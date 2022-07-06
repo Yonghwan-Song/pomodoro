@@ -1,0 +1,31 @@
+.siteTitle {
+  font-size: 2rem;
+}
+.nav {
+  display: flex;
+  justify-content: space-between;
+  /* align-items: stretch;
+  gap: 2rem; */
+  padding: 0 1rem;
+}
+
+.navUl {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+
+  /* why do we use this ? */
+  /* gap: 1rem; */
+}
+
+.textLink {
+  text-decoration: none;
+}
+
+/* it works.. 
+- treat the Link component as if it is just 
+an a html tag in terms of applying css*/
+.textLink:visited {
+  color: aquamarine;
+}
