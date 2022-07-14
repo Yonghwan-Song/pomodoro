@@ -2,14 +2,29 @@ import React, { useEffect } from "react";
 import GoogleButton from "react-google-button";
 import { UserAuth } from "../../Auth/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { getAdditionalUserInfo } from "firebase/auth";
+import { useState } from "react";
 
 const Signin = () => {
   const { googleSignIn, user } = UserAuth();
+
   const navigate = useNavigate();
 
-  const handleGoogleSignIn = async () => {
+  // const handleGoogleSignIn = async () => {
+  //   try {
+  //     let result = await googleSignIn();
+  //     const { isNewUser } = getAdditionalUserInfo(result);
+  //     setTimeout(() => console.log(isNewUser), 2500);
+  //     //?? reloading은 어느시점에서 되는거냐 대체? 하..
+  //     //!
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  const handleGoogleSignIn = () => {
     try {
-      await googleSignIn();
+      googleSignIn();
     } catch (error) {
       console.log(error);
     }

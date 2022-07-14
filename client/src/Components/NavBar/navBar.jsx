@@ -1,4 +1,3 @@
-import { async } from "@firebase/util";
 import React from "react";
 import { Link } from "react-router-dom";
 import { UserAuth } from "../../Auth/AuthContext";
@@ -15,7 +14,6 @@ const Navbar = () => {
     }
   };
 
-  // TODO: remove the purple color for visited links.
   return (
     <nav className={styles.nav}>
       <Link to="/" className={`${styles.siteTitle} ${styles.textLink}`}>
