@@ -1,17 +1,15 @@
 import { useEffect } from "react";
 import { UserAuth } from "../../Auth/AuthContext";
 import { useNavigate } from "react-router-dom";
+import CircularProgressBar from "../../Components/CircularProgressBar/circularProgressBar";
 
 export default function Main() {
   const { user } = UserAuth();
   const navigate = useNavigate();
 
-  // Instead of this, we use a Protected Route.
-  // useEffect(() => {
-  //   if (user == null) {
-  //     navigate("/");
-  //   }
-  // });
-
-  return <div>Timer</div>;
+  return (
+    <div>
+      <CircularProgressBar />
+    </div>
+  );
 }
