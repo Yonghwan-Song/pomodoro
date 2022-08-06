@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Timer } from "../Timer/Timer";
 import { reducerPatternTimer as reducer } from "../reducers";
 
@@ -15,25 +15,54 @@ export function PatternTimer({
   const [cycleCount, setCycleCount] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0);
 
-  // TODO: Learn how to write comment about function signature and edit the comment below
-  // howManyCountdown: it is used to determine whether the next duration is pomo or any of the breakDurations.
   function next(howManyCountdown) {
-    console.log(howManyCountdown);
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
+        //shortBreak notification
+        notify("shortBreak");
         setDuration(shortBreakDuration);
       } else {
+        //pomo notification
+        notify("pomo");
         setDuration(pomoDuration);
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
+      //longBreak notification
+      notify("longBreak");
       setDuration(longBreakDuration);
     } else if (howManyCountdown === numOfPomo * 2) {
       console.log("one cycle is done");
+      //cycle completion notification
+      notify("nextCycle");
       setCycleCount((prev) => prev + 1);
       setDuration(pomoDuration);
       setRepetitionCount(0);
     }
   }
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      console.log("The Notification property exists in the window namespace");
+      if (Notification.permission === "granted") {
+        alert("Permission is granted");
+      } else {
+        Notification.requestPermission()
+          .then(function (result) {
+            console.log("result:", result);
+            if (Notification.permission === "granted") {
+              alert("Permission is granted");
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+    } else {
+      console.log(
+        "The Notification property does not exist in the window namespace"
+      );
+    }
+  }, []);
 
   return (
     <>
@@ -45,4 +74,34 @@ export function PatternTimer({
       />
     </>
   );
+}
+
+function notify(which) {
+  let title = "Pomodoro";
+  let body = "";
+
+  switch (which) {
+    case "pomo":
+      body = "time to focus";
+      break;
+    case "shortBreak":
+      body = "time to taks a short break";
+      break;
+    case "longBreak":
+      body = "time to taks a long break";
+      break;
+    case "nextCycle":
+      body = "time to do the next cycle of pomos";
+      break;
+  }
+
+  let options = {
+    body,
+  };
+
+  let noti = new Notification(title, options);
+
+  setTimeout(() => {
+    noti.close();
+  }, 4000);
 }
