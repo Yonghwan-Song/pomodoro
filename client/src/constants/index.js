@@ -1,3 +1,4 @@
+//#region Components/CircularProgressBar/circularProgressBar.jsx
 export const SVG = { HEGITH: 300, WIDTH: 300 };
 export const MIDDLE_X = SVG.WIDTH / 2;
 export const MIDDLE_Y = SVG.HEGITH / 2;
@@ -10,3 +11,12 @@ export const RADIUS = (SVG.WIDTH - STROKE_WIDTH) / 2;
 export const BACKGROUND_COLOR = "#98e3ac";
 export const FOREGROUND_COLOR = "#32a852";
 export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
+//#endregion
+
+//#region URLs
+export const URLs = {
+  NEW_USER: "http://localhost:4444/users",
+  NEW_POMO: "http://localhost:4444/pomos",
+};
+
+//#endregion
