@@ -8,8 +8,6 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
     pause: { totalLength: 0, record: [] },
   });
   const [remainingDuration, setRemainingDuration] = useState(duration);
-  //const [repetitionCount, setRepetitionCount] = useState(0);
-  //const repetitionCount = useRef(0);
   let seconds = 0;
 
   function toggleTimer() {
@@ -61,7 +59,7 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
       console.log(`Focus session is complete from ${Timer.name}`);
       //? The changes of the states in the parent component
       setRepetitionCount(repetitionCount + 1);
-      next(repetitionCount + 1);
+      next(repetitionCount + 1, state.startTime);
       //? The changes of the states in this component
       dispatch({ type: ACTION.RESET });
     }

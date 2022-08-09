@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useReducer } from "react";
 import { Timer } from "../Timer/Timer";
 import { reducerPatternTimer as reducer } from "../reducers";
+import { UserAuth } from "../../Auth/AuthContext";
+import axios from "axios";
+import * as CONSTANTS from "../../constants/index";
 
 // Purpose:
 // the PatternTimer controls the Timer component,
@@ -14,20 +17,23 @@ export function PatternTimer({
   const [duration, setDuration] = useState(pomoDuration);
   const [cycleCount, setCycleCount] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0);
+  const { user } = UserAuth();
 
-  function next(howManyCountdown) {
+  function next(howManyCountdown, startTime) {
     if (howManyCountdown < numOfPomo * 2 - 1) {
+      //! This is when a pomo is completed.
       if (howManyCountdown % 2 === 1) {
-        //shortBreak notification
+        console.log("ONE POMO DURATION IS FINISHED");
+        recordPomo(user, duration, startTime);
         notify("shortBreak");
         setDuration(shortBreakDuration);
       } else {
-        //pomo notification
         notify("pomo");
         setDuration(pomoDuration);
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
-      //longBreak notification
+      console.log("ONE POMO DURATION IS FINISHED");
+      recordPomo(user, duration, startTime);
       notify("longBreak");
       setDuration(longBreakDuration);
     } else if (howManyCountdown === numOfPomo * 2) {
@@ -62,7 +68,16 @@ export function PatternTimer({
         "The Notification property does not exist in the window namespace"
       );
     }
-  }, []);
+    console.log(user);
+    console.log(user.email);
+    //console.log("idToken: ", idToken);
+    console.log("accessToken: ", user.accessToken);
+  }, [user]);
+  // user is fetched after this comp is mounted.
+  // But we have the user as a dependency, thus, comp is going to be updated.
+  // Is it ideal?..
+  // Is there any way to make this comp render after user is fetched?...
+  // so that is is rendered once not twice?
 
   return (
     <>
@@ -76,10 +91,33 @@ export function PatternTimer({
   );
 }
 
+//TODO: Should I place these two functions inside the PatternTimer?
+async function recordPomo(user, duration, startTime) {
+  try {
+    const response = await axios.post(
+      CONSTANTS.URLs.NEW_POMO,
+      {
+        userEmail: user.email,
+        duration,
+        startTime,
+      },
+      {
+        headers: {
+          Authorization: "Bearer " + user.accessToken,
+        },
+      }
+    );
+    console.log("res obj", response);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 function notify(which) {
   let title = "Pomodoro";
   let body = "";
 
+  // eslint-disable-next-line default-case
   switch (which) {
     case "pomo":
       body = "time to focus";

@@ -14,6 +14,6 @@ export const createUser = async (req, res) => {
     res.send(newUser);
     console.log(newUser);
   } catch (error) {
-    console.log(`******DB error: controllers.createUser******`);
+    console.log(`******DB error: createUser in controllers/users.js******`);
   }
 };

@@ -18,7 +18,7 @@ export default function Main() {
 
   return (
     <div>
-      <CircularProgressBar />
+      {/* <CircularProgressBar /> */}
       <PatternTimer {...props} />
     </div>
   );

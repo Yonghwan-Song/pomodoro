@@ -1,6 +1,8 @@
 import express from "express";
 import bodyParser from "body-parser";
 import usersRoutes from "./routes/users.js";
+import pomosRoutes from "./routes/pomos.js";
+
 //???
 // import * as dotenv from "dotenv"; // this works.
 import dotenv from "dotenv"; // this also works...
@@ -34,6 +36,7 @@ app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true }));
 //app.use(middleware.decodeToken(req, res, next));
 app.use("/users", usersRoutes);
+app.use("/pomos", pomosRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port: http://localhost:${port}`);
