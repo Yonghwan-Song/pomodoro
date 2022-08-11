@@ -1,5 +1,6 @@
 import { useState, useEffect, useReducer, useRef } from "react";
 import { reducerTimer as reducer, ACTION } from "../reducers";
+import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
 
 export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
   const [state, dispatch] = useReducer(reducer, {
@@ -12,10 +13,16 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
 
   function toggleTimer() {
     if (isFirstStart()) {
+      // initial start
+
       dispatch({ type: ACTION.START, payload: Date.now() });
     } else if (isPaused()) {
+      // resume
+
       dispatch({ type: ACTION.RESUME, payload: Date.now() });
     } else {
+      // pause
+
       dispatch({ type: ACTION.PAUSE, payload: Date.now() });
     }
 
@@ -34,7 +41,9 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
     // Booleans
     const isAfterReset = remainingDuration === 0 && state.startTime === 0;
     const isEnd = remainingDuration === 0 && state.startTime !== 0;
-    // because the reset was dispatched, the truth of the conditional statement indicates the rendering right after a countdown ends.
+
+    // Because the reset was dispatched,
+    // if isAfterReset is true, the update of this component is right after a countdown ends.
     if (isAfterReset) {
       setRemainingDuration(duration); // setting remaining duration to the one newly passed in from parent component.
     }
@@ -44,6 +53,7 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
       const id = setInterval(() => {
         setRemainingDuration(
           Math.floor(
+            //seconds to miliseconds
             (duration * 1000 -
               (Date.now() - state.startTime - state.pause.totalLength)) /
               1000
@@ -73,16 +83,20 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
   );
   let g = <h2>{duration / 60 + ":00"}</h2>;
   return (
-    <div>
-      <h1>
-        {repetitionCount % 2 === 0 ? "POMO" : "BREAK"} DURATION: {duration} SEC
-      </h1>
+    <>
+      <div>
+        <h1>
+          {repetitionCount % 2 === 0 ? "POMO" : "BREAK"} DURATION: {duration}{" "}
+          SEC
+        </h1>
 
-      {state.startTime === 0 ? g : h}
+        {state.startTime === 0 ? g : h}
 
-      <button onClick={toggleTimer}>
-        {state.running && remainingDuration !== 0 ? "pause" : "start"}
-      </button>
-    </div>
+        <button onClick={toggleTimer}>
+          {state.running && remainingDuration !== 0 ? "pause" : "start"}
+        </button>
+      </div>
+      <CircularProgressBar progress={1 - remainingDuration / duration} />
+    </>
   );
 }

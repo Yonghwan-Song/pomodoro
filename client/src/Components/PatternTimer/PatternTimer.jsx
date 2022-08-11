@@ -50,13 +50,13 @@ export function PatternTimer({
     if ("Notification" in window) {
       console.log("The Notification property exists in the window namespace");
       if (Notification.permission === "granted") {
-        alert("Permission is granted");
+        console.log("Permission is granted");
       } else {
         Notification.requestPermission()
           .then(function (result) {
             console.log("result:", result);
             if (Notification.permission === "granted") {
-              alert("Permission is granted");
+              console.log("Permission is granted");
             }
           })
           .catch((err) => {
@@ -82,6 +82,7 @@ export function PatternTimer({
   return (
     <>
       <Timer
+        //min to seconds
         duration={duration * 60}
         next={next}
         repetitionCount={repetitionCount}
