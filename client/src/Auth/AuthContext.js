@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import axios from "axios";
-import * as CONSTANTS from "../constants/index";
+import * as C from "../constants/index";
 
 const AuthContext = createContext();
 
@@ -32,7 +32,7 @@ export function AuthContextProvider({ children }) {
   async function registerUser(user) {
     try {
       const response = await axios.post(
-        CONSTANTS.URLs.NEW_USER,
+        C.URLs.USER,
         {
           email: user.email,
           firebaseUid: user.uid,

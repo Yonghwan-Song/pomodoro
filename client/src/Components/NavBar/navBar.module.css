@@ -1,6 +1,11 @@
 .siteTitle {
   font-size: 2rem;
 }
+
+.otherMenu {
+  font-size: 1.5rem;
+}
+
 .nav {
   display: flex;
   justify-content: space-between;
@@ -27,5 +32,5 @@
 - treat the Link component as if it is just 
 an a html tag in terms of applying css*/
 .textLink:visited {
-  color: aquamarine;
+  color: rgb(21, 226, 158);
 }

@@ -2,6 +2,8 @@ import admin from "../firebase/config.js";
 
 class Middleware {
   async decodeToken(req, res, next) {
+    console.log(`async decodeToken(): ${req.headers.authorization}`);
+
     const idToken = req.headers.authorization.split(" ")[1]; // [1] of arr [Bearer, tokenValue]
 
     try {

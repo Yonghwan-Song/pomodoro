@@ -11,6 +11,7 @@
  * export { AboutUs, Login, Main };
  * */
 
-import Main from "./Main/main";
-
-export default Main;
+import Main from "./Main/Main";
+import Signin from "./Signin/Signin";
+import Setting from "./Setting/Setting";
+export { Main, Signin, Setting };

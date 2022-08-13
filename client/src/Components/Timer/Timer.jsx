@@ -42,11 +42,14 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
     const isAfterReset = remainingDuration === 0 && state.startTime === 0;
     const isEnd = remainingDuration === 0 && state.startTime !== 0;
 
-    // Because the reset was dispatched,
-    // if isAfterReset is true, the update of this component is right after a countdown ends.
     if (isAfterReset) {
       setRemainingDuration(duration); // setting remaining duration to the one newly passed in from parent component.
     }
+
+    if (state.startTime === 0 && remainingDuration !== 0) {
+      setRemainingDuration(duration);
+    }
+
     console.log(remainingDuration);
     if (state.running && remainingDuration !== 0) {
       // running

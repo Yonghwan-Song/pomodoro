@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getAdditionalUserInfo } from "firebase/auth";
 import { useState } from "react";
 
-const Signin = () => {
+function Signin() {
   const { googleSignIn, user } = UserAuth();
 
   const navigate = useNavigate();
@@ -44,6 +44,6 @@ const Signin = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Signin;

@@ -2,22 +2,19 @@ import { useEffect, useState, useReducer } from "react";
 import { Timer } from "../Timer/Timer";
 import { reducerPatternTimer as reducer } from "../reducers";
 import { UserAuth } from "../../Auth/AuthContext";
+import { UserInfo } from "../UserContext";
 import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
 
-// Purpose:
-// the PatternTimer controls the Timer component,
-// using the four props passed in like below.
-export function PatternTimer({
-  pomoDuration,
-  shortBreakDuration,
-  longBreakDuration,
-  numOfPomo,
-}) {
-  const [duration, setDuration] = useState(pomoDuration);
-  const [cycleCount, setCycleCount] = useState(0);
+export function PatternTimer() {
+  const { pomoSetting } = UserInfo();
+  const [duration, setDuration] = useState(pomoSetting.pomoDuration);
+  //const [cycleCount, setCycleCount] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0);
   const { user } = UserAuth();
+
+  let { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
+    pomoSetting;
 
   function next(howManyCountdown, startTime) {
     if (howManyCountdown < numOfPomo * 2 - 1) {
@@ -40,13 +37,15 @@ export function PatternTimer({
       console.log("one cycle is done");
       //cycle completion notification
       notify("nextCycle");
-      setCycleCount((prev) => prev + 1);
+      //setCycleCount((prev) => prev + 1);
       setDuration(pomoDuration);
       setRepetitionCount(0);
     }
   }
 
   useEffect(() => {
+    setDuration(pomoSetting.pomoDuration);
+
     if ("Notification" in window) {
       console.log("The Notification property exists in the window namespace");
       if (Notification.permission === "granted") {
@@ -70,9 +69,9 @@ export function PatternTimer({
     }
     console.log(user);
     console.log(user.email);
-    //console.log("idToken: ", idToken);
     console.log("accessToken: ", user.accessToken);
-  }, [user]);
+  }, [user, pomoSetting]);
+  // TODO?
   // user is fetched after this comp is mounted.
   // But we have the user as a dependency, thus, comp is going to be updated.
   // Is it ideal?..
@@ -96,7 +95,7 @@ export function PatternTimer({
 async function recordPomo(user, duration, startTime) {
   try {
     const response = await axios.post(
-      CONSTANTS.URLs.NEW_POMO,
+      CONSTANTS.URLs.POMO,
       {
         userEmail: user.email,
         duration,

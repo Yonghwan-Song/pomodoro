@@ -1,5 +1,9 @@
 import express from "express";
-import { createUser } from "../controllers/users.js";
+import {
+  createUser,
+  getPomoSetting,
+  updatePomoSetting,
+} from "../controllers/users.js";
 import middleware from "../middleware/firebase-auth.js";
 
 const router = express.Router();
@@ -7,12 +11,12 @@ const router = express.Router();
 router.use(middleware.decodeToken);
 // all routes in here start with /users
 
-router.get("/", (req, res) => {
-  console.log(users);
-  res.send(users);
-});
+router.get("/:email", getPomoSetting);
 
 // Create a new user
 router.post("/", createUser);
+
+// Set a new pomo setting
+router.put("/editPomoSetting/:email", updatePomoSetting);
 
 export default router;

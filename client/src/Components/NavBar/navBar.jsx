@@ -16,8 +16,11 @@ const Navbar = () => {
 
   return (
     <nav className={styles.nav}>
-      <Link to="/" className={`${styles.siteTitle} ${styles.textLink}`}>
+      <Link to="/timer" className={`${styles.siteTitle} ${styles.textLink}`}>
         Pomodoro Timer
+      </Link>
+      <Link to="/setting" className={`${styles.otherMenu} ${styles.textLink}`}>
+        Setting
       </Link>
       <ul className={styles.navUl}>
         {user?.displayName ? (
