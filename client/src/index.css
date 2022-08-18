@@ -1,0 +1,15 @@
+* {
+  margin: 0px;
+  padding: 0px;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: "Poppins", sans-serif;
+}
+
+@media screen and (max-width: 734px) {
+  body {
+    overflow-x: hidden;
+  }
+}

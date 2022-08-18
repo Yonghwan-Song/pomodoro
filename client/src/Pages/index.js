@@ -14,4 +14,6 @@
 import Main from "./Main/Main";
 import Signin from "./Signin/Signin";
 import Setting from "./Setting/Setting";
-export { Main, Signin, Setting };
+import Statistics from "./Statistics/Statistics";
+
+export { Main, Signin, Setting, Statistics };

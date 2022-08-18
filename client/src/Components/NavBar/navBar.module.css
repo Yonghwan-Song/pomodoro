@@ -1,5 +1,6 @@
 .siteTitle {
   font-size: 2rem;
+  letter-spacing: 7px;
 }
 
 .otherMenu {
@@ -8,29 +9,113 @@
 
 .nav {
   display: flex;
+  /* justify-content: space-around; */
   justify-content: space-between;
-  /* align-items: stretch;
-  gap: 2rem; */
-  padding: 0 1rem;
+  padding: 0 2rem;
+  align-items: center;
+  min-height: 10vh;
+  background-color: #ebd3cb;
+  /* #e0c2b8 */
+  /* align-items: stretch; */
+  /* gap: 2rem; */
+  z-index: 999;
 }
 
-.navUl {
-  padding: 0;
-  margin: 0;
+.navLinks {
   list-style: none;
   display: flex;
-
+  /* justify-content: space-around; */
+  justify-content: space-between;
+  /* background-color: aquamarine; */
+  width: 40%;
   /* why do we use this ? */
   /* gap: 1rem; */
+
+  /*TODO: is it a right way? How does it work? inheritance?*/
+  /* to center the span inside the li */
+  align-items: center;
+
+  z-index: 999;
 }
 
 .textLink {
   text-decoration: none;
+  color: rgb(11, 64, 207);
 }
 
-/* it works.. 
-- treat the Link component as if it is just 
-an a html tag in terms of applying css*/
 .textLink:visited {
-  color: rgb(21, 226, 158);
+  color: rgb(11, 64, 207);
+}
+
+.span {
+  color: rgb(24, 19, 19);
+  cursor: pointer;
+}
+
+.span:hover {
+  font-weight: bold;
+}
+
+.burger {
+  display: none;
+}
+
+.burgerDiv {
+  width: 25px;
+  height: 3px;
+  background-color: rgb(65, 43, 43);
+  margin: 5px;
+  transition: all 0.3s ease;
+}
+
+@media screen and (max-width: 1024px) {
+  .navLinks {
+    /* TODO: not smooth.. */
+    width: 45%;
+    /* background-color: aquamarine; */
+  }
+}
+
+@media screen and (max-width: 734px) {
+  .navLinks {
+    position: absolute;
+    right: 0px;
+    top: 10vh;
+    height: 90vh;
+    background-color: #ebd3cb;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    width: 50%;
+    transform: translateX(100%);
+    /*TODO: edit opacity and font-weight and contrast of font and background color to make it look more aesthetic*/
+    opacity: 0.8;
+  }
+
+  .navLinksItems {
+    opacity: 0;
+  }
+
+  .burger {
+    display: block;
+    cursor: pointer;
+    padding: 5px;
+  }
+
+  .navLinksActive {
+    transform: translateX(0%);
+    transition: transform 0.3s ease-in;
+  }
+}
+
+@keyframes navLinksFade {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0px);
+    /* font-weight: bold; */
+  }
 }

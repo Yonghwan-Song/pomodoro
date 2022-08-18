@@ -1,8 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "./index.css";
 import App from "./App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Main, Signin, Setting } from "./Pages/index";
+import { Main, Signin, Setting, Statistics } from "./Pages/index";
 
 import Protected from "./Components/Protected";
 
@@ -24,6 +25,14 @@ root.render(
           element={
             <Protected>
               <Setting />
+            </Protected>
+          }
+        />
+        <Route
+          path="statistics"
+          element={
+            <Protected>
+              <Statistics />
             </Protected>
           }
         />
