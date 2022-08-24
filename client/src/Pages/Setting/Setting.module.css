@@ -1,0 +1,42 @@
+.upArrow {
+  transform: rotate(-0.5turn);
+  transform-origin: center;
+}
+
+.arrangeInput {
+  display: block;
+
+  border: none;
+  text-align: center;
+  /* width: 100%; */
+  width: 30%;
+  font-size: 1.5em;
+  /* font-weight: 200; */
+}
+
+.arrangeLabel {
+  /* padding-left: 6.5em; */
+  display: block;
+  text-align: center;
+  /* font-weight: bold; */
+}
+
+.alignBoxes {
+  display: flex;
+  justify-content: center;
+  margin-top: 1em;
+}
+
+.forBothArrows {
+  width: 1.5em;
+}
+
+.saveButton {
+  display: block;
+  transform: translateX(50%);
+}
+
+.flexBox {
+  display: flex;
+  justify-content: center;
+}

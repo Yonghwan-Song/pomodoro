@@ -1,0 +1,14 @@
+.upArrow {
+  transform: rotate(-0.5turn);
+  transform-origin: center;
+}
+
+.forBothArrows {
+  width: 1.5em;
+  cursor: pointer;
+}
+
+.forBothArrows:active {
+  stroke: rgb(47, 196, 255);
+  stroke-width: 1em;
+}

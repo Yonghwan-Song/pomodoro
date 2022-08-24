@@ -3,9 +3,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserAuth } from "../../Auth/AuthContext";
 import { UserInfo } from "../../Components/UserContext";
+import { ReactComponent as DownArrow } from "../../Icons/down-arrow-svgrepo-com.svg";
+import { ArrowDown, ArrowUp } from "../../Components/Buttons/Arrows/Arrows";
+import { Button } from "../../Components/Buttons/Button";
 import axios from "axios";
 import * as C from "../../constants/index";
 import { async } from "@firebase/util";
+import styles from "./Setting.module.css";
 
 //TODO:
 //// 1. Change URL of api
@@ -17,33 +21,52 @@ function Setting() {
   const [settingInputs, setSettingInputs] = useState(pomoSetting || {});
 
   function handleInputChange(event) {
-    switch (event.target.name) {
-      case "pomoDuration":
-        setSettingInputs({
-          ...settingInputs,
-          pomoDuration: +event.target.value,
-        });
-        break;
-      case "shortBreakDuration":
-        setSettingInputs({
-          ...settingInputs,
-          shortBreakDuration: +event.target.value,
-        });
-        break;
-      case "longBreakDuration":
-        setSettingInputs({
-          ...settingInputs,
-          longBreakDuration: +event.target.value,
-        });
-        break;
-      case "numOfPomo":
-        setSettingInputs({
-          ...settingInputs,
-          numOfPomo: +event.target.value,
-        });
-        break;
-      default:
-        break;
+    let targetValue = +event.target.value;
+    if (targetValue >= 0) {
+      switch (event.target.name) {
+        case "pomoDuration":
+          setSettingInputs({
+            ...settingInputs,
+            pomoDuration: targetValue,
+          });
+          break;
+        case "shortBreakDuration":
+          setSettingInputs({
+            ...settingInputs,
+            shortBreakDuration: targetValue,
+          });
+          break;
+        case "longBreakDuration":
+          setSettingInputs({
+            ...settingInputs,
+            longBreakDuration: targetValue,
+          });
+          break;
+        case "numOfPomo":
+          setSettingInputs({
+            ...settingInputs,
+            numOfPomo: targetValue,
+          });
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  function handleIncrease(targetProp) {
+    setSettingInputs({
+      ...settingInputs,
+      [targetProp]: ++settingInputs[`${targetProp}`],
+    });
+  }
+
+  function handleDecrease(targetProp) {
+    if (settingInputs[`${targetProp}`] > 0) {
+      setSettingInputs({
+        ...settingInputs,
+        [targetProp]: --settingInputs[`${targetProp}`],
+      });
     }
   }
 
@@ -70,48 +93,109 @@ function Setting() {
       <br />
       <br />
       <form onSubmit={handleSubmit}>
-        <label>
-          Pomo Duration:
-          <input
-            name="pomoDuration"
-            type="number"
-            value={settingInputs.pomoDuration}
-            onChange={handleInputChange}
-          />
+        <label className={styles.arrangeLabel}>
+          Pomo Duration
+          <div className={styles.alignBoxes}>
+            <ArrowDown
+              handleClick={() => {
+                handleDecrease("pomoDuration");
+              }}
+            />
+            <input
+              name="pomoDuration"
+              type="number"
+              className={styles.arrangeInput}
+              value={settingInputs.pomoDuration}
+              onChange={handleInputChange}
+            />
+
+            <ArrowUp
+              handleClick={() => {
+                handleIncrease("pomoDuration");
+              }}
+            />
+          </div>
         </label>
         <br />
-        <label>
-          Short Break Duration:
-          <input
-            name="shortBreakDuration"
-            type="number"
-            value={settingInputs.shortBreakDuration}
-            onChange={handleInputChange}
-          />
+        <label className={styles.arrangeLabel}>
+          Short Break Duration
+          <div className={styles.alignBoxes}>
+            <ArrowDown
+              handleClick={() => {
+                handleDecrease("shortBreakDuration");
+              }}
+            />
+            <input
+              name="shortBreakDuration"
+              type="number"
+              className={styles.arrangeInput}
+              value={settingInputs.shortBreakDuration}
+              onChange={handleInputChange}
+            />
+            <ArrowUp
+              handleClick={() => {
+                handleIncrease("shortBreakDuration");
+              }}
+            />
+          </div>
         </label>
         <br />
-        <label>
-          Long Break Duration:
-          <input
-            name="longBreakDuration"
-            type="number"
-            value={settingInputs.longBreakDuration}
-            onChange={handleInputChange}
-          />
+        <label className={styles.arrangeLabel}>
+          Long Break Duration
+          <div className={styles.alignBoxes}>
+            <ArrowDown
+              handleClick={() => {
+                handleDecrease("longBreakDuration");
+              }}
+            />
+            <input
+              name="longBreakDuration"
+              type="number"
+              className={styles.arrangeInput}
+              value={settingInputs.longBreakDuration}
+              onChange={handleInputChange}
+            />
+            <ArrowUp
+              handleClick={() => {
+                handleIncrease("longBreakDuration");
+              }}
+            />
+          </div>
         </label>
         <br />
-        <label>
-          Number of Pomos:
-          <input
-            name="numOfPomo"
-            type="number"
-            value={settingInputs.numOfPomo}
-            onChange={handleInputChange}
-          />
+        <label className={styles.arrangeLabel}>
+          Number of Pomos
+          <div className={styles.alignBoxes}>
+            <ArrowDown
+              handleClick={() => {
+                handleDecrease("numOfPomo");
+              }}
+            />
+            <input
+              name="numOfPomo"
+              type="number"
+              className={styles.arrangeInput}
+              value={settingInputs.numOfPomo}
+              onChange={handleInputChange}
+            />
+            <ArrowUp
+              handleClick={() => {
+                handleIncrease("numOfPomo");
+              }}
+            />
+          </div>
         </label>
         <br />
         <br />
-        <input type="submit" value="Submit" />
+        <div className={`${styles.flexBox}`}>
+          <Button
+            type={"submit"}
+            color={"primary"}
+            styles="transform: translateX(50%)"
+          >
+            SAVE
+          </Button>
+        </div>
       </form>
     </div>
   );

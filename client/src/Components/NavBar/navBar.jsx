@@ -77,7 +77,7 @@ function Navbar() {
           </li>
         ) : (
           <li className={styles.navLinksItems}>
-            <Link to="/signin" className={styles.textLink}>
+            <Link to="/signin" className={styles.span}>
               Sign in
             </Link>
           </li>

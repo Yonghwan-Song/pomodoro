@@ -50,6 +50,7 @@
 .span {
   color: rgb(24, 19, 19);
   cursor: pointer;
+  text-decoration: none;
 }
 
 .span:hover {

@@ -8,6 +8,34 @@ html {
   font-family: "Poppins", sans-serif;
 }
 
+.btn {
+  border: none;
+  font-size: 1rem;
+  padding: 0.5em 1em;
+  border-radius: 0.3em;
+}
+
+.btn-primary {
+  background-color: rgb(129, 216, 201);
+}
+
+.btn-primary:hover {
+  cursor: pointer;
+  background-color: rgb(117, 187, 175);
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 @media screen and (max-width: 734px) {
   body {
     overflow-x: hidden;
