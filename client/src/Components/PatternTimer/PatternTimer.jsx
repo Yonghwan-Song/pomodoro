@@ -16,12 +16,12 @@ export function PatternTimer() {
   let { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
     pomoSetting;
 
-  function next(howManyCountdown, startTime) {
+  function next(howManyCountdown, startTime, concentrationTime = duration) {
     if (howManyCountdown < numOfPomo * 2 - 1) {
       //! This is when a pomo is completed.
       if (howManyCountdown % 2 === 1) {
         console.log("ONE POMO DURATION IS FINISHED");
-        recordPomo(user, duration, startTime);
+        recordPomo(user, concentrationTime, startTime);
         notify("shortBreak");
         setDuration(shortBreakDuration);
       } else {
@@ -30,7 +30,7 @@ export function PatternTimer() {
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
       console.log("ONE POMO DURATION IS FINISHED");
-      recordPomo(user, duration, startTime);
+      recordPomo(user, concentrationTime, startTime);
       notify("longBreak");
       setDuration(longBreakDuration);
     } else if (howManyCountdown === numOfPomo * 2) {

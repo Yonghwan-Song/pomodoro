@@ -9,7 +9,9 @@ const CircularProgressBar = ({ progress }) => {
 
   //? 사실 이거 왜 여기다가 해야하는지 설명 못하겠어.
   useEffect(() => {
-    console.log(`BAR IS RENDERED`);
+    console.log(
+      `BAR IS RENDERED -------------------- progress >>> ${progress}`
+    );
     circleRef.current.style = "transition: stroke-dashoffset 0ms linear";
   });
 

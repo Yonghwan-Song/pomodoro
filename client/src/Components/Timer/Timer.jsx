@@ -1,6 +1,7 @@
 import { useState, useEffect, useReducer, useRef } from "react";
 import { reducerTimer as reducer, ACTION } from "../reducers";
 import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
+import { Button } from "../Buttons/Button";
 
 export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
   const [state, dispatch] = useReducer(reducer, {
@@ -12,6 +13,7 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
   let seconds = 0;
 
   function toggleTimer() {
+    console.log("jpowejfpwojefpoj");
     if (isFirstStart()) {
       // initial start
 
@@ -34,11 +36,20 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
     }
   }
 
+  function endTimer() {
+    let timePassed = Math.floor((duration - remainingDuration) / 60);
+    setRepetitionCount(repetitionCount + 1);
+    next(repetitionCount + 1, state.startTime, timePassed);
+    dispatch({ type: ACTION.RESET });
+    setRemainingDuration(0);
+  }
   //UPGRADE: if I want my data about my pomo session I was doing to be persistent between reloading page,
   //         I think I need to store the pomo session data to the indexed db I guess.
   useEffect(() => {
     console.log(repetitionCount);
     // Booleans
+
+    //TODO: The name of this variable is a little bit weird since ACTION.RESET deos not reset the remainingDuration.
     const isAfterReset = remainingDuration === 0 && state.startTime === 0;
     const isEnd = remainingDuration === 0 && state.startTime !== 0;
 
@@ -95,9 +106,10 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
 
         {state.startTime === 0 ? g : h}
 
-        <button onClick={toggleTimer}>
+        <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
           {state.running && remainingDuration !== 0 ? "pause" : "start"}
-        </button>
+        </Button>
+        <Button handleClick={endTimer}>End</Button>
       </div>
       <CircularProgressBar progress={1 - remainingDuration / duration} />
     </>
