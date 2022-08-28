@@ -11,4 +11,12 @@ const pomoSchema = new Schema({
   startTime: Number,
 });
 
+pomoSchema.statics.findByUserEmail = function (userEmail) {
+  return this.find({ userEmail });
+};
+
+pomoSchema.statics.deleteAllByUserEmail = function (userEmail) {
+  return this.deleteMany({ userEmail });
+};
+
 export const Pomo = mongoose.model("Pomo", pomoSchema);

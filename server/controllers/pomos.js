@@ -24,14 +24,79 @@ export const recordPomo = async (req, res) => {
   }
 };
 
+export const getPomoRecords = async (req, res) => {
+  try {
+    let pomoRecords = await Pomo.findByUserEmail(req.params.userEmail);
+
+    //#region calculate the total cocentration time of today
+    const now = new Date();
+    const _24hours = 24 * 60 * 60 * 1000;
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    let startOfTodayTimestamp = startOfToday.getTime();
+    let endOfTodayTimestamp = startOfTodayTimestamp + _24hours;
+
+    const todayPomoTotalDuration = pomoRecords
+      .filter((rec) => {
+        return (
+          rec.startTime >= startOfTodayTimestamp &&
+          rec.startTime < endOfTodayTimestamp
+        );
+      })
+      .reduce((S_n_1, a_n) => {
+        return S_n_1 + a_n.duration;
+      }, 0);
+    //#endregion
+
+    //#region calculate the total cocentration time of this week
+    let daysPassed = new Date(startOfToday.getDay() + 6) % 7;
+    let startOfWeekTimestamp = startOfTodayTimestamp - daysPassed * _24hours;
+    let endOfWeekTimestamp = startOfWeekTimestamp + 7 * _24hours;
+
+    const thisWeekPomoTotalDuration = pomoRecords
+      .filter((rec) => {
+        return (
+          rec.startTime >= startOfWeekTimestamp &&
+          rec.startTime < endOfWeekTimestamp
+        );
+      })
+      .reduce((S_n_1, a_n) => {
+        return S_n_1 + a_n.duration;
+      }, 0);
+
+    //#endregion
+    res.json({
+      pomoRecords,
+      todayPomoTotalDuration,
+      thisWeekPomoTotalDuration,
+    });
+  } catch (error) {
+    console.log(`getPomoRecords in controllers/pomos.js\n ${error}`);
+  }
+};
+
+export const deletePomoRecords = async (req, res) => {
+  try {
+    let deletedCount = await Pomo.deleteAllByUserEmail(req.params.userEmail);
+
+    res.json(deletedCount);
+  } catch (error) {
+    console.log(`deleteRecords in controllers/pomos.js\n ${error}`);
+  }
+};
+
 export const generateDummies = async (req, res) => {
   try {
+    let { year, month, day, hours } = req.body;
     const pomoRecords = createRecords(
       {
-        year: "2022",
-        month: "7",
-        day: "26",
-        hours: "8",
+        year,
+        month,
+        day,
+        hours,
       },
       25,
       5,
