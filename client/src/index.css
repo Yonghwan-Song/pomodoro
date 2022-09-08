@@ -6,6 +6,18 @@
 
 html {
   font-family: "Poppins", sans-serif;
+  height: 100%;
+}
+
+body {
+  /* min-height: 100vh; */
+  min-height: 100%;
+  background-color: #f0f0f0;
+}
+
+#root,
+#root > div {
+  height: 100%;
 }
 
 .btn {

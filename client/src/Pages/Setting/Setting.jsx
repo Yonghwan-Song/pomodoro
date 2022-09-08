@@ -89,10 +89,10 @@ function Setting() {
   }, [user, pomoSetting, settingInputs]);
 
   return (
-    <div>
+    <div style={{ position: "relative" }}>
       <br />
       <br />
-      <form onSubmit={handleSubmit}>
+      <form className={styles.centerForm} onSubmit={handleSubmit}>
         <label className={styles.arrangeLabel}>
           Pomo Duration
           <div className={styles.alignBoxes}>

@@ -40,3 +40,19 @@
   display: flex;
   justify-content: center;
 }
+
+.centerForm {
+  /* width: fit-content; */
+  width: 50%;
+  background-color: white;
+  left: 50%;
+  transform: translateX(-50%);
+  position: absolute;
+  margin-top: 3em;
+  padding: 3em 0;
+  border-radius: 3em;
+  border-color: black;
+  border-right: 10px;
+  border-bottom: 10px;
+  border-style: solid;
+}
