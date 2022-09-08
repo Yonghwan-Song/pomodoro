@@ -5,23 +5,28 @@ import { useEffect } from "react";
 import { AuthContextProvider } from "./Auth/AuthContext";
 import { UserContextProvider } from "./Components/UserContext";
 import Navbar from "./Components/NavBar/navBar";
+import { ThemeProvider } from "styled-components";
+
+const theme = {
+  colors: {
+    navBar: "#44475a",
+    green: "#50fa7b",
+    text: "#181313",
+  },
+  tablet: "1024px",
+  mobile: "768px",
+};
 
 function App() {
-  //todo: Programatically navigate to <Main /> page.
-  // suppoising that this App component is going to be re-rendered after finishing signing in,
-  // I think I can utilize useEffect hook to accomplish the re-direction.
-
-  // useEffect(() => {});
-
   return (
-    <div>
-      <AuthContextProvider>
-        <UserContextProvider>
+    <AuthContextProvider>
+      <UserContextProvider>
+        <ThemeProvider theme={theme}>
           <Navbar />
           <Outlet />
-        </UserContextProvider>
-      </AuthContextProvider>
-    </div>
+        </ThemeProvider>
+      </UserContextProvider>
+    </AuthContextProvider>
   );
 }
 

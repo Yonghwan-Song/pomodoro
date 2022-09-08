@@ -2,11 +2,13 @@ import { async } from "@firebase/util";
 import React from "react";
 import { useRef } from "react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { UserAuth } from "../../Auth/AuthContext";
+import { StyledNav } from "../styles/Nav.styled";
+import { UnorderedList } from "../UnorderedList";
+import { StyledLink } from "../styles/Link.styled";
 import styles from "./navBar.module.css";
 
-function Navbar() {
+function Navbar(props) {
   const { user, logOut } = UserAuth();
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef(null);
@@ -41,54 +43,39 @@ function Navbar() {
   }
 
   return (
-    <nav className={styles.nav}>
-      <Link to="/timer" className={`${styles.siteTitle} ${styles.textLink}`}>
+    <StyledNav>
+      <StyledLink to="/timer" size="2rem" letterSpacing="7px">
         Pomodoro
-      </Link>
+      </StyledLink>
 
-      <ul
-        className={`${styles.navLinks} ${
-          isActive ? styles.navLinksActive : ""
-        }`}
-        ref={ulRef}
-      >
-        <li className={styles.navLinksItems}>
-          <Link
-            to="/statistics"
-            className={`${styles.otherMenu} ${styles.textLink}`}
-          >
-            Statistics
-          </Link>
+      <UnorderedList ref={ulRef} isSideBarActive={isActive} liOpacity>
+        <li>
+          <StyledLink to="/statistics">Statistics</StyledLink>
         </li>
-        <li className={styles.navLinksItems}>
-          <Link
-            to="/setting"
-            className={`${styles.otherMenu} ${styles.textLink}`}
-          >
-            Setting
-          </Link>
+        <li>
+          <StyledLink to="/setting">Setting</StyledLink>
         </li>
         {user?.displayName ? (
-          <li className={styles.navLinksItems}>
-            {/* <button onClick={handleSignOut}>Logout</button> */}
+          <li>
             <span className={styles.span} onClick={handleSignOut}>
               Logout
             </span>
           </li>
         ) : (
-          <li className={styles.navLinksItems}>
-            <Link to="/signin" className={styles.span}>
+          <li>
+            <StyledLink to="/signin" size="1rem" color={"#181313"} hover>
               Sign in
-            </Link>
+            </StyledLink>
           </li>
         )}
-      </ul>
+      </UnorderedList>
+
       <div className={styles.burger} onClick={toggleSideBar}>
         <div className={styles.burgerDiv}></div>
         <div className={styles.burgerDiv}></div>
         <div className={styles.burgerDiv}></div>
       </div>
-    </nav>
+    </StyledNav>
   );
 }
 
