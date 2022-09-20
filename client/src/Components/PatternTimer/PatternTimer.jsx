@@ -91,15 +91,17 @@ export function PatternTimer() {
   );
 }
 
-//TODO: Should I place these two functions inside the PatternTimer?
 async function recordPomo(user, duration, startTime) {
   try {
+    let LocaleDateString = new Date(startTime).toLocaleDateString();
+
     const response = await axios.post(
       CONSTANTS.URLs.POMO,
       {
         userEmail: user.email,
         duration,
         startTime,
+        LocaleDateString,
       },
       {
         headers: {

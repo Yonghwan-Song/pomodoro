@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+// If a duration starts 11:30pm and ends 12:30am,
+// the date for this is calculated based on 11:30pm
+// which is the start time.
 const pomoSchema = new Schema({
   // userEmail: {
   //   type: Schema.Types.ObjectId,
@@ -9,6 +12,7 @@ const pomoSchema = new Schema({
   userEmail: String,
   duration: Number,
   startTime: Number,
+  date: String,
 });
 
 pomoSchema.statics.findByUserEmail = function (userEmail) {
