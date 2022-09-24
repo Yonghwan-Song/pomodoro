@@ -47,6 +47,7 @@ export const getStat = async (req, res) => {
           return [
             {
               date: curRec.date,
+              timestamp: new Date(curRec.date).getTime(),
               dayOfWeek: days[dayOfWeek],
               total: curRec.duration,
             },
@@ -62,6 +63,7 @@ export const getStat = async (req, res) => {
             ...acc,
             {
               date: curRec.date,
+              timestamp: new Date(curRec.date).getTime(),
               dayOfWeek: days[dayOfWeek],
               total: curRec.duration,
             },

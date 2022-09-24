@@ -3,15 +3,18 @@ import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import { UserAuth } from "../../Auth/AuthContext";
+import { Button } from "../../Components/Buttons/Button";
 import * as CONSTANTS from "../../constants/index";
+import { useWeek } from "../useWeek";
 import {
-  ResponsiveContainer,
   AreaChart,
+  Area,
+  CartesianGrid,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Area,
-  Tooltip,
-  CartesianGrid,
 } from "recharts";
 
 export default function Statistics() {
@@ -19,6 +22,8 @@ export default function Statistics() {
   const [todayTotal, setTodayTotal] = useState(0);
   const [thisWeekTotal, setThisWeekTotal] = useState(0);
   const [statArr, setStatArr] = useState([]);
+  const { week, prevWeek, nextWeek, initializeWithThisWeek, average } =
+    useWeek();
 
   async function getPomos(user) {
     try {
@@ -44,7 +49,9 @@ export default function Statistics() {
           },
         }
       );
+      // ? do we really need the statArr state ?
       setStatArr(response.data);
+      initializeWithThisWeek(response.data);
     } catch (error) {
       console.log(error);
     }
@@ -55,47 +62,68 @@ export default function Statistics() {
       getPomos(user);
       getStatArr(user);
     }
-  }, [user]);
+    console.log(`week - ${week}`);
+  }, [user, week]);
 
   return (
-    <ResponsiveContainer width="80%" height={300}>
-      <AreaChart
-        data={statArr}
-        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-      >
-        <defs>
-          <linearGradient id="color" x1="0" y1="0" x2="0" y2="1">
-            <stop offset={"0%"} stopColor="#2451B7" stopOpacity={0.4} />
-            <stop offset={"75%"} stopColor="#2451B7" stopOpacity={0.05} />
-          </linearGradient>
-          <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
-          </linearGradient>
-        </defs>
+    <>
+      <ResponsiveContainer width="80%" height={300}>
+        <AreaChart
+          // data={statArr}
+          data={week}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="color" x1="0" y1="0" x2="0" y2="1">
+              <stop offset={"0%"} stopColor="#0740c7" stopOpacity={0.4} />
+              <stop offset={"75%"} stopColor="#0740c7" stopOpacity={0.05} />
+            </linearGradient>
+            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#a3d4f9" stopOpacity={0.8} />
+              <stop offset="95%" stopColor="#a3d4f9" stopOpacity={0} />
+            </linearGradient>
+          </defs>
 
-        <Area
-          type="monotone"
-          dataKey="total"
-          stroke="#8884d8"
-          fillOpacity={1}
-          fill="url(#color)"
-        />
-        <XAxis dataKey="dayOfWeek" axisLine={true} tickLine={false} />
-        <YAxis
-          axisLine={true}
-          tickLine={false}
-          tickFormatter={(minutes) => (minutes / 60).toFixed(1)}
-        />
-        {/* <CartesianGrid strokeDasharray="3 3" /> */}
-        <CartesianGrid opacity={0.7} vertical={false} />
-        <Tooltip content={CustomTooltip} />
-      </AreaChart>
-    </ResponsiveContainer>
+          <Area
+            type="monotone"
+            dataKey="total"
+            stroke="#e25633"
+            fillOpacity={1}
+            fill="url(#color)"
+          />
+          {/* <Area
+            type="monotone"
+            dataKey="average"
+            stroke="#2d2f37"
+            fillOpacity={1}
+            fill="url(#colorPv)"
+          /> */}
+          <XAxis dataKey="dayOfWeek" axisLine={true} tickLine={false} />
+
+          <YAxis
+            axisLine={true}
+            tickLine={false}
+            tickFormatter={(minutes) => (minutes / 60).toFixed(1)}
+          />
+          <ReferenceLine
+            y={average}
+            // label={`Average ${Math.trunc(average / 60)}h ${average % 60}m`}
+            label={`Average ${(average / 60).toFixed(1)}h`}
+            stroke="#2d2f37"
+            strokeDasharray="3 3"
+          />
+          <CartesianGrid opacity={0.7} vertical={false} />
+          <Tooltip content={CustomTooltip} />
+        </AreaChart>
+      </ResponsiveContainer>
+      <Button handleClick={() => prevWeek(statArr)}>Prev</Button>
+
+      <Button handleClick={() => nextWeek(statArr)}>Next</Button>
+    </>
   );
 }
 
