@@ -94,7 +94,7 @@ export function PatternTimer() {
 async function recordPomo(user, duration, startTime) {
   try {
     let LocaleDateString = new Date(startTime).toLocaleDateString();
-
+    const idToken = await user.getIdToken();
     const response = await axios.post(
       CONSTANTS.URLs.POMO,
       {
@@ -105,7 +105,8 @@ async function recordPomo(user, duration, startTime) {
       },
       {
         headers: {
-          Authorization: "Bearer " + user.accessToken,
+          //Authorization: "Bearer " + user.accessToken,
+          Authorization: "Bearer " + idToken,
         },
       }
     );

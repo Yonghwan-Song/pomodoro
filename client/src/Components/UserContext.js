@@ -11,9 +11,11 @@ export function UserContextProvider({ children }) {
 
   async function getPomoSetting(user) {
     try {
+      const idToken = await user.getIdToken();
       const res = await axios.get(C.URLs.USER + `/${user.email}`, {
         headers: {
-          Authorization: "Bearer " + user.accessToken,
+          // Authorization: "Bearer " + user.accessToken,
+          Authorization: "Bearer " + idToken,
         },
       });
       console.log("res obj.data", res.data);

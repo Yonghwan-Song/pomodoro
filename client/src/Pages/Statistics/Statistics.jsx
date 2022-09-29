@@ -6,6 +6,7 @@ import { UserAuth } from "../../Auth/AuthContext";
 import { Button } from "../../Components/Buttons/Button";
 import * as CONSTANTS from "../../constants/index";
 import { useWeek } from "../useWeek";
+import { LeftArrow, RightArrow } from "../../Components/Icons/ChevronArrows";
 import {
   AreaChart,
   Area,
@@ -22,14 +23,22 @@ export default function Statistics() {
   const [todayTotal, setTodayTotal] = useState(0);
   const [thisWeekTotal, setThisWeekTotal] = useState(0);
   const [statArr, setStatArr] = useState([]);
-  const { week, prevWeek, nextWeek, initializeWithThisWeek, average } =
-    useWeek();
+  const {
+    week,
+    prevWeek,
+    nextWeek,
+    initializeWithThisWeek,
+    average,
+    weekRange,
+  } = useWeek();
 
   async function getPomos(user) {
     try {
+      const idToken = await user.getIdToken();
       const response = await axios.get(CONSTANTS.URLs.POMO + `/${user.email}`, {
         headers: {
-          Authorization: "Bearer " + user.accessToken,
+          //Authorization: "Bearer " + user.accessToken,
+          Authorization: "Bearer " + idToken,
         },
       });
       setTodayTotal(response.data.todayPomoTotalDuration);
@@ -63,11 +72,28 @@ export default function Statistics() {
       getStatArr(user);
     }
     console.log(`week - ${week}`);
+    console.log(`Average - ${average}`);
   }, [user, week]);
 
   return (
-    <>
-      <ResponsiveContainer width="80%" height={300}>
+    <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "absolute",
+          display: "flex",
+          right: 0,
+          top: "10px",
+          marginRight: "20px",
+          zIndex: 2,
+        }}
+      >
+        <LeftArrow handleClick={() => prevWeek(statArr)} />
+        <p>{weekRange}</p>
+        <RightArrow handleClick={() => nextWeek(statArr)} />
+        {/* <Button handleClick={() => prevWeek(statArr)}>Prev</Button>
+        <Button handleClick={() => nextWeek(statArr)}>Next</Button> */}
+      </div>
+      <ResponsiveContainer width="100%" height={300}>
         <AreaChart
           // data={statArr}
           data={week}
@@ -91,7 +117,7 @@ export default function Statistics() {
           <Area
             type="monotone"
             dataKey="total"
-            stroke="#e25633"
+            stroke="#302783"
             fillOpacity={1}
             fill="url(#color)"
           />
@@ -105,25 +131,25 @@ export default function Statistics() {
           <XAxis dataKey="dayOfWeek" axisLine={true} tickLine={false} />
 
           <YAxis
-            axisLine={true}
+            axisLine={false}
             tickLine={false}
-            tickFormatter={(minutes) => (minutes / 60).toFixed(1)}
+            tick={false}
+            // tickFormatter={(minutes) => (minutes / 60).toFixed(1)}
+            // tickFormatter={(minutes) =>
+            //   `${Math.trunc(minutes / 60)}h ${minutes % 60}m`
+            // }
           />
           <ReferenceLine
             y={average}
-            // label={`Average ${Math.trunc(average / 60)}h ${average % 60}m`}
-            label={`Average ${(average / 60).toFixed(1)}h`}
-            stroke="#2d2f37"
+            label={`Average ${Math.floor(average / 60)}h ${average % 60}m`}
+            stroke="#ed8262"
             strokeDasharray="3 3"
           />
-          <CartesianGrid opacity={0.7} vertical={false} />
+
           <Tooltip content={CustomTooltip} />
         </AreaChart>
       </ResponsiveContainer>
-      <Button handleClick={() => prevWeek(statArr)}>Prev</Button>
-
-      <Button handleClick={() => nextWeek(statArr)}>Next</Button>
-    </>
+    </div>
   );
 }
 

@@ -3,8 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserAuth } from "../../Auth/AuthContext";
 import { UserInfo } from "../../Components/UserContext";
-import { ReactComponent as DownArrow } from "../../Icons/down-arrow-svgrepo-com.svg";
-import { ArrowDown, ArrowUp } from "../../Components/Buttons/Arrows/Arrows";
+import { ArrowDown, ArrowUp } from "../../Components/Icons/Arrows/Arrows";
 import { Button } from "../../Components/Buttons/Button";
 import axios from "axios";
 import * as C from "../../constants/index";
@@ -203,6 +202,7 @@ function Setting() {
 
 async function setPomoSetting(user, pomoSetting) {
   try {
+    const idToken = await user.getIdToken();
     const res = await axios.put(
       C.URLs.USER + `/editPomoSetting/${user.email}`,
       {
@@ -210,7 +210,8 @@ async function setPomoSetting(user, pomoSetting) {
       },
       {
         headers: {
-          Authorization: "Bearer " + user.accessToken,
+          //Authorization: "Bearer " + user.accessToken,
+          Authorization: "Bearer " + idToken,
         },
       }
     );

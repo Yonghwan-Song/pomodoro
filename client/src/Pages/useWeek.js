@@ -56,6 +56,7 @@ export function useWeek() {
   const [weekStart, setWeekStart] = useState(startOfWeekTimestamp);
   const [weekEnd, setWeekEnd] = useState(endOfWeekTimestamp);
   const [average, setAverage] = useState(0);
+  const [weekRange, setWeekRange] = useState("");
 
   function initializeWithThisWeek(statArray) {
     let correspondingWeekData = filterWeekData(
@@ -85,7 +86,13 @@ export function useWeek() {
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
     }, 0);
-    setAverage(sum / 7);
+
+    setAverage(Math.trunc(sum / new Date().getDay()));
+    setWeekRange(
+      `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
+        .slice(0, -5)
+        .replace("/", ". ")}`
+    );
     setWeek(week);
   }
 
@@ -119,9 +126,16 @@ export function useWeek() {
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
     }, 0);
-    setAverage(sum / 7);
+    setAverage(Math.trunc(sum / 7));
+    setWeekRange(
+      `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
+        .slice(0, -5)
+        .replace("/", ". ")}`
+    );
     setWeek(week);
   }
+
+  // todo: establish a condition to check if the next week is future. If it is, we prevent showing the week.
   function nextWeek(statArray) {
     let newWeekStart = weekStart + 7 * _24h;
     let newWeekEnd = weekEnd + 7 * _24h;
@@ -151,10 +165,22 @@ export function useWeek() {
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
     }, 0);
-    setAverage(sum / 7);
+    setAverage(Math.trunc(sum / 7));
+    setWeekRange(
+      `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
+        .slice(0, -5)
+        .replace("/", ". ")}`
+    );
     setWeek(week);
   }
-  return { week, prevWeek, nextWeek, initializeWithThisWeek, average };
+  return {
+    week,
+    prevWeek,
+    nextWeek,
+    initializeWithThisWeek,
+    average,
+    weekRange,
+  };
 }
 
 function filterWeekData(

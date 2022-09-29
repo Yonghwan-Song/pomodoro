@@ -31,6 +31,7 @@ export function AuthContextProvider({ children }) {
 
   async function registerUser(user) {
     try {
+      const idToken = await user.getIdToken();
       const response = await axios.post(
         C.URLs.USER,
         {
@@ -39,7 +40,8 @@ export function AuthContextProvider({ children }) {
         },
         {
           headers: {
-            Authorization: "Bearer " + user.accessToken,
+            // Authorization: "Bearer " + user.accessToken,
+            Authorization: "Bearer " + idToken,
           },
         }
       );
