@@ -3,14 +3,12 @@ import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import { UserAuth } from "../../Auth/AuthContext";
-import { Button } from "../../Components/Buttons/Button";
 import * as CONSTANTS from "../../constants/index";
 import { useWeek } from "../useWeek";
 import { LeftArrow, RightArrow } from "../../Components/Icons/ChevronArrows";
 import {
   AreaChart,
   Area,
-  CartesianGrid,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -37,13 +35,11 @@ export default function Statistics() {
       const idToken = await user.getIdToken();
       const response = await axios.get(CONSTANTS.URLs.POMO + `/${user.email}`, {
         headers: {
-          //Authorization: "Bearer " + user.accessToken,
           Authorization: "Bearer " + idToken,
         },
       });
       setTodayTotal(response.data.todayPomoTotalDuration);
       setThisWeekTotal(response.data.thisWeekPomoTotalDuration);
-      //console.log(`getToday - ${response.data.todayPomoArr}`);
     } catch (error) {
       console.log(error);
     }
@@ -58,7 +54,6 @@ export default function Statistics() {
           },
         }
       );
-      // ? do we really need the statArr state ?
       setStatArr(response.data);
       initializeWithThisWeek(response.data);
     } catch (error) {
@@ -90,12 +85,9 @@ export default function Statistics() {
         <LeftArrow handleClick={() => prevWeek(statArr)} />
         <p>{weekRange}</p>
         <RightArrow handleClick={() => nextWeek(statArr)} />
-        {/* <Button handleClick={() => prevWeek(statArr)}>Prev</Button>
-        <Button handleClick={() => nextWeek(statArr)}>Next</Button> */}
       </div>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
-          // data={statArr}
           data={week}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
@@ -121,24 +113,9 @@ export default function Statistics() {
             fillOpacity={1}
             fill="url(#color)"
           />
-          {/* <Area
-            type="monotone"
-            dataKey="average"
-            stroke="#2d2f37"
-            fillOpacity={1}
-            fill="url(#colorPv)"
-          /> */}
-          <XAxis dataKey="dayOfWeek" axisLine={true} tickLine={false} />
+          <XAxis dataKey="dayOfWeek" axisLine={false} tickLine={false} />
 
-          <YAxis
-            axisLine={false}
-            tickLine={false}
-            tick={false}
-            // tickFormatter={(minutes) => (minutes / 60).toFixed(1)}
-            // tickFormatter={(minutes) =>
-            //   `${Math.trunc(minutes / 60)}h ${minutes % 60}m`
-            // }
-          />
+          <YAxis axisLine={false} tickLine={false} tick={false} />
           <ReferenceLine
             y={average}
             label={`Average ${Math.floor(average / 60)}h ${average % 60}m`}
