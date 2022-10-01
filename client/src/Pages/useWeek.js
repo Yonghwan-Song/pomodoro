@@ -14,23 +14,13 @@ export function useWeek() {
   const _24h = 24 * 60 * 60 * 1000;
 
   /**
-   *
+   * Purpose:  to filter the statArray to get the array of this week
+   *           and use the filtered array to fill the week state variable.
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function initializeWithThisWeek(statArray) {
     let correspondingWeekData = filterWeekData(statArray, weekStart, weekEnd);
-
-    for (let element of week) {
-      let matchingObj = correspondingWeekData.find(
-        (obj) => obj.date === element.date
-      );
-
-      if (matchingObj) {
-        element.total = matchingObj.total;
-      } else if (element.timestamp <= new Date().getTime()) {
-        element.total = 0;
-      }
-    }
+    compareAndFill(week, correspondingWeekData);
     console.log(week);
 
     let sum = correspondingWeekData.reduce((acc, cur) => {
@@ -46,6 +36,11 @@ export function useWeek() {
     setWeek(week);
   }
 
+  /**
+   * Purpose:  to filter the statArray to get the array of one week before the week currently appearing on the chart
+   *           and use the filtered array to fill the week state variable.
+   * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
   function prevWeek(statArray) {
     let newWeekStart = weekStart - 7 * _24h;
     let newWeekEnd = weekEnd - 7 * _24h;
@@ -62,18 +57,7 @@ export function useWeek() {
       newWeekStart,
       newWeekEnd
     );
-
-    for (let element of week) {
-      let matchingObj = correspondingWeekData.find(
-        (obj) => obj.date === element.date
-      );
-      if (matchingObj) {
-        element.total = matchingObj.total;
-      } else if (element.timestamp <= new Date().getTime()) {
-        element.total = 0;
-      }
-    }
-
+    compareAndFill(week, correspondingWeekData);
     console.log(week);
 
     let sum = correspondingWeekData.reduce((acc, cur) => {
@@ -88,6 +72,11 @@ export function useWeek() {
     setWeek(week);
   }
 
+  /**
+   * Purpose:  to filter the statArray to get the array of one week after the week currently appearing on the chart
+   *           and use the filtered array to fill the week state variable.
+   * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
   function nextWeek(statArray) {
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
       alert("No more data");
@@ -107,17 +96,7 @@ export function useWeek() {
         newWeekStart,
         newWeekEnd
       );
-
-      for (let element of week) {
-        let matchingObj = correspondingWeekData.find(
-          (obj) => obj.date === element.date
-        );
-        if (matchingObj) {
-          element.total = matchingObj.total;
-        } else if (element.timestamp <= new Date().getTime()) {
-          element.total = 0;
-        }
-      }
+      compareAndFill(week, correspondingWeekData);
       console.log(week);
 
       let sum = correspondingWeekData.reduce((acc, cur) => {
@@ -130,6 +109,7 @@ export function useWeek() {
       } else {
         setAverage(Math.trunc(sum / 7));
       }
+
       setWeekRange(
         `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
           .slice(0, -5)
@@ -150,7 +130,7 @@ export function useWeek() {
 }
 
 /**
- *
+ * Purpose: to obtain a specific week data from the statArray
  * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
  * @param {*} timestampOfStartOfWeek
  * @param {*} timestampOfEndOfWeek
@@ -168,6 +148,10 @@ function filterWeekData(
     );
   });
 }
+/**
+ * Purpose: to initialize the local state variable, week.
+ * @returns the array representing the current week. But the elements in it do not get the property, total.
+ */
 function init() {
   let weekArr = [
     {
@@ -217,11 +201,11 @@ function init() {
   return weekArr;
 }
 
-function prepareWeekData(statArray, week, weekStart, weekEnd) {
-  let correspondingWeekData = filterWeekData(statArray, weekStart, weekEnd);
-  compareAndFill(week, correspondingWeekData);
-}
-
+/**
+ * Purpose: to copy the data(total property) from filteredWeek to week state
+ * @param {*} week the local week state in this component
+ * @param {*} filteredWeek a filtered array representing a particular week data
+ */
 function compareAndFill(week, filteredWeek) {
   for (let element of week) {
     let matchingObj = filteredWeek.find((obj) => obj.date === element.date);
