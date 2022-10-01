@@ -33,14 +33,6 @@ export function useWeek() {
     }
     console.log(week);
 
-    for (let i = 0; i < 7; i++) {
-      let sum = 0;
-      for (let j = i; j >= 0; j--) {
-        sum += week[j].total;
-      }
-      week[i]["averageUntilToday"] = sum / (i + 1);
-    }
-
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
     }, 0);
@@ -131,7 +123,13 @@ export function useWeek() {
       let sum = correspondingWeekData.reduce((acc, cur) => {
         return acc + cur.total;
       }, 0);
-      setAverage(Math.trunc(sum / 7));
+      if (
+        newWeekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+      ) {
+        setAverage(Math.trunc(sum / new Date().getDay()));
+      } else {
+        setAverage(Math.trunc(sum / 7));
+      }
       setWeekRange(
         `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
           .slice(0, -5)
