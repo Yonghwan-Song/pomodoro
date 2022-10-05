@@ -6,6 +6,9 @@ import { UserAuth } from "../../Auth/AuthContext";
 import * as CONSTANTS from "../../constants/index";
 import { useWeek } from "../useWeek";
 import { LeftArrow, RightArrow } from "../../Components/Icons/ChevronArrows";
+import { BoxShadowWrapper } from "../../Components/Wrapper";
+import { Grid } from "../../Components/Layouts/Grid";
+import { GridItem } from "../../Components/Layouts/GridItem";
 import {
   AreaChart,
   Area,
@@ -71,62 +74,67 @@ export default function Statistics() {
   }, [user, week]);
 
   return (
-    <div style={{ position: "relative" }}>
-      <div
-        style={{
-          position: "absolute",
-          display: "flex",
-          right: 0,
-          top: "10px",
-          marginRight: "20px",
-          zIndex: 2,
-        }}
-      >
-        <LeftArrow handleClick={() => prevWeek(statArr)} />
-        <p>{weekRange}</p>
-        <RightArrow handleClick={() => nextWeek(statArr)} />
-      </div>
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart
-          data={week}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-        >
-          <defs>
-            <linearGradient id="color" x1="0" y1="0" x2="0" y2="1">
-              <stop offset={"0%"} stopColor="#0740c7" stopOpacity={0.4} />
-              <stop offset={"75%"} stopColor="#0740c7" stopOpacity={0.05} />
-            </linearGradient>
-            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#a3d4f9" stopOpacity={0.8} />
-              <stop offset="95%" stopColor="#a3d4f9" stopOpacity={0} />
-            </linearGradient>
-          </defs>
+    <Grid>
+      <GridItem>
+        <BoxShadowWrapper>
+          <div
+            style={{
+              position: "absolute",
+              display: "flex",
+              right: 0,
+              top: "10px",
+              marginRight: "20px",
+              zIndex: 2,
+            }}
+          >
+            <LeftArrow handleClick={() => prevWeek(statArr)} />
+            <p>{weekRange}</p>
+            <RightArrow handleClick={() => nextWeek(statArr)} />
+          </div>
 
-          <Area
-            type="monotone"
-            dataKey="total"
-            stroke="#302783"
-            fillOpacity={1}
-            fill="url(#color)"
-          />
-          <XAxis dataKey="dayOfWeek" axisLine={false} tickLine={false} />
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart
+              data={week}
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
+              <defs>
+                <linearGradient id="color" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset={"0%"} stopColor="#0740c7" stopOpacity={0.4} />
+                  <stop offset={"75%"} stopColor="#0740c7" stopOpacity={0.05} />
+                </linearGradient>
+                <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#a3d4f9" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#a3d4f9" stopOpacity={0} />
+                </linearGradient>
+              </defs>
 
-          <YAxis axisLine={false} tickLine={false} tick={false} />
-          <ReferenceLine
-            y={average}
-            label={`Average ${Math.floor(average / 60)}h ${average % 60}m`}
-            stroke="#ed8262"
-            strokeDasharray="3 3"
-          />
+              <Area
+                type="monotone"
+                dataKey="total"
+                stroke="#302783"
+                fillOpacity={1}
+                fill="url(#color)"
+              />
+              <XAxis dataKey="dayOfWeek" axisLine={false} tickLine={false} />
 
-          <Tooltip content={CustomTooltip} />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+              <YAxis axisLine={false} tickLine={false} tick={false} />
+              <ReferenceLine
+                y={average}
+                label={`Average ${Math.floor(average / 60)}h ${average % 60}m`}
+                stroke="#ed8262"
+                strokeDasharray="3 3"
+              />
+
+              <Tooltip content={CustomTooltip} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </BoxShadowWrapper>
+      </GridItem>
+    </Grid>
   );
 }
 
