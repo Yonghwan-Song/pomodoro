@@ -1,7 +1,14 @@
 import { useState } from "react";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
 export function useWeek() {
+  const [todayTotal, setTodayTotal] = useState(0);
+  const [lastDayTotal, setLastDayTotal] = useState(0);
+  const [thisWeekTotal, setThisWeekTotal] = useState(0);
+  const [lastWeekTotal, setLastWeekTotal] = useState(0);
+  const [thisMonthTotal, setThisMonthTotal] = useState(0);
+  const [lastMonthTotal, setLastMonthTotal] = useState(0);
+  const [total, setTotal] = useState(0);
   const [week, setWeek] = useState(init);
   const [weekStart, setWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
@@ -13,6 +20,103 @@ export function useWeek() {
   const [weekRange, setWeekRange] = useState("");
   const _24h = 24 * 60 * 60 * 1000;
 
+  /**
+   * Purpose: to calculate overview, such as the totals of today, this week, and this month as well as the total of all pomo records.
+   * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
+  function calculateOverview(statArray) {
+    const now = new Date();
+    //#region today and the last day total
+    const startOfTodayTimestamp = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    ).getTime();
+
+    let todayObject = statArray.find(
+      (obj) => obj.timestamp === startOfTodayTimestamp
+    );
+    if (todayObject) {
+      setTodayTotal(todayObject.total);
+    }
+    let lastDayObject = statArray.find(
+      (obj) => obj.timestamp === startOfTodayTimestamp - _24h
+    );
+    if (lastDayObject) {
+      setLastDayTotal(lastDayObject.total);
+    }
+    //#endregion
+
+    //#region week total
+    const thisWeekStartTimestamp = startOfWeek(now, {
+      weekStartsOn: 1,
+    }).getTime();
+    const thisWeekEndTimestamp = endOfWeek(now, {
+      weekStartsOn: 1,
+    }).getTime();
+
+    let thisWeekData = filterWeekData(
+      statArray,
+      thisWeekStartTimestamp,
+      thisWeekEndTimestamp
+    );
+    const thisWeekSum = thisWeekData.reduce((acc, cur) => acc + cur.total, 0);
+    setThisWeekTotal(thisWeekSum);
+
+    let lastWeekData = filterWeekData(
+      statArray,
+      thisWeekStartTimestamp - 7 * _24h,
+      thisWeekEndTimestamp - 7 * _24h
+    );
+    const lastWeekSum = lastWeekData.reduce((acc, cur) => acc + cur.total, 0);
+    setLastWeekTotal(lastWeekSum);
+    //#endregion
+
+    //#region month total
+    const thisMonthStartTimestamp = new Date(
+      now.getFullYear(),
+      now.getMonth()
+    ).getTime();
+    let thisMonthEndTimestamp = 0;
+    if (now.getMonth() === 11) {
+      thisMonthEndTimestamp = new Date(now.getFullYear() + 1, 0).getTime() - 1;
+    } else {
+      thisMonthEndTimestamp =
+        new Date(now.getFullYear(), now.getMonth() + 1).getTime() - 1;
+    }
+
+    let thisMonthData = filterWeekData(
+      statArray,
+      thisMonthStartTimestamp,
+      thisMonthEndTimestamp
+    );
+    const thisMonthSum = thisMonthData.reduce((acc, cur) => acc + cur.total, 0);
+    setThisMonthTotal(thisMonthSum);
+
+    let lastMonthStartTimestamp = 0;
+    if (now.getMonth() === 0) {
+      lastMonthStartTimestamp = new Date(now.getFullYear() - 1, 11).getTime();
+    } else {
+      lastMonthStartTimestamp = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1
+      ).getTime();
+    }
+    const lastMonthEndTimestamp = thisMonthStartTimestamp - 1;
+
+    let lastMonthData = filterWeekData(
+      statArray,
+      lastMonthStartTimestamp,
+      lastMonthEndTimestamp
+    );
+    const lastMonthSum = lastMonthData.reduce((acc, cur) => acc + cur.total, 0);
+    setLastMonthTotal(lastMonthSum);
+    //#endregion
+
+    // total of all records
+    const sum = statArray.reduce((acc, cur) => acc + cur.total, 0);
+    setTotal(sum);
+  }
   /**
    * Purpose:  to filter the statArray to get the array of this week
    *           and use the filtered array to fill the week state variable.
@@ -120,6 +224,14 @@ export function useWeek() {
   }
 
   return {
+    todayTotal,
+    lastDayTotal,
+    thisWeekTotal,
+    lastWeekTotal,
+    thisMonthTotal,
+    lastMonthTotal,
+    total,
+    calculateOverview,
     week,
     prevWeek,
     nextWeek,
@@ -143,7 +255,7 @@ function filterWeekData(
 ) {
   return statArray.filter((ele) => {
     return (
-      ele.timestamp < timestampOfEndOfWeek &&
+      ele.timestamp <= timestampOfEndOfWeek && //! eg. value is ending with multiple 9s like 1665374399999
       ele.timestamp >= timestampOfStartOfWeek
     );
   });

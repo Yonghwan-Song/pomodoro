@@ -21,10 +21,16 @@ import {
 
 export default function Statistics() {
   const { user } = UserAuth();
-  const [todayTotal, setTodayTotal] = useState(0);
-  const [thisWeekTotal, setThisWeekTotal] = useState(0);
   const [statArr, setStatArr] = useState([]);
   const {
+    todayTotal,
+    lastDayTotal,
+    thisWeekTotal,
+    lastWeekTotal,
+    thisMonthTotal,
+    lastMonthTotal,
+    total,
+    calculateOverview,
     week,
     prevWeek,
     nextWeek,
@@ -33,20 +39,6 @@ export default function Statistics() {
     weekRange,
   } = useWeek();
 
-  async function getPomos(user) {
-    try {
-      const idToken = await user.getIdToken();
-      const response = await axios.get(CONSTANTS.URLs.POMO + `/${user.email}`, {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      });
-      setTodayTotal(response.data.todayPomoTotalDuration);
-      setThisWeekTotal(response.data.thisWeekPomoTotalDuration);
-    } catch (error) {
-      console.log(error);
-    }
-  }
   async function getStatArr(user) {
     try {
       const response = await axios.get(
@@ -58,6 +50,7 @@ export default function Statistics() {
         }
       );
       setStatArr(response.data);
+      calculateOverview(response.data);
       initializeWithThisWeek(response.data);
     } catch (error) {
       console.log(error);
@@ -66,15 +59,39 @@ export default function Statistics() {
 
   useEffect(() => {
     if (user !== null && Object.entries(user).length !== 0) {
-      getPomos(user);
       getStatArr(user);
     }
     console.log(`week - ${week}`);
     console.log(`Average - ${average}`);
+    console.log(`todayTotal - ${todayTotal}`);
+    console.log(`lastDayTotal - ${lastDayTotal}`);
   }, [user, week]);
 
   return (
     <Grid>
+      <GridItem>
+        <BoxShadowWrapper>
+          <div style={{ display: "flex", gap: "20px" }}>
+            <div>
+              <p>Today: {todayTotal} min</p>
+              <p>gap from the last day: {todayTotal - lastDayTotal}min</p>
+            </div>
+            <div>
+              <p>This week: {thisWeekTotal} min</p>
+              <p>gap from the last week: {thisWeekTotal - lastWeekTotal}min</p>
+            </div>
+            <div>
+              <p>This month: {thisMonthTotal} min</p>
+              <p>
+                gap from the last month: {thisMonthTotal - lastMonthTotal}min
+              </p>
+            </div>
+            <div>
+              <p>total: {total} min</p>
+            </div>
+          </div>
+        </BoxShadowWrapper>
+      </GridItem>
       <GridItem>
         <BoxShadowWrapper>
           <div
