@@ -9,6 +9,8 @@ import { LeftArrow, RightArrow } from "../../Components/Icons/ChevronArrows";
 import { BoxShadowWrapper } from "../../Components/Wrapper";
 import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
+import { FlexBox } from "../../Components/Layouts/FlexBox";
+import { Total } from "../../Components/Total";
 import {
   AreaChart,
   Area,
@@ -61,6 +63,7 @@ export default function Statistics() {
     if (user !== null && Object.entries(user).length !== 0) {
       getStatArr(user);
     }
+    calculateOverview(statArr);
     console.log(`week - ${week}`);
     console.log(`Average - ${average}`);
     console.log(`todayTotal - ${todayTotal}`);
@@ -70,26 +73,42 @@ export default function Statistics() {
   return (
     <Grid>
       <GridItem>
-        <BoxShadowWrapper>
-          <div style={{ display: "flex", gap: "20px" }}>
+        <BoxShadowWrapper fontSize={"1em"}>
+          <FlexBox>
+            <Total
+              thisTotal={todayTotal}
+              lastTotal={lastDayTotal}
+              target="day"
+              message="Today"
+            />
+
+            <Total
+              thisTotal={thisWeekTotal}
+              lastTotal={lastWeekTotal}
+              target="week"
+              message="This week"
+            />
+
+            <Total
+              thisTotal={thisMonthTotal}
+              lastTotal={lastMonthTotal}
+              target="month"
+              message="This month"
+            />
+
             <div>
-              <p>Today: {todayTotal} min</p>
-              <p>gap from the last day: {todayTotal - lastDayTotal}min</p>
+              <h4>Total</h4>
+              <h3
+                style={{
+                  color: "#6272a4",
+                  fontWeight: "bold",
+                  fontSize: "1.2em",
+                }}
+              >
+                {Math.floor(total / 60)}h {total % 60}m
+              </h3>
             </div>
-            <div>
-              <p>This week: {thisWeekTotal} min</p>
-              <p>gap from the last week: {thisWeekTotal - lastWeekTotal}min</p>
-            </div>
-            <div>
-              <p>This month: {thisMonthTotal} min</p>
-              <p>
-                gap from the last month: {thisMonthTotal - lastMonthTotal}min
-              </p>
-            </div>
-            <div>
-              <p>total: {total} min</p>
-            </div>
-          </div>
+          </FlexBox>
         </BoxShadowWrapper>
       </GridItem>
       <GridItem>
