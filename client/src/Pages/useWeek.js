@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { startOfWeek, endOfWeek } from "date-fns";
 
 export function useWeek() {
   const [todayTotal, setTodayTotal] = useState(0);
@@ -123,9 +123,9 @@ export function useWeek() {
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function initializeWithThisWeek(statArray) {
+    let weekCloned = [...week];
     let correspondingWeekData = filterWeekData(statArray, weekStart, weekEnd);
-    compareAndFill(week, correspondingWeekData);
-    console.log(week);
+    compareAndFill(weekCloned, correspondingWeekData);
 
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
@@ -133,11 +133,14 @@ export function useWeek() {
 
     setAverage(Math.trunc(sum / new Date().getDay()));
     setWeekRange(
-      `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
+      `${weekCloned[0].date
+        .slice(0, -5)
+        .replace("/", ". ")} - ${weekCloned[6].date
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    setWeek(week);
+
+    setWeek(weekCloned);
   }
 
   /**
@@ -146,12 +149,15 @@ export function useWeek() {
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function prevWeek(statArray) {
+    let weekCloned = [...week];
     let newWeekStart = weekStart - 7 * _24h;
     let newWeekEnd = weekEnd - 7 * _24h;
     for (let i = 0; i < 7; i++) {
-      week[i].date = new Date(newWeekStart + i * _24h).toLocaleDateString();
-      delete week[i].total;
-      week[i].timestamp = newWeekStart + i * _24h;
+      weekCloned[i].date = new Date(
+        newWeekStart + i * _24h
+      ).toLocaleDateString();
+      delete weekCloned[i].total;
+      weekCloned[i].timestamp = newWeekStart + i * _24h;
     }
     setWeekStart(newWeekStart);
     setWeekEnd(newWeekEnd);
@@ -161,19 +167,20 @@ export function useWeek() {
       newWeekStart,
       newWeekEnd
     );
-    compareAndFill(week, correspondingWeekData);
-    console.log(week);
+    compareAndFill(weekCloned, correspondingWeekData);
 
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
     }, 0);
     setAverage(Math.trunc(sum / 7));
     setWeekRange(
-      `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
+      `${weekCloned[0].date
+        .slice(0, -5)
+        .replace("/", ". ")} - ${weekCloned[6].date
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    setWeek(week);
+    setWeek(weekCloned);
   }
 
   /**
@@ -182,15 +189,19 @@ export function useWeek() {
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function nextWeek(statArray) {
+    let weekCloned = [...week];
+
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
       alert("No more data");
     } else {
       let newWeekStart = weekStart + 7 * _24h;
       let newWeekEnd = weekEnd + 7 * _24h;
       for (let i = 0; i < 7; i++) {
-        week[i].date = new Date(newWeekStart + i * _24h).toLocaleDateString();
-        delete week[i].total;
-        week[i].timestamp = newWeekStart + i * _24h;
+        weekCloned[i].date = new Date(
+          newWeekStart + i * _24h
+        ).toLocaleDateString();
+        delete weekCloned[i].total;
+        weekCloned[i].timestamp = newWeekStart + i * _24h;
       }
       setWeekStart(newWeekStart);
       setWeekEnd(newWeekEnd);
@@ -200,8 +211,8 @@ export function useWeek() {
         newWeekStart,
         newWeekEnd
       );
-      compareAndFill(week, correspondingWeekData);
-      console.log(week);
+
+      compareAndFill(weekCloned, correspondingWeekData);
 
       let sum = correspondingWeekData.reduce((acc, cur) => {
         return acc + cur.total;
@@ -215,11 +226,13 @@ export function useWeek() {
       }
 
       setWeekRange(
-        `${week[0].date.slice(0, -5).replace("/", ". ")} - ${week[6].date
+        `${weekCloned[0].date
+          .slice(0, -5)
+          .replace("/", ". ")} - ${weekCloned[6].date
           .slice(0, -5)
           .replace("/", ". ")}`
       );
-      setWeek(week);
+      setWeek(weekCloned);
     }
   }
 

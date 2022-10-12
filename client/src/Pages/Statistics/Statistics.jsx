@@ -1,16 +1,15 @@
-import { async } from "@firebase/util";
 import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
 import { UserAuth } from "../../Auth/AuthContext";
 import * as CONSTANTS from "../../constants/index";
-import { useWeek } from "../useWeek";
 import { LeftArrow, RightArrow } from "../../Components/Icons/ChevronArrows";
 import { BoxShadowWrapper } from "../../Components/Wrapper";
 import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
 import { FlexBox } from "../../Components/Layouts/FlexBox";
 import { Total } from "../../Components/Total";
+import { useWeek } from "../useWeek";
 import {
   AreaChart,
   Area,
@@ -40,7 +39,7 @@ export default function Statistics() {
     average,
     weekRange,
   } = useWeek();
-
+  //#region functions
   async function getStatArr(user) {
     try {
       const response = await axios.get(
@@ -51,6 +50,7 @@ export default function Statistics() {
           },
         }
       );
+      console.log("getStatArr");
       setStatArr(response.data);
       calculateOverview(response.data);
       initializeWithThisWeek(response.data);
@@ -60,15 +60,19 @@ export default function Statistics() {
   }
 
   useEffect(() => {
-    if (user !== null && Object.entries(user).length !== 0) {
+    if (
+      user !== null &&
+      Object.entries(user).length !== 0 &&
+      statArr.length === 0
+    ) {
       getStatArr(user);
     }
-    calculateOverview(statArr);
-    console.log(`week - ${week}`);
+
+    console.log(week);
     console.log(`Average - ${average}`);
     console.log(`todayTotal - ${todayTotal}`);
     console.log(`lastDayTotal - ${lastDayTotal}`);
-  }, [user, week]);
+  }, [user]);
 
   return (
     <Grid>
