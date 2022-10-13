@@ -1,6 +1,8 @@
 import styled, { css } from "styled-components";
 
 export const StyledGridItem = styled.div`
+  min-width: 0px;
+
   ${({ columnStart }) =>
     columnStart &&
     css`
