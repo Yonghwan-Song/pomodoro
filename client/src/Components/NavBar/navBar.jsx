@@ -50,20 +50,36 @@ function Navbar(props) {
 
       <UnorderedList ref={ulRef} isSideBarActive={isActive} liOpacity>
         <li>
-          <StyledLink to="/statistics">Statistics</StyledLink>
+          <StyledLink to="/statistics" onClick={toggleSideBar}>
+            Statistics
+          </StyledLink>
         </li>
         <li>
-          <StyledLink to="/setting">Setting</StyledLink>
+          <StyledLink to="/setting" onClick={toggleSideBar}>
+            Setting
+          </StyledLink>
         </li>
         {user?.displayName ? (
           <li>
-            <span className={styles.span} onClick={handleSignOut}>
+            <span
+              className={styles.span}
+              onClick={() => {
+                handleSignOut();
+                toggleSideBar();
+              }}
+            >
               Logout
             </span>
           </li>
         ) : (
           <li>
-            <StyledLink to="/signin" size="1rem" color={"#181313"} hover>
+            <StyledLink
+              to="/signin"
+              onClick={toggleSideBar}
+              size="1rem"
+              color={"#181313"}
+              hover
+            >
               Sign in
             </StyledLink>
           </li>

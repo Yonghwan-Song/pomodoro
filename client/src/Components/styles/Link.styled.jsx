@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 
-const Linkk = ({ children, className, to }) => {
+const Linkk = ({ children, className, to, onClick }) => {
   return (
-    <Link className={className} to={to}>
+    <Link className={className} to={to} onClick={onClick}>
       {children}
     </Link>
   );
