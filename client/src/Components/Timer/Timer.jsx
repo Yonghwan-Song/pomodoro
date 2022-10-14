@@ -2,6 +2,10 @@ import { useState, useEffect, useReducer, useRef } from "react";
 import { reducerTimer as reducer, ACTION } from "../reducers";
 import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
 import { Button } from "../Buttons/Button";
+import { BoxShadowWrapper } from "../Wrapper";
+import { Grid } from "../Layouts/Grid";
+import { GridItem } from "../Layouts/GridItem";
+import { FlexBox } from "../Layouts/FlexBox";
 
 export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
   const [state, dispatch] = useReducer(reducer, {
@@ -97,21 +101,32 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
   );
   let g = <h2>{duration / 60 + ":00"}</h2>;
   return (
-    <>
-      <div>
-        <h1>
-          {repetitionCount % 2 === 0 ? "POMO" : "BREAK"} DURATION: {duration}{" "}
-          SEC
-        </h1>
+    <Grid gap={"13px"} justifyItems={"center"}>
+      <GridItem>
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "10px",
+            marginBottom: "10px",
+          }}
+        >
+          <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
+          {state.startTime === 0 ? g : h}
+        </div>
+      </GridItem>
 
-        {state.startTime === 0 ? g : h}
+      <GridItem>
+        <CircularProgressBar progress={1 - remainingDuration / duration} />
+      </GridItem>
 
-        <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
-          {state.running && remainingDuration !== 0 ? "pause" : "start"}
-        </Button>
-        <Button handleClick={endTimer}>End</Button>
-      </div>
-      <CircularProgressBar progress={1 - remainingDuration / duration} />
-    </>
+      <GridItem>
+        <FlexBox>
+          <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
+            {state.running && remainingDuration !== 0 ? "pause" : "start"}
+          </Button>
+          <Button handleClick={endTimer}>End</Button>
+        </FlexBox>
+      </GridItem>
+    </Grid>
   );
 }

@@ -15,9 +15,13 @@ body {
   background-color: #f0f0f0;
 }
 
-#root,
+/* #root,
 #root > div {
   height: 100%;
+} */
+
+#root {
+  height: 100vh;
 }
 
 .btn {
@@ -25,6 +29,12 @@ body {
   font-size: 1rem;
   padding: 0.5em 1em;
   border-radius: 0.3em;
+  cursor: pointer;
+  background-color: rgb(233, 233, 233);
+}
+
+.btn:hover {
+  background-color: rgb(226, 221, 221);
 }
 
 .btn-primary {
@@ -32,7 +42,6 @@ body {
 }
 
 .btn-primary:hover {
-  cursor: pointer;
   background-color: rgb(117, 187, 175);
 }
 

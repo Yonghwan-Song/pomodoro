@@ -16,40 +16,39 @@ const CircularProgressBar = ({ progress }) => {
   });
 
   return (
-    <div className={styles.center}>
-      <svg
-        width={C.SVG.WIDTH}
-        height={C.SVG.HEGITH}
-        className={styles.svgBackground}
-      >
-        <circle
-          className={styles.circleOne}
-          r={C.RADIUS}
-          cx={C.MIDDLE_X}
-          cy={C.MIDDLE_Y}
-          stroke={C.BACKGROUND_COLOR}
-          strokeWidth={C.STROKE_WIDTH}
-        ></circle>
-        <circle
-          className={styles.circleTwo}
-          r={C.RADIUS}
-          cx={C.MIDDLE_X}
-          cy={C.MIDDLE_Y}
-          stroke={C.FOREGROUND_COLOR}
-          strokeWidth={C.STROKE_WIDTH}
-          strokeDasharray={C.CIRCUMFERENCE}
-          //              ={      -  progress *      }
-          // when we click the start/pause button, we need to pass the progress untill then.
-          // Then, an offset can be reset to the progress value
-          // making it possible to restart the timer from where it has stopped.
-          // the timer stopped
-          // Offset is applied counter-clockwise.
+    <svg
+      width={C.SVG.WIDTH}
+      height={C.SVG.HEGITH}
+      className={`${styles.svgBackground} ${styles.sizing}`}
+    >
+      <circle
+        className={styles.circleOne}
+        r={C.RADIUS}
+        cx={C.MIDDLE_X}
+        cy={C.MIDDLE_Y}
+        stroke={C.BACKGROUND_COLOR}
+        strokeWidth={C.STROKE_WIDTH}
+      ></circle>
+      <circle
+        className={styles.circleTwo}
+        r={C.RADIUS}
+        cx={C.MIDDLE_X}
+        cy={C.MIDDLE_Y}
+        stroke={C.FOREGROUND_COLOR}
+        strokeWidth={C.STROKE_WIDTH}
+        strokeDasharray={C.CIRCUMFERENCE}
+        //              ={      -  progress *      }
+        // when we click the start/pause button, we need to pass the progress untill then.
+        // Then, an offset can be reset to the progress value
+        // making it possible to restart the timer from where it has stopped.
+        // the timer stopped
+        // Offset is applied counter-clockwise.
 
-          strokeDashoffset={910.6 - progress * 910.6}
-          ref={circleRef}
-        ></circle>
-      </svg>
-    </div>
+        strokeDashoffset={910.6 - progress * 910.6}
+        ref={circleRef}
+      ></circle>
+    </svg>
+    // </div>
   );
 };
 
