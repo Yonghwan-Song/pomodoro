@@ -32,7 +32,7 @@ export function UserContextProvider({ children }) {
   }, [user]);
 
   return (
-    <UserContext.Provider value={{ pomoSetting }}>
+    <UserContext.Provider value={{ pomoSetting, setPomoSetting }}>
       {children}
     </UserContext.Provider>
   );

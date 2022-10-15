@@ -16,7 +16,7 @@ import styles from "./Setting.module.css";
 // 3. Check database - test and debug
 function Setting() {
   const { user } = UserAuth();
-  const { pomoSetting } = UserInfo();
+  const { pomoSetting, setPomoSetting } = UserInfo();
   const [settingInputs, setSettingInputs] = useState(pomoSetting || {});
 
   function handleInputChange(event) {
@@ -70,7 +70,8 @@ function Setting() {
   }
 
   function handleSubmit(event) {
-    setPomoSetting(user, settingInputs);
+    updatePomoSetting(user, settingInputs);
+    setPomoSetting(settingInputs);
     event.preventDefault();
   }
 
@@ -200,7 +201,7 @@ function Setting() {
   );
 }
 
-async function setPomoSetting(user, pomoSetting) {
+async function updatePomoSetting(user, pomoSetting) {
   try {
     const idToken = await user.getIdToken();
     const res = await axios.put(
