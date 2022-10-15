@@ -95,11 +95,11 @@ function Setting() {
         <label className={styles.arrangeLabel}>
           Pomo Duration
           <div className={styles.alignBoxes}>
-            <ArrowDown
+            {/* <ArrowDown
               handleClick={() => {
                 handleDecrease("pomoDuration");
               }}
-            />
+            /> */}
             <input
               name="pomoDuration"
               type="number"
@@ -108,22 +108,22 @@ function Setting() {
               onChange={handleInputChange}
             />
 
-            <ArrowUp
+            {/* <ArrowUp
               handleClick={() => {
                 handleIncrease("pomoDuration");
               }}
-            />
+            /> */}
           </div>
         </label>
         <br />
         <label className={styles.arrangeLabel}>
           Short Break Duration
           <div className={styles.alignBoxes}>
-            <ArrowDown
+            {/* <ArrowDown
               handleClick={() => {
                 handleDecrease("shortBreakDuration");
               }}
-            />
+            /> */}
             <input
               name="shortBreakDuration"
               type="number"
@@ -131,22 +131,22 @@ function Setting() {
               value={settingInputs.shortBreakDuration}
               onChange={handleInputChange}
             />
-            <ArrowUp
+            {/* <ArrowUp
               handleClick={() => {
                 handleIncrease("shortBreakDuration");
               }}
-            />
+            /> */}
           </div>
         </label>
         <br />
         <label className={styles.arrangeLabel}>
           Long Break Duration
           <div className={styles.alignBoxes}>
-            <ArrowDown
+            {/* <ArrowDown
               handleClick={() => {
                 handleDecrease("longBreakDuration");
               }}
-            />
+            /> */}
             <input
               name="longBreakDuration"
               type="number"
@@ -154,22 +154,22 @@ function Setting() {
               value={settingInputs.longBreakDuration}
               onChange={handleInputChange}
             />
-            <ArrowUp
+            {/* <ArrowUp
               handleClick={() => {
                 handleIncrease("longBreakDuration");
               }}
-            />
+            /> */}
           </div>
         </label>
         <br />
         <label className={styles.arrangeLabel}>
           Number of Pomos
           <div className={styles.alignBoxes}>
-            <ArrowDown
+            {/* <ArrowDown
               handleClick={() => {
                 handleDecrease("numOfPomo");
               }}
-            />
+            /> */}
             <input
               name="numOfPomo"
               type="number"
@@ -177,11 +177,11 @@ function Setting() {
               value={settingInputs.numOfPomo}
               onChange={handleInputChange}
             />
-            <ArrowUp
+            {/* <ArrowUp
               handleClick={() => {
                 handleIncrease("numOfPomo");
               }}
-            />
+            /> */}
           </div>
         </label>
         <br />
