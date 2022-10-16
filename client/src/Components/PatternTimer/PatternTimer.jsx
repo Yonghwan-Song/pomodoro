@@ -1,6 +1,5 @@
-import { useEffect, useState, useReducer } from "react";
+import { useEffect, useState } from "react";
 import { Timer } from "../Timer/Timer";
-import { reducerPatternTimer as reducer } from "../reducers";
 import { UserAuth } from "../../Auth/AuthContext";
 import { UserInfo } from "../UserContext";
 import axios from "axios";
@@ -18,22 +17,25 @@ export function PatternTimer() {
 
   function next(howManyCountdown, startTime, concentrationTime = duration) {
     if (howManyCountdown < numOfPomo * 2 - 1) {
-      //! This is when a pomo is completed.
       if (howManyCountdown % 2 === 1) {
+        //! This is when a pomo, which is not the last one of a cycle, is completed.
         console.log("ONE POMO DURATION IS FINISHED");
         recordPomo(user, concentrationTime, startTime);
         notify("shortBreak");
         setDuration(shortBreakDuration);
       } else {
+        //! This is when a short break is done.
         notify("pomo");
         setDuration(pomoDuration);
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
+      //! This is when the last pomo of a cycle is completed.
       console.log("ONE POMO DURATION IS FINISHED");
       recordPomo(user, concentrationTime, startTime);
       notify("longBreak");
       setDuration(longBreakDuration);
     } else if (howManyCountdown === numOfPomo * 2) {
+      //! This is when the long break is done meaning that a cycle of pomos, short break, and long break is done.
       console.log("one cycle is done");
       //cycle completion notification
       notify("nextCycle");

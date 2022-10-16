@@ -1,6 +1,7 @@
 export function reducerTimer(state, action) {
   switch (action.type) {
     case "start":
+      localStorage.setItem("isTimerRunning", "yes");
       return {
         ...state,
         running: true,
@@ -16,6 +17,7 @@ export function reducerTimer(state, action) {
         },
       };
     case "resume":
+      localStorage.setItem("isTimerRunning", "yes");
       return {
         ...state,
         running: true,
@@ -37,53 +39,11 @@ export function reducerTimer(state, action) {
         },
       };
     case "reset":
+      localStorage.setItem("isTimerRunning", "no");
       return {
         running: false,
         startTime: 0,
         pause: { totalLength: 0, record: [] },
-      };
-    default:
-      throw new Error();
-  }
-}
-
-export function reducerPatternTimer(state, action) {
-  switch (action.type) {
-    case "start":
-      return {
-        ...state,
-        running: true,
-        startTime: action.payload,
-      };
-    case "pause":
-      return {
-        ...state,
-        running: false,
-        pause: {
-          ...state.pause,
-          record: [...state.pause.record, { start: action.payload }],
-        },
-      };
-    case "resume":
-      return {
-        ...state,
-        running: true,
-        pause: {
-          record: state.pause.record.map((obj) => {
-            if (obj.end === undefined) {
-              return {
-                ...obj,
-                end: action.payload,
-              };
-            } else {
-              return obj;
-            }
-          }),
-          totalLength:
-            state.pause.totalLength +
-            (action.payload -
-              state.pause.record[state.pause.record.length - 1].start),
-        },
       };
     default:
       throw new Error();

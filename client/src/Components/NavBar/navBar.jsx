@@ -1,4 +1,3 @@
-import { async } from "@firebase/util";
 import React from "react";
 import { useRef } from "react";
 import { useState } from "react";
@@ -9,7 +8,7 @@ import { StyledLink } from "../styles/Link.styled";
 import { useTheme } from "styled-components";
 import styles from "./navBar.module.css";
 
-function Navbar(props) {
+function Navbar() {
   const { user, logOut } = UserAuth();
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef(null);
@@ -47,24 +46,20 @@ function Navbar(props) {
         console.log(index / 7);
       });
     }
-    // // toggle the ul element
-    // setIsActive(!isActive);
+  }
 
-    // // apply animation to the li elements
-    // let navLinks = Array.from(ulRef.current.children);
-    // console.log(navLinks);
-
-    // navLinks.forEach((link, index) => {
-    //   if (link.style.animation) {
-    //     link.style.animation = "";
-    //   } else {
-    //     link.style.animation = `${styles.navLinksFade} 0.5s ease forwards ${
-    //       index / 7 + 0.2
-    //     }s`;
-    //   }
-    //   console.log(link.style);
-    //   console.log(index / 7);
-    // });
+  function handleLinkClick(e) {
+    if (localStorage.getItem("isTimerRunning") === "yes") {
+      e.preventDefault();
+      alert(
+        "Timer is Running. Please end the timer or finish it before navigating to other pages"
+      );
+    } else {
+      if (e.target.id === "signOut") {
+        handleSignOut();
+      }
+      toggleSideBar();
+    }
   }
 
   return (
@@ -75,12 +70,12 @@ function Navbar(props) {
 
       <UnorderedList ref={ulRef} isSideBarActive={isActive} liOpacity>
         <li>
-          <StyledLink to="/statistics" onClick={toggleSideBar}>
+          <StyledLink to="/statistics" onClick={handleLinkClick}>
             Statistics
           </StyledLink>
         </li>
         <li>
-          <StyledLink to="/setting" onClick={toggleSideBar}>
+          <StyledLink to="/setting" onClick={handleLinkClick}>
             Setting
           </StyledLink>
         </li>
@@ -88,10 +83,8 @@ function Navbar(props) {
           <li>
             <span
               className={styles.span}
-              onClick={() => {
-                handleSignOut();
-                toggleSideBar();
-              }}
+              id="signOut"
+              onClick={handleLinkClick}
             >
               Logout
             </span>
