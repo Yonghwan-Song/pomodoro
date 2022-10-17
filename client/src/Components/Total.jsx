@@ -33,7 +33,7 @@ export function Total({ thisTotal, lastTotal, message, target, ...props }) {
           fontSize: "1.2em",
         }}
       >
-        {Math.floor(thisTotal / 60)}h {lastTotal % 60}m
+        {Math.floor(thisTotal / 60)}h {thisTotal % 60}m
       </h3>
       <p style={{ fontSize: "1.5em", fontWeight: "bold" }}>{"="}</p>
       last {target}{" "}
