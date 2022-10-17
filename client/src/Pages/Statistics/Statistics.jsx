@@ -155,7 +155,13 @@ export default function Statistics() {
               <Area
                 type="monotone"
                 dataKey="total"
+                dot={{
+                  strokeWidth: 1.5,
+                  r: 3,
+                  fill: "#ffffff",
+                }}
                 stroke="#302783"
+                strokeWidth={1.5}
                 fillOpacity={1}
                 fill="url(#color)"
               />
