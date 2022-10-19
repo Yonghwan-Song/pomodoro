@@ -107,7 +107,6 @@ async function recordPomo(user, duration, startTime) {
       },
       {
         headers: {
-          //Authorization: "Bearer " + user.accessToken,
           Authorization: "Bearer " + idToken,
         },
       }

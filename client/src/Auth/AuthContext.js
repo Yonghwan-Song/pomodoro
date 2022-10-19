@@ -40,7 +40,6 @@ export function AuthContextProvider({ children }) {
         },
         {
           headers: {
-            // Authorization: "Bearer " + user.accessToken,
             Authorization: "Bearer " + idToken,
           },
         }

@@ -7,14 +7,13 @@ class Middleware {
     const idToken = req.headers.authorization.split(" ")[1]; // [1] of arr [Bearer, tokenValue]
 
     try {
-      const decodeValue = admin.auth().verifyIdToken(idToken);
-      console.log(decodeValue);
+      const decodeValue = await admin.auth().verifyIdToken(idToken);
       if (decodeValue) {
         return next();
       }
-      return res.json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Unauthorized" });
     } catch (error) {
-      return res.json({ message: "Internal Error" });
+      return res.status(500).json({ message: "Internal Error" });
     }
   }
 }

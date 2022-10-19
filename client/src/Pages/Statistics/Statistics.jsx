@@ -42,11 +42,12 @@ export default function Statistics() {
   //#region functions
   async function getStatArr(user) {
     try {
+      const idToken = await user.getIdToken();
       const response = await axios.get(
         CONSTANTS.URLs.POMO + `/stat/${user.email}`,
         {
           headers: {
-            Authorization: "Bearer " + user.accessToken,
+            Authorization: "Bearer " + idToken,
           },
         }
       );

@@ -14,7 +14,6 @@ export function UserContextProvider({ children }) {
       const idToken = await user.getIdToken();
       const res = await axios.get(C.URLs.USER + `/${user.email}`, {
         headers: {
-          // Authorization: "Bearer " + user.accessToken,
           Authorization: "Bearer " + idToken,
         },
       });
