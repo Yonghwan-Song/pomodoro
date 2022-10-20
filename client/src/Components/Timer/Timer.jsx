@@ -13,7 +13,8 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
     startTime: 0,
     pause: { totalLength: 0, record: [] },
   });
-  const [remainingDuration, setRemainingDuration] = useState(duration);
+  const [remainingDuration, setRemainingDuration] = useState(duration || 0);
+
   let seconds = 0;
 
   function toggleTimer() {
@@ -99,7 +100,9 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
       {(seconds = remainingDuration % 60) < 10 ? "0" + seconds : seconds}
     </h2>
   );
-  let g = <h2>{duration / 60 + ":00"}</h2>;
+
+  let g = <h2>{(duration / 60 || "00") + ":00"}</h2>;
+
   return (
     <Grid gap={"13px"} justifyItems={"center"}>
       <GridItem>
@@ -116,7 +119,9 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
       </GridItem>
 
       <GridItem>
-        <CircularProgressBar progress={1 - remainingDuration / duration} />
+        <CircularProgressBar
+          progress={duration === 0 ? 0 : 1 - remainingDuration / duration}
+        />
       </GridItem>
 
       <GridItem>

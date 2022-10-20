@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Timer } from "../Timer/Timer";
 import { UserAuth } from "../../Auth/AuthContext";
 import { UserInfo } from "../UserContext";
@@ -7,7 +7,7 @@ import * as CONSTANTS from "../../constants/index";
 
 export function PatternTimer() {
   const { pomoSetting } = UserInfo();
-  const [duration, setDuration] = useState(pomoSetting.pomoDuration);
+  const [duration, setDuration] = useState(0);
   //const [cycleCount, setCycleCount] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0);
   const { user } = UserAuth();
@@ -46,7 +46,7 @@ export function PatternTimer() {
   }
 
   useEffect(() => {
-    setDuration(pomoSetting.pomoDuration);
+    setDuration(pomoSetting.pomoDuration || 0);
 
     if ("Notification" in window) {
       console.log("The Notification property exists in the window namespace");
@@ -73,12 +73,6 @@ export function PatternTimer() {
     console.log(user.email);
     console.log("accessToken: ", user.accessToken);
   }, [user, pomoSetting]);
-  // TODO?
-  // user is fetched after this comp is mounted.
-  // But we have the user as a dependency, thus, comp is going to be updated.
-  // Is it ideal?..
-  // Is there any way to make this comp render after user is fetched?...
-  // so that is is rendered once not twice?
 
   return (
     <>
