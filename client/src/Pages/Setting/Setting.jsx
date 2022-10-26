@@ -5,6 +5,10 @@ import { UserAuth } from "../../Auth/AuthContext";
 import { UserInfo } from "../../Components/UserContext";
 import { ArrowDown, ArrowUp } from "../../Components/Icons/Arrows/Arrows";
 import { Button } from "../../Components/Buttons/Button";
+import { BoxShadowWrapper } from "../../Components/Wrapper";
+import { Grid } from "../../Components/Layouts/Grid";
+import { GridItem } from "../../Components/Layouts/GridItem";
+import { FlexBox } from "../../Components/Layouts/FlexBox";
 import axios from "axios";
 import * as C from "../../constants/index";
 import { async } from "@firebase/util";
@@ -89,118 +93,125 @@ function Setting() {
   }, [user, pomoSetting, settingInputs]);
 
   return (
-    <div style={{ position: "relative" }}>
-      <br />
-      <br />
-      <form className={styles.centerForm} onSubmit={handleSubmit}>
-        <label className={styles.arrangeLabel}>
-          Pomo Duration
-          <div className={styles.alignBoxes}>
-            {/* <ArrowDown
-              handleClick={() => {
-                handleDecrease("pomoDuration");
-              }}
-            /> */}
-            <input
-              name="pomoDuration"
-              type="number"
-              className={styles.arrangeInput}
-              value={settingInputs.pomoDuration}
-              onChange={handleInputChange}
-            />
+    <Grid maxWidth="634px" gap="25px">
+      <GridItem>
+        <BoxShadowWrapper>
+          <form onSubmit={handleSubmit}>
+            <label className={styles.arrangeLabel}>
+              Pomo Duration
+              <div className={styles.alignBoxes}>
+                <input
+                  name="pomoDuration"
+                  type="number"
+                  className={styles.arrangeInput}
+                  value={settingInputs.pomoDuration}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </label>
+            <br />
+            <label className={styles.arrangeLabel}>
+              Short Break Duration
+              <div className={styles.alignBoxes}>
+                <input
+                  name="shortBreakDuration"
+                  type="number"
+                  className={styles.arrangeInput}
+                  value={settingInputs.shortBreakDuration}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </label>
+            <br />
+            <label className={styles.arrangeLabel}>
+              Long Break Duration
+              <div className={styles.alignBoxes}>
+                <input
+                  name="longBreakDuration"
+                  type="number"
+                  className={styles.arrangeInput}
+                  value={settingInputs.longBreakDuration}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </label>
+            <br />
+            <label className={styles.arrangeLabel}>
+              Number of Pomos
+              <div className={styles.alignBoxes}>
+                <input
+                  name="numOfPomo"
+                  type="number"
+                  className={styles.arrangeInput}
+                  value={settingInputs.numOfPomo}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </label>
 
-            {/* <ArrowUp
-              handleClick={() => {
-                handleIncrease("pomoDuration");
-              }}
-            /> */}
-          </div>
-        </label>
-        <br />
-        <label className={styles.arrangeLabel}>
-          Short Break Duration
-          <div className={styles.alignBoxes}>
-            {/* <ArrowDown
-              handleClick={() => {
-                handleDecrease("shortBreakDuration");
-              }}
-            /> */}
-            <input
-              name="shortBreakDuration"
-              type="number"
-              className={styles.arrangeInput}
-              value={settingInputs.shortBreakDuration}
-              onChange={handleInputChange}
-            />
-            {/* <ArrowUp
-              handleClick={() => {
-                handleIncrease("shortBreakDuration");
-              }}
-            /> */}
-          </div>
-        </label>
-        <br />
-        <label className={styles.arrangeLabel}>
-          Long Break Duration
-          <div className={styles.alignBoxes}>
-            {/* <ArrowDown
-              handleClick={() => {
-                handleDecrease("longBreakDuration");
-              }}
-            /> */}
-            <input
-              name="longBreakDuration"
-              type="number"
-              className={styles.arrangeInput}
-              value={settingInputs.longBreakDuration}
-              onChange={handleInputChange}
-            />
-            {/* <ArrowUp
-              handleClick={() => {
-                handleIncrease("longBreakDuration");
-              }}
-            /> */}
-          </div>
-        </label>
-        <br />
-        <label className={styles.arrangeLabel}>
-          Number of Pomos
-          <div className={styles.alignBoxes}>
-            {/* <ArrowDown
-              handleClick={() => {
-                handleDecrease("numOfPomo");
-              }}
-            /> */}
-            <input
-              name="numOfPomo"
-              type="number"
-              className={styles.arrangeInput}
-              value={settingInputs.numOfPomo}
-              onChange={handleInputChange}
-            />
-            {/* <ArrowUp
-              handleClick={() => {
-                handleIncrease("numOfPomo");
-              }}
-            /> */}
-          </div>
-        </label>
-        <br />
-        <br />
-        <div className={`${styles.flexBox}`}>
-          <Button
-            type={"submit"}
-            color={"primary"}
-            styles="transform: translateX(50%)"
-          >
-            SAVE
+            <br />
+            <div className={`${styles.flexBox}`}>
+              <Button
+                type={"submit"}
+                color={"primary"}
+                styles="transform: translateX(50%)"
+              >
+                SAVE
+              </Button>
+            </div>
+          </form>
+        </BoxShadowWrapper>
+      </GridItem>
+      <GridItem>
+        <FlexBox>
+          <Button color={"primary"} handleClick={() => createDemoData(user)}>
+            Create Demo data
           </Button>
-        </div>
-      </form>
-    </div>
+          <Button handleClick={() => removeDemoData(user)}>
+            Remove Demo data
+          </Button>
+        </FlexBox>
+      </GridItem>
+    </Grid>
   );
 }
+async function createDemoData(user) {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayTimestamp = today.getTime() - 24 * 60 * 60 * 1000;
+    const idToken = await user.getIdToken();
+    const res = await axios.post(
+      C.URLs.POMO + `/generateDemoData/${user.email}`,
+      {
+        timestamp: yesterdayTimestamp,
+        timezoneOffset: now.getTimezoneOffset(),
+      },
+      {
+        headers: {
+          Authorization: "Bearer " + idToken,
+        },
+      }
+    );
+    console.log("res obj.data", res.data);
+  } catch (err) {
+    console.log(err);
+  }
+}
 
+async function removeDemoData(user) {
+  try {
+    const idToken = await user.getIdToken();
+    const res = await axios.delete(C.URLs.POMO + `/demo/${user.email}`, {
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+    console.log("res obj.data", res.data);
+  } catch (err) {
+    console.log(err);
+  }
+}
 async function updatePomoSetting(user, pomoSetting) {
   try {
     const idToken = await user.getIdToken();
@@ -211,7 +222,6 @@ async function updatePomoSetting(user, pomoSetting) {
       },
       {
         headers: {
-          //Authorization: "Bearer " + user.accessToken,
           Authorization: "Bearer " + idToken,
         },
       }

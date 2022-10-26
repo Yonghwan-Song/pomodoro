@@ -5,11 +5,13 @@
 
 .arrangeInput {
   display: block;
-
+  background-color: #f0f0f0;
   border: none;
+  border-radius: 0.5rem;
   text-align: center;
+  padding: 0.4em 0;
   /* width: 100%; */
-  width: 30%;
+  width: 20%;
   font-size: 1.5em;
   /* font-weight: 200; */
 }

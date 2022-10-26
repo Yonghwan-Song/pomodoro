@@ -1,7 +1,8 @@
 import styled, { css } from "styled-components";
 
 export const StyledGrid = styled.div`
-  max-width: 960px;
+  max-width: ${({ maxWidth }) => maxWidth || "960px"};
+
   justify-items: ${({ justifyItems }) => justifyItems};
   margin: 100px auto;
   padding: 10px;
