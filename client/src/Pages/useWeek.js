@@ -131,7 +131,7 @@ export function useWeek() {
       return acc + cur.total;
     }, 0);
 
-    setAverage(Math.trunc(sum / new Date().getDay() || 7));
+    setAverage(Math.trunc(sum / (new Date().getDay() || 7)));
     setWeekRange(
       `${weekCloned[0].date
         .slice(0, -5)
