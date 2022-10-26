@@ -31,7 +31,11 @@ const port = process.env.port || 4444;
 
 //app.use(cors());
 app.use(
-  cors({ origin: true, methods: ["GET", "PUT", "POST"], credentials: true })
+  cors({
+    origin: true,
+    methods: ["GET", "PUT", "POST", "DELETE"],
+    credentials: true,
+  })
 );
 app.use(express.json()); // for parsing application/json
 // for parsing application/x-www-form-urlencoded

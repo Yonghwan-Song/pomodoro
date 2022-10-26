@@ -2,9 +2,11 @@ import express from "express";
 import middleware from "../middleware/firebase-auth.js";
 import {
   recordPomo,
-  getPomoRecords,
   deletePomoRecords,
+  deleteDemoData,
   generateDummies,
+  generateDemoData,
+  getPomoRecords,
   getStat,
 } from "../controllers/pomos.js";
 
@@ -20,6 +22,10 @@ router.post("/", recordPomo);
 
 router.post("/generateDummies/:userEmail", generateDummies);
 
+router.post("/generateDemoData/:userEmail", generateDemoData);
+
 router.delete("/:userEmail", deletePomoRecords);
+
+router.delete("/demo/:userEmail", deleteDemoData);
 
 export default router;

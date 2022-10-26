@@ -13,6 +13,7 @@ const pomoSchema = new Schema({
   duration: Number,
   startTime: Number,
   date: String,
+  isDummy: { type: Boolean, default: false },
 });
 
 pomoSchema.statics.findByUserEmail = function (userEmail) {
