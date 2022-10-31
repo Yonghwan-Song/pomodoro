@@ -10,21 +10,9 @@ function Signin() {
 
   const navigate = useNavigate();
 
-  // const handleGoogleSignIn = async () => {
-  //   try {
-  //     let result = await googleSignIn();
-  //     const { isNewUser } = getAdditionalUserInfo(result);
-  //     setTimeout(() => console.log(isNewUser), 2500);
-  //     //?? reloading은 어느시점에서 되는거냐 대체? 하..
-  //     //!
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     try {
-      googleSignIn();
+      await googleSignIn();
     } catch (error) {
       console.log(error);
     }

@@ -1,4 +1,6 @@
+import admin from "../firebase/config.js";
 import { User } from "../models/user.js";
+import { Pomo } from "../models/pomo.js";
 
 /*export const createUser = async (req, res) {
 }*/
@@ -18,13 +20,31 @@ export const createUser = async (req, res) => {
   }
 };
 
+export const deleteUser = async (req, res) => {
+  try {
+    let deletedCount = await Pomo.deleteAllByUserEmail(req.params.email);
+    let currentUser = await User.findOne({ email: req.params.email });
+
+    let userDeleted = await User.deleteOne({ email: req.params.email });
+
+    console.log({ deletedCount, userDeleted });
+    res.send({ deletedCount, userDeleted });
+  } catch (error) {
+    console.log(error);
+    console.log(`******DB error: deleteUser in controllers/users.js******`);
+  }
+};
+
 export const getPomoSetting = async (req, res) => {
   try {
     let currentUser = await User.findOne({ email: req.params.email });
 
-    console.log(currentUser.pomoSetting);
-    //res.headers.add("Access-Control-Allow-Origin", "*");
-    res.send(currentUser.pomoSetting);
+    if (currentUser) {
+      console.log(currentUser.pomoSetting);
+      res.send(currentUser.pomoSetting);
+    } else {
+      res.status(404).send("User is not found");
+    }
   } catch (error) {
     console.log(`getPomoSetting in controllers/users.js\n ${error}`);
   }

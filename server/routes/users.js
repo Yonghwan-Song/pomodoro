@@ -1,6 +1,7 @@
 import express from "express";
 import {
   createUser,
+  deleteUser,
   getPomoSetting,
   updatePomoSetting,
 } from "../controllers/users.js";
@@ -18,5 +19,7 @@ router.post("/", createUser);
 
 // Set a new pomo setting
 router.put("/editPomoSetting/:email", updatePomoSetting);
+
+router.delete("/:email", deleteUser);
 
 export default router;

@@ -101,7 +101,12 @@ export function Timer({ duration, next, repetitionCount, setRepetitionCount }) {
     </h2>
   );
 
-  let g = <h2>{(duration / 60 || "00") + ":00"}</h2>;
+  // let g = <h2>{(duration / 60 || "00") + ":00"}</h2>;
+  let g = (
+    <h2>
+      {!!(duration / 60) === false ? "Loading data" : duration / 60 + ":00"}
+    </h2>
+  );
 
   return (
     <Grid gap={"13px"} justifyItems={"center"}>

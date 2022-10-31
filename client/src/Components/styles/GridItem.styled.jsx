@@ -2,6 +2,7 @@ import styled, { css } from "styled-components";
 
 export const StyledGridItem = styled.div`
   min-width: 0px;
+  text-align: ${({ textAlign }) => textAlign};
   background-color: ${({ backgroundColor }) => backgroundColor};
   ${({ columnStart }) =>
     columnStart &&

@@ -15,24 +15,36 @@ import * as C from "../constants/index";
 const AuthContext = createContext();
 
 export function AuthContextProvider({ children }) {
-  const [user, setUser] = useState({});
-  const [isNew, setIsNew] = useState(null);
+  // const [user, setUser] = useState({}); // user registered to the firebase
+  const [user, setUser] = useState(null);
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [isNewUserRegistered, setIsNewUserRegistered] = useState(false);
 
   const googleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const { isNewUser } = getAdditionalUserInfo(result);
-    setIsNew(isNewUser);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const details = getAdditionalUserInfo(result);
+
+      if (details.isNewUser) {
+        setIsNewUser(true);
+        let userRegistered = await registerUser(result.user);
+        console.log(userRegistered);
+      }
+    } catch (error) {
+      console.log(`------------------------googleSignIn in AuthContext.js-------------------------
+      ${error}`);
+    }
   };
 
-  const logOut = () => {
-    signOut(auth);
+  const logOut = async () => {
+    await signOut(auth);
   };
 
   async function registerUser(user) {
     try {
       const idToken = await user.getIdToken();
-      const response = await axios.post(
+      let response = await axios.post(
         C.URLs.USER,
         {
           email: user.email,
@@ -44,21 +56,23 @@ export function AuthContextProvider({ children }) {
           },
         }
       );
-      console.log("res obj", response);
+      setIsNewUserRegistered(true);
+      return response;
     } catch (err) {
       console.log(err);
     }
   }
 
   useEffect(() => {
+    console.log(`------------Auth Context Provider Component------------`);
+    console.log(user);
     if (user === {}) {
       setUser(localStorage.getItem("user"));
     }
-    if (isNew === true) {
-      registerUser(user);
-    }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log(`------------Auth State Changed------------`);
+      console.log(currentUser);
       setUser(currentUser);
       localStorage.setItem("user", currentUser);
     });
@@ -66,10 +80,18 @@ export function AuthContextProvider({ children }) {
     return () => {
       unsubscribe();
     };
-  }, [isNew]);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ googleSignIn, logOut, user }}>
+    <AuthContext.Provider
+      value={{
+        googleSignIn,
+        logOut,
+        user,
+        isNewUser,
+        isNewUserRegistered,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

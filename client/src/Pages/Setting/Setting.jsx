@@ -12,16 +12,18 @@ import { FlexBox } from "../../Components/Layouts/FlexBox";
 import axios from "axios";
 import * as C from "../../constants/index";
 import { async } from "@firebase/util";
+import {
+  deleteUser,
+  GoogleAuthProvider,
+  reauthenticateWithPopup,
+} from "firebase/auth";
 import styles from "./Setting.module.css";
 
-//TODO:
-//// 1. Change URL of api
-//// 2. Axios call
-// 3. Check database - test and debug
 function Setting() {
   const { user } = UserAuth();
   const { pomoSetting, setPomoSetting } = UserInfo();
   const [settingInputs, setSettingInputs] = useState(pomoSetting || {});
+  //const [settingInputs, setSettingInputs] = useState(pomoSetting);
 
   function handleInputChange(event) {
     let targetValue = +event.target.value;
@@ -93,87 +95,134 @@ function Setting() {
   }, [user, pomoSetting, settingInputs]);
 
   return (
-    <Grid maxWidth="634px" gap="25px">
-      <GridItem>
-        <BoxShadowWrapper>
-          <form onSubmit={handleSubmit}>
-            <label className={styles.arrangeLabel}>
-              Pomo Duration
-              <div className={styles.alignBoxes}>
-                <input
-                  name="pomoDuration"
-                  type="number"
-                  className={styles.arrangeInput}
-                  value={settingInputs.pomoDuration}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </label>
-            <br />
-            <label className={styles.arrangeLabel}>
-              Short Break Duration
-              <div className={styles.alignBoxes}>
-                <input
-                  name="shortBreakDuration"
-                  type="number"
-                  className={styles.arrangeInput}
-                  value={settingInputs.shortBreakDuration}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </label>
-            <br />
-            <label className={styles.arrangeLabel}>
-              Long Break Duration
-              <div className={styles.alignBoxes}>
-                <input
-                  name="longBreakDuration"
-                  type="number"
-                  className={styles.arrangeInput}
-                  value={settingInputs.longBreakDuration}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </label>
-            <br />
-            <label className={styles.arrangeLabel}>
-              Number of Pomos
-              <div className={styles.alignBoxes}>
-                <input
-                  name="numOfPomo"
-                  type="number"
-                  className={styles.arrangeInput}
-                  value={settingInputs.numOfPomo}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </label>
+    <>
+      <h3
+        style={{
+          position: "absolute",
+          top: "16.5%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        {Object.values(settingInputs).length === 0 ? "Loading Data" : ""}
+      </h3>
+      <Grid maxWidth="634px" gap="25px">
+        <GridItem>
+          <BoxShadowWrapper>
+            <form onSubmit={handleSubmit}>
+              <label className={styles.arrangeLabel}>
+                Pomo Duration
+                <div className={styles.alignBoxes}>
+                  <input
+                    name="pomoDuration"
+                    type="number"
+                    className={styles.arrangeInput}
+                    value={settingInputs.pomoDuration || 0}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </label>
+              <br />
+              <label className={styles.arrangeLabel}>
+                Short Break Duration
+                <div className={styles.alignBoxes}>
+                  <input
+                    name="shortBreakDuration"
+                    type="number"
+                    className={styles.arrangeInput}
+                    value={settingInputs.shortBreakDuration || 0}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </label>
+              <br />
+              <label className={styles.arrangeLabel}>
+                Long Break Duration
+                <div className={styles.alignBoxes}>
+                  <input
+                    name="longBreakDuration"
+                    type="number"
+                    className={styles.arrangeInput}
+                    value={settingInputs.longBreakDuration || 0}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </label>
+              <br />
+              <label className={styles.arrangeLabel}>
+                Number of Pomos
+                <div className={styles.alignBoxes}>
+                  <input
+                    name="numOfPomo"
+                    type="number"
+                    className={styles.arrangeInput}
+                    value={settingInputs.numOfPomo || 0}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </label>
 
-            <br />
-            <div className={`${styles.flexBox}`}>
-              <Button
-                type={"submit"}
-                color={"primary"}
-                styles="transform: translateX(50%)"
-              >
-                SAVE
-              </Button>
-            </div>
-          </form>
-        </BoxShadowWrapper>
-      </GridItem>
-      <GridItem>
-        <FlexBox>
-          <Button color={"primary"} handleClick={() => createDemoData(user)}>
-            Create Demo data
+              <br />
+              <div className={`${styles.flexBox}`}>
+                <Button
+                  type={"submit"}
+                  color={"primary"}
+                  styles="transform: translateX(50%)"
+                >
+                  SAVE
+                </Button>
+              </div>
+            </form>
+          </BoxShadowWrapper>
+        </GridItem>
+        <GridItem>
+          <FlexBox>
+            <Button color={"primary"} handleClick={() => createDemoData(user)}>
+              Create Demo data
+            </Button>
+            <Button handleClick={() => removeDemoData(user)}>
+              Remove Demo data
+            </Button>
+          </FlexBox>
+        </GridItem>
+        <GridItem>
+          <Button
+            handleClick={async () => {
+              const provider = new GoogleAuthProvider();
+              //.TODO:
+              // I think I don't need to update the user state inside the Auth Context Provider
+              // using the result.user
+              // Since, we are going to delete this account.
+              let result = await reauthenticateWithPopup(user, provider);
+              deleteAccount(result.user);
+              //deleteAccount(user)
+            }}
+          >
+            Delete account
           </Button>
-          <Button handleClick={() => removeDemoData(user)}>
-            Remove Demo data
-          </Button>
-        </FlexBox>
-      </GridItem>
-    </Grid>
+        </GridItem>
+      </Grid>
+    </>
   );
+}
+
+async function deleteAccount(user) {
+  console.log(`--------------------DELETE ACCOUNT-------------------`);
+  try {
+    const idToken = await user.getIdToken();
+    const res = await axios.delete(C.URLs.USER + `/${user.email}`, {
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+    console.log("deleteAccount res", res.data);
+    //await user.delete();
+    let result = await deleteUser(user);
+    window.location.reload();
+    console.log(result);
+  } catch (error) {
+    console.log(error);
+  }
 }
 async function createDemoData(user) {
   try {
