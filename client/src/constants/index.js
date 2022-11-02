@@ -15,14 +15,9 @@ export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
 //#endregion
 
 //#region URLs
-//? Should these properties be like?
-// export const URLs = {
-//   USER: "http://localhost:4444/users",
-//   POMO: "http://localhost:4444/pomos",
-// };
 export const URLs = {
-  USER: "http://localhost:4444/users",
-  POMO: "http://localhost:4444/pomos",
+  USER: "https://pomodoro-apis.onrender.com/users",
+  POMO: "https://pomodoro-apis.onrender.com/pomos",
 };
 
 //#endregion
