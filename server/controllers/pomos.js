@@ -39,43 +39,8 @@ export const recordPomo = async (req, res) => {
 export const getStat = async (req, res) => {
   try {
     let pomoRecords = await Pomo.findByUserEmail(req.params.userEmail);
-    let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    // [{ date: '9/12/2022', total: 300 }, ... ]
-    let durationByDateArr = pomoRecords
-      .sort((a, b) => a.startTime - b.startTime)
-      .reduce((acc, curRec) => {
-        // check if the date property of the last element in the acc
-        // has the same value as the curRec's date value.
-        if (acc.length === 0) {
-          const dayOfWeek = new Date(curRec.date).getDay();
-          return [
-            {
-              date: curRec.date,
-              timestamp: new Date(curRec.date).getTime(),
-              dayOfWeek: days[dayOfWeek],
-              total: curRec.duration,
-            },
-          ];
-        }
 
-        if (acc[acc.length - 1].date === curRec.date) {
-          acc[acc.length - 1].total += curRec.duration;
-          return acc;
-        } else {
-          const dayOfWeek = new Date(curRec.date).getDay();
-          return [
-            ...acc,
-            {
-              date: curRec.date,
-              timestamp: new Date(curRec.date).getTime(),
-              dayOfWeek: days[dayOfWeek],
-              total: curRec.duration,
-            },
-          ];
-        }
-      }, []);
-
-    res.json(durationByDateArr);
+    res.json(pomoRecords);
   } catch (error) {
     console.log(`getStat in controllers/pomos.js\n ${error}`);
   }
