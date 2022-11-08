@@ -16,7 +16,7 @@ router.use(middleware.decodeToken);
 
 router.get("/:userEmail", getPomoRecords);
 
-router.get("/stat/:userEmail", getStat);
+router.get("/stat/:userEmail&:clientLocationTimezoneOffset", getStat);
 
 router.post("/", recordPomo);
 

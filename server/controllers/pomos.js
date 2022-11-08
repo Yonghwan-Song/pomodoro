@@ -38,8 +38,13 @@ export const recordPomo = async (req, res) => {
 
 export const getStat = async (req, res) => {
   try {
+    console.log(
+      `----------getStat---------${req.params.clientLocationTimezoneOffset}`
+    );
+    let serverLocationTimezoneOffset = new Date().getTimezoneOffset();
     let pomoRecords = await Pomo.findByUserEmail(req.params.userEmail);
     let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
     // [{ date: '9/12/2022', total: 300 }, ... ]
     let durationByDateArr = pomoRecords
       .sort((a, b) => a.startTime - b.startTime)
@@ -51,7 +56,11 @@ export const getStat = async (req, res) => {
           return [
             {
               date: curRec.date,
-              timestamp: new Date(curRec.date).getTime(),
+              timestamp:
+                new Date(curRec.date).getTime() +
+                (serverLocationTimezoneOffset -
+                  req.params.clientLocationTimezoneOffset) *
+                  60000,
               dayOfWeek: days[dayOfWeek],
               total: curRec.duration,
             },
@@ -67,7 +76,11 @@ export const getStat = async (req, res) => {
             ...acc,
             {
               date: curRec.date,
-              timestamp: new Date(curRec.date).getTime(),
+              timestamp:
+                new Date(curRec.date).getTime() +
+                (serverLocationTimezoneOffset -
+                  req.params.clientLocationTimezoneOffset) *
+                  60000,
               dayOfWeek: days[dayOfWeek],
               total: curRec.duration,
             },
