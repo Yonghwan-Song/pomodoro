@@ -44,8 +44,7 @@ export default function Statistics() {
     try {
       const idToken = await user.getIdToken();
       const response = await axios.get(
-        CONSTANTS.URLs.POMO +
-          `/stat/${user.email}&${new Date().getTimezoneOffset()}`,
+        CONSTANTS.URLs.POMO + `/stat/${user.email}`,
         {
           headers: {
             Authorization: "Bearer " + idToken,
