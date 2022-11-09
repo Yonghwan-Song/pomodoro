@@ -18,6 +18,16 @@ const theme = {
 };
 
 function App() {
+  useEffect(() => {
+    function onUnload() {
+      localStorage.clear();
+    }
+    window.addEventListener("unload", onUnload);
+    return () => {
+      window.removeEventListener("unload", onUnload);
+    };
+  }, []);
+
   return (
     <AuthContextProvider>
       <UserContextProvider>
