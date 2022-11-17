@@ -64,10 +64,12 @@ Project is created with:
 ```bash
 git clone https://github.com/Yonghwan-Song/pomodoro.git
 cd pomodoro
-git checkout -b local
+git checkout local
 cd server
 npm install
 npm start
+# open a new pane in the terminal
+# and then in the server directory
 cd ../client
 npm install
 npm start
