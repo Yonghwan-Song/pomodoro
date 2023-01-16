@@ -7,7 +7,11 @@ type ButtonProps = {
 
 export function Button({ children, type, color, handleClick }: ButtonProps) {
   return (
-    <button type={type} className={`btn btn-${color}`} onClick={handleClick}>
+    <button
+      type={type}
+      className={`btn${color !== undefined ? " btn-" + color : ""}`}
+      onClick={handleClick}
+    >
       {children}
     </button>
   );
