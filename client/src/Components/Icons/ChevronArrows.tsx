@@ -1,7 +1,11 @@
 import { ReactComponent as ArrowToTheLeft } from "../../Icons/chevron-left-icon.svg";
 import { ReactComponent as ArrowToTheRight } from "../../Icons/chevron-right-icon.svg";
 
-export function LeftArrow({ handleClick }) {
+type ArrowsProps = {
+  handleClick: (event: React.MouseEvent<SVGSVGElement>) => void;
+};
+
+export function LeftArrow({ handleClick }: ArrowsProps) {
   return (
     <ArrowToTheLeft
       style={{
@@ -15,7 +19,7 @@ export function LeftArrow({ handleClick }) {
   );
 }
 
-export function RightArrow({ handleClick }) {
+export function RightArrow({ handleClick }: ArrowsProps) {
   return (
     <ArrowToTheRight
       style={{
