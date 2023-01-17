@@ -2,17 +2,27 @@ import React, { useEffect, useRef } from "react";
 import * as C from "../../constants/index";
 import styles from "./circularProgressBar.module.css";
 
+type CircularProgressBarProps = {
+  progress: number;
+};
+
 //const CircularProgressBar = ({ progress }) => {
-const CircularProgressBar = ({ progress }) => {
+const CircularProgressBar = ({ progress }: CircularProgressBarProps) => {
   //do I need to have the div tag wrapped around svg?
-  const circleRef = useRef(null);
+  const circleRef = useRef<SVGCircleElement>(null);
 
   //? 사실 이거 왜 여기다가 해야하는지 설명 못하겠어.
   useEffect(() => {
     console.log(
       `BAR IS RENDERED -------------------- progress >>> ${progress}`
     );
-    circleRef.current.style = "transition: stroke-dashoffset 0ms linear";
+
+    // https://stackoverflow.com/questions/64243292/ts-2540-cannot-assign-to-style-because-it-is-a-read-only-property
+    // circleRef.current!.style = "transition: stroke-dashoffset 0ms linear";
+    circleRef.current!.setAttribute(
+      "style",
+      "transition: stroke-dashoffset 0ms linear"
+    );
   });
 
   return (
