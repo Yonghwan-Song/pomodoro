@@ -14,7 +14,7 @@ const CircularProgressBar = ({ progress }: CircularProgressBarProps) => {
   //? 사실 이거 왜 여기다가 해야하는지 설명 못하겠어.
   useEffect(() => {
     console.log(
-      `BAR IS RENDERED -------------------- progress >>> ${progress}`
+      `BAR IS RENDERED --------------------> progress is ${progress}`
     );
 
     // https://stackoverflow.com/questions/64243292/ts-2540-cannot-assign-to-style-because-it-is-a-read-only-property
