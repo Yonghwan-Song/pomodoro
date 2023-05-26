@@ -28,7 +28,9 @@ const theme = {
 function App() {
   useEffect(() => {
     function onUnload() {
-      localStorage.clear();
+      //TODO: 이거 uncomment해도 문제 없는건가?
+      // localStorage.clear();
+      localStorage.removeItem("isTimerRunning");
     }
     window.addEventListener("unload", onUnload);
     return () => {

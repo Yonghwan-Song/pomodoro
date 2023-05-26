@@ -5,12 +5,19 @@ import {
   Dispatch,
   SetStateAction,
 } from "react";
-import { reducerTimer as reducer, ACTION } from "../reducers";
+import {
+  reducerTimer as reducer,
+  ACTION,
+  TimerState,
+  TimerAction,
+} from "../reducers";
 import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
 import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
+import { retrieveState } from "../..";
+import { SW } from "../..";
 
 /**
  *
@@ -29,6 +36,8 @@ type TimerProps = {
   // TODO: 맞냐?
   repetitionCount: number;
   setRepetitionCount: Dispatch<SetStateAction<number>>;
+  isOnCycle: boolean;
+  setIsOnCycle: Dispatch<SetStateAction<boolean>>;
 };
 
 export function Timer({
@@ -36,33 +45,61 @@ export function Timer({
   next,
   repetitionCount,
   setRepetitionCount,
+  isOnCycle,
+  setIsOnCycle,
 }: TimerProps) {
-  //TODO: is there a better syntax?
+  //! idea: When a cycle is on meaning one cylce is not done yet, initial state is set from the prop
+  //! otherwise: give
   const [state, dispatch] = useReducer(reducer, {
     running: false,
     startTime: 0,
-    pause: { totalLength: 0, record: [] },
+    pause: { totalLength: 0, record: [] }, // 이거는 당장은 필요없으니까 걍.. indexedDB에 넣지 말자.
   });
   const [remainingDuration, setRemainingDuration] = useState(duration || 0);
+
+  //#region for a lazy initialization
+  //1. I === Omit<TimerState, "running" | "startTime">
+  //2. ReducerState<R> === TimerState :::...
+  //3. R === tpyeof reducer
+  //4. type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
+  // const [state, dispatch] = useReducer<
+  //   (state: TimerState, action: TimerAction) => TimerState,
+  //   Omit<TimerState, "running" | "startTime">
+  // >(
+  //   reducer,
+  //   {
+  //     pause: { totalLength: 0, record: [] },
+  //   },
+  //   init
+  // );
+  //#endregion
 
   let seconds = 0;
 
   function toggleTimer() {
-    console.log("jpowejfpwojefpoj");
     if (isFirstStart()) {
       // initial start
-
       dispatch({ type: ACTION.START, payload: Date.now() });
+      if (repetitionCount === 0) {
+        //! repetitionCount is the information from the PatternTimer component.
+        // a cylce of pomo durations has started.
+        SW?.postMessage({
+          component: "PatternTimer",
+          stateArr: [
+            { name: "repetitionCount", value: 0 },
+            { name: "duration", value: duration / 60 },
+          ],
+        });
+        setIsOnCycle(true);
+      }
     } else if (isPaused()) {
       // resume
-
       dispatch({ type: ACTION.RESUME, payload: Date.now() });
     } else {
       // pause
-
       dispatch({ type: ACTION.PAUSE, payload: Date.now() });
     }
-
+    // if this is not the first start of the timer, it means resuming the timer.
     function isFirstStart() {
       return !state.running && state.pause!.record.length === 0;
     }
@@ -74,40 +111,99 @@ export function Timer({
   function endTimer() {
     let timePassed = Math.floor((duration - remainingDuration) / 60);
     setRepetitionCount(repetitionCount + 1);
+    SW?.postMessage({
+      component: "PatternTimer",
+      stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
+    });
     next(repetitionCount + 1, state.startTime, timePassed);
     dispatch({ type: ACTION.RESET });
     setRemainingDuration(0);
   }
 
+  /*  useEffect(() => {
+    console.log(`startTime - ${state.startTime}`);
+    console.log(`running- ${state.running}`);
+  }, [state.startTime, state.running]);*/
+
+  //#region useEffect experimental
+  // lifecycle -> 1.mount 2.update(=== unmount + mount) ... 3.unmount
+  // [] is for the 1 and 3 especially, the funtion returned is going to be called only for the last unmount. :::... 이거 맞아<???>
+  // not for the unmounts by the update phase.
+  useEffect(() => {
+    async function getStatesFromIndexedDB() {
+      let running = await retrieveState<boolean>(false, "running", "Timer");
+      let startTime = await retrieveState<number>(0, "startTime", "Timer");
+      let pause = await retrieveState<pauseType>(
+        { totalLength: 0, record: [] },
+        "pause",
+        "Timer"
+      );
+      dispatch({
+        type: ACTION.CONTINUE,
+        payload: { running, startTime, pause },
+      });
+      // setRemainingDuration(
+      //   Math.floor(
+      //     (duration * 1000 - (Date.now() - startTime - pause.totalLength)) /
+      //       1000
+      //   )
+      // );
+    }
+
+    getStatesFromIndexedDB();
+    return () => {
+      if (isOnCycle) {
+      }
+    };
+  }, []);
+  //#endregion
+
   // UPGRADE: if I want my data about my pomo session I was doing to be persistent between reloading page,
   //         I think I need to store the pomo session data to the indexed db I guess.
+  //* This effect function is called every update because of the remainingDuration in the dep array.
   useEffect(() => {
-    // console.log(repetitionCount);
-    console.log(`repetitionCount - ${repetitionCount}`);
-    // Booleans
+    // console.log(`repetitionCount - ${repetitionCount}`);
+    // console.log(`isOnCycle - ${isOnCycle}`);
 
     //TODO: The name of this variable is a little bit weird since ACTION.RESET deos not reset the remainingDuration.
     const isAfterReset = remainingDuration === 0 && state.startTime === 0;
     const isEnd = remainingDuration === 0 && state.startTime !== 0;
 
+    //* 0. remainingDuration !== 0 && state.startTime !== 0 && state.running === false
+    //* to log the pause object
+    if (
+      remainingDuration !== 0 &&
+      state.startTime !== 0 &&
+      state.running === false
+    ) {
+      console.log(state.pause);
+    }
+
+    //* 1. remainingDuration === 0 && state.startTime === 0 && state.running === false
     if (isAfterReset) {
+      // running === false
       setRemainingDuration(duration); // setting remaining duration to the one newly passed in from parent component.
     }
 
-    if (state.startTime === 0 && remainingDuration !== 0) {
+    //* 2. remainingDuration !== 0 && state.startTime === 0 && state.running === false
+    //* This is right after this component is mounted.
+    if (remainingDuration !== 0 && state.startTime === 0) {
+      // console.log(`isRunning - ${state.running}`); // running === false
       setRemainingDuration(duration);
     }
+    // console.log(`remainingDuration - ${remainingDuration}`);
 
-    // console.log(remainingDuration);
-    console.log(`remainingDuration - ${remainingDuration}`);
+    //* 3. remainingDuration !== 0 && state.startTime !== 0 && state.running === true
     if (state.running && remainingDuration !== 0) {
+      //? 당연히 startTime !== 0 일 것 같아서 확인 안해봄.
       // running
       const id = setInterval(() => {
         setRemainingDuration(
           Math.floor(
             //seconds to miliseconds
             (duration * 1000 -
-              (Date.now() - state.startTime - state.pause!.totalLength)) /
+              // (Date.now() - state.startTime - state.pause!.totalLength)) / // -> is paired with reducers.ts line 4
+              (Date.now() - state.startTime - state.pause.totalLength)) /
               1000
           )
         );
@@ -115,16 +211,26 @@ export function Timer({
 
       return () => {
         clearInterval(id);
+        // console.log(`isOnCycle - ${isOnCycle}`);
+        // console.log(`duration - ${duration}`);
+        console.log(`startTime - ${state.startTime}`);
       };
       // state.startTime is not zero yet.
-    } else if (isEnd) {
-      console.log(state);
 
-      console.log(`Focus session is complete from ${Timer.name}`);
-      //? The changes of the states in the parent component
+      //* 4. remainingDuration === 0 && state.startTime !== 0 && state.running === true
+    } else if (isEnd) {
+      //? 당연히 startTime !== 0 일 것 같아서 확인 안해봄.
+      // console.log(state);
+
+      // console.log(`Focus session is complete from ${Timer.name}`);
+      // The changes of the states in the parent component
       setRepetitionCount(repetitionCount + 1);
+      SW?.postMessage({
+        component: "PatternTimer",
+        stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
+      });
       next(repetitionCount + 1, state.startTime);
-      //? The changes of the states in this component
+      // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
     }
   }, [remainingDuration, duration, state.running]);
@@ -136,7 +242,6 @@ export function Timer({
     </h2>
   );
 
-  //Todo: 타이머 카운트 다운 시작 전에 처음 설정해놓은 duration or 카운트 다운 다 끝난 후 0:00 맞냐?... 오래전이라 기억이..
   let twoEndsOfDuration = (
     <h2>
       {!!(duration / 60) === false ? "Loading data" : duration / 60 + ":00"}
@@ -169,10 +274,29 @@ export function Timer({
           <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
             {state.running && remainingDuration !== 0 ? "Pause" : "Start"}
           </Button>
-
           <Button handleClick={endTimer}>End</Button>
         </FlexBox>
       </GridItem>
     </Grid>
   );
 }
+
+//#region 작동하는 것
+// function init(initialState: TimerState) {
+//   let running = retrieveState<boolean>(false, "running", "Timer");
+//   let startTime = retrieveState<number>(0, "startTime", "Timer");
+//   return {
+//     ...initialState,
+//     running,
+//     startTime,
+//   };
+// }
+//#endregion
+
+type pauseType = {
+  totalLength: number;
+  record: {
+    start: number;
+    end: number | undefined;
+  }[];
+};

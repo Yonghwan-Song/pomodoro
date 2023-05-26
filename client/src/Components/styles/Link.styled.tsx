@@ -8,9 +8,22 @@ type LinkkProps = LinkProps & {
   hover?: boolean;
 };
 
-const Linkk = ({ children, className, to, onClick, ...props }: LinkkProps) => {
+const Linkk = ({
+  children,
+  className,
+  to,
+  onClick,
+  state,
+  ...props
+}: LinkkProps) => {
   return (
-    <Link className={className} to={to} onClick={onClick}>
+    <Link
+      className={className}
+      to={to}
+      onClick={onClick}
+      state={state}
+      {...props}
+    >
       {children}
     </Link>
   );

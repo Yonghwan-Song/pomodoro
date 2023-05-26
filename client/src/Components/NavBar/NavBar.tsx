@@ -54,14 +54,15 @@ function Navbar() {
 
   function handleLinkClick(e: React.SyntheticEvent) {
     // function handleLinkClick(e: React.MouseEvent) {
-    if (localStorage.getItem("isTimerRunning") === "yes") {
-      e.preventDefault();
-      alert(
-        "Timer is Running. Please end the timer or finish it before navigating to other pages"
-      );
-    } else {
-      toggleSideBar();
-    }
+    // if (localStorage.getItem("isTimerRunning") === "yes") {
+    //   e.preventDefault();
+    //   alert(
+    //     "Timer is Running. Please end the timer or finish it before navigating to other pages"
+    //   );
+    // } else {
+    //   toggleSideBar();
+    // }
+    toggleSideBar();
   }
 
   function handleLinkClick2(e: React.SyntheticEvent) {

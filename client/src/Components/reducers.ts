@@ -1,22 +1,19 @@
-// type elementOfRecordArray = {
-//   start: number;
-//   end: number;
-// };
-// interface elementOfRecordArray {
-//   start: number;
-//   end: number;
-// }
+import { SW } from "..";
 
-type TimerState = {
+export type TimerState = {
   running: boolean;
   startTime: number;
-  pause?: {
+  // pause?: {
+  //   totalLength: number;
+  //   record: { start: number; end: number | undefined }[];
+  // };
+  pause: {
     totalLength: number;
     record: { start: number; end: number | undefined }[];
   };
 };
 
-type TimerAction = UpdateAction | ResetAction;
+export type TimerAction = UpdateAction | ResetAction | ContinueAction;
 type UpdateAction = {
   type: Update;
   payload: number;
@@ -25,8 +22,14 @@ type UpdateAction = {
 type ResetAction = {
   type: Reset;
 };
+
+type ContinueAction = {
+  type: Continue;
+  payload: TimerState;
+};
 type Update = "start" | "pause" | "resume";
 type Reset = "reset";
+type Continue = "continue";
 
 export function reducerTimer(
   state: TimerState,
@@ -35,6 +38,16 @@ export function reducerTimer(
   switch (action.type) {
     case "start":
       localStorage.setItem("isTimerRunning", "yes");
+      localStorage.setItem("startTime", action.payload!.toString());
+      SW?.postMessage({
+        component: "Timer",
+        stateArr: [
+          { name: "startTime", value: action.payload },
+          { name: "running", value: true },
+          { name: "pause", value: { totalLength: 0, record: [] } },
+        ],
+      });
+
       return {
         ...state,
         running: true,
@@ -43,6 +56,22 @@ export function reducerTimer(
       };
 
     case "pause":
+      SW?.postMessage({
+        component: "Timer",
+        stateArr: [
+          { name: "running", value: false },
+          {
+            name: "pause",
+            value: {
+              ...state.pause,
+              record: [
+                ...state.pause!.record,
+                { start: action.payload, end: undefined },
+              ],
+            },
+          },
+        ],
+      });
       return {
         ...state,
         running: false,
@@ -57,6 +86,31 @@ export function reducerTimer(
 
     case "resume":
       localStorage.setItem("isTimerRunning", "yes");
+      SW?.postMessage({
+        component: "Timer",
+        stateArr: [
+          { name: "running", value: true },
+          {
+            name: "pause",
+            value: {
+              record: state.pause!.record.map((obj) => {
+                if (obj.end === undefined) {
+                  return {
+                    ...obj,
+                    end: action.payload,
+                  };
+                } else {
+                  return obj;
+                }
+              }),
+              totalLength:
+                state.pause!.totalLength +
+                (action.payload! -
+                  state.pause!.record[state.pause!.record.length - 1].start),
+            },
+          },
+        ],
+      });
       return {
         ...state,
         running: true,
@@ -80,11 +134,25 @@ export function reducerTimer(
 
     case "reset":
       localStorage.setItem("isTimerRunning", "no");
+      SW?.postMessage({
+        component: "Timer",
+        stateArr: [
+          { name: "startTime", value: 0 },
+          { name: "running", value: false },
+          { name: "pause", value: { totalLength: 0, record: [] } },
+        ],
+      });
       return {
         running: false,
         startTime: 0,
         pause: { totalLength: 0, record: [] },
       };
+
+    case "continue":
+      return {
+        ...action.payload,
+      };
+
     default:
       throw new Error();
   }
@@ -95,9 +163,11 @@ export const ACTION: {
   PAUSE: Update;
   RESUME: Update;
   RESET: Reset;
+  CONTINUE: Continue;
 } = {
   START: "start",
   PAUSE: "pause",
   RESUME: "resume",
   RESET: "reset",
+  CONTINUE: "continue",
 };

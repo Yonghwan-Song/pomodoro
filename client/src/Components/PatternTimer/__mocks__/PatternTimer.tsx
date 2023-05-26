@@ -5,6 +5,7 @@ import { UserInfo } from "../../../Context/UserContext";
 export function PatternTimer() {
   const [duration, setDuration] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0); // How many times the timer used by this Pattern timer.
+  const [isOnCycle, setIsOnCycle] = useState<boolean>(false);
   const { pomoSetting } = UserInfo()!;
 
   let { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
@@ -63,6 +64,8 @@ export function PatternTimer() {
         next={next}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}
+        isOnCycle={isOnCycle}
+        setIsOnCycle={setIsOnCycle}
       />
     </>
   );
