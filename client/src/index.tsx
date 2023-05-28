@@ -52,7 +52,6 @@ root.render(
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      // .register("/service-worker.js", {
       .register("/sw.js", {
         scope: "/",
         type: "module", //TODO: 이거 맞아?...
@@ -70,17 +69,40 @@ function registerServiceWorker() {
       );
 
     navigator.serviceWorker.addEventListener("controllerchange", async () => {
-      //? async???
       SW = navigator.serviceWorker.controller;
     });
-    //TODO: add a message event listener.
+
+    navigator.serviceWorker.addEventListener("message", ({ data }) => {
+      console.log(`TimerRelatedStates are received`);
+      console.log(data);
+
+      TimerRelatedStates = data.reduce(
+        (acc: Accumulator, cur: StateFromIDB) => {
+          return { ...acc, [cur.name]: cur.value };
+        },
+        {}
+      );
+
+      console.log(TimerRelatedStates);
+    });
   } else {
     console.log("This browser does not support Service Workers.");
   }
 }
 
+interface Accumulator {
+  [index: string]: number | boolean | object;
+}
+type StateFromIDB = {
+  name: string;
+  value: number | boolean | object;
+  component: string;
+};
+
 export let SW: ServiceWorker | null = null;
 export let DB: IDBDatabase | null = null;
+export let TimerRelatedStates = null;
+
 let objectStores: IDBObjectStore[] = [];
 
 // async function openIDB2() {

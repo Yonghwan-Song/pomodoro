@@ -4,6 +4,7 @@ import { AuthContextProvider } from "./Context/AuthContext";
 import { UserContextProvider } from "./Context/UserContext";
 import Navbar from "./Components/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
+import { SW } from ".";
 
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
@@ -27,6 +28,9 @@ const theme = {
 
 function App() {
   useEffect(() => {
+    console.log("APP is being mounted");
+
+    SW?.postMessage("sendDataToIndex");
     function onUnload() {
       //TODO: 이거 uncomment해도 문제 없는건가?
       // localStorage.clear();

@@ -49,52 +49,47 @@ self.addEventListener("activate", (ev) => {
 self.addEventListener("message", (ev) => {
   console.log("sw - received a message");
   console.log({ ev });
-  if ("component" in ev.data) {
+  if (typeof ev.data === "object" && ev.data !== null) {
+    if ("component" in ev.data) {
+      if (DB) {
+        saveStates(ev.data);
+      } else {
+        openDB(() => {
+          saveStates(ev.data);
+        });
+      }
+    }
+  } else if (ev.data === "sendDataToIndex") {
     if (DB) {
-      saveStates(ev.data);
+      sendStates(ev.source.id);
     } else {
       openDB(() => {
-        saveStates(ev.data);
+        sendStates(ev.source.id);
       });
     }
   }
 });
 
-function openDB(callback) {
-  let req = indexedDB.open("timerRelatedDB", idbVersion);
-  req.onerror = (err) => {
+async function sendStates(clientId) {
+  // const sendStates = async (clientId) => {
+  let client = await self.clients.get(clientId);
+  let transaction = DB.transaction("stateStore", "readonly");
+  transaction.onerror = (err) => {
     console.warn(err);
-    DB = null;
   };
-  req.onupgradeneeded = (ev) => {
-    DB = req.result;
-    let oldVersion = ev.oldVersion;
-    let newVersion = ev.newVersion || DB.version;
-    console.log("DB updated from version", oldVersion, "to", newVersion);
 
-    console.log("upgrade", DB);
-    if (!DB.objectStoreNames.contains("stateStore")) {
-      let stateStore = DB.createObjectStore("stateStore", {
-        keyPath: ["name", "component"],
-      });
-      objectStores.push(stateStore);
-    }
+  transaction.oncomplete = (ev) => {
+    console.log("transaction has completed");
   };
+  let store = transaction.objectStore("stateStore");
+  let req = store.getAll();
 
   req.onsuccess = (ev) => {
-    // every time the connection to the argument db is successful.
-    DB = req.result;
-    console.log("DB connection has succeeded");
-    // console.log("ObjectStores", objectStores);
-    if (callback) {
-      callback();
-    }
-
-    DB.onversionchange = (ev) => {
-      DB && DB.close();
-      console.log("Database version has changed.", { versionchange: ev });
-      openDB();
-    };
+    console.log("getting all objects has succeeded");
+    client.postMessage(ev.target.result);
+  };
+  req.onerror = (err) => {
+    console.warn(err);
   };
 }
 //data is like below.
@@ -135,4 +130,42 @@ function saveStates(data) {
   });
 
   // store.
+}
+
+function openDB(callback) {
+  let req = indexedDB.open("timerRelatedDB", idbVersion);
+  req.onerror = (err) => {
+    console.warn(err);
+    DB = null;
+  };
+  req.onupgradeneeded = (ev) => {
+    DB = req.result;
+    let oldVersion = ev.oldVersion;
+    let newVersion = ev.newVersion || DB.version;
+    console.log("DB updated from version", oldVersion, "to", newVersion);
+
+    console.log("upgrade", DB);
+    if (!DB.objectStoreNames.contains("stateStore")) {
+      let stateStore = DB.createObjectStore("stateStore", {
+        keyPath: ["name", "component"],
+      });
+      objectStores.push(stateStore);
+    }
+  };
+
+  req.onsuccess = (ev) => {
+    // every time the connection to the argument db is successful.
+    DB = req.result;
+    console.log("DB connection has succeeded");
+    // console.log("ObjectStores", objectStores);
+    if (callback) {
+      callback();
+    }
+
+    DB.onversionchange = (ev) => {
+      DB && DB.close();
+      console.log("Database version has changed.", { versionchange: ev });
+      openDB();
+    };
+  };
 }
