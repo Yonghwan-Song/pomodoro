@@ -16,8 +16,7 @@ import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
-import { retrieveState } from "../..";
-import { SW } from "../..";
+import { SW, TimerRelatedStates } from "../..";
 
 /**
  *
@@ -50,28 +49,84 @@ export function Timer({
 }: TimerProps) {
   //! idea: When a cycle is on meaning one cylce is not done yet, initial state is set from the prop
   //! otherwise: give
-  const [state, dispatch] = useReducer(reducer, {
-    running: false,
-    startTime: 0,
-    pause: { totalLength: 0, record: [] }, // 이거는 당장은 필요없으니까 걍.. indexedDB에 넣지 말자.
-  });
-  const [remainingDuration, setRemainingDuration] = useState(duration || 0);
+  //#region Experiment with index.tsx - failed due to {}
+  // const [state, dispatch] = useReducer(reducer, {
+  //   running: TimerRelatedStates!.running,
+  //   startTime: TimerRelatedStates!.startTime,
+  //   pause: TimerRelatedStates!.pause,
+  // });
+  // const [remainingDuration, setRemainingDuration] = useState(() => {
+  //   return Math.floor(
+  //     (TimerRelatedStates!.duration * 1000 -
+  //       (Date.now() -
+  //         TimerRelatedStates!.startTime -
+  //         TimerRelatedStates!.pause.totalLength)) /
+  //       1000
+  //   );
+  // });
+  //#endregion
+  //#region Original
+  // const [state, dispatch] = useReducer(reducer, {
+  //   running: false,
+  //   startTime: 0,
+  //   pause: { totalLength: 0, record: [] },
+  // });
+  // const [remainingDuration, setRemainingDuration] = useState(duration || 0);
+  //#endregion
 
   //#region for a lazy initialization
   //1. I === Omit<TimerState, "running" | "startTime">
   //2. ReducerState<R> === TimerState :::...
   //3. R === tpyeof reducer
   //4. type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
-  // const [state, dispatch] = useReducer<
-  //   (state: TimerState, action: TimerAction) => TimerState,
-  //   Omit<TimerState, "running" | "startTime">
-  // >(
-  //   reducer,
-  //   {
-  //     pause: { totalLength: 0, record: [] },
-  //   },
-  //   init
-  // );
+  const [state, dispatch] = useReducer<
+    (state: TimerState, action: TimerAction) => TimerState,
+    TimerState
+  >(
+    reducer,
+    {
+      running: false,
+      startTime: 0,
+      pause: { totalLength: 0, record: [] },
+    },
+    init
+  );
+  const [remainingDuration, setRemainingDuration] = useState(() => {
+    let retVal = 0,
+      timePassed = 0,
+      timeCountedDown = 0;
+
+    if (
+      TimerRelatedStates !== null &&
+      Object.keys(TimerRelatedStates).length !== 0
+    ) {
+      let durationInSeconds = TimerRelatedStates.duration * 60;
+
+      if (TimerRelatedStates.running) {
+        timePassed = Date.now() - TimerRelatedStates.startTime;
+        timeCountedDown = timePassed - TimerRelatedStates.pause.totalLength;
+        retVal = Math.floor(
+          (durationInSeconds * 1000 - timeCountedDown) / 1000
+        );
+      } else if (TimerRelatedStates.startTime === 0) {
+        //running === false && startTime === 0 -> timer has not yet started.
+        retVal = durationInSeconds;
+      } else {
+        //running === false && startTime !== 0 -> timer has not paused.
+        timePassed =
+          TimerRelatedStates.pause.record[
+            TimerRelatedStates.pause.record.length - 1
+          ].start - TimerRelatedStates.startTime;
+        timeCountedDown = timePassed - TimerRelatedStates.pause.totalLength;
+        retVal = Math.floor(
+          (durationInSeconds * 1000 - timeCountedDown) / 1000
+        );
+      }
+    }
+
+    console.log(`remainingDuration initalizer - ${retVal}`);
+    return retVal;
+  });
   //#endregion
 
   let seconds = 0;
@@ -130,27 +185,30 @@ export function Timer({
   // [] is for the 1 and 3 especially, the funtion returned is going to be called only for the last unmount. :::... 이거 맞아<???>
   // not for the unmounts by the update phase.
   useEffect(() => {
-    async function getStatesFromIndexedDB() {
-      let running = await retrieveState<boolean>(false, "running", "Timer");
-      let startTime = await retrieveState<number>(0, "startTime", "Timer");
-      let pause = await retrieveState<pauseType>(
-        { totalLength: 0, record: [] },
-        "pause",
-        "Timer"
-      );
-      dispatch({
-        type: ACTION.CONTINUE,
-        payload: { running, startTime, pause },
-      });
-      // setRemainingDuration(
-      //   Math.floor(
-      //     (duration * 1000 - (Date.now() - startTime - pause.totalLength)) /
-      //       1000
-      //   )
-      // );
-    }
+    // async function getStatesFromIndexedDB() {
+    //   let running = await retrieveState<boolean>(false, "running", "Timer");
+    //   let startTime = await retrieveState<number>(0, "startTime", "Timer");
+    //   let pause = await retrieveState<PauseType>(
+    //     { totalLength: 0, record: [] },
+    //     "pause",
+    //     "Timer"
+    //   );
+    //   dispatch({
+    //     type: ACTION.CONTINUE,
+    //     payload: { running, startTime, pause },
+    //   });
+    //   // setRemainingDuration(
+    //   //   Math.floor(
+    //   //     (duration * 1000 - (Date.now() - startTime - pause.totalLength)) /
+    //   //       1000
+    //   //   )
+    //   // );
+    // }
 
-    getStatesFromIndexedDB();
+    // getStatesFromIndexedDB();
+
+    console.log(`duration - ${duration}`);
+    console.log(`remainingDuration- ${remainingDuration}`);
     return () => {
       if (isOnCycle) {
       }
@@ -242,6 +300,7 @@ export function Timer({
     </h2>
   );
 
+  //TODO: 뭔말인지 모르겠어. twoEnds -> startAndEndOfDuration 이런걸로 바꾸던가 해야 할 듯.
   let twoEndsOfDuration = (
     <h2>
       {!!(duration / 60) === false ? "Loading data" : duration / 60 + ":00"}
@@ -265,7 +324,8 @@ export function Timer({
 
       <GridItem>
         <CircularProgressBar
-          progress={duration === 0 ? 0 : 1 - remainingDuration / duration}
+          // progress={duration === 0 ? 0 : 1 - remainingDuration / duration}
+          progress={1 - remainingDuration / duration}
         />
       </GridItem>
 
@@ -282,21 +342,18 @@ export function Timer({
 }
 
 //#region 작동하는 것
-// function init(initialState: TimerState) {
-//   let running = retrieveState<boolean>(false, "running", "Timer");
-//   let startTime = retrieveState<number>(0, "startTime", "Timer");
-//   return {
-//     ...initialState,
-//     running,
-//     startTime,
-//   };
-// }
+function init(initialState: TimerState): TimerState {
+  let retVal = initialState;
+  if (
+    TimerRelatedStates !== null &&
+    Object.keys(TimerRelatedStates).length !== 0
+  ) {
+    retVal = {
+      running: TimerRelatedStates.running,
+      startTime: TimerRelatedStates.startTime,
+      pause: TimerRelatedStates.pause,
+    };
+  }
+  return retVal;
+}
 //#endregion
-
-type pauseType = {
-  totalLength: number;
-  record: {
-    start: number;
-    end: number | undefined;
-  }[];
-};

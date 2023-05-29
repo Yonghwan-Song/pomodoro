@@ -59,6 +59,15 @@ self.addEventListener("message", (ev) => {
         });
       }
     }
+    if ("newPomoSetting" in ev.data) {
+      if (DB) {
+        emptyStateStore(ev.source.id);
+      } else {
+        openDB(() => {
+          emptyStateStore(ev.source.id);
+        });
+      }
+    }
   } else if (ev.data === "sendDataToIndex") {
     if (DB) {
       sendStates(ev.source.id);
@@ -69,6 +78,27 @@ self.addEventListener("message", (ev) => {
     }
   }
 });
+
+async function emptyStateStore(clientId) {
+  let transaction = DB.transaction("stateStore", "readwrite");
+  transaction.onerror = (err) => {
+    console.warn(err);
+  };
+  transaction.oncomplete = (ev) => {
+    console.log("transaction has completed");
+  };
+  let store = transaction.objectStore("stateStore");
+  let req = store.clear();
+  req.onsuccess = (ev) => {
+    console.log("stateStore has been cleared");
+  };
+  req.onerror = (err) => {
+    console.warn(err);
+  };
+
+  let client = await self.clients.get(clientId);
+  client.postMessage([]);
+}
 
 async function sendStates(clientId) {
   // const sendStates = async (clientId) => {
@@ -86,7 +116,10 @@ async function sendStates(clientId) {
 
   req.onsuccess = (ev) => {
     console.log("getting all objects has succeeded");
-    client.postMessage(ev.target.result);
+    let filtered = ev.target.result.filter((ele) => {
+      return ele.name !== "pomoSetting";
+    });
+    client.postMessage(filtered);
   };
   req.onerror = (err) => {
     console.warn(err);
@@ -113,9 +146,6 @@ function saveStates(data) {
   let stateStore = transaction.objectStore("stateStore");
 
   console.log(data);
-  // for (let i = 0; i < data.stateArr.length; i++) {
-  //   console.log(data.stateArr[i]);
-  // }
 
   let component = data.component;
   Array.from(data.stateArr).forEach((obj) => {
@@ -128,8 +158,6 @@ function saveStates(data) {
       console.warn(err);
     };
   });
-
-  // store.
 }
 
 function openDB(callback) {

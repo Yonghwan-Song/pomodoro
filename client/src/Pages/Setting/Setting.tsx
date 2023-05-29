@@ -16,6 +16,7 @@ import {
   User,
 } from "firebase/auth";
 import styles from "./Setting.module.css";
+import { SW } from "../..";
 
 function Setting() {
   const { user } = UserAuth()!;
@@ -59,9 +60,12 @@ function Setting() {
   }
 
   function handleSubmit(event: { preventDefault: () => void }) {
+    event.preventDefault();
+    SW?.postMessage({
+      newPomoSetting: settingInputs,
+    });
     updatePomoSetting(user!, settingInputs);
     setPomoSetting(settingInputs);
-    event.preventDefault();
   }
 
   useEffect(() => {

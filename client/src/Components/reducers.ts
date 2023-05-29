@@ -1,5 +1,13 @@
 import { SW } from "..";
 
+export type PauseType = {
+  totalLength: number;
+  record: {
+    start: number;
+    end: number | undefined;
+  }[];
+};
+
 export type TimerState = {
   running: boolean;
   startTime: number;

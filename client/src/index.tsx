@@ -6,7 +6,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Main, Signin, Setting, Statistics } from "./Pages/index";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import Protected from "./Components/Protected";
-import { openDB, wrap, unwrap } from "idb";
+import { wrap } from "idb";
+import { TimerState } from "./Components/reducers";
 
 document.addEventListener("DOMContentLoaded", () => {
   registerServiceWorker();
@@ -76,6 +77,13 @@ function registerServiceWorker() {
       console.log(`TimerRelatedStates are received`);
       console.log(data);
 
+      // issue
+      // 1. a user navigates from the main to settings page
+      // 2. This variable is assigned an object from indexedDB as soon as the user leaves the main page
+      // 3. the user sets a new pomoSetting from the settings page
+      // 4. objectStore is cleared
+      // 5. the user comes back to the main page, and this TimerRelatedStates remains the same
+      // 6. It prevents the user from starting a new cycle with the new pomoSetting.
       TimerRelatedStates = data.reduce(
         (acc: Accumulator, cur: StateFromIDB) => {
           return { ...acc, [cur.name]: cur.value };
@@ -98,20 +106,55 @@ type StateFromIDB = {
   value: number | boolean | object;
   component: string;
 };
+// type StatesType = {
+//   duration: number;
+//   pause: PauseType;
+//   pomoSetting: PomoSettingType;
+//   repetitionCount: number;
+//   running : boolean;
+//   startTime: number;
+// };
+//todo: filter out the fucking pomoSetting
+// type StatesType = TimerState &
+//   PomoSettingType & { duration: number; repetitionCount: number };
+type StatesType = TimerState & { duration: number; repetitionCount: number };
 
 export let SW: ServiceWorker | null = null;
 export let DB: IDBDatabase | null = null;
-export let TimerRelatedStates = null;
+export let TimerRelatedStates: StatesType | null = null;
 
 let objectStores: IDBObjectStore[] = [];
 
-// async function openIDB2() {
-//   DB = await openDB("timerRelatedDB", {
-//     upgrade(db, oldVersion, newVersion, transaction, event) {},
-//   });
-// }
+export function clearStateStore() {
+  if (!DB) {
+    openIDB(clearTheStore);
+  } else {
+    clearTheStore();
+  }
+  function clearTheStore() {
+    //? 이렇게 해도 되는거 맞아?
+    // let wrapped = wrap(DB!);
+    // const store = wrapped.transaction("stateStore").objectStore("stateStore");
+    // store.clear();
+    let transaction = DB!.transaction("stateStore");
+    transaction.oncomplete = (ev) => {
+      console.log("transaction of clearing the stateStore has completed");
+    };
+    transaction.onerror = (err) => {
+      console.warn(err);
+    };
 
-function openIDB() {
+    let store = transaction.objectStore("stateStore");
+    let req = store.clear();
+    req.onsuccess = (ev) => {
+      console.log(`${req.result} should be undefined`);
+    };
+    req.onerror = (err) => {
+      console.warn(err);
+    };
+  }
+}
+function openIDB(callback?: () => void) {
   let req = window.indexedDB.open("timerRelatedDB");
   req.onerror = (err) => {
     console.warn(err);
@@ -136,6 +179,10 @@ function openIDB() {
     // every time the connection to the argument db is successful.
     DB = req!.result;
     console.log("DB connection has succeeded");
+
+    if (callback) {
+      callback();
+    }
 
     DB.onversionchange = (ev) => {
       DB && DB.close();

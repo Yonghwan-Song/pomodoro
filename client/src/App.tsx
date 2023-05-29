@@ -30,10 +30,32 @@ function App() {
   useEffect(() => {
     console.log("APP is being mounted");
 
+    //#region notification
+    if ("Notification" in window) {
+      console.log("The Notification property exists in the window namespace");
+      if (Notification.permission === "granted") {
+        console.log("Permission is granted");
+      } else {
+        Notification.requestPermission()
+          .then(function (result) {
+            console.log("result:", result);
+            if (Notification.permission === "granted") {
+              console.log("Permission is granted");
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+    } else {
+      console.log(
+        "The Notification property does not exist in the window namespace"
+      );
+    }
+    //#endregion
+
     SW?.postMessage("sendDataToIndex");
     function onUnload() {
-      //TODO: 이거 uncomment해도 문제 없는건가?
-      // localStorage.clear();
       localStorage.removeItem("isTimerRunning");
     }
     window.addEventListener("unload", onUnload);
