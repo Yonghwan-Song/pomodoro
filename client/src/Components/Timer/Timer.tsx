@@ -100,24 +100,23 @@ export function Timer({
       TimerRelatedStates !== null &&
       Object.keys(TimerRelatedStates).length !== 0
     ) {
-      let durationInSeconds = TimerRelatedStates.duration * 60;
+      let { duration, pause, running, startTime } = TimerRelatedStates;
 
-      if (TimerRelatedStates.running) {
-        timePassed = Date.now() - TimerRelatedStates.startTime;
-        timeCountedDown = timePassed - TimerRelatedStates.pause.totalLength;
+      let durationInSeconds = duration * 60;
+
+      if (running) {
+        timePassed = Date.now() - startTime;
+        timeCountedDown = timePassed - pause.totalLength;
         retVal = Math.floor(
           (durationInSeconds * 1000 - timeCountedDown) / 1000
         );
-      } else if (TimerRelatedStates.startTime === 0) {
+      } else if (startTime === 0) {
         //running === false && startTime === 0 -> timer has not yet started.
         retVal = durationInSeconds;
       } else {
         //running === false && startTime !== 0 -> timer has not paused.
-        timePassed =
-          TimerRelatedStates.pause.record[
-            TimerRelatedStates.pause.record.length - 1
-          ].start - TimerRelatedStates.startTime;
-        timeCountedDown = timePassed - TimerRelatedStates.pause.totalLength;
+        timePassed = pause.record[pause.record.length - 1].start - startTime;
+        timeCountedDown = timePassed - pause.totalLength;
         retVal = Math.floor(
           (durationInSeconds * 1000 - timeCountedDown) / 1000
         );
@@ -220,7 +219,9 @@ export function Timer({
   //         I think I need to store the pomo session data to the indexed db I guess.
   //* This effect function is called every update because of the remainingDuration in the dep array.
   useEffect(() => {
-    // console.log(`repetitionCount - ${repetitionCount}`);
+    console.log(`repetitionCount - ${repetitionCount}`);
+    console.log(`duration- ${duration}`);
+    console.log(`remainingDuration - ${remainingDuration}`);
     // console.log(`isOnCycle - ${isOnCycle}`);
 
     //TODO: The name of this variable is a little bit weird since ACTION.RESET deos not reset the remainingDuration.
@@ -324,8 +325,8 @@ export function Timer({
 
       <GridItem>
         <CircularProgressBar
-          // progress={duration === 0 ? 0 : 1 - remainingDuration / duration}
-          progress={1 - remainingDuration / duration}
+          progress={duration === 0 ? 0 : 1 - remainingDuration / duration}
+          // progress={1 - remainingDuration / duration}
         />
       </GridItem>
 

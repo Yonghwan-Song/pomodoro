@@ -53,12 +53,15 @@ root.render(
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      .register("/sw.js", {
+      // .register("/sw.js", {
+      .register("/sw2.js", {
         scope: "/",
         type: "module", //TODO: 이거 맞아?...
       })
       .then(
         (registration) => {
+          console.log("registration", registration);
+
           SW =
             registration.installing ||
             registration.waiting ||
@@ -74,24 +77,23 @@ function registerServiceWorker() {
     });
 
     navigator.serviceWorker.addEventListener("message", ({ data }) => {
-      console.log(`TimerRelatedStates are received`);
-      console.log(data);
-
-      // issue
-      // 1. a user navigates from the main to settings page
-      // 2. This variable is assigned an object from indexedDB as soon as the user leaves the main page
-      // 3. the user sets a new pomoSetting from the settings page
-      // 4. objectStore is cleared
-      // 5. the user comes back to the main page, and this TimerRelatedStates remains the same
-      // 6. It prevents the user from starting a new cycle with the new pomoSetting.
-      TimerRelatedStates = data.reduce(
-        (acc: Accumulator, cur: StateFromIDB) => {
-          return { ...acc, [cur.name]: cur.value };
-        },
-        {}
-      );
-
-      console.log(TimerRelatedStates);
+      if ("idOfSetInterval" in data) {
+        localStorage.setItem(
+          "idOfSetInterval",
+          data.idOfSetInterval.toString()
+        );
+      } else {
+        console.log(`TimerRelatedStates are received`);
+        console.log(data);
+        // issue
+        // 1. a user navigates from the main to settings page
+        // 2. This variable is assigned an object from indexedDB as soon as the user leaves the main page
+        // 3. the user sets a new pomoSetting from the settings page
+        // 4. objectStore is cleared
+        // 5. the user comes back to the main page, and this TimerRelatedStates remains the same
+        // 6. It prevents the user from starting a new cycle with the new pomoSetting.
+        TimerRelatedStates = data;
+      }
     });
   } else {
     console.log("This browser does not support Service Workers.");

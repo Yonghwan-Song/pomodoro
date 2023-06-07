@@ -102,7 +102,7 @@ export function PatternTimer({
         stateArr: [{ name: "duration", value: longBreakDuration }],
       });
     } else if (howManyCountdown === numOfPomo! * 2) {
-      //! This is when the long break is done meaning that a cycle of pomos, short break, and long break is done.
+      //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
       console.log("one cycle is done");
       //cycle completion notification
       notify("nextCycle");
@@ -172,6 +172,15 @@ export function PatternTimer({
     //! 그런데 그걸 여기서 하게되면 삑이 난다는것.
   }, []);
 
+  useEffect(() => {
+    console.log(pomoDuration);
+    console.log(shortBreakDuration);
+    console.log(longBreakDuration);
+    console.log(numOfPomo);
+
+    // setDuration(pomoDuration);
+  }, [pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo]);
+
   return (
     <>
       <Timer
@@ -201,6 +210,14 @@ async function recordPomo(user: User, duration: number, startTime: number) {
   try {
     let LocaleDateString = new Date(startTime).toLocaleDateString();
     const idToken = await user.getIdToken();
+    console.log(
+      JSON.stringify({
+        userEmail: user.email,
+        duration,
+        startTime,
+        LocaleDateString,
+      })
+    );
     const response = await axios.post(
       CONSTANTS.URLs.POMO,
       {
@@ -231,10 +248,10 @@ function notify(which: string) {
       body = "time to focus";
       break;
     case "shortBreak":
-      body = "time to taks a short break";
+      body = "time to take a short break";
       break;
     case "longBreak":
-      body = "time to taks a long break";
+      body = "time to take a long break";
       break;
     case "nextCycle":
       body = "time to do the next cycle of pomos";
