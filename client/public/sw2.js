@@ -13722,10 +13722,10 @@
   //#region URLs
 
   var URLs = {
-    USER: "http://localhost:4444/users",
-    POMO: "http://localhost:4444/pomos" // USER: "https://pomodoro-apis.onrender.com/users",
-    // POMO: "https://pomodoro-apis.onrender.com/pomos",
-
+    // USER: "http://localhost:4444/users",
+    // POMO: "http://localhost:4444/pomos",
+    USER: "https://pomodoro-apis.onrender.com/users",
+    POMO: "https://pomodoro-apis.onrender.com/pomos"
   }; //#endregion
 
   var _excluded = ["pomoSetting"];
