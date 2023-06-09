@@ -1,4 +1,4 @@
-<!-- # [Pomodoro Timer Web App](https://pomodoro-j7cd41zkf-yhs.vercel.app)
+<!-- # [Pomodoro Timer Web App](https://pomodoro-git-main-yhs.vercel.app)
 
 ![pomo-timer](https://user-images.githubusercontent.com/72689705/200711638-eabcbf53-c4cf-4712-9c1d-d0a5883ee0fa.png)
 
@@ -16,7 +16,7 @@ Users can see how they can get stat about their focus duration using demo data.
 Users can create and delete the demo data in the setting.
 ![demo-data](https://user-images.githubusercontent.com/72689705/200711204-247db8a7-825e-4bb9-8451-f33ee215fc7e.gif) -->
 
-# [Pomodoro Timer](https://pomodoro-j7cd41zkf-yhs.vercel.app) - web application
+# [Pomodoro Timer](https://pomodoro-git-main-yhs.vercel.app) - web application
 
 This is a study timer app developed with React and Node js.
 

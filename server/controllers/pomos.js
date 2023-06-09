@@ -33,6 +33,7 @@ export const recordPomo = async (req, res) => {
     res.json(savedPomo);
   } catch (error) {
     console.log(`******DB error: recordPomo in controllers/pomos.js******`);
+    console.error(error);
   }
 };
 
