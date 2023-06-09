@@ -30,6 +30,12 @@ This is a study timer app developed with React and Node js.
 
 This is a study timer using the idea of [pomodoro technique](https://en.wikipedia.org/wiki/Pomodoro_Technique). Users can set their own pomodoro duration and break durations. One cycle consists of `(pomo + short break) * number of pomos + long break`.
 
+### Timer
+![1-1)](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/9801ceee-4a11-4ec0-814b-825fed2cf5d4)
+![after-loging-out](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/9fcafd96-f2bb-4839-a2c5-bd3d2d0db3b7)
+![after-closing-tab](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/6958addc-3ce3-46c0-80ad-83f3d9635611)
+
+
 ### Stat
 
 ![pomo-stat](https://user-images.githubusercontent.com/72689705/200711062-3718ab4d-e360-43ef-a05c-63eda3f28c25.png)
