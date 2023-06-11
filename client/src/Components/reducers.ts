@@ -45,8 +45,6 @@ export function reducerTimer(
 ): TimerState {
   switch (action.type) {
     case "start":
-      localStorage.setItem("isTimerRunning", "yes");
-      localStorage.setItem("startTime", action.payload!.toString());
       SW?.postMessage({
         component: "Timer",
         stateArr: [
@@ -93,7 +91,6 @@ export function reducerTimer(
       };
 
     case "resume":
-      localStorage.setItem("isTimerRunning", "yes");
       SW?.postMessage({
         component: "Timer",
         stateArr: [
@@ -141,7 +138,6 @@ export function reducerTimer(
       };
 
     case "reset":
-      localStorage.setItem("isTimerRunning", "no");
       SW?.postMessage({
         component: "Timer",
         stateArr: [

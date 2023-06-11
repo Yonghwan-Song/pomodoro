@@ -13722,14 +13722,13 @@
   //#region URLs
 
   var URLs = {
-    // USER: "http://localhost:4444/users",
-    // POMO: "http://localhost:4444/pomos",
-    USER: "https://pomodoro-apis.onrender.com/users",
-    POMO: "https://pomodoro-apis.onrender.com/pomos"
+    USER: "http://localhost:4444/users",
+    POMO: "http://localhost:4444/pomos" // USER: "https://pomodoro-apis.onrender.com/users",
+    // POMO: "https://pomodoro-apis.onrender.com/pomos",
+
   }; //#endregion
 
   var _excluded = ["pomoSetting"];
-
   var idbVersion = 3;
   var DB = null;
 
@@ -13773,7 +13772,7 @@
     if (_typeof(ev.data) === "object" && ev.data !== null) {
       if ("component" in ev.data) {
         if (DB) {
-          saveStates(ev.data); // if(ev.data.stateArr)
+          saveStates(ev.data);
         } else {
           openDB(function () {
             saveStates(ev.data);
@@ -13794,6 +13793,24 @@
       {
         clearInterval(ev.data.idOfSetInterval);
       }
+
+      if (ev.data.action && ev.data.action === "sendDataToIndex") {
+        if (DB) {
+          sendStates(ev.source.id).then(function (states) {
+            if (states.running && ev.data.payload === null) {
+              countDown(states, ev.source.id);
+            }
+          });
+        } else {
+          openDB(function () {
+            sendStates(ev.source.id).then(function (states) {
+              if (states.running && ev.data.payload === null) {
+                countDown(states, ev.source.id);
+              }
+            });
+          });
+        }
+      }
     } else if (ev.data === "sendDataToIndex") {
       //! This is when a user is leaving a main page(origin/main).
       //! Thus, from this point, this service worker is responsible for counting down the timer.
@@ -13812,53 +13829,7 @@
           });
         });
       }
-    } // else if (ev.data === "clearInterval") {
-    //   // if (idOfSetInterval !== null) {
-    //   //   clearInterval(idOfSetInterval);
-    //   //   idOfSetInterval = null;
-    //   // }
-    //   // const wrapped = wrap(DB);
-    //   // const tx = wrapped.transaction("idStore", "readwrite");
-    //   // console.log(tx);
-    //   // const idStore = tx.objectStore("idStore");
-    //   // console.log(idStore);
-    //   // idStore.get("setInterval").then((idObj) => {
-    //   //   console.log(idObj);
-    //   //   clearInterval(idObj.value);
-    //   // });
-    //   // console.log(id); //! <---- undefined나오는데!
-    //   // clearInterval(id);
-    //   //todo - case of we clearing the id undefined
-    //   /*let idStore = getStateStore("idStore", "readonly");
-    //   let req = idStore.get("setInterval");
-    //   req.onsuccess = (ev) => {
-    //     let id = ev.target.result.value;
-    //     console.log("id of setInterval", id);
-    //     clearInterval(id);
-    //   };
-    //   req.onerror = (err) => {
-    //     console.warn(err);
-    //   };*/
-    //   /*let transaction = DB.transaction("idStore", "readwrite");
-    //   transaction.onerror = (err) => {
-    //     console.log(err);
-    //   };
-    //   transaction.oncomplete = (ev) => {
-    //     console.log("transaction has completed");
-    //   };
-    //   let store = transaction.objectStore("idStore");
-    //   console.log("idStore", store);
-    //   let req = store.get("interval");
-    //   req.onsuccess = (ev) => {
-    //     let id = req.result.value;
-    //     console.log(id);
-    //     clearInterval(id);
-    //   };
-    //   req.onerror = (err) => {
-    //     console.log(err);
-    //   };*/
-    // }
-
+    }
   });
   /**
    * purpose: to make TimerRelatedStates in the index.tsx be assigned an empty object.
@@ -13905,7 +13876,6 @@
 
             case 9:
               client = _context.sent;
-              // client.postMessage([]);
               client.postMessage({});
 
             case 11:
@@ -14145,20 +14115,6 @@
         while (1) {
           switch (_context3.prev = _context3.next) {
             case 0:
-              // idOfSetInterval = setInterval(() => {
-              //   let remainingDuration = Math.floor(
-              //     (states.duration * 60 * 1000 - // min * 60 * 1000 => Milliseconds
-              //       (Date.now() - states.startTime - states.pause.totalLength)) /
-              //       1000
-              //   );
-              //   console.log("count down remaining duration", remainingDuration);
-              //   if (remainingDuration === 0) {
-              //     console.log("idOfSetInverval", idOfSetInterval);
-              //     clearInterval(idOfSetInterval);
-              //     idOfSetInterval = null;
-              //     goNext(states, clientId);
-              //   }
-              // }, 500);
               idOfSetInterval = setInterval(function () {
                 var remainingDuration = Math.floor((states.duration * 60 * 1000 - ( // min * 60 * 1000 => Milliseconds
                 Date.now() - states.startTime - states.pause.totalLength)) / 1000);
@@ -14166,19 +14122,10 @@
 
                 if (remainingDuration === 0) {
                   console.log("idOfSetInverval", idOfSetInterval);
-                  clearInterval(idOfSetInterval); // idOfSetInterval = null;
-
+                  clearInterval(idOfSetInterval);
                   goNext(states, clientId);
                 }
-              }, 500); // localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
-              // let client = await self.clients.get(clientId);
-              // client.postMessage()
-
-              /*const wrapped = wrap(DB);
-              const tx = wrapped.transaction("idStore", "readwrite");
-              const idStore = tx.objectStore("idStore");
-              await idStore.put({ name: "interval", value: idOfSetInterval });*/
-              //! Data Flow : sw -> main thread where id is stored in localStorage and sent back to sw using message
+              }, 500); //! Data Flow : sw -> main thread where id is stored in localStorage and sent back to sw using message
               //!                      -> sw where we just simply can use the id from the message to clear the interval
               //? send message to the client so that it can store the idOfSetInterval to the localStorage
 
@@ -14203,24 +14150,7 @@
 
   function sendStates(_x6) {
     return _sendStates.apply(this, arguments);
-  } //#region working
-
-  /*async function sendStates(clientId) {
-    const wrapped = wrap(DB);
-    let client = await self.clients.get(clientId);
-    const store = wrapped.transaction("stateStore").objectStore("stateStore");
-    let filtered = (await store.getAll()).filter((ele) => {
-      return ele.name !== "pomoSetting";
-    });
-    let reduced = filtered.reduce((acc, cur) => {
-      return { ...acc, [cur.name]: cur.value };
-    }, {});
-    console.log("from sendStates", reduced);
-    client.postMessage(reduced);
-    return reduced;
-  }*/
-  //#endregion
-  //data is like below.
+  } //data is like below.
   //{
   //   component: "Timer",
   //   stateArr: [
@@ -14254,14 +14184,6 @@
                 return _objectSpread2(_objectSpread2({}, acc), {}, _defineProperty({}, cur.name, cur.value));
               }, {});
               states.pomoSetting, withoutPomoSetting = _objectWithoutProperties(states, _excluded);
-              /*let statesFiltered = dataArr
-                .filter((ele) => {
-                  return ele.name !== "pomoSetting";
-                })
-                .reduce((acc, cur) => {
-                  return { ...acc, [cur.name]: cur.value };
-                }, {});*/
-
               console.log("from sendStates", withoutPomoSetting);
               client.postMessage(withoutPomoSetting);
               return _context4.abrupt("return", states);
@@ -14336,7 +14258,7 @@
     req.onsuccess = function (ev) {
       // every time the connection to the argument db is successful.
       DB = req.result;
-      console.log("DB connection has succeeded"); // console.log("ObjectStores", objectStores);
+      console.log("DB connection has succeeded");
 
       if (callback) {
         callback();
@@ -14350,32 +14272,7 @@
         openDB();
       };
     };
-  } // Axios
-  // async function recordPomo(duration, startTime) {
-  //   try {
-  //     let LocaleDateString = new Date(startTime).toLocaleDateString();
-  //     const { idToken, email } = await getIdTokenAndEmail();
-  //     const res = await axios.post(
-  //       URLs.POMO,
-  //       {
-  //         userEmail: email,
-  //         duration,
-  //         startTime,
-  //         LocaleDateString,
-  //       },
-  //       {
-  //         headers: {
-  //           Authorization: "Bearer " + idToken,
-  //         },
-  //       }
-  //     );
-  //     console.log("res of recordPomo in sw: ", res);
-  //   } catch (err) {
-  //     console.warn(err);
-  //   }
-  // }
-  // Fetch
-
+  }
 
   function recordPomo(_x7, _x8) {
     return _recordPomo.apply(this, arguments);
@@ -14426,7 +14323,7 @@
             case 17:
               _context5.prev = 17;
               _context5.t0 = _context5["catch"](0);
-              console.warn(_context5.t0);
+              console.warn(_context5.t0); //todo: wait until a user logins again,which mean we can get idtoken and email, and then send a http request
 
             case 20:
             case "end":

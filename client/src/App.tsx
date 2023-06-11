@@ -54,7 +54,13 @@ function App() {
     }
     //#endregion
 
-    SW?.postMessage("sendDataToIndex");
+    //  1. This line is executed when loading this app.
+    //? 2. Problem: What if Main and its decendents are rendered before sw sends data to index.tsx
+    SW?.postMessage({
+      action: "sendDataToIndex",
+      payload: localStorage.getItem("idOfSetInterval"),
+    });
+
     function onUnload() {
       localStorage.removeItem("isTimerRunning");
     }
