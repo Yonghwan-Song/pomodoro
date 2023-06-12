@@ -13763,70 +13763,52 @@
     }));
   });
   self.addEventListener("message", function (ev) {
-    console.log("registration in global scope from service-worker.js");
-    console.log("sw - received a message");
-    console.log({
-      ev: ev
-    });
-
     if (_typeof(ev.data) === "object" && ev.data !== null) {
-      if ("component" in ev.data) {
-        if (DB) {
-          saveStates(ev.data);
-        } else {
-          openDB(function () {
-            saveStates(ev.data);
-          });
-        }
-      }
+      var _ev$data = ev.data,
+          action = _ev$data.action,
+          payload = _ev$data.payload;
 
-      if ("newPomoSetting" in ev.data) {
-        if (DB) {
-          emptyStateStore(ev.source.id);
-        } else {
-          openDB(function () {
-            emptyStateStore(ev.source.id);
-          });
-        }
-      }
+      switch (action) {
+        case "saveStates":
+          ensureDBIsOpen(saveStates, payload);
+          break;
 
-      {
-        clearInterval(ev.data.idOfSetInterval);
-      }
-
-      if (ev.data.action && ev.data.action === "sendDataToIndex") {
-        if (DB) {
-          sendStates(ev.source.id).then(function (states) {
-            if (states.running && ev.data.payload === null) {
-              countDown(states, ev.source.id);
-            }
-          });
-        } else {
-          openDB(function () {
+        case "sendDataToIndex":
+          if (DB) {
             sendStates(ev.source.id).then(function (states) {
-              if (states.running && ev.data.payload === null) {
+              if (states.running && payload === null) {
                 countDown(states, ev.source.id);
               }
             });
-          });
-        }
-      }
-    } else if (ev.data === "sendDataToIndex") {
-      //! This is when a user is leaving a main page(origin/main).
-      //! Thus, from this point, this service worker is responsible for counting down the timer.
-      if (DB) {
-        sendStates(ev.source.id).then(function (states) {
-          if (states.running) {
-            countDown(states, ev.source.id);
+          } else {
+            openDB(function () {
+              sendStates(ev.source.id).then(function (states) {
+                if (states.running && payload === null) {
+                  countDown(states, ev.source.id);
+                }
+              });
+            });
           }
-        });
+
+          break;
+
+        case "emptyStateStore":
+          ensureDBIsOpen(emptyStateStore, ev.source.id);
+          break;
+
+        case "clearInterval":
+          //TODO: number로 바꿔야하 하는거 아니야?
+          clearInterval(payload.idOfSetInterval);
+          break;
+      }
+    }
+
+    function ensureDBIsOpen(cb, arg) {
+      if (DB) {
+        cb(arg);
       } else {
         openDB(function () {
-          sendStates(ev.source.id).then(function (states) {
-            if (states.running) {
-              countDown(states, ev.source.id);
-            }
-          });
+          cb(arg);
         });
       }
     }

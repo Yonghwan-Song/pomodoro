@@ -16,7 +16,7 @@ import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
-import { SW, TimerRelatedStates } from "../..";
+import { TimerRelatedStates, postMsgToSW } from "../..";
 
 /**
  *
@@ -49,30 +49,6 @@ export function Timer({
 }: TimerProps) {
   //! idea: When a cycle is on meaning one cylce is not done yet, initial state is set from the prop
   //! otherwise: give
-  //#region Experiment with index.tsx - failed due to {}
-  // const [state, dispatch] = useReducer(reducer, {
-  //   running: TimerRelatedStates!.running,
-  //   startTime: TimerRelatedStates!.startTime,
-  //   pause: TimerRelatedStates!.pause,
-  // });
-  // const [remainingDuration, setRemainingDuration] = useState(() => {
-  //   return Math.floor(
-  //     (TimerRelatedStates!.duration * 1000 -
-  //       (Date.now() -
-  //         TimerRelatedStates!.startTime -
-  //         TimerRelatedStates!.pause.totalLength)) /
-  //       1000
-  //   );
-  // });
-  //#endregion
-  //#region Original
-  // const [state, dispatch] = useReducer(reducer, {
-  //   running: false,
-  //   startTime: 0,
-  //   pause: { totalLength: 0, record: [] },
-  // });
-  // const [remainingDuration, setRemainingDuration] = useState(duration || 0);
-  //#endregion
 
   //#region for a lazy initialization
   //1. I === Omit<TimerState, "running" | "startTime">
@@ -137,7 +113,7 @@ export function Timer({
       if (repetitionCount === 0) {
         //! repetitionCount is the information from the PatternTimer component.
         // a cylce of pomo durations has started.
-        SW?.postMessage({
+        postMsgToSW("saveStates", {
           component: "PatternTimer",
           stateArr: [
             { name: "repetitionCount", value: 0 },
@@ -165,7 +141,7 @@ export function Timer({
   function endTimer() {
     let timePassed = Math.floor((duration - remainingDuration) / 60);
     setRepetitionCount(repetitionCount + 1);
-    SW?.postMessage({
+    postMsgToSW("saveStates", {
       component: "PatternTimer",
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
@@ -174,38 +150,11 @@ export function Timer({
     setRemainingDuration(0);
   }
 
-  /*  useEffect(() => {
-    console.log(`startTime - ${state.startTime}`);
-    console.log(`running- ${state.running}`);
-  }, [state.startTime, state.running]);*/
-
   //#region useEffect experimental
   // lifecycle -> 1.mount 2.update(=== unmount + mount) ... 3.unmount
   // [] is for the 1 and 3 especially, the funtion returned is going to be called only for the last unmount. :::... 이거 맞아<???>
   // not for the unmounts by the update phase.
   useEffect(() => {
-    // async function getStatesFromIndexedDB() {
-    //   let running = await retrieveState<boolean>(false, "running", "Timer");
-    //   let startTime = await retrieveState<number>(0, "startTime", "Timer");
-    //   let pause = await retrieveState<PauseType>(
-    //     { totalLength: 0, record: [] },
-    //     "pause",
-    //     "Timer"
-    //   );
-    //   dispatch({
-    //     type: ACTION.CONTINUE,
-    //     payload: { running, startTime, pause },
-    //   });
-    //   // setRemainingDuration(
-    //   //   Math.floor(
-    //   //     (duration * 1000 - (Date.now() - startTime - pause.totalLength)) /
-    //   //       1000
-    //   //   )
-    //   // );
-    // }
-
-    // getStatesFromIndexedDB();
-
     console.log(`duration - ${duration}`);
     console.log(`remainingDuration- ${remainingDuration}`);
     return () => {
@@ -284,7 +233,7 @@ export function Timer({
       // console.log(`Focus session is complete from ${Timer.name}`);
       // The changes of the states in the parent component
       setRepetitionCount(repetitionCount + 1);
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "PatternTimer",
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });

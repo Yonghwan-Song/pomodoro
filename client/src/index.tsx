@@ -53,8 +53,8 @@ root.render(
 function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      // .register("/sw.js", {
-      .register("/sw2.js", {
+      .register("/sw.js", {
+        // .register("/sw2.js", {
         scope: "/",
         type: "module", //TODO: 이거 맞아?...
       })
@@ -210,4 +210,15 @@ export async function retrieveState<T>(
 
   console.log(retVal);
   return retVal;
+}
+
+export function postMsgToSW(
+  action:
+    | "saveStates"
+    | "sendDataToIndex"
+    | "emptyStateStore"
+    | "clearInterval",
+  payload: any
+) {
+  SW?.postMessage({ action, payload });
 }

@@ -1,4 +1,4 @@
-import { SW } from "..";
+import { postMsgToSW } from "..";
 
 export type PauseType = {
   totalLength: number;
@@ -45,7 +45,7 @@ export function reducerTimer(
 ): TimerState {
   switch (action.type) {
     case "start":
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "startTime", value: action.payload },
@@ -62,7 +62,7 @@ export function reducerTimer(
       };
 
     case "pause":
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "running", value: false },
@@ -91,7 +91,7 @@ export function reducerTimer(
       };
 
     case "resume":
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "running", value: true },
@@ -138,7 +138,7 @@ export function reducerTimer(
       };
 
     case "reset":
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "startTime", value: 0 },

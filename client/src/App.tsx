@@ -4,7 +4,7 @@ import { AuthContextProvider } from "./Context/AuthContext";
 import { UserContextProvider } from "./Context/UserContext";
 import Navbar from "./Components/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
-import { SW } from ".";
+import { postMsgToSW } from ".";
 
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
@@ -56,10 +56,7 @@ function App() {
 
     //  1. This line is executed when loading this app.
     //? 2. Problem: What if Main and its decendents are rendered before sw sends data to index.tsx
-    SW?.postMessage({
-      action: "sendDataToIndex",
-      payload: localStorage.getItem("idOfSetInterval"),
-    });
+    postMsgToSW("sendDataToIndex", localStorage.getItem("idOfSetInterval"));
 
     function onUnload() {
       localStorage.removeItem("isTimerRunning");
