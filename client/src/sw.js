@@ -260,6 +260,7 @@ async function goNext(states, clientId) {
 }
 
 async function countDown(states, clientId) {
+  let client = await self.clients.get(clientId);
   let idOfSetInterval = setInterval(() => {
     let remainingDuration = Math.floor(
       (states.duration * 60 * 1000 - // min * 60 * 1000 => Milliseconds
@@ -267,9 +268,10 @@ async function countDown(states, clientId) {
         1000
     );
     console.log("count down remaining duration", remainingDuration);
-    if (remainingDuration === 0) {
+    if (remainingDuration <= 0) {
       console.log("idOfSetInverval", idOfSetInterval);
       clearInterval(idOfSetInterval);
+      client.postMessage({ timerHasEnded: "clearLocalStorage" });
       goNext(states, clientId);
     }
   }, 500);
@@ -277,7 +279,7 @@ async function countDown(states, clientId) {
   //! Data Flow : sw -> main thread where id is stored in localStorage and sent back to sw using message
   //!                      -> sw where we just simply can use the id from the message to clear the interval
   //? send message to the client so that it can store the idOfSetInterval to the localStorage
-  let client = await self.clients.get(clientId);
+  // let client = await self.clients.get(clientId);
   client.postMessage({ idOfSetInterval });
 }
 
