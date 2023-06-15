@@ -28,6 +28,9 @@ const theme = {
 
 function App() {
   useEffect(() => {
+    console.log("App is updated");
+  });
+  useEffect(() => {
     console.log("APP is being mounted");
 
     //#region notification
@@ -55,16 +58,15 @@ function App() {
     //#endregion
 
     //  1. This line is executed when loading this app.
-    //? 2. Problem: What if Main and its decendents are rendered before sw sends data to index.tsx
+    //! 2. Problem: What if Main and its decendents are rendered before the TimerRelatedStates variable is assigned the data.
+    //* 3. I think this one should be a little bit different
+    //*    than the function call in the Main.tsx for the case
+    //*    a user closed the app while the timer was running.
+    //*    Before the PT and T initialize their states with a wrong TimerRelatedStates,
+    //*    It should be checked whether the timer was supposed to end
+    //*    while this app was closed. Otherwise, the timer will show minus value
+    //*    for the remaining duration.
     postMsgToSW("sendDataToIndex", localStorage.getItem("idOfSetInterval"));
-
-    function onUnload() {
-      localStorage.removeItem("isTimerRunning");
-    }
-    window.addEventListener("unload", onUnload);
-    return () => {
-      window.removeEventListener("unload", onUnload);
-    };
   }, []);
 
   return (

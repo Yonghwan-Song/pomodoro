@@ -14,6 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
   openIDB();
 });
 
+window.addEventListener("beforeunload", (event) => {
+  postMsgToSW("clearInterval", {
+    idOfSetInterval: localStorage.getItem("idOfSetInterval"),
+  });
+  localStorage.removeItem("idOfSetInterval");
+});
+
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
   <BrowserRouter>
@@ -82,6 +89,8 @@ function registerServiceWorker() {
           "idOfSetInterval",
           data.idOfSetInterval.toString()
         );
+      } else if ("timerHasEnded" in data) {
+        localStorage.removeItem("idOfSetInterval");
       } else {
         console.log(`TimerRelatedStates are received`);
         console.log(data);

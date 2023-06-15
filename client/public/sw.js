@@ -14092,30 +14092,34 @@
 
   function _countDown() {
     _countDown = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(states, clientId) {
-      var idOfSetInterval, client;
+      var client, idOfSetInterval;
       return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) {
           switch (_context3.prev = _context3.next) {
             case 0:
+              _context3.next = 2;
+              return self.clients.get(clientId);
+
+            case 2:
+              client = _context3.sent;
               idOfSetInterval = setInterval(function () {
                 var remainingDuration = Math.floor((states.duration * 60 * 1000 - ( // min * 60 * 1000 => Milliseconds
                 Date.now() - states.startTime - states.pause.totalLength)) / 1000);
                 console.log("count down remaining duration", remainingDuration);
 
-                if (remainingDuration === 0) {
+                if (remainingDuration <= 0) {
                   console.log("idOfSetInverval", idOfSetInterval);
                   clearInterval(idOfSetInterval);
+                  client.postMessage({
+                    timerHasEnded: "clearLocalStorage"
+                  });
                   goNext(states, clientId);
                 }
               }, 500); //! Data Flow : sw -> main thread where id is stored in localStorage and sent back to sw using message
               //!                      -> sw where we just simply can use the id from the message to clear the interval
               //? send message to the client so that it can store the idOfSetInterval to the localStorage
+              // let client = await self.clients.get(clientId);
 
-              _context3.next = 3;
-              return self.clients.get(clientId);
-
-            case 3:
-              client = _context3.sent;
               client.postMessage({
                 idOfSetInterval: idOfSetInterval
               });
