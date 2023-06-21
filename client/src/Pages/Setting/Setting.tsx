@@ -84,6 +84,10 @@ function Setting() {
     console.log("POMO SETTING INPUTS", settingInputs);
   }, [user, pomoSetting, settingInputs]);
 
+  useEffect(() => {
+    postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
+  }, []);
+
   return (
     <>
       <h3

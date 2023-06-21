@@ -22,6 +22,7 @@ import {
 import { User } from "firebase/auth";
 import { TooltipProps } from "recharts";
 import { pomoType, StatArrType } from "./statRelatedTypes";
+import { postMsgToSW } from "../..";
 
 export default function Statistics() {
   const { user } = UserAuth()!;
@@ -118,6 +119,10 @@ export default function Statistics() {
     console.log(`todayTotal - ${todayTotal}`);
     console.log(`lastDayTotal - ${lastDayTotal}`);
   }, [user]);
+
+  useEffect(() => {
+    postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
+  }, []);
 
   return (
     <Grid>

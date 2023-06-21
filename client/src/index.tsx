@@ -4,10 +4,10 @@ import "./index.css";
 import App from "./App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Main, Signin, Setting, Statistics } from "./Pages/index";
-import { Vacant } from "./Pages/Vacant/Vacant";
 import Protected from "./Components/Protected";
 import { wrap } from "idb";
 import { TimerState } from "./Components/reducers";
+import { Vacant } from "./Pages/Vacant/Vacant";
 
 document.addEventListener("DOMContentLoaded", () => {
   registerServiceWorker();
@@ -15,11 +15,28 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener("beforeunload", (event) => {
-  postMsgToSW("clearInterval", {
+  postMsgToSW("stopCountdown", {
     idOfSetInterval: localStorage.getItem("idOfSetInterval"),
   });
-  localStorage.removeItem("idOfSetInterval");
 });
+interface Accumulator {
+  [index: string]: number | boolean | object;
+}
+type StateFromIDB = {
+  name: string;
+  value: number | boolean | object;
+  component: string;
+};
+export type StatesType = TimerState & {
+  duration: number;
+  repetitionCount: number;
+};
+
+export let SW: ServiceWorker | null = null;
+export let DB: IDBDatabase | null = null;
+export let TimerRelatedStates: StatesType | null = null;
+
+let objectStores: IDBObjectStore[] = [];
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
@@ -61,9 +78,8 @@ function registerServiceWorker() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js", {
-        // .register("/sw2.js", {
         scope: "/",
-        type: "module", //TODO: 이거 맞아?...
+        type: "module",
       })
       .then(
         (registration) => {
@@ -94,13 +110,6 @@ function registerServiceWorker() {
       } else {
         console.log(`TimerRelatedStates are received`);
         console.log(data);
-        // issue
-        // 1. a user navigates from the main to settings page
-        // 2. This variable is assigned an object from indexedDB as soon as the user leaves the main page
-        // 3. the user sets a new pomoSetting from the settings page
-        // 4. objectStore is cleared
-        // 5. the user comes back to the main page, and this TimerRelatedStates remains the same
-        // 6. It prevents the user from starting a new cycle with the new pomoSetting.
         TimerRelatedStates = data;
       }
     });
@@ -109,33 +118,6 @@ function registerServiceWorker() {
   }
 }
 
-interface Accumulator {
-  [index: string]: number | boolean | object;
-}
-type StateFromIDB = {
-  name: string;
-  value: number | boolean | object;
-  component: string;
-};
-// type StatesType = {
-//   duration: number;
-//   pause: PauseType;
-//   pomoSetting: PomoSettingType;
-//   repetitionCount: number;
-//   running : boolean;
-//   startTime: number;
-// };
-//todo: filter out the fucking pomoSetting
-// type StatesType = TimerState &
-//   PomoSettingType & { duration: number; repetitionCount: number };
-type StatesType = TimerState & { duration: number; repetitionCount: number };
-
-export let SW: ServiceWorker | null = null;
-export let DB: IDBDatabase | null = null;
-export let TimerRelatedStates: StatesType | null = null;
-
-let objectStores: IDBObjectStore[] = [];
-
 export function clearStateStore() {
   if (!DB) {
     openIDB(clearTheStore);
@@ -143,10 +125,6 @@ export function clearStateStore() {
     clearTheStore();
   }
   function clearTheStore() {
-    //? 이렇게 해도 되는거 맞아?
-    // let wrapped = wrap(DB!);
-    // const store = wrapped.transaction("stateStore").objectStore("stateStore");
-    // store.clear();
     let transaction = DB!.transaction("stateStore");
     transaction.oncomplete = (ev) => {
       console.log("transaction of clearing the stateStore has completed");
@@ -211,7 +189,6 @@ export async function retrieveState<T>(
   let retVal = defaultVal;
   if (DB) {
     let wrapped = wrap(DB);
-    // let value = await wrapped.get("stateStore", [name, component]);
     const store = wrapped.transaction("stateStore").objectStore("stateStore");
 
     retVal = (await store.get([name, component])).value;
@@ -224,10 +201,14 @@ export async function retrieveState<T>(
 export function postMsgToSW(
   action:
     | "saveStates"
-    | "sendDataToIndex"
+    | "sendDataToIndexAndCountDown"
     | "emptyStateStore"
-    | "clearInterval",
+    | "stopCountdown"
+    | "countDown",
   payload: any
 ) {
   SW?.postMessage({ action, payload });
+  if (action === "stopCountdown") {
+    localStorage.removeItem("idOfSetInterval");
+  }
 }
