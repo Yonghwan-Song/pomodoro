@@ -59,6 +59,16 @@ export function PatternTimer() {
   return (
     <>
       <Timer
+        statesRelatedToTimer={{
+          duration: 60,
+          pause: {
+            totalLength: 0,
+            record: [],
+          },
+          repetitionCount: 0,
+          running: true,
+          startTime: 1686971557618,
+        }}
         //min to seconds
         duration={duration * 60}
         next={next}

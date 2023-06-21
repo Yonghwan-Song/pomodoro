@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import GoogleButton from "react-google-button";
 import { UserAuth } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { postMsgToSW } from "../..";
 
 function Signin() {
   const { googleSignIn, user } = UserAuth()!;
@@ -11,14 +12,25 @@ function Signin() {
   const handleGoogleSignIn = async () => {
     try {
       await googleSignIn();
+      // postMsgToSW(
+      //   "sendDataToIndexAndCountDown",
+      //   localStorage.getItem("idOfSetInterval")
+      // );
+      // postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
     } catch (error) {
       console.log(error);
     }
   };
 
   useEffect(() => {
-    if (user != null) {
+    if (user !== null) {
+      // postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
       navigate("/timer");
+      //It seems like I am betting on the 1000ms to guarantee that
+      //the sw ends the timer if the remainingDuration is a negative value.
+      // setTimeout(() => {
+      //   navigate("/timer");
+      // }, 1000);
     }
   }, [user]);
 

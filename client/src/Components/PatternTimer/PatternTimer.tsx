@@ -4,9 +4,10 @@ import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
 import { UserAuth } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
-import { TimerRelatedStates, postMsgToSW } from "../..";
+import { StatesType, postMsgToSW } from "../..";
 
 type PatternTimerProps = {
+  statesRelatedToTimer: StatesType;
   pomoDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;
@@ -14,27 +15,22 @@ type PatternTimerProps = {
 };
 
 export function PatternTimer({
+  statesRelatedToTimer,
   pomoDuration,
   shortBreakDuration,
   longBreakDuration,
   numOfPomo,
 }: PatternTimerProps) {
   const [duration, setDuration] = useState(() => {
-    if (
-      TimerRelatedStates !== null &&
-      Object.keys(TimerRelatedStates).length !== 0
-    ) {
-      return TimerRelatedStates.duration;
+    if (Object.keys(statesRelatedToTimer).length !== 0) {
+      return statesRelatedToTimer.duration;
     } else {
       return pomoDuration;
     }
   }); // How long the timer is going to run next time.
   const [repetitionCount, setRepetitionCount] = useState(() => {
-    if (
-      TimerRelatedStates !== null &&
-      Object.keys(TimerRelatedStates).length !== 0
-    ) {
-      return TimerRelatedStates.repetitionCount;
+    if (Object.keys(statesRelatedToTimer).length !== 0) {
+      return statesRelatedToTimer.repetitionCount;
     } else {
       return 0;
     }
@@ -110,16 +106,15 @@ export function PatternTimer({
 
   //! 문제: 어떤 이유로, stat에서 main으로 돌아올 때 마다 effect function이 call된다.
   useEffect(() => {
-    console.log(user);
-    console.log(user!.email);
+    // console.log(user);
+    // console.log(user!.email);
   }, []);
 
   useEffect(() => {
-    console.log(pomoDuration);
-    console.log(shortBreakDuration);
-    console.log(longBreakDuration);
-    console.log(numOfPomo);
-
+    // console.log(pomoDuration);
+    // console.log(shortBreakDuration);
+    // console.log(longBreakDuration);
+    // console.log(numOfPomo);
     // setDuration(pomoDuration);
   }, [pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo]);
 
@@ -127,7 +122,7 @@ export function PatternTimer({
     <>
       <Timer
         //min to seconds
-        // duration={duration * 60}
+        statesRelatedToTimer={statesRelatedToTimer}
         duration={duration * 60}
         next={next}
         repetitionCount={repetitionCount}

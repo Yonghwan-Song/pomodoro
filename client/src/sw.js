@@ -50,20 +50,12 @@ self.addEventListener("message", (ev) => {
         ensureDBIsOpen(saveStates, payload);
         break;
 
-      case "sendDataToIndex":
+      case "countDown":
         if (DB) {
-          sendStates(ev.source.id).then((states) => {
-            if (states.running && payload === null) {
-              countDown(states, ev.source.id);
-            }
-          });
+          countDown(payload, ev.source.id);
         } else {
           openDB(() => {
-            sendStates(ev.source.id).then((states) => {
-              if (states.running && payload === null) {
-                countDown(states, ev.source.id);
-              }
-            });
+            countDown(payload, ev.source.id);
           });
         }
         break;
@@ -72,8 +64,9 @@ self.addEventListener("message", (ev) => {
         ensureDBIsOpen(emptyStateStore, ev.source.id);
         break;
 
-      case "clearInterval":
-        //TODO: number로 바꿔야하 하는거 아니야?
+      case "stopCountdown":
+        //number로 바꿔야하 하는거 아니야?
+        console.log(payload.idOfSetInterval);
         clearInterval(payload.idOfSetInterval);
         break;
 
@@ -120,21 +113,8 @@ async function emptyStateStore(clientId) {
   client.postMessage({});
 }
 
-function getStateStore(storeName, mode) {
-  let transaction = DB.transaction(storeName, mode);
-  transaction.onerror = (err) => {
-    console.warn(err);
-  };
-
-  transaction.oncomplete = (ev) => {
-    console.log("transaction has completed");
-  };
-  return transaction.objectStore(storeName);
-}
-
 // Purpose: to decide whether the the following duration is a pomo or break.
 async function goNext(states, clientId) {
-  const client = await self.clients.get(clientId);
   const wrapped = wrap(DB);
   const tx = wrapped.transaction("stateStore", "readwrite");
   const store = tx.objectStore("stateStore");
@@ -190,13 +170,6 @@ async function goNext(states, clientId) {
         component: "PatternTimer",
         value: shortBreakDuration,
       });
-      client.postMessage({
-        duration: shortBreakDuration,
-        repetitionCount,
-        pause,
-        running,
-        startTime: 0,
-      });
       console.log(await getIdTokenAndEmail());
     } else {
       //* This is when a short break is done.
@@ -207,13 +180,6 @@ async function goNext(states, clientId) {
         name: "duration",
         component: "PatternTimer",
         value: pomoDuration,
-      });
-      client.postMessage({
-        duration: pomoDuration,
-        repetitionCount,
-        pause,
-        running,
-        startTime: 0,
       });
     }
   } else if (repetitionCount === numOfPomo * 2 - 1) {
@@ -226,13 +192,6 @@ async function goNext(states, clientId) {
       name: "duration",
       component: "PatternTimer",
       value: longBreakDuration,
-    });
-    client.postMessage({
-      duration: longBreakDuration,
-      repetitionCount,
-      pause,
-      running,
-      startTime: 0,
     });
   } else if (repetitionCount === numOfPomo * 2) {
     //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
@@ -249,70 +208,38 @@ async function goNext(states, clientId) {
       component: "PatternTimer",
       value: pomoDuration,
     });
-    client.postMessage({
-      duration: pomoDuration,
-      repetitionCount: 0,
-      pause,
-      running,
-      startTime: 0,
-    });
   }
 }
 
-async function countDown(states, clientId) {
-  let client = await self.clients.get(clientId);
-  let idOfSetInterval = setInterval(() => {
-    let remainingDuration = Math.floor(
-      (states.duration * 60 * 1000 - // min * 60 * 1000 => Milliseconds
-        (Date.now() - states.startTime - states.pause.totalLength)) /
-        1000
-    );
-    console.log("count down remaining duration", remainingDuration);
-    if (remainingDuration <= 0) {
-      console.log("idOfSetInverval", idOfSetInterval);
-      clearInterval(idOfSetInterval);
-      client.postMessage({ timerHasEnded: "clearLocalStorage" });
-      goNext(states, clientId);
-    }
-  }, 500);
-
-  //! Data Flow : sw -> main thread where id is stored in localStorage and sent back to sw using message
-  //!                      -> sw where we just simply can use the id from the message to clear the interval
-  //? send message to the client so that it can store the idOfSetInterval to the localStorage
-  // let client = await self.clients.get(clientId);
-  client.postMessage({ idOfSetInterval });
-}
-
-/**
- * 
- * @param {*} clientId 
- * @returns 
- *    e.g.  {
-              "duration": 2,
-              "pause": {
-                  "totalLength": 0,
-                  "record": []
-              },
-              "repetitionCount": 4,
-              "running": true,
-              "startTime": 1685850205094
-            }
- */
-async function sendStates(clientId) {
-  const client = await self.clients.get(clientId);
+//#region Now
+// if the timer was running in the timer page, continue to count down the timer.
+async function countDown(setIntervalId, clientId) {
   const wrapped = wrap(DB);
   const store = wrapped.transaction("stateStore").objectStore("stateStore");
-
-  let dataArr = await store.getAll();
-  console.log("dataArr", dataArr);
-  let states = dataArr.reduce((acc, cur) => {
+  let states = (await store.getAll()).reduce((acc, cur) => {
     return { ...acc, [cur.name]: cur.value };
   }, {});
-  const { pomoSetting, ...withoutPomoSetting } = states;
-  console.log("from sendStates", withoutPomoSetting);
-  client.postMessage(withoutPomoSetting);
-  return states;
+  if (states.running && setIntervalId === null) {
+    let client = await self.clients.get(clientId);
+    let idOfSetInterval = setInterval(() => {
+      let remainingDuration = Math.floor(
+        (states.duration * 60 * 1000 -
+          (Date.now() - states.startTime - states.pause.totalLength)) /
+          1000
+      );
+      console.log("count down remaining duration", remainingDuration);
+      if (remainingDuration <= 0) {
+        console.log("idOfSetInterval", idOfSetInterval);
+        clearInterval(idOfSetInterval);
+        client.postMessage({ timerHasEnded: "clearLocalStorage" });
+        goNext(states, clientId);
+      }
+    }, 500);
+
+    client.postMessage({ idOfSetInterval });
+  }
 }
+//#endregion
 
 //data is like below.
 //{
@@ -416,6 +343,5 @@ async function recordPomo(duration, startTime) {
     console.log("res of recordPomo in sw: ", res);
   } catch (err) {
     console.warn(err);
-    //todo: wait until a user logins again,which mean we can get idtoken and email, and then send a http request
   }
 }
