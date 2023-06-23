@@ -54,31 +54,11 @@ function Navbar() {
   }
 
   function handleLinkClick(e: React.SyntheticEvent) {
-    // function handleLinkClick(e: React.MouseEvent) {
-    // if (localStorage.getItem("isTimerRunning") === "yes") {
-    //   e.preventDefault();
-    //   alert(
-    //     "Timer is Running. Please end the timer or finish it before navigating to other pages"
-    //   );
-    // } else {
-    //   toggleSideBar();
-    // }
-
     toggleSideBar();
     setIsActive(!isActive);
   }
 
   function handleLinkClick2(e: React.SyntheticEvent) {
-    // function handleLinkClick(e: React.MouseEvent) {
-    /*if (localStorage.getItem("isTimerRunning") === "yes") {
-      e.preventDefault();
-      alert(
-        "Timer is Running. Please end the timer or finish it before navigating to other pages"
-      );
-    } else {
-      handleSignOut();
-    }*/
-
     postMsgToSW("stopCountdown", {
       idOfSetInterval: localStorage.getItem("idOfSetInterval"),
     });
