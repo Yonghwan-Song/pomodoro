@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Timer } from "../Timer/Timer";
 import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
@@ -40,7 +40,6 @@ export function PatternTimer({
 
   const { user } = UserAuth()!;
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
-  const [cycleCount, setCycleCount] = useState(0);
   /**
    * Decide this time rendering is whether a pomo duration or a break
    * and decide how many pomo durations or breaks are left.
@@ -103,20 +102,6 @@ export function PatternTimer({
       });
     }
   }
-
-  //! 문제: 어떤 이유로, stat에서 main으로 돌아올 때 마다 effect function이 call된다.
-  useEffect(() => {
-    // console.log(user);
-    // console.log(user!.email);
-  }, []);
-
-  useEffect(() => {
-    // console.log(pomoDuration);
-    // console.log(shortBreakDuration);
-    // console.log(longBreakDuration);
-    // console.log(numOfPomo);
-    // setDuration(pomoDuration);
-  }, [pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo]);
 
   return (
     <>

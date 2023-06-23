@@ -9,11 +9,7 @@ export function Vacant() {
 
   useEffect(() => {
     if (user !== null) {
-      // postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
       navigate("/timer");
-      // setTimeout(() => {
-      //   navigate("/timer");
-      // }, 1000);
     }
   }, [user]);
 

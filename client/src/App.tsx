@@ -4,7 +4,6 @@ import { AuthContextProvider } from "./Context/AuthContext";
 import { UserContextProvider } from "./Context/UserContext";
 import Navbar from "./Components/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
-import { postMsgToSW } from ".";
 
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
@@ -57,8 +56,6 @@ function App() {
       );
     }
     //#endregion
-
-    // postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
   }, []);
 
   return (
