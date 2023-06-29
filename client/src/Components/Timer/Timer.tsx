@@ -19,7 +19,7 @@ import { FlexBox } from "../Layouts/FlexBox";
 import { StatesType, postMsgToSW } from "../..";
 
 type TimerProps = {
-  statesRelatedToTimer: StatesType;
+  statesRelatedToTimer: StatesType | {};
   duration: number;
   next: (
     howManyCountdown: number,
@@ -71,7 +71,8 @@ export function Timer({
       timeCountedDown = 0;
 
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      let { duration, pause, running, startTime } = statesRelatedToTimer;
+      let { duration, pause, running, startTime } =
+        statesRelatedToTimer as StatesType;
 
       let durationInSeconds = duration * 60;
 
@@ -104,9 +105,9 @@ export function Timer({
     let retVal = initialState;
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       retVal = {
-        running: statesRelatedToTimer.running,
-        startTime: statesRelatedToTimer.startTime,
-        pause: statesRelatedToTimer.pause,
+        running: (statesRelatedToTimer as StatesType).running,
+        startTime: (statesRelatedToTimer as StatesType).startTime,
+        pause: (statesRelatedToTimer as StatesType).pause,
       };
     }
     return retVal;
@@ -158,20 +159,6 @@ export function Timer({
     dispatch({ type: ACTION.RESET });
     setRemainingDuration(0);
   }
-
-  //#region useEffect experimental
-  // lifecycle -> 1.mount 2.update(=== unmount + mount) ... 3.unmount
-  // [] is for the 1 and 3 especially, the funtion returned is going to be called only for the last unmount. :::... 이거 맞아<???>
-  // not for the unmounts by the update phase.
-  useEffect(() => {
-    // console.log(`duration - ${duration}`);
-    // console.log(`remainingDuration- ${remainingDuration}`);
-    return () => {
-      if (isOnCycle) {
-      }
-    };
-  }, []);
-  //#endregion
 
   // UPGRADE: if I want my data about my pomo session I was doing to be persistent between reloading page,
   //         I think I need to store the pomo session data to the indexed db I guess.

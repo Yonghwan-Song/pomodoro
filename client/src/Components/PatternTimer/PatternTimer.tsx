@@ -7,7 +7,7 @@ import { User } from "firebase/auth";
 import { StatesType, postMsgToSW } from "../..";
 
 type PatternTimerProps = {
-  statesRelatedToTimer: StatesType;
+  statesRelatedToTimer: StatesType | {};
   pomoDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;
@@ -23,14 +23,14 @@ export function PatternTimer({
 }: PatternTimerProps) {
   const [duration, setDuration] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      return statesRelatedToTimer.duration;
+      return (statesRelatedToTimer as StatesType).duration;
     } else {
       return pomoDuration;
     }
   }); // How long the timer is going to run next time.
   const [repetitionCount, setRepetitionCount] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      return statesRelatedToTimer.repetitionCount;
+      return (statesRelatedToTimer as StatesType).repetitionCount;
     } else {
       return 0;
     }

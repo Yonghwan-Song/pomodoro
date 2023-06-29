@@ -3,8 +3,8 @@ import { wrap } from "idb";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../src/firebase";
 import { URLs } from "./constants/index";
+import { IDB_VERSION } from "./constants/index";
 
-let idbVersion = 3;
 let DB = null;
 let objectStores = [];
 
@@ -30,6 +30,7 @@ const getIdTokenAndEmail = () => {
 
 self.addEventListener("install", (ev) => {
   console.log("sw - installed");
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (ev) => {
@@ -277,7 +278,7 @@ function saveStates(data) {
 }
 
 function openDB(callback) {
-  let req = indexedDB.open("timerRelatedDB", idbVersion);
+  let req = indexedDB.open("timerRelatedDB", IDB_VERSION);
   req.onerror = (err) => {
     console.warn(err);
     DB = null;
@@ -295,12 +296,6 @@ function openDB(callback) {
       });
       objectStores.push(stateStore);
     }
-    if (!DB.objectStoreNames.contains("idStore")) {
-      let idStore = DB.createObjectStore("idStore", {
-        keyPath: ["name"],
-      });
-      objectStores.push(idStore);
-    }
   };
 
   req.onsuccess = (ev) => {
@@ -316,6 +311,17 @@ function openDB(callback) {
       console.log("Database version has changed.", { versionchange: ev });
       openDB();
     };
+
+    DB.onclose = (ev) => {
+      console.log("The database connection was unexpectedly closed", ev);
+
+      DB = null;
+      openDB();
+    };
+  };
+
+  req.onblocked = (ev) => {
+    console.log("onblocked", ev);
   };
 }
 

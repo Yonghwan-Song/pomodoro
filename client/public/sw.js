@@ -13690,9 +13690,9 @@
     // POMO: "http://localhost:4444/pomos",
     USER: "https://pomodoro-apis.onrender.com/users",
     POMO: "https://pomodoro-apis.onrender.com/pomos"
-  }; //#endregion
+  };
+  var IDB_VERSION = 4; //#endregion
 
-  var idbVersion = 3;
   var DB = null;
 
   var getIdTokenAndEmail = function getIdTokenAndEmail() {
@@ -13718,6 +13718,7 @@
 
   self.addEventListener("install", function (ev) {
     console.log("sw - installed");
+    self.skipWaiting();
   });
   self.addEventListener("activate", function (ev) {
     console.log("sw - activated");
@@ -14088,7 +14089,7 @@
   }
 
   function openDB(callback) {
-    var req = indexedDB.open("timerRelatedDB", idbVersion);
+    var req = indexedDB.open("timerRelatedDB", IDB_VERSION);
 
     req.onerror = function (err) {
       console.warn(err);
@@ -14105,12 +14106,6 @@
       if (!DB.objectStoreNames.contains("stateStore")) {
         DB.createObjectStore("stateStore", {
           keyPath: ["name", "component"]
-        });
-      }
-
-      if (!DB.objectStoreNames.contains("idStore")) {
-        DB.createObjectStore("idStore", {
-          keyPath: ["name"]
         });
       }
     };
@@ -14131,6 +14126,16 @@
         });
         openDB();
       };
+
+      DB.onclose = function (ev) {
+        console.log("The database connection was unexpectedly closed", ev);
+        DB = null;
+        openDB();
+      };
+    };
+
+    req.onblocked = function (ev) {
+      console.log("onblocked", ev);
     };
   }
 
