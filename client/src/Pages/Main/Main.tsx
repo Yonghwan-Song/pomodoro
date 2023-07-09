@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { PatternTimer } from "../../Components/PatternTimer/PatternTimer";
-import { postMsgToSW, obtainStatesFromIDB } from "../..";
+import {
+  postMsgToSW,
+  obtainStatesFromIDB,
+  retrieveTodaySessionsFromIDB,
+} from "../..";
 import { UserInfo } from "../../Context/UserContext";
 import { UserAuth } from "../../Context/AuthContext";
 import { StatesType } from "../..";
@@ -31,6 +35,10 @@ export default function Main() {
       setStatesRelatedToTimer(states);
     };
     getStatesFromIDB();
+  }, []);
+
+  useEffect(() => {
+    retrieveTodaySessionsFromIDB(); //I'm gonna use this for a new feature soon.
   }, []);
 
   useEffect(() => {

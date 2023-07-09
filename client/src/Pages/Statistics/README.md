@@ -38,9 +38,21 @@ interface DailyPomo {
 type StatArrType = DailyPomo[];
 ```
 
-## useWeek function
+## week state in Statistics component
 
-This array is going to be used for Area chart.
+```typescript
+const [week, setWeek] = useState<CertainWeek>(init);
+export interface Weekdays {
+  date: string;
+  timestamp: number;
+  dayOfWeek: string;
+  total?: number;
+}
+// This type is used for AreaChart component.
+export type CertainWeek = Weekdays[];
+```
+
+The `week` is going to be used for Area chart.
 The `thisWeek`, `prevWeek`, `nextWeek` functions set an array for the `week` state.
 The `thisWeek` is called inside `getStatArr(user: User)`.
 

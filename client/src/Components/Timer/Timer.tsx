@@ -20,11 +20,12 @@ import { StatesType, postMsgToSW } from "../..";
 
 type TimerProps = {
   statesRelatedToTimer: StatesType | {};
-  duration: number;
+  durationInSeconds: number;
   next: (
     howManyCountdown: number,
-    startTime: number,
-    concentrationTime?: number
+    state: TimerState,
+    concentrationTime?: number,
+    pauseEnd?: number
   ) => void;
 
   // Let's assume that one cycle is like below
@@ -38,7 +39,7 @@ type TimerProps = {
 
 export function Timer({
   statesRelatedToTimer,
-  duration,
+  durationInSeconds,
   next,
   repetitionCount,
   setRepetitionCount,
@@ -127,7 +128,7 @@ export function Timer({
           component: "PatternTimer",
           stateArr: [
             { name: "repetitionCount", value: 0 },
-            { name: "duration", value: duration / 60 },
+            { name: "duration", value: durationInSeconds / 60 },
           ],
         });
         setIsOnCycle(true);
@@ -148,64 +149,61 @@ export function Timer({
     }
   }
 
-  function endTimer() {
-    let timePassed = Math.floor((duration - remainingDuration) / 60);
+  function endTimer(now: number) {
+    let timeCountedDown = Math.floor(
+      (durationInSeconds - remainingDuration) / 60
+    );
     setRepetitionCount(repetitionCount + 1);
     postMsgToSW("saveStates", {
       component: "PatternTimer",
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
-    next(repetitionCount + 1, state.startTime, timePassed);
+    if (state.running) {
+      next(repetitionCount + 1, state, timeCountedDown);
+    } else {
+      // end a timer when it's paused.
+      next(repetitionCount + 1, state, timeCountedDown, now);
+    }
     dispatch({ type: ACTION.RESET });
     setRemainingDuration(0);
   }
 
-  // UPGRADE: if I want my data about my pomo session I was doing to be persistent between reloading page,
-  //         I think I need to store the pomo session data to the indexed db I guess.
-  //* This effect function is called every update because of the remainingDuration in the dep array.
+  //#region side effects
   useEffect(() => {
-    // console.log(`repetitionCount - ${repetitionCount}`);
-    // console.log(`duration- ${duration}`);
-    // console.log(`remainingDuration - ${remainingDuration}`);
-    // console.log(`isOnCycle - ${isOnCycle}`);
-
-    //TODO: The name of this variable is a little bit weird since ACTION.RESET deos not reset the remainingDuration.
-    const isAfterReset = remainingDuration === 0 && state.startTime === 0;
-    const isEnd = remainingDuration <= 0 && state.startTime !== 0;
-
-    //* 0. remainingDuration !== 0 && state.startTime !== 0 && state.running === false
-    //* to log the pause object
+    // To log the pause object:
+    // remainingDuration !== 0 && state.startTime !== 0 && state.running === false
     if (
       remainingDuration !== 0 &&
       state.startTime !== 0 &&
       state.running === false
     ) {
-      // console.log(state.pause);
+      console.log(state.pause);
     }
-
-    //* 1. remainingDuration === 0 && state.startTime === 0 && state.running === false
-    if (isAfterReset) {
-      // running === false
-      setRemainingDuration(duration); // setting remaining duration to the one newly passed in from parent component.
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // After reset:
+    // remainingDuration === 0 && state.startTime === 0 && state.running === false
+    if (remainingDuration === 0 && state.startTime === 0) {
+      // setting remaining duration to the one newly passed in from the PatternTimer.
+      setRemainingDuration(durationInSeconds);
     }
-
-    //* 2. remainingDuration !== 0 && state.startTime === 0 && state.running === false
-    //* This is right after this component is mounted.
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // As soon as this component is mounted:
+    // remainingDuration !== 0 && state.startTime === 0 && state.running === false
     if (remainingDuration !== 0 && state.startTime === 0) {
-      // console.log(`isRunning - ${state.running}`); // running === false
-      setRemainingDuration(duration);
+      setRemainingDuration(durationInSeconds);
     }
-    // console.log(`remainingDuration - ${remainingDuration}`);
-
-    //* 3. remainingDuration !== 0 && state.startTime !== 0 && state.running === true
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // To count down timer:
+    // remainingDuration !== 0 && state.startTime !== 0 && state.running === true
     if (state.running && remainingDuration > 0) {
-      //? 당연히 startTime !== 0 일 것 같아서 확인 안해봄.
-      // running
       const id = setInterval(() => {
         setRemainingDuration(
           Math.floor(
             //seconds to miliseconds
-            (duration * 1000 -
+            (durationInSeconds * 1000 -
               // (Date.now() - state.startTime - state.pause!.totalLength)) / // -> is paired with reducers.ts line 4
               (Date.now() - state.startTime - state.pause.totalLength)) /
               1000
@@ -215,14 +213,13 @@ export function Timer({
 
       return () => {
         clearInterval(id);
-        // console.log(`isOnCycle - ${isOnCycle}`);
-        // console.log(`duration - ${duration}`);
         console.log(`startTime - ${state.startTime}`);
       };
-      // state.startTime is not zero yet.
-
-      //* 4. remainingDuration === 0 && state.startTime !== 0 && state.running === true
-    } else if (isEnd) {
+    }
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // When the countdown of the timer has ended.
+    if (remainingDuration <= 0 && state.startTime !== 0) {
       // console.log(`Focus session is complete from ${Timer.name}`);
       // The changes of the states in the parent component
       setRepetitionCount(repetitionCount + 1);
@@ -230,11 +227,12 @@ export function Timer({
         component: "PatternTimer",
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });
-      next(repetitionCount + 1, state.startTime);
+      next(repetitionCount + 1, state);
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
     }
-  }, [remainingDuration, duration, state.running]);
+  }, [remainingDuration, durationInSeconds, state.running]);
+  //#endregion
 
   let durationRemaining =
     remainingDuration < 0 ? (
@@ -248,7 +246,9 @@ export function Timer({
 
   let durationBeforeStart = (
     <h2>
-      {!!(duration / 60) === false ? "Loading data" : duration / 60 + ":00"}
+      {!!(durationInSeconds / 60) === false
+        ? "Loading data"
+        : durationInSeconds / 60 + ":00"}
     </h2>
   );
 
@@ -270,11 +270,11 @@ export function Timer({
       <GridItem>
         <CircularProgressBar
           progress={
-            duration === 0
+            durationInSeconds === 0
               ? 0
               : remainingDuration < 0
               ? 1
-              : 1 - remainingDuration / duration
+              : 1 - remainingDuration / durationInSeconds
           }
         />
       </GridItem>
@@ -284,7 +284,13 @@ export function Timer({
           <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
             {state.running && remainingDuration !== 0 ? "Pause" : "Start"}
           </Button>
-          <Button handleClick={endTimer}>End</Button>
+          <Button
+            handleClick={() => {
+              endTimer(Date.now());
+            }}
+          >
+            End
+          </Button>
         </FlexBox>
       </GridItem>
     </Grid>

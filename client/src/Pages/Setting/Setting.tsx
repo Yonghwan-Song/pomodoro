@@ -62,6 +62,9 @@ function Setting() {
   function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
     postMsgToSW("emptyStateStore", {});
+    postMsgToSW("stopCountdown", {
+      idOfSetInterval: localStorage.getItem("idOfSetInterval"),
+    });
     updatePomoSetting(user!, settingInputs);
     setPomoSetting(settingInputs);
   }

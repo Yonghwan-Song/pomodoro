@@ -1,12 +1,13 @@
 /* eslint-disable no-restricted-globals */
-import { wrap } from "idb";
+import { openDB } from "idb";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../src/firebase";
 import { URLs } from "./constants/index";
 import { IDB_VERSION } from "./constants/index";
+import { pubsub } from "./pubsub";
 
 let DB = null;
-let objectStores = [];
+const BC = new BroadcastChannel("pomodoro");
 
 const getIdTokenAndEmail = () => {
   return new Promise((res, rej) => {
@@ -36,8 +37,8 @@ self.addEventListener("install", (ev) => {
 self.addEventListener("activate", (ev) => {
   console.log("sw - activated");
   ev.waitUntil(
-    Promise.resolve().then(() => {
-      openDB();
+    Promise.resolve().then(async () => {
+      DB = await openIndexedDB();
     })
   );
 });
@@ -48,21 +49,15 @@ self.addEventListener("message", (ev) => {
 
     switch (action) {
       case "saveStates":
-        ensureDBIsOpen(saveStates, payload);
+        saveStates(payload);
         break;
 
       case "countDown":
-        if (DB) {
-          countDown(payload, ev.source.id);
-        } else {
-          openDB(() => {
-            countDown(payload, ev.source.id);
-          });
-        }
+        countDown(payload, ev.source.id);
         break;
 
       case "emptyStateStore":
-        ensureDBIsOpen(emptyStateStore, ev.source.id);
+        emptyStateStore(ev.source.id);
         break;
 
       case "stopCountdown":
@@ -75,16 +70,90 @@ self.addEventListener("message", (ev) => {
         break;
     }
   }
-  function ensureDBIsOpen(cb, arg) {
-    if (DB) {
-      cb(arg);
-    } else {
-      openDB(() => {
-        cb(arg);
-      });
-    }
-  }
 });
+
+async function openIndexedDB() {
+  let db = await openDB("timerRelatedDB", IDB_VERSION, {
+    upgrade(db, oldVersion, newVersion, transaction, event) {
+      console.log("DB updated from version", oldVersion, "to", newVersion);
+
+      if (!db.objectStoreNames.contains("stateStore")) {
+        db.createObjectStore("stateStore", {
+          keyPath: ["name", "component"],
+        });
+      }
+      if (!db.objectStoreNames.contains("recOfToday")) {
+        db.createObjectStore("recOfToday", {
+          keyPath: ["kind", "startTime"],
+        });
+      }
+    },
+    blocking(currentVersion, blockedVersion, event) {
+      // db.close();
+      console.log("blocking", event);
+      //TODO: test prompt
+      // prompt("Please refresh the current webpage");
+    },
+  });
+
+  db.onclose = async (ev) => {
+    console.log("The database connection was unexpectedly closed", ev);
+    DB = null;
+    DB = await openIndexedDB();
+  };
+
+  return db;
+}
+
+//data is like below.
+//{
+//   component: "Timer",
+//   stateArr: [
+//     { name: "startTime", value: action.payload },
+//     { name: "running", value: true },
+//   ],
+// };
+async function saveStates(data) {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("stateStore", "readwrite")
+    .objectStore("stateStore");
+
+  console.log(data);
+
+  let component = data.component;
+  Array.from(data.stateArr).forEach(async (obj) => {
+    await store.put({ ...obj, component });
+  });
+}
+
+// If the timer was running in the timer page, continue to count down the timer.
+async function countDown(setIntervalId, clientId) {
+  let db = DB || (await openIndexedDB());
+  const store = db.transaction("stateStore").objectStore("stateStore");
+  let states = (await store.getAll()).reduce((acc, cur) => {
+    return { ...acc, [cur.name]: cur.value };
+  }, {});
+  if (states.running && setIntervalId === null) {
+    let client = await self.clients.get(clientId);
+    let idOfSetInterval = setInterval(() => {
+      let remainingDuration = Math.floor(
+        (states.duration * 60 * 1000 -
+          (Date.now() - states.startTime - states.pause.totalLength)) /
+          1000
+      );
+      console.log("count down remaining duration", remainingDuration);
+      if (remainingDuration <= 0) {
+        console.log("idOfSetInterval", idOfSetInterval);
+        clearInterval(idOfSetInterval);
+        client.postMessage({ timerHasEnded: "clearLocalStorage" });
+        goNext(states, clientId);
+      }
+    }, 500);
+
+    client.postMessage({ idOfSetInterval });
+  }
+}
 
 /**
  * purpose: to make TimerRelatedStates in the index.tsx be assigned an empty object.
@@ -94,45 +163,48 @@ self.addEventListener("message", (ev) => {
  * @param {*} clientId
  */
 async function emptyStateStore(clientId) {
-  let transaction = DB.transaction("stateStore", "readwrite");
-  transaction.onerror = (err) => {
-    console.warn(err);
-  };
-  transaction.oncomplete = (ev) => {
-    console.log("transaction has completed");
-  };
-  let store = transaction.objectStore("stateStore");
-  let req = store.clear();
-  req.onsuccess = (ev) => {
-    console.log("stateStore has been cleared");
-  };
-  req.onerror = (err) => {
-    console.warn(err);
-  };
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("stateStore", "readwrite")
+    .objectStore("stateStore");
+  await store.clear();
+  console.log("stateStore has been cleared");
 
   let client = await self.clients.get(clientId);
-  client.postMessage({});
+  client.postMessage({}); //TODO: 이거 아직도 필요한가?...
 }
 
 // Purpose: to decide whether the the following duration is a pomo or break.
 async function goNext(states, clientId) {
-  const wrapped = wrap(DB);
-  const tx = wrapped.transaction("stateStore", "readwrite");
-  const store = tx.objectStore("stateStore");
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("stateStore", "readwrite")
+    .objectStore("stateStore");
 
   let {
     duration,
-    pause,
     repetitionCount,
     running,
-    startTime,
     pomoSetting: {
       pomoDuration,
       shortBreakDuration,
       longBreakDuration,
       numOfPomo,
     },
+    pause,
+    startTime,
   } = states;
+
+  delete states.duration;
+  delete states.repetitionCount;
+  delete states.running;
+  delete states.pomoSetting;
+  const endTime = startTime + pause.totalLength + duration * 60 * 1000;
+  const sessionData = {
+    ...states,
+    endTime,
+    timeCountedDown: duration,
+  };
 
   repetitionCount++;
   running = false;
@@ -171,7 +243,8 @@ async function goNext(states, clientId) {
         component: "PatternTimer",
         value: shortBreakDuration,
       });
-      console.log(await getIdTokenAndEmail());
+      await persistSession("pomo", sessionData);
+      // console.log(await getIdTokenAndEmail());
     } else {
       //* This is when a short break is done.
       self.registration.showNotification("pomo", {
@@ -182,6 +255,7 @@ async function goNext(states, clientId) {
         component: "PatternTimer",
         value: pomoDuration,
       });
+      await persistSession("break", sessionData);
     }
   } else if (repetitionCount === numOfPomo * 2 - 1) {
     //This is when the last pomo of a cycle is completed.
@@ -194,6 +268,7 @@ async function goNext(states, clientId) {
       component: "PatternTimer",
       value: longBreakDuration,
     });
+    await persistSession("pomo", sessionData);
   } else if (repetitionCount === numOfPomo * 2) {
     //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
     self.registration.showNotification("nextCycle", {
@@ -209,120 +284,8 @@ async function goNext(states, clientId) {
       component: "PatternTimer",
       value: pomoDuration,
     });
+    await persistSession("break", sessionData);
   }
-}
-
-//#region Now
-// if the timer was running in the timer page, continue to count down the timer.
-async function countDown(setIntervalId, clientId) {
-  const wrapped = wrap(DB);
-  const store = wrapped.transaction("stateStore").objectStore("stateStore");
-  let states = (await store.getAll()).reduce((acc, cur) => {
-    return { ...acc, [cur.name]: cur.value };
-  }, {});
-  if (states.running && setIntervalId === null) {
-    let client = await self.clients.get(clientId);
-    let idOfSetInterval = setInterval(() => {
-      let remainingDuration = Math.floor(
-        (states.duration * 60 * 1000 -
-          (Date.now() - states.startTime - states.pause.totalLength)) /
-          1000
-      );
-      console.log("count down remaining duration", remainingDuration);
-      if (remainingDuration <= 0) {
-        console.log("idOfSetInterval", idOfSetInterval);
-        clearInterval(idOfSetInterval);
-        client.postMessage({ timerHasEnded: "clearLocalStorage" });
-        goNext(states, clientId);
-      }
-    }, 500);
-
-    client.postMessage({ idOfSetInterval });
-  }
-}
-//#endregion
-
-//data is like below.
-//{
-//   component: "Timer",
-//   stateArr: [
-//     { name: "startTime", value: action.payload },
-//     { name: "running", value: true },
-//   ],
-// };
-function saveStates(data) {
-  let transaction = DB.transaction("stateStore", "readwrite"); //immediately returns a transaction object.
-  transaction.onerror = (err) => {
-    console.warn(err);
-  };
-
-  transaction.oncomplete = (ev) => {
-    console.log("transaction has completed");
-  };
-
-  let stateStore = transaction.objectStore("stateStore");
-
-  console.log(data);
-
-  let component = data.component;
-  Array.from(data.stateArr).forEach((obj) => {
-    let req = stateStore.put({ ...obj, component });
-
-    req.onsuccess = (ev) => {
-      console.log("putting an object has succeeded");
-    };
-    req.onerror = (err) => {
-      console.warn(err);
-    };
-  });
-}
-
-function openDB(callback) {
-  let req = indexedDB.open("timerRelatedDB", IDB_VERSION);
-  req.onerror = (err) => {
-    console.warn(err);
-    DB = null;
-  };
-  req.onupgradeneeded = (ev) => {
-    DB = req.result;
-    let oldVersion = ev.oldVersion;
-    let newVersion = ev.newVersion || DB.version;
-    console.log("DB updated from version", oldVersion, "to", newVersion);
-
-    console.log("upgrade", DB);
-    if (!DB.objectStoreNames.contains("stateStore")) {
-      let stateStore = DB.createObjectStore("stateStore", {
-        keyPath: ["name", "component"],
-      });
-      objectStores.push(stateStore);
-    }
-  };
-
-  req.onsuccess = (ev) => {
-    // every time the connection to the argument db is successful.
-    DB = req.result;
-    console.log("DB connection has succeeded");
-    if (callback) {
-      callback();
-    }
-
-    DB.onversionchange = (ev) => {
-      DB && DB.close();
-      console.log("Database version has changed.", { versionchange: ev });
-      openDB();
-    };
-
-    DB.onclose = (ev) => {
-      console.log("The database connection was unexpectedly closed", ev);
-
-      DB = null;
-      openDB();
-    };
-  };
-
-  req.onblocked = (ev) => {
-    console.log("onblocked", ev);
-  };
 }
 
 async function recordPomo(duration, startTime) {
@@ -349,5 +312,25 @@ async function recordPomo(duration, startTime) {
     console.log("res of recordPomo in sw: ", res);
   } catch (err) {
     console.warn(err);
+  }
+}
+
+// same as the one in the src/index.tsx
+async function persistSession(kind, data) {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("recOfToday", "readwrite")
+    .objectStore("recOfToday");
+
+  console.log("sessionData", { kind, ...data });
+  try {
+    await store.add({ kind, ...data });
+    if (kind === "pomo") {
+      console.log("trying to add pomo", { kind, ...data });
+      BC.postMessage({ evName: "pomoAdded", payload: data.timeCountedDown });
+      console.log("pubsub event from sw", pubsub.events);
+    }
+  } catch (error) {
+    console.warn(error);
   }
 }

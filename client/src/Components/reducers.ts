@@ -11,10 +11,6 @@ export type PauseType = {
 export type TimerState = {
   running: boolean;
   startTime: number;
-  // pause?: {
-  //   totalLength: number;
-  //   record: { start: number; end: number | undefined }[];
-  // };
   pause: {
     totalLength: number;
     record: { start: number; end: number | undefined }[];

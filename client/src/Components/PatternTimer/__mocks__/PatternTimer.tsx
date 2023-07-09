@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Timer } from "../../Timer/Timer";
 import { UserInfo } from "../../../Context/UserContext";
+import { TimerState } from "../../reducers";
 
 export function PatternTimer() {
   const [duration, setDuration] = useState(0);
@@ -22,7 +23,7 @@ export function PatternTimer() {
    */
   function next(
     howManyCountdown: number,
-    startTime: number,
+    startTime: TimerState,
     concentrationTime: number = duration
   ) {
     if (howManyCountdown < numOfPomo! * 2 - 1) {
@@ -70,7 +71,7 @@ export function PatternTimer() {
           startTime: 1686971557618,
         }}
         //min to seconds
-        duration={duration * 60}
+        durationInSeconds={duration * 60}
         next={next}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}

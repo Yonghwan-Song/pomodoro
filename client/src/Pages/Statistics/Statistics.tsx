@@ -3,47 +3,273 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { UserAuth } from "../../Context/AuthContext";
 import * as CONSTANTS from "../../constants/index";
-import { LeftArrow, RightArrow } from "../../Components/Icons/ChevronArrows";
-import { BoxShadowWrapper } from "../../Components/Wrapper";
 import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
-import { FlexBox } from "../../Components/Layouts/FlexBox";
-import { Total } from "../../Components/Total";
-import { useWeek } from "./useWeek";
-import {
-  AreaChart,
-  Area,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { User } from "firebase/auth";
-import { TooltipProps } from "recharts";
-import { pomoType, StatArrType } from "./statRelatedTypes";
+import {
+  pomoType,
+  CertainWeek,
+  DailyPomo,
+  StatArrType,
+} from "./statRelatedTypes";
 import { postMsgToSW } from "../..";
+import { pubsub } from "../../pubsub";
+import { startOfWeek, endOfWeek } from "date-fns";
+import { Overview } from "./Overview";
+import { Graph } from "./Graph";
 
 export default function Statistics() {
   const { user } = UserAuth()!;
   const [statArr, setStatArr] = useState<StatArrType>([]);
-  const {
-    todayTotal,
-    lastDayTotal,
-    thisWeekTotal,
-    lastWeekTotal,
-    thisMonthTotal,
-    lastMonthTotal,
-    total,
-    calculateOverview,
-    week,
-    prevWeek,
-    nextWeek,
-    thisWeek,
-    average,
-    weekRange,
-  } = useWeek();
-  //#region functions
+  const [todayTotal, setTodayTotal] = useState(0);
+  const [lastDayTotal, setLastDayTotal] = useState(0);
+  const [thisWeekTotal, setThisWeekTotal] = useState(0);
+  const [lastWeekTotal, setLastWeekTotal] = useState(0);
+  const [thisMonthTotal, setThisMonthTotal] = useState(0);
+  const [lastMonthTotal, setLastMonthTotal] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [week, setWeek] = useState<CertainWeek>(init);
+  const [weekStart, setWeekStart] = useState(
+    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+  );
+  const [weekEnd, setWeekEnd] = useState(
+    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+  );
+  const [average, setAverage] = useState(0);
+  const [weekRange, setWeekRange] = useState("");
+  const _24h = 24 * 60 * 60 * 1000;
+  //#region from the previous useWeek.tsx
+  /**
+   * Purpose: to calculate overview, such as the totals of today, this week, and this month as well as the total of all pomo records.
+   * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
+  function calculateOverview(statArray: StatArrType) {
+    const now = new Date();
+    //#region today and the last day total
+    const startOfTodayTimestamp = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    ).getTime();
+
+    let todayObject = statArray.find(
+      (obj) => obj.timestamp === startOfTodayTimestamp
+    );
+    if (todayObject) {
+      setTodayTotal(todayObject.total);
+    }
+    let lastDayObject = statArray.find(
+      (obj) => obj.timestamp === startOfTodayTimestamp - _24h
+    );
+    if (lastDayObject) {
+      setLastDayTotal(lastDayObject.total);
+    }
+    //#endregion
+
+    //#region week total
+    const thisWeekStartTimestamp = startOfWeek(now, {
+      weekStartsOn: 1,
+    }).getTime();
+    const thisWeekEndTimestamp = endOfWeek(now, {
+      weekStartsOn: 1,
+    }).getTime();
+
+    let thisWeekData = filterWeekData(
+      statArray,
+      thisWeekStartTimestamp,
+      thisWeekEndTimestamp
+    );
+    const thisWeekSum = thisWeekData.reduce(
+      (acc: number, cur: DailyPomo) => acc + cur.total,
+      0
+    );
+    setThisWeekTotal(thisWeekSum);
+
+    let lastWeekData = filterWeekData(
+      statArray,
+      thisWeekStartTimestamp - 7 * _24h,
+      thisWeekEndTimestamp - 7 * _24h
+    );
+    const lastWeekSum = lastWeekData.reduce(
+      (acc: number, cur: DailyPomo) => acc + cur.total,
+      0
+    );
+    setLastWeekTotal(lastWeekSum);
+    //#endregion
+
+    //#region month total
+    const thisMonthStartTimestamp = new Date(
+      now.getFullYear(),
+      now.getMonth()
+    ).getTime();
+    let thisMonthEndTimestamp = 0;
+    if (now.getMonth() === 11) {
+      thisMonthEndTimestamp = new Date(now.getFullYear() + 1, 0).getTime() - 1;
+    } else {
+      thisMonthEndTimestamp =
+        new Date(now.getFullYear(), now.getMonth() + 1).getTime() - 1;
+    }
+
+    let thisMonthData = filterWeekData(
+      statArray,
+      thisMonthStartTimestamp,
+      thisMonthEndTimestamp
+    );
+    const thisMonthSum = thisMonthData.reduce(
+      (acc: number, cur: DailyPomo) => acc + cur.total,
+      0
+    );
+    setThisMonthTotal(thisMonthSum);
+
+    let lastMonthStartTimestamp = 0;
+    if (now.getMonth() === 0) {
+      lastMonthStartTimestamp = new Date(now.getFullYear() - 1, 11).getTime();
+    } else {
+      lastMonthStartTimestamp = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1
+      ).getTime();
+    }
+    const lastMonthEndTimestamp = thisMonthStartTimestamp - 1;
+
+    let lastMonthData = filterWeekData(
+      statArray,
+      lastMonthStartTimestamp,
+      lastMonthEndTimestamp
+    );
+    const lastMonthSum = lastMonthData.reduce(
+      (acc: number, cur: DailyPomo) => acc + cur.total,
+      0
+    );
+    setLastMonthTotal(lastMonthSum);
+    //#endregion
+
+    // total of all records
+    const sum = statArray.reduce((acc, cur) => acc + cur.total, 0);
+    setTotal(sum);
+  }
+  /**
+   * Purpose:  to filter the statArray to get the array of this week
+   *           and use the filtered array to set the week state variable.
+   *           An average and weekRange are calcuated and set using the filtered array.
+   * @param {StatArrType} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
+  function setThisWeek(statArray: StatArrType) {
+    let weekCloned = [...week];
+    let correspondingWeekData = filterWeekData(statArray, weekStart, weekEnd);
+    compareAndFill(weekCloned as DailyPomo[], correspondingWeekData);
+
+    let sum = correspondingWeekData.reduce((acc: number, cur: DailyPomo) => {
+      return acc + cur.total;
+    }, 0);
+
+    setAverage(Math.trunc(sum / (new Date().getDay() || 7)));
+    setWeekRange(
+      `${weekCloned[0].date
+        .slice(0, -5)
+        .replace("/", ". ")} - ${weekCloned[6].date
+        .slice(0, -5)
+        .replace("/", ". ")}`
+    );
+
+    setWeek(weekCloned);
+  }
+
+  /**
+   * Purpose:  to filter the statArray to get the array of one week before the week currently appearing on the chart
+   *           and set the week state to the filtered array.
+   *           An average and weekRange are calcuated and set using the filtered array.
+   * @param {StatArrType} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
+  function setPrevWeek(statArray: StatArrType) {
+    let weekCloned = [...week] as DailyPomo[];
+    let newWeekStart = weekStart - 7 * _24h;
+    let newWeekEnd = weekEnd - 7 * _24h;
+    for (let i = 0; i < 7; i++) {
+      weekCloned[i].date = new Date(
+        newWeekStart + i * _24h
+      ).toLocaleDateString();
+
+      weekCloned[i].timestamp = newWeekStart + i * _24h;
+    }
+    setWeekStart(newWeekStart);
+    setWeekEnd(newWeekEnd);
+
+    let correspondingWeekData = filterWeekData(
+      statArray,
+      newWeekStart,
+      newWeekEnd
+    );
+    compareAndFill(weekCloned, correspondingWeekData);
+
+    let sum = correspondingWeekData.reduce((acc, cur) => {
+      return acc + cur.total;
+    }, 0);
+    setAverage(Math.trunc(sum / 7));
+    setWeekRange(
+      `${weekCloned[0].date
+        .slice(0, -5)
+        .replace("/", ". ")} - ${weekCloned[6].date
+        .slice(0, -5)
+        .replace("/", ". ")}`
+    );
+    setWeek(weekCloned);
+  }
+
+  /**
+   * Purpose:  to filter the statArray to get the array of one week after the week currently appearing on the chart
+   *           and set the week state to the filtered array.
+   *           An average and weekRange are calcuated and set using the filtered array.
+   * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   */
+  function setNextWeek(statArray: StatArrType) {
+    let weekCloned = [...week];
+
+    if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
+      alert("No more data");
+    } else {
+      let newWeekStart = weekStart + 7 * _24h;
+      let newWeekEnd = weekEnd + 7 * _24h;
+      for (let i = 0; i < 7; i++) {
+        weekCloned[i].date = new Date(
+          newWeekStart + i * _24h
+        ).toLocaleDateString();
+        delete weekCloned[i].total;
+        weekCloned[i].timestamp = newWeekStart + i * _24h;
+      }
+      setWeekStart(newWeekStart);
+      setWeekEnd(newWeekEnd);
+
+      let correspondingWeekData = filterWeekData(
+        statArray,
+        newWeekStart,
+        newWeekEnd
+      );
+
+      compareAndFill(weekCloned, correspondingWeekData);
+
+      let sum = correspondingWeekData.reduce((acc, cur) => {
+        return acc + cur.total;
+      }, 0);
+      if (
+        newWeekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+      ) {
+        setAverage(Math.trunc(sum / new Date().getDay()));
+      } else {
+        setAverage(Math.trunc(sum / 7));
+      }
+
+      setWeekRange(
+        `${weekCloned[0].date
+          .slice(0, -5)
+          .replace("/", ". ")} - ${weekCloned[6].date
+          .slice(0, -5)
+          .replace("/", ". ")}`
+      );
+      setWeek(weekCloned);
+    }
+  }
+  //#endregion
 
   /**
    * TODO: Purpose:
@@ -96,10 +322,11 @@ export default function Statistics() {
             ];
           }
         }, []);
-      console.log(durationByDateArr);
+      console.log("pomoRecords", pomoRecords);
+      console.log("durationByDateArr", durationByDateArr);
       setStatArr(durationByDateArr); //!
       calculateOverview(durationByDateArr);
-      thisWeek(durationByDateArr);
+      setThisWeek(durationByDateArr);
     } catch (error) {
       console.log(error);
     }
@@ -122,167 +349,167 @@ export default function Statistics() {
 
   useEffect(() => {
     postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
+    const unsub = pubsub.subscribe("pomoAdded", (data: number) => {
+      console.log("pomoAdded", data);
+
+      setStatArr((prev) => {
+        let cloned = [...prev];
+        cloned[cloned.length - 1].total += data;
+        setThisWeek(cloned);
+        return cloned;
+      });
+      setTodayTotal((prev) => prev + data);
+      setThisWeekTotal((prev) => prev + data);
+      setThisMonthTotal((prev) => prev + data);
+      setTotal((prev) => prev + data);
+    });
+
+    return () => {
+      unsub();
+    };
   }, []);
 
+  useEffect(() => {
+    console.log("sth has changed");
+    console.log("statArr", statArr);
+  });
+
   return (
-    <Grid>
-      <GridItem>
-        <BoxShadowWrapper fontSize={"1em"}>
-          <FlexBox>
-            <Total
-              thisTotal={todayTotal}
-              lastTotal={lastDayTotal}
-              target="day"
-              message="Today"
-            />
-
-            <Total
-              thisTotal={thisWeekTotal}
-              lastTotal={lastWeekTotal}
-              target="week"
-              message="This week"
-            />
-
-            <Total
-              thisTotal={thisMonthTotal}
-              lastTotal={lastMonthTotal}
-              target="month"
-              message="This month"
-            />
-
-            <div>
-              <h4>Total</h4>
-              <h3
-                style={{
-                  color: "#6272a4",
-                  fontWeight: "bold",
-                  fontSize: "1.2em",
-                }}
-              >
-                {Math.floor(total / 60)}h {total % 60}m
-              </h3>
-            </div>
-          </FlexBox>
-        </BoxShadowWrapper>
-      </GridItem>
-      <GridItem>
-        <BoxShadowWrapper>
-          <div
-            style={{
-              position: "absolute",
-              display: "flex",
-              right: 0,
-              top: "10px",
-              marginRight: "20px",
-              zIndex: 2,
-            }}
-          >
-            <LeftArrow handleClick={() => prevWeek(statArr)} />
-            <p>{weekRange}</p>
-            <RightArrow handleClick={() => nextWeek(statArr)} />
-          </div>
-
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart
-              data={week}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="color" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset={"0%"} stopColor="#0740c7" stopOpacity={0.4} />
-                  <stop offset={"75%"} stopColor="#0740c7" stopOpacity={0.05} />
-                </linearGradient>
-                <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a3d4f9" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#a3d4f9" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-
-              <Area
-                type="monotone"
-                dataKey="total"
-                dot={{
-                  strokeWidth: 1.5,
-                  r: 3,
-                  fill: "#ffffff",
-                }}
-                stroke="#302783"
-                strokeWidth={1.5}
-                fillOpacity={1}
-                fill="url(#color)"
-              />
-              <XAxis dataKey="dayOfWeek" axisLine={false} tickLine={false} />
-
-              <YAxis axisLine={false} tickLine={false} tick={false} />
-              <ReferenceLine
-                y={average}
-                label={`Average ${Math.floor(average / 60)}h ${average % 60}m`}
-                stroke="#ed8262"
-                strokeDasharray="3 3"
-              />
-
-              <Tooltip content={CustomTooltip} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </BoxShadowWrapper>
-      </GridItem>
-    </Grid>
+    <>
+      <Grid>
+        <GridItem>
+          <Overview
+            todayTotal={todayTotal}
+            lastDayTotal={lastDayTotal}
+            thisWeekTotal={thisWeekTotal}
+            lastWeekTotal={lastWeekTotal}
+            thisMonthTotal={thisMonthTotal}
+            lastMonthTotal={lastMonthTotal}
+            total={total}
+          />
+        </GridItem>
+        <GridItem>
+          <Graph
+            setPrevWeek={setPrevWeek}
+            setNextWeek={setNextWeek}
+            weekRange={weekRange}
+            statArr={statArr}
+            average={average}
+            week={week}
+          />
+        </GridItem>
+      </Grid>
+    </>
   );
 }
 
 /**
- * payload[0] is like below 
- * 
-    {
-        "stroke": "#302783",
-        "strokeWidth": 1.5,
-        "fillOpacity": 1,
-        "fill": "url(#color)",
-        "points": [],
-        "dataKey": "total",
-        "name": "total",
-        "color": "#302783",
-        "value": 2,
-        "payload": {
-            "date": "4/26/2023",
-            "dayOfWeek": "Wed",
-            "timestamp": 1682434800000,
-            "total": 2
-        }
-    }
-  
-  And, the payload[0].payload is an element of the week array which is passed as the data prop of AreaChart.
+ * Purpose: to initialize the local state variable, week.
+ * @returns the array representing the current week. But the elements in it do not get the property, total.
+ * Each total of elements is going to be added in the compareAndFill method defined below.
+ * e.g 
+ *  [
+      {
+        "date": "4/26/2023",
+        "dayOfWeek": "Wed",
+        "timestamp": 1682434800000
+      },
+      ...
+    ]
  */
-// https://stackoverflow.com/questions/65913461/typescript-interface-for-recharts-custom-tooltip
-function CustomTooltip({
-  active,
-  payload,
-  label,
-}: TooltipProps<number, string>) {
-  if (active && payload && payload.length) {
+
+function init() {
+  let weekArr: CertainWeek = [
+    {
+      date: "",
+      dayOfWeek: "Mon",
+      timestamp: 0,
+    },
+    {
+      date: "",
+      dayOfWeek: "Tue",
+      timestamp: 0,
+    },
+    {
+      date: "",
+      dayOfWeek: "Wed",
+      timestamp: 0,
+    },
+    {
+      date: "",
+      dayOfWeek: "Thu",
+      timestamp: 0,
+    },
+    {
+      date: "",
+      dayOfWeek: "Fri",
+      timestamp: 0,
+    },
+    {
+      date: "",
+      dayOfWeek: "Sat",
+      timestamp: 0,
+    },
+    {
+      date: "",
+      dayOfWeek: "Sun",
+      timestamp: 0,
+    },
+  ];
+
+  const start = startOfWeek(new Date(), { weekStartsOn: 1 });
+  weekArr[0].date = start.toLocaleDateString();
+
+  const startOfWeekTimestamp = start.getTime();
+  weekArr[0].timestamp = startOfWeekTimestamp;
+
+  const _24h = 24 * 60 * 60 * 1000;
+  for (let i = 1; i < 7; i++) {
+    weekArr[i].date = new Date(
+      startOfWeekTimestamp + i * _24h
+    ).toLocaleDateString();
+    weekArr[i].timestamp = startOfWeekTimestamp + i * _24h;
+  }
+
+  return weekArr;
+}
+
+/**
+ * Purpose: to extract a specific week data from the statArray
+ * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+ * @param {*} timestampOfStartOfWeek
+ * @param {*} timestampOfEndOfWeek
+ * @returns a particular week array determined by the second and the third argument.
+ */
+function filterWeekData(
+  statArray: StatArrType,
+  timestampOfStartOfWeek: number,
+  timestampOfEndOfWeek: number
+): StatArrType {
+  return statArray.filter((ele) => {
     return (
-      <div
-        style={{
-          borderRadius: "0.25rem",
-          background: "#26313c",
-          color: "#fff",
-          padding: "1rem",
-          boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
-          textAlign: "center",
-        }}
-      >
-        <h4>{payload[0].payload.date}</h4>
-        <p>
-          {payload[0].value !== undefined
-            ? `${Math.trunc(payload[0].value / 60)}h ${payload[0].value % 60}m`
-            : ""}
-        </p>
-        <p>{payload[0].value}m</p>
-      </div>
+      ele.timestamp <= timestampOfEndOfWeek && //! eg. value is ending with multiple 9s like 1665374399999
+      ele.timestamp >= timestampOfStartOfWeek
     );
+  });
+}
+
+/**
+ * Purpose: to copy the data(total property) from filteredWeek to week state
+ * @param {*} week the local week state in this component
+ * @param {*} filteredWeek a filtered array representing a particular week
+ */
+function compareAndFill(
+  // week: Omit<DailyPomo, "total">[],
+  week: CertainWeek,
+  filteredWeek: StatArrType
+) {
+  for (let element of week) {
+    let matchingObj = filteredWeek.find((obj) => obj.date === element.date);
+    if (matchingObj) {
+      element.total = matchingObj.total;
+    } else if (element.timestamp <= new Date().getTime()) {
+      element.total = 0;
+    }
   }
 }

@@ -22,5 +22,5 @@ export const URLs = {
   POMO: "https://pomodoro-apis.onrender.com/pomos",
 };
 
-export const IDB_VERSION = 4;
+export const IDB_VERSION = 5;
 //#endregion

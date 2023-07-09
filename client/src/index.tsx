@@ -5,10 +5,11 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Main, Signin, Setting, Statistics } from "./Pages/index";
 import Protected from "./Components/Protected";
 import { IDBPDatabase, DBSchema, openDB } from "idb";
-import { PauseType } from "./Components/reducers";
+import { PauseType, TimerState } from "./Components/reducers";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./Context/UserContext";
 import { IDB_VERSION } from "./constants";
+import { pubsub } from "./pubsub";
 
 type dataCombinedFromIDB = {
   running: boolean;
@@ -24,10 +25,14 @@ type dataCombinedFromIDB = {
 export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
 
 export let SW: ServiceWorker | null = null;
-// export let DB: IDBDatabase | null = null;
 export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let TimerRelatedStates: StatesType | null = null;
-// let objectStores: IDBObjectStore[] = [];
+const DC = new BroadcastChannel("pomodoro");
+
+DC.addEventListener("message", (ev) => {
+  const { evName, payload } = ev.data;
+  pubsub.publish(evName, payload);
+});
 
 interface TimerRelatedDB extends DBSchema {
   stateStore: {
@@ -38,12 +43,29 @@ interface TimerRelatedDB extends DBSchema {
     };
     key: [string, string];
   };
+  recOfToday: {
+    value: {
+      kind: "pomo" | "break";
+      startTime: number;
+
+      // startTime + duration
+      // Or starTime + timePassed (this is when a user ends the session in the middle)
+      endTime: number;
+      timeCountedDown: number; //in minutes
+      pause: {
+        totalLength: number;
+        record: { start: number; end: number | undefined }[];
+      };
+    };
+    key: [number];
+  };
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   registerServiceWorker();
   // openIDB();
   DB = await openIndexedDB();
+  await deleteRecordsBeforeTodayInIDB();
 });
 
 window.addEventListener("beforeunload", (event) => {
@@ -157,11 +179,18 @@ async function openIndexedDB() {
     upgrade(db, oldVersion, newVersion, transaction, event) {
       console.log("DB updated from version", oldVersion, "to", newVersion);
 
-      if (!db.objectStoreNames.contains("stateStore")) {
-        db.createObjectStore("stateStore", {
-          keyPath: ["name", "component"],
-        });
+      if (db.objectStoreNames.contains("stateStore")) {
+        db.deleteObjectStore("stateStore");
       }
+      db.createObjectStore("stateStore", {
+        keyPath: ["name", "component"],
+      });
+      if (db.objectStoreNames.contains("recOfToday")) {
+        db.deleteObjectStore("recOfToday");
+      }
+      db.createObjectStore("recOfToday", {
+        keyPath: ["startTime"],
+      });
     },
     blocking(currentVersion, blockedVersion, event) {
       console.log("blocking", event);
@@ -193,6 +222,58 @@ export async function obtainStatesFromIDB(): Promise<StatesType | {}> {
     return withoutPomoSetting;
   } else {
     return {};
+  }
+}
+// But, if a user does not close the app, for example, from 11:00 pm to 12:30 am of the next day,
+// the records of the previous day still exists in the idb.
+export async function deleteRecordsBeforeTodayInIDB() {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("recOfToday", "readwrite")
+    .objectStore("recOfToday");
+  const allSessions = await store.getAll();
+  const now = new Date();
+  const startOfTodayTimestamp = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  ).getTime();
+  allSessions.forEach(async (rec) => {
+    if (rec.endTime < startOfTodayTimestamp) {
+      await store.delete([rec.startTime]);
+    }
+  });
+}
+export async function retrieveTodaySessionsFromIDB() {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("recOfToday", "readwrite")
+    .objectStore("recOfToday");
+  const allSessions = await store.getAll();
+  console.log("allSessions", allSessions);
+}
+
+export async function persistSession(
+  kind: "pomo" | "break",
+  data: Omit<TimerState, "running"> & {
+    endTime: number;
+    timeCountedDown: number;
+  }
+) {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("recOfToday", "readwrite")
+    .objectStore("recOfToday");
+
+  console.log("sessionData", { kind, ...data });
+  try {
+    await store.add({ kind, ...data });
+    if (kind === "pomo") {
+      console.log("trying to add pomo", { kind, ...data });
+      pubsub.publish("pomoAdded", data.timeCountedDown);
+    }
+  } catch (error) {
+    console.warn(error);
   }
 }
 

@@ -4,7 +4,8 @@ import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
 import { UserAuth } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
-import { StatesType, postMsgToSW } from "../..";
+import { StatesType, persistSession, postMsgToSW } from "../..";
+import { TimerState } from "../reducers";
 
 type PatternTimerProps = {
   statesRelatedToTimer: StatesType | {};
@@ -49,22 +50,36 @@ export function PatternTimer({
    * @param {*} startTime
    * @param {*} concentrationTime
    */
-  function next(
+  async function next(
     howManyCountdown: number,
-    startTime: number,
-    concentrationTime: number = duration
+    state: TimerState,
+    concentrationTime: number = duration,
+    pauseEnd?: number
   ) {
+    const { running, ...withoutRunning } = state;
+
+    // When a user end a timer while it's paused, the end of pause is equal to the end of timer.
+    const endTime =
+      pauseEnd ||
+      state.startTime + state.pause.totalLength + concentrationTime * 60 * 1000;
+    const sessionData = {
+      ...withoutRunning,
+      endTime,
+      timeCountedDown: concentrationTime,
+    };
+
     if (howManyCountdown < numOfPomo! * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
         //! This is when a pomo, which is not the last one of a cycle, is completed.
         console.log("ONE POMO DURATION IS FINISHED");
-        recordPomo(user!, concentrationTime, startTime); // Non null assertion is correct because a user is already signed in at this point.
+        recordPomo(user!, concentrationTime, state.startTime); // Non null assertion is correct because a user is already signed in at this point.
         notify("shortBreak");
         setDuration(shortBreakDuration!);
         postMsgToSW("saveStates", {
           component: "PatternTimer",
           stateArr: [{ name: "duration", value: shortBreakDuration }],
         });
+        await persistSession("pomo", sessionData);
       } else {
         //! This is when a short break is done.
         notify("pomo");
@@ -73,17 +88,19 @@ export function PatternTimer({
           component: "PatternTimer",
           stateArr: [{ name: "duration", value: pomoDuration }],
         });
+        await persistSession("break", sessionData);
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
       console.log("ONE POMO DURATION IS FINISHED");
-      recordPomo(user!, concentrationTime, startTime);
+      recordPomo(user!, concentrationTime, state.startTime);
       notify("longBreak");
       setDuration(longBreakDuration!);
       postMsgToSW("saveStates", {
         component: "PatternTimer",
         stateArr: [{ name: "duration", value: longBreakDuration }],
       });
+      await persistSession("pomo", sessionData);
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
       console.log("one cycle is done");
@@ -100,6 +117,7 @@ export function PatternTimer({
           { name: "repetitionCount", value: 0 },
         ],
       });
+      await persistSession("break", sessionData);
     }
   }
 
@@ -108,7 +126,7 @@ export function PatternTimer({
       <Timer
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
-        duration={duration * 60}
+        durationInSeconds={duration * 60}
         next={next}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}
