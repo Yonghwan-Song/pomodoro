@@ -27,10 +27,11 @@ export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
 export let SW: ServiceWorker | null = null;
 export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let TimerRelatedStates: StatesType | null = null;
-const DC = new BroadcastChannel("pomodoro");
+const BC = new BroadcastChannel("pomodoro");
 
-DC.addEventListener("message", (ev) => {
+BC.addEventListener("message", (ev) => {
   const { evName, payload } = ev.data;
+  console.log("payload of BC", payload);
   pubsub.publish(evName, payload);
 });
 
@@ -270,7 +271,7 @@ export async function persistSession(
     await store.add({ kind, ...data });
     if (kind === "pomo") {
       console.log("trying to add pomo", { kind, ...data });
-      pubsub.publish("pomoAdded", data.timeCountedDown);
+      // pubsub.publish("pomoAdded", data); //이거 없애도 될 듯.
     }
   } catch (error) {
     console.warn(error);

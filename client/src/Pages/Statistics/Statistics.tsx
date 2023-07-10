@@ -13,7 +13,7 @@ import {
   StatArrType,
 } from "./statRelatedTypes";
 import { postMsgToSW } from "../..";
-import { pubsub } from "../../pubsub";
+import { PayloadFromRecOfToday, pubsub } from "../../pubsub";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { Overview } from "./Overview";
 import { Graph } from "./Graph";
@@ -157,7 +157,7 @@ export default function Statistics() {
   function setThisWeek(statArray: StatArrType) {
     let weekCloned = [...week];
     let correspondingWeekData = filterWeekData(statArray, weekStart, weekEnd);
-    compareAndFill(weekCloned as DailyPomo[], correspondingWeekData);
+    fillWeekCloned(weekCloned as DailyPomo[], correspondingWeekData);
 
     let sum = correspondingWeekData.reduce((acc: number, cur: DailyPomo) => {
       return acc + cur.total;
@@ -171,6 +171,7 @@ export default function Statistics() {
         .slice(0, -5)
         .replace("/", ". ")}`
     );
+    // setWeekRange(`${weekCloned[0].date} - ${weekCloned[6].date}`);
 
     setWeek(weekCloned);
   }
@@ -186,9 +187,10 @@ export default function Statistics() {
     let newWeekStart = weekStart - 7 * _24h;
     let newWeekEnd = weekEnd - 7 * _24h;
     for (let i = 0; i < 7; i++) {
-      weekCloned[i].date = new Date(
-        newWeekStart + i * _24h
-      ).toLocaleDateString();
+      let aDate = new Date(newWeekStart + i * _24h);
+      weekCloned[i].date = `${
+        aDate.getMonth() + 1
+      }/${aDate.getDate()}/${aDate.getFullYear()}`;
 
       weekCloned[i].timestamp = newWeekStart + i * _24h;
     }
@@ -200,7 +202,7 @@ export default function Statistics() {
       newWeekStart,
       newWeekEnd
     );
-    compareAndFill(weekCloned, correspondingWeekData);
+    fillWeekCloned(weekCloned, correspondingWeekData);
 
     let sum = correspondingWeekData.reduce((acc, cur) => {
       return acc + cur.total;
@@ -213,6 +215,7 @@ export default function Statistics() {
         .slice(0, -5)
         .replace("/", ". ")}`
     );
+    // setWeekRange(`${weekCloned[0].date} - ${weekCloned[6].date}`);
     setWeek(weekCloned);
   }
 
@@ -231,9 +234,10 @@ export default function Statistics() {
       let newWeekStart = weekStart + 7 * _24h;
       let newWeekEnd = weekEnd + 7 * _24h;
       for (let i = 0; i < 7; i++) {
-        weekCloned[i].date = new Date(
-          newWeekStart + i * _24h
-        ).toLocaleDateString();
+        let aDate = new Date(newWeekStart + i * _24h);
+        weekCloned[i].date = `${
+          aDate.getMonth() + 1
+        }/${aDate.getDate()}/${aDate.getFullYear()}`;
         delete weekCloned[i].total;
         weekCloned[i].timestamp = newWeekStart + i * _24h;
       }
@@ -246,7 +250,7 @@ export default function Statistics() {
         newWeekEnd
       );
 
-      compareAndFill(weekCloned, correspondingWeekData);
+      fillWeekCloned(weekCloned, correspondingWeekData);
 
       let sum = correspondingWeekData.reduce((acc, cur) => {
         return acc + cur.total;
@@ -266,6 +270,7 @@ export default function Statistics() {
           .slice(0, -5)
           .replace("/", ". ")}`
       );
+      // setWeekRange(`${weekCloned[0].date} - ${weekCloned[6].date}`);
       setWeek(weekCloned);
     }
   }
@@ -341,28 +346,48 @@ export default function Statistics() {
       getStatArr(user);
     }
 
-    console.log(week);
-    console.log(`Average - ${average}`);
-    console.log(`todayTotal - ${todayTotal}`);
-    console.log(`lastDayTotal - ${lastDayTotal}`);
+    // console.log(week);
+    // console.log(`Average - ${average}`);
+    // console.log(`todayTotal - ${todayTotal}`);
+    // console.log(`lastDayTotal - ${lastDayTotal}`);
   }, [user]);
 
   useEffect(() => {
     postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
-    const unsub = pubsub.subscribe("pomoAdded", (data: number) => {
-      console.log("pomoAdded", data);
+    const unsub = pubsub.subscribe(
+      "pomoAdded",
+      (data: PayloadFromRecOfToday) => {
+        console.log("pomoAdded", data);
 
-      setStatArr((prev) => {
-        let cloned = [...prev];
-        cloned[cloned.length - 1].total += data;
-        setThisWeek(cloned);
-        return cloned;
-      });
-      setTodayTotal((prev) => prev + data);
-      setThisWeekTotal((prev) => prev + data);
-      setThisMonthTotal((prev) => prev + data);
-      setTotal((prev) => prev + data);
-    });
+        setStatArr((prev) => {
+          console.log("prev", prev);
+          let cloned = [];
+          if (prev.length !== 0) {
+            cloned = [...prev];
+            cloned[cloned.length - 1].total += data.timeCountedDown;
+          } else {
+            let today = new Date();
+            const todayDateStr = `${
+              today.getMonth() + 1
+            }/${today.getDate()}/${today.getFullYear()}`;
+            let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+            cloned.push({
+              date: todayDateStr,
+              timestamp: data.startTime,
+              dayOfWeek: days[today.getDay()],
+              total: data.timeCountedDown,
+            });
+          }
+          setThisWeek(cloned);
+          return cloned;
+        });
+        setTodayTotal((prev) => prev + data.timeCountedDown);
+        setThisWeekTotal((prev) => prev + data.timeCountedDown);
+        setThisMonthTotal((prev) => prev + data.timeCountedDown);
+        setTotal((prev) => prev + data.timeCountedDown);
+      }
+    );
 
     return () => {
       unsub();
@@ -372,6 +397,7 @@ export default function Statistics() {
   useEffect(() => {
     console.log("sth has changed");
     console.log("statArr", statArr);
+    console.log("week", week);
   });
 
   return (
@@ -458,16 +484,21 @@ function init() {
   ];
 
   const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-  weekArr[0].date = start.toLocaleDateString();
+  // weekArr[0].date = `${start.getMonth() + 1}. ${start.getDate()}`;
+  weekArr[0].date = `${
+    start.getMonth() + 1
+  }/${start.getDate()}/${start.getFullYear()}`;
 
   const startOfWeekTimestamp = start.getTime();
   weekArr[0].timestamp = startOfWeekTimestamp;
 
   const _24h = 24 * 60 * 60 * 1000;
   for (let i = 1; i < 7; i++) {
-    weekArr[i].date = new Date(
-      startOfWeekTimestamp + i * _24h
-    ).toLocaleDateString();
+    let nextDate = new Date(startOfWeekTimestamp + i * _24h);
+    // weekArr[i].date = `${nextDate.getMonth() + 1}. ${nextDate.getDate()}`;
+    weekArr[i].date = `${
+      nextDate.getMonth() + 1
+    }/${nextDate.getDate()}/${nextDate.getFullYear()}`;
     weekArr[i].timestamp = startOfWeekTimestamp + i * _24h;
   }
 
@@ -496,16 +527,17 @@ function filterWeekData(
 
 /**
  * Purpose: to copy the data(total property) from filteredWeek to week state
- * @param {*} week the local week state in this component
+ * @param {*} weekCloned the local week state in this component
  * @param {*} filteredWeek a filtered array representing a particular week
  */
-function compareAndFill(
+function fillWeekCloned(
   // week: Omit<DailyPomo, "total">[],
-  week: CertainWeek,
+  weekCloned: CertainWeek,
   filteredWeek: StatArrType
 ) {
-  for (let element of week) {
+  for (let element of weekCloned) {
     let matchingObj = filteredWeek.find((obj) => obj.date === element.date);
+    console.log("matchingObj in fillWeekCloned", matchingObj);
     if (matchingObj) {
       element.total = matchingObj.total;
     } else if (element.timestamp <= new Date().getTime()) {

@@ -1,9 +1,23 @@
 // reference: https://www.youtube.com/watch?v=aynSM8llOBs
+
+export type PayloadFromRecOfToday = {
+  startTime: number;
+  timeCountedDown: number; //in minutes
+};
 interface PubsubType {
-  events: { [index: string]: Set<(data: number) => void> };
-  subscribe: (evName: string, fn: (data: number) => void) => () => void;
-  unsubscribe: (evName: string, fn: (data: number) => void) => void;
-  publish: (evName: string, data: number) => void;
+  events: { [index: string]: Set<(data: PayloadFromRecOfToday) => void> };
+  // subscribe: (evName: string, fn: (data: number) => void) => () => void;
+  // unsubscribe: (evName: string, fn: (data: number) => void) => void;
+  // publish: (evName: string, data: number) => void;
+  subscribe: (
+    evName: string,
+    fn: (data: PayloadFromRecOfToday) => void
+  ) => () => void;
+  unsubscribe: (
+    evName: string,
+    fn: (data: PayloadFromRecOfToday) => void
+  ) => void;
+  publish: (evName: string, data: PayloadFromRecOfToday) => void;
 }
 export const pubsub: PubsubType = {
   events: {},
@@ -27,7 +41,7 @@ export const pubsub: PubsubType = {
     }
   },
 
-  publish: function (evName, data: number) {
+  publish: function (evName, data: PayloadFromRecOfToday) {
     console.log("publish is called with data", data);
     console.log("this.events[evName]", this.events[evName]);
     console.log("this is", this);

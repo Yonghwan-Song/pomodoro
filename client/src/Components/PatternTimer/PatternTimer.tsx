@@ -148,7 +148,10 @@ export function PatternTimer({
 
 async function recordPomo(user: User, duration: number, startTime: number) {
   try {
-    let LocaleDateString = new Date(startTime).toLocaleDateString();
+    const today = new Date(startTime);
+    let LocaleDateString = `${
+      today.getMonth() + 1
+    }/${today.getDate()}/${today.getFullYear()}`;
     const idToken = await user.getIdToken();
     console.log(
       JSON.stringify({

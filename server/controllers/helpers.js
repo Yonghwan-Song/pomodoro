@@ -35,11 +35,14 @@ export function createRecords(
 
   for (let i = 0; i < numOfCycle; i++) {
     for (let j = 0; j < numOfPomo; j++) {
+      let aDate = new Date(startTime);
       pomoRecordArr.push({
         userEmail,
         duration: pomoDuration,
         startTime,
-        date: new Date(startTime).toLocaleDateString(),
+        date: `${
+          aDate.getMonth() + 1
+        }/${aDate.getDate()}/${aDate.getFullYear()}`,
       });
       if (j == numOfPomo - 1) {
         startTime +=

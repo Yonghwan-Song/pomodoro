@@ -13738,6 +13738,7 @@
   };
   var IDB_VERSION = 5; //#endregion
 
+  // reference: https://www.youtube.com/watch?v=aynSM8llOBs
   var pubsub = {
     events: {},
     subscribe: function subscribe(evName, fn) {
@@ -14327,18 +14328,19 @@
 
   function _recordPomo() {
     _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(duration, startTime) {
-      var LocaleDateString, _yield$getIdTokenAndE, idToken, email, body, res;
+      var today, LocaleDateString, _yield$getIdTokenAndE, idToken, email, body, res;
 
       return _regeneratorRuntime().wrap(function _callee9$(_context9) {
         while (1) {
           switch (_context9.prev = _context9.next) {
             case 0:
               _context9.prev = 0;
-              LocaleDateString = new Date(startTime).toLocaleDateString();
-              _context9.next = 4;
+              today = new Date(startTime);
+              LocaleDateString = "".concat(today.getMonth() + 1, "/").concat(today.getDate(), "/").concat(today.getFullYear());
+              _context9.next = 5;
               return getIdTokenAndEmail();
 
-            case 4:
+            case 5:
               _yield$getIdTokenAndE = _context9.sent;
               idToken = _yield$getIdTokenAndE.idToken;
               email = _yield$getIdTokenAndE.email;
@@ -14351,7 +14353,7 @@
                 LocaleDateString: LocaleDateString
               });
               console.log("body", body);
-              _context9.next = 13;
+              _context9.next = 14;
               return fetch(URLs.POMO, {
                 method: "POST",
                 body: body,
@@ -14361,23 +14363,23 @@
                 }
               });
 
-            case 13:
+            case 14:
               res = _context9.sent;
               console.log("res of recordPomo in sw: ", res);
-              _context9.next = 20;
+              _context9.next = 21;
               break;
 
-            case 17:
-              _context9.prev = 17;
+            case 18:
+              _context9.prev = 18;
               _context9.t0 = _context9["catch"](0);
               console.warn(_context9.t0);
 
-            case 20:
+            case 21:
             case "end":
               return _context9.stop();
           }
         }
-      }, _callee9, null, [[0, 17]]);
+      }, _callee9, null, [[0, 18]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
@@ -14422,10 +14424,11 @@
               if (kind === "pomo") {
                 console.log("trying to add pomo", _objectSpread2({
                   kind: kind
-                }, data));
+                }, data)); // BC.postMessage({ evName: "pomoAdded", payload: data.timeCountedDown });
+
                 BC.postMessage({
                   evName: "pomoAdded",
-                  payload: data.timeCountedDown
+                  payload: data
                 });
                 console.log("pubsub event from sw", pubsub.events);
               }

@@ -290,7 +290,10 @@ async function goNext(states, clientId) {
 
 async function recordPomo(duration, startTime) {
   try {
-    let LocaleDateString = new Date(startTime).toLocaleDateString();
+    const today = new Date(startTime);
+    let LocaleDateString = `${
+      today.getMonth() + 1
+    }/${today.getDate()}/${today.getFullYear()}`;
     const { idToken, email } = await getIdTokenAndEmail();
     console.log("idToken", idToken);
     console.log("email", email);
@@ -327,7 +330,8 @@ async function persistSession(kind, data) {
     await store.add({ kind, ...data });
     if (kind === "pomo") {
       console.log("trying to add pomo", { kind, ...data });
-      BC.postMessage({ evName: "pomoAdded", payload: data.timeCountedDown });
+      // BC.postMessage({ evName: "pomoAdded", payload: data.timeCountedDown });
+      BC.postMessage({ evName: "pomoAdded", payload: data });
       console.log("pubsub event from sw", pubsub.events);
     }
   } catch (error) {
