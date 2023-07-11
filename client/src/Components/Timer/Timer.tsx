@@ -16,23 +16,21 @@ import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
-import { SW, TimerRelatedStates } from "../..";
+import { StatesType, postMsgToSW } from "../..";
 
-/**
- *
- */
 type TimerProps = {
-  duration: number;
+  statesRelatedToTimer: StatesType | {};
+  durationInSeconds: number;
   next: (
     howManyCountdown: number,
-    startTime: number,
-    concentrationTime?: number
+    state: TimerState,
+    concentrationTime?: number,
+    pauseEnd?: number
   ) => void;
 
   // Let's assume that one cycle is like below
   // {(focus, short break) * 4 + Long break}.
   // Then, the timer is going to be run 9 times. Thus, repetitionCount is supposed to be 9.
-  // TODO: 맞냐?
   repetitionCount: number;
   setRepetitionCount: Dispatch<SetStateAction<number>>;
   isOnCycle: boolean;
@@ -40,7 +38,8 @@ type TimerProps = {
 };
 
 export function Timer({
-  duration,
+  statesRelatedToTimer,
+  durationInSeconds,
   next,
   repetitionCount,
   setRepetitionCount,
@@ -49,30 +48,6 @@ export function Timer({
 }: TimerProps) {
   //! idea: When a cycle is on meaning one cylce is not done yet, initial state is set from the prop
   //! otherwise: give
-  //#region Experiment with index.tsx - failed due to {}
-  // const [state, dispatch] = useReducer(reducer, {
-  //   running: TimerRelatedStates!.running,
-  //   startTime: TimerRelatedStates!.startTime,
-  //   pause: TimerRelatedStates!.pause,
-  // });
-  // const [remainingDuration, setRemainingDuration] = useState(() => {
-  //   return Math.floor(
-  //     (TimerRelatedStates!.duration * 1000 -
-  //       (Date.now() -
-  //         TimerRelatedStates!.startTime -
-  //         TimerRelatedStates!.pause.totalLength)) /
-  //       1000
-  //   );
-  // });
-  //#endregion
-  //#region Original
-  // const [state, dispatch] = useReducer(reducer, {
-  //   running: false,
-  //   startTime: 0,
-  //   pause: { totalLength: 0, record: [] },
-  // });
-  // const [remainingDuration, setRemainingDuration] = useState(duration || 0);
-  //#endregion
 
   //#region for a lazy initialization
   //1. I === Omit<TimerState, "running" | "startTime">
@@ -96,11 +71,9 @@ export function Timer({
       timePassed = 0,
       timeCountedDown = 0;
 
-    if (
-      TimerRelatedStates !== null &&
-      Object.keys(TimerRelatedStates).length !== 0
-    ) {
-      let { duration, pause, running, startTime } = TimerRelatedStates;
+    if (Object.keys(statesRelatedToTimer).length !== 0) {
+      let { duration, pause, running, startTime } =
+        statesRelatedToTimer as StatesType;
 
       let durationInSeconds = duration * 60;
 
@@ -128,6 +101,20 @@ export function Timer({
   });
   //#endregion
 
+  //#region 작동하는 것
+  function init(initialState: TimerState): TimerState {
+    let retVal = initialState;
+    if (Object.keys(statesRelatedToTimer).length !== 0) {
+      retVal = {
+        running: (statesRelatedToTimer as StatesType).running,
+        startTime: (statesRelatedToTimer as StatesType).startTime,
+        pause: (statesRelatedToTimer as StatesType).pause,
+      };
+    }
+    return retVal;
+  }
+  //#endregion
+
   let seconds = 0;
 
   function toggleTimer() {
@@ -137,11 +124,11 @@ export function Timer({
       if (repetitionCount === 0) {
         //! repetitionCount is the information from the PatternTimer component.
         // a cylce of pomo durations has started.
-        SW?.postMessage({
+        postMsgToSW("saveStates", {
           component: "PatternTimer",
           stateArr: [
             { name: "repetitionCount", value: 0 },
-            { name: "duration", value: duration / 60 },
+            { name: "duration", value: durationInSeconds / 60 },
           ],
         });
         setIsOnCycle(true);
@@ -162,74 +149,29 @@ export function Timer({
     }
   }
 
-  function endTimer() {
-    let timePassed = Math.floor((duration - remainingDuration) / 60);
+  function endTimer(now: number) {
+    let timeCountedDown = Math.floor(
+      (durationInSeconds - remainingDuration) / 60
+    );
     setRepetitionCount(repetitionCount + 1);
-    SW?.postMessage({
+    postMsgToSW("saveStates", {
       component: "PatternTimer",
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
-    next(repetitionCount + 1, state.startTime, timePassed);
+    if (state.running) {
+      next(repetitionCount + 1, state, timeCountedDown);
+    } else {
+      // end a timer when it's paused.
+      next(repetitionCount + 1, state, timeCountedDown, now);
+    }
     dispatch({ type: ACTION.RESET });
     setRemainingDuration(0);
   }
 
-  /*  useEffect(() => {
-    console.log(`startTime - ${state.startTime}`);
-    console.log(`running- ${state.running}`);
-  }, [state.startTime, state.running]);*/
-
-  //#region useEffect experimental
-  // lifecycle -> 1.mount 2.update(=== unmount + mount) ... 3.unmount
-  // [] is for the 1 and 3 especially, the funtion returned is going to be called only for the last unmount. :::... 이거 맞아<???>
-  // not for the unmounts by the update phase.
+  //#region side effects
   useEffect(() => {
-    // async function getStatesFromIndexedDB() {
-    //   let running = await retrieveState<boolean>(false, "running", "Timer");
-    //   let startTime = await retrieveState<number>(0, "startTime", "Timer");
-    //   let pause = await retrieveState<PauseType>(
-    //     { totalLength: 0, record: [] },
-    //     "pause",
-    //     "Timer"
-    //   );
-    //   dispatch({
-    //     type: ACTION.CONTINUE,
-    //     payload: { running, startTime, pause },
-    //   });
-    //   // setRemainingDuration(
-    //   //   Math.floor(
-    //   //     (duration * 1000 - (Date.now() - startTime - pause.totalLength)) /
-    //   //       1000
-    //   //   )
-    //   // );
-    // }
-
-    // getStatesFromIndexedDB();
-
-    console.log(`duration - ${duration}`);
-    console.log(`remainingDuration- ${remainingDuration}`);
-    return () => {
-      if (isOnCycle) {
-      }
-    };
-  }, []);
-  //#endregion
-
-  // UPGRADE: if I want my data about my pomo session I was doing to be persistent between reloading page,
-  //         I think I need to store the pomo session data to the indexed db I guess.
-  //* This effect function is called every update because of the remainingDuration in the dep array.
-  useEffect(() => {
-    console.log(`repetitionCount - ${repetitionCount}`);
-    console.log(`duration- ${duration}`);
-    console.log(`remainingDuration - ${remainingDuration}`);
-    // console.log(`isOnCycle - ${isOnCycle}`);
-
-    //TODO: The name of this variable is a little bit weird since ACTION.RESET deos not reset the remainingDuration.
-    const isAfterReset = remainingDuration === 0 && state.startTime === 0;
-    const isEnd = remainingDuration === 0 && state.startTime !== 0;
-
-    //* 0. remainingDuration !== 0 && state.startTime !== 0 && state.running === false
-    //* to log the pause object
+    // To log the pause object:
+    // remainingDuration !== 0 && state.startTime !== 0 && state.running === false
     if (
       remainingDuration !== 0 &&
       state.startTime !== 0 &&
@@ -237,30 +179,31 @@ export function Timer({
     ) {
       console.log(state.pause);
     }
-
-    //* 1. remainingDuration === 0 && state.startTime === 0 && state.running === false
-    if (isAfterReset) {
-      // running === false
-      setRemainingDuration(duration); // setting remaining duration to the one newly passed in from parent component.
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // After reset:
+    // remainingDuration === 0 && state.startTime === 0 && state.running === false
+    if (remainingDuration === 0 && state.startTime === 0) {
+      // setting remaining duration to the one newly passed in from the PatternTimer.
+      setRemainingDuration(durationInSeconds);
     }
-
-    //* 2. remainingDuration !== 0 && state.startTime === 0 && state.running === false
-    //* This is right after this component is mounted.
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // As soon as this component is mounted:
+    // remainingDuration !== 0 && state.startTime === 0 && state.running === false
     if (remainingDuration !== 0 && state.startTime === 0) {
-      // console.log(`isRunning - ${state.running}`); // running === false
-      setRemainingDuration(duration);
+      setRemainingDuration(durationInSeconds);
     }
-    // console.log(`remainingDuration - ${remainingDuration}`);
-
-    //* 3. remainingDuration !== 0 && state.startTime !== 0 && state.running === true
-    if (state.running && remainingDuration !== 0) {
-      //? 당연히 startTime !== 0 일 것 같아서 확인 안해봄.
-      // running
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // To count down timer:
+    // remainingDuration !== 0 && state.startTime !== 0 && state.running === true
+    if (state.running && remainingDuration > 0) {
       const id = setInterval(() => {
         setRemainingDuration(
           Math.floor(
             //seconds to miliseconds
-            (duration * 1000 -
+            (durationInSeconds * 1000 -
               // (Date.now() - state.startTime - state.pause!.totalLength)) / // -> is paired with reducers.ts line 4
               (Date.now() - state.startTime - state.pause.totalLength)) /
               1000
@@ -270,41 +213,42 @@ export function Timer({
 
       return () => {
         clearInterval(id);
-        // console.log(`isOnCycle - ${isOnCycle}`);
-        // console.log(`duration - ${duration}`);
         console.log(`startTime - ${state.startTime}`);
       };
-      // state.startTime is not zero yet.
-
-      //* 4. remainingDuration === 0 && state.startTime !== 0 && state.running === true
-    } else if (isEnd) {
-      //? 당연히 startTime !== 0 일 것 같아서 확인 안해봄.
-      // console.log(state);
-
+    }
+  }, [remainingDuration, durationInSeconds, state.running]);
+  useEffect(() => {
+    // When the countdown of the timer has ended.
+    if (remainingDuration <= 0 && state.startTime !== 0) {
       // console.log(`Focus session is complete from ${Timer.name}`);
       // The changes of the states in the parent component
       setRepetitionCount(repetitionCount + 1);
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "PatternTimer",
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });
-      next(repetitionCount + 1, state.startTime);
+      next(repetitionCount + 1, state);
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
     }
-  }, [remainingDuration, duration, state.running]);
+  }, [remainingDuration, durationInSeconds, state.running]);
+  //#endregion
 
-  let durationRemaining = (
-    <h2>
-      {Math.trunc(remainingDuration / 60)}:
-      {(seconds = remainingDuration % 60) < 10 ? "0" + seconds : seconds}
-    </h2>
-  );
+  let durationRemaining =
+    remainingDuration < 0 ? (
+      <h2>0:00</h2>
+    ) : (
+      <h2>
+        {Math.trunc(remainingDuration / 60)}:
+        {(seconds = remainingDuration % 60) < 10 ? "0" + seconds : seconds}
+      </h2>
+    );
 
-  //TODO: 뭔말인지 모르겠어. twoEnds -> startAndEndOfDuration 이런걸로 바꾸던가 해야 할 듯.
-  let twoEndsOfDuration = (
+  let durationBeforeStart = (
     <h2>
-      {!!(duration / 60) === false ? "Loading data" : duration / 60 + ":00"}
+      {!!(durationInSeconds / 60) === false
+        ? "Loading data"
+        : durationInSeconds / 60 + ":00"}
     </h2>
   );
 
@@ -319,14 +263,19 @@ export function Timer({
           }}
         >
           <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
-          {state.startTime === 0 ? twoEndsOfDuration : durationRemaining}
+          {state.startTime === 0 ? durationBeforeStart : durationRemaining}
         </div>
       </GridItem>
 
       <GridItem>
         <CircularProgressBar
-          progress={duration === 0 ? 0 : 1 - remainingDuration / duration}
-          // progress={1 - remainingDuration / duration}
+          progress={
+            durationInSeconds === 0
+              ? 0
+              : remainingDuration < 0
+              ? 1
+              : 1 - remainingDuration / durationInSeconds
+          }
         />
       </GridItem>
 
@@ -335,26 +284,15 @@ export function Timer({
           <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
             {state.running && remainingDuration !== 0 ? "Pause" : "Start"}
           </Button>
-          <Button handleClick={endTimer}>End</Button>
+          <Button
+            handleClick={() => {
+              endTimer(Date.now());
+            }}
+          >
+            End
+          </Button>
         </FlexBox>
       </GridItem>
     </Grid>
   );
 }
-
-//#region 작동하는 것
-function init(initialState: TimerState): TimerState {
-  let retVal = initialState;
-  if (
-    TimerRelatedStates !== null &&
-    Object.keys(TimerRelatedStates).length !== 0
-  ) {
-    retVal = {
-      running: TimerRelatedStates.running,
-      startTime: TimerRelatedStates.startTime,
-      pause: TimerRelatedStates.pause,
-    };
-  }
-  return retVal;
-}
-//#endregion

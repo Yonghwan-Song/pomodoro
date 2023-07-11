@@ -16,7 +16,7 @@ import {
   User,
 } from "firebase/auth";
 import styles from "./Setting.module.css";
-import { SW } from "../..";
+import { countDown, postMsgToSW, stopCountDown } from "../..";
 
 function Setting() {
   const { user } = UserAuth()!;
@@ -61,9 +61,8 @@ function Setting() {
 
   function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
-    SW?.postMessage({
-      newPomoSetting: settingInputs,
-    });
+    postMsgToSW("emptyStateStore", {});
+    stopCountDown();
     updatePomoSetting(user!, settingInputs);
     setPomoSetting(settingInputs);
   }
@@ -78,13 +77,17 @@ function Setting() {
     //* pomoSetting != null is always true.
     //* if settingsInputs === {}, the second statement evaluates to [].length === 0
     // if (pomoSetting != null && Object.entries(settingInputs).length === 0) {
-    //! 시발 이거... 지워도 제대로 작동하는 것 같은데 두번밖에 refresh안해봤지만.. 대체 시발 왜 comment 자세히 안해놨냐.
+    //! 지워도 제대로 작동하는 것 같아...........
     if (Object.entries(settingInputs).length === 0) {
       setSettingInputs(pomoSetting);
     }
 
     console.log("POMO SETTING INPUTS", settingInputs);
   }, [user, pomoSetting, settingInputs]);
+
+  useEffect(() => {
+    countDown(localStorage.getItem("idOfSetInterval"));
+  }, []);
 
   return (
     <>

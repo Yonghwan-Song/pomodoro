@@ -6,9 +6,7 @@ type CircularProgressBarProps = {
   progress: number;
 };
 
-//const CircularProgressBar = ({ progress }) => {
 const CircularProgressBar = ({ progress }: CircularProgressBarProps) => {
-  //do I need to have the div tag wrapped around svg?
   const circleRef = useRef<SVGCircleElement>(null);
 
   //? 사실 이거 왜 여기다가 해야하는지 설명 못하겠어.
@@ -47,7 +45,6 @@ const CircularProgressBar = ({ progress }: CircularProgressBarProps) => {
         stroke={C.FOREGROUND_COLOR}
         strokeWidth={C.STROKE_WIDTH}
         strokeDasharray={C.CIRCUMFERENCE}
-        //              ={      -  progress *      }
         // when we click the start/pause button, we need to pass the progress untill then.
         // Then, an offset can be reset to the progress value
         // making it possible to restart the timer from where it has stopped.
@@ -58,7 +55,6 @@ const CircularProgressBar = ({ progress }: CircularProgressBarProps) => {
         ref={circleRef}
       ></circle>
     </svg>
-    // </div>
   );
 };
 

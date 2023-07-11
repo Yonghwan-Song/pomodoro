@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import GoogleButton from "react-google-button";
 import { UserAuth } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +17,7 @@ function Signin() {
   };
 
   useEffect(() => {
-    if (user != null) {
+    if (user !== null) {
       navigate("/timer");
     }
   }, [user]);

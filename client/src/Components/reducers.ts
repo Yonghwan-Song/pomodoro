@@ -1,4 +1,4 @@
-import { SW } from "..";
+import { postMsgToSW } from "..";
 
 export type PauseType = {
   totalLength: number;
@@ -11,10 +11,6 @@ export type PauseType = {
 export type TimerState = {
   running: boolean;
   startTime: number;
-  // pause?: {
-  //   totalLength: number;
-  //   record: { start: number; end: number | undefined }[];
-  // };
   pause: {
     totalLength: number;
     record: { start: number; end: number | undefined }[];
@@ -45,9 +41,7 @@ export function reducerTimer(
 ): TimerState {
   switch (action.type) {
     case "start":
-      localStorage.setItem("isTimerRunning", "yes");
-      localStorage.setItem("startTime", action.payload!.toString());
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "startTime", value: action.payload },
@@ -64,7 +58,7 @@ export function reducerTimer(
       };
 
     case "pause":
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "running", value: false },
@@ -93,8 +87,7 @@ export function reducerTimer(
       };
 
     case "resume":
-      localStorage.setItem("isTimerRunning", "yes");
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "running", value: true },
@@ -141,8 +134,7 @@ export function reducerTimer(
       };
 
     case "reset":
-      localStorage.setItem("isTimerRunning", "no");
-      SW?.postMessage({
+      postMsgToSW("saveStates", {
         component: "Timer",
         stateArr: [
           { name: "startTime", value: 0 },

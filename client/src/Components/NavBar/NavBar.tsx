@@ -8,6 +8,7 @@ import { StyledLink } from "../styles/Link.styled";
 import { useTheme } from "styled-components";
 import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
+import { stopCountDown } from "../..";
 
 function Navbar() {
   const { user, logOut } = UserAuth()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
@@ -53,30 +54,12 @@ function Navbar() {
   }
 
   function handleLinkClick(e: React.SyntheticEvent) {
-    // function handleLinkClick(e: React.MouseEvent) {
-    // if (localStorage.getItem("isTimerRunning") === "yes") {
-    //   e.preventDefault();
-    //   alert(
-    //     "Timer is Running. Please end the timer or finish it before navigating to other pages"
-    //   );
-    // } else {
-    //   toggleSideBar();
-    // }
-
     toggleSideBar();
     setIsActive(!isActive);
   }
 
   function handleLinkClick2(e: React.SyntheticEvent) {
-    // function handleLinkClick(e: React.MouseEvent) {
-    /*if (localStorage.getItem("isTimerRunning") === "yes") {
-      e.preventDefault();
-      alert(
-        "Timer is Running. Please end the timer or finish it before navigating to other pages"
-      );
-    } else {
-      handleSignOut();
-    }*/
+    stopCountDown();
     handleSignOut();
   }
 
