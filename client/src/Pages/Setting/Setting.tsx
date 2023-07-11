@@ -16,7 +16,7 @@ import {
   User,
 } from "firebase/auth";
 import styles from "./Setting.module.css";
-import { postMsgToSW } from "../..";
+import { countDown, postMsgToSW, stopCountDown } from "../..";
 
 function Setting() {
   const { user } = UserAuth()!;
@@ -62,9 +62,7 @@ function Setting() {
   function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
     postMsgToSW("emptyStateStore", {});
-    postMsgToSW("stopCountdown", {
-      idOfSetInterval: localStorage.getItem("idOfSetInterval"),
-    });
+    stopCountDown();
     updatePomoSetting(user!, settingInputs);
     setPomoSetting(settingInputs);
   }
@@ -88,7 +86,7 @@ function Setting() {
   }, [user, pomoSetting, settingInputs]);
 
   useEffect(() => {
-    postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
+    countDown(localStorage.getItem("idOfSetInterval"));
   }, []);
 
   return (

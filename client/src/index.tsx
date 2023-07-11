@@ -70,9 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 window.addEventListener("beforeunload", (event) => {
-  postMsgToSW("stopCountdown", {
-    idOfSetInterval: localStorage.getItem("idOfSetInterval"),
-  });
+  stopCountDown();
 });
 
 const root = ReactDOM.createRoot(document.getElementById("root")!);
@@ -209,7 +207,15 @@ async function openIndexedDB() {
   return db;
 }
 
-export async function obtainStatesFromIDB(): Promise<StatesType | {}> {
+export async function obtainStatesFromIDB(
+  opt: "withoutPomoSetting"
+): Promise<StatesType | {}>;
+export async function obtainStatesFromIDB(
+  opt: "withPomoSetting"
+): Promise<dataCombinedFromIDB | {}>;
+export async function obtainStatesFromIDB(
+  opt: "withoutPomoSetting" | "withPomoSetting"
+): Promise<any | {}> {
   let db = DB || (await openIndexedDB());
   console.log("db", db);
   const store = db.transaction("stateStore").objectStore("stateStore");
@@ -218,9 +224,13 @@ export async function obtainStatesFromIDB(): Promise<StatesType | {}> {
     return { ...acc, [cur.name]: cur.value };
   }, {});
   if (Object.keys(states).length !== 0) {
-    const { pomoSetting, ...withoutPomoSetting } =
-      states as dataCombinedFromIDB;
-    return withoutPomoSetting;
+    if (opt === "withoutPomoSetting") {
+      const { pomoSetting, ...withoutPomoSetting } =
+        states as dataCombinedFromIDB;
+      return withoutPomoSetting;
+    } else {
+      return states;
+    }
   } else {
     return {};
   }
@@ -271,7 +281,6 @@ export async function persistSession(
     await store.add({ kind, ...data });
     if (kind === "pomo") {
       console.log("trying to add pomo", { kind, ...data });
-      // pubsub.publish("pomoAdded", data); //이거 없애도 될 듯.
     }
   } catch (error) {
     console.warn(error);
@@ -284,7 +293,8 @@ export function postMsgToSW(
     | "sendDataToIndexAndCountDown"
     | "emptyStateStore"
     | "stopCountdown"
-    | "countDown",
+    | "countDown"
+    | "endTimer",
   payload: any
 ) {
   if (SW !== null && SW.state !== "redundant") {
@@ -310,5 +320,41 @@ export function postMsgToSW(
         localStorage.removeItem("idOfSetInterval");
       }
     });
+  }
+}
+
+export function stopCountDown() {
+  let id = localStorage.getItem("idOfSetInterval");
+  if (id !== null) {
+    clearInterval(id);
+    localStorage.removeItem("idOfSetInterval");
+  }
+}
+
+// TODO: type narrowing
+export async function countDown(setIntervalId: number | string | null) {
+  let states = await obtainStatesFromIDB("withPomoSetting");
+  console.log("states in countDown()", states);
+  if (Object.entries(states).length !== 0) {
+    if ((states as dataCombinedFromIDB).running && setIntervalId === null) {
+      let idOfSetInterval = setInterval(() => {
+        let remainingDuration = Math.floor(
+          ((states as dataCombinedFromIDB).duration * 60 * 1000 -
+            (Date.now() -
+              (states as dataCombinedFromIDB).startTime -
+              (states as dataCombinedFromIDB).pause.totalLength)) /
+            1000
+        );
+        console.log("count down remaining duration", remainingDuration);
+        if (remainingDuration <= 0) {
+          console.log("idOfSetInterval", idOfSetInterval);
+          clearInterval(idOfSetInterval);
+          localStorage.removeItem("idOfSetInterval");
+          postMsgToSW("endTimer", states);
+        }
+      }, 500);
+
+      localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+    }
   }
 }

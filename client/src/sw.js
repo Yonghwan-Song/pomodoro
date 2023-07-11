@@ -66,6 +66,10 @@ self.addEventListener("message", (ev) => {
         clearInterval(payload.idOfSetInterval);
         break;
 
+      case "endTimer":
+        goNext(payload);
+        break;
+
       default:
         break;
     }
@@ -175,7 +179,7 @@ async function emptyStateStore(clientId) {
 }
 
 // Purpose: to decide whether the the following duration is a pomo or break.
-async function goNext(states, clientId) {
+async function goNext(states) {
   let db = DB || (await openIndexedDB());
   const store = db
     .transaction("stateStore", "readwrite")
@@ -330,7 +334,6 @@ async function persistSession(kind, data) {
     await store.add({ kind, ...data });
     if (kind === "pomo") {
       console.log("trying to add pomo", { kind, ...data });
-      // BC.postMessage({ evName: "pomoAdded", payload: data.timeCountedDown });
       BC.postMessage({ evName: "pomoAdded", payload: data });
       console.log("pubsub event from sw", pubsub.events);
     }

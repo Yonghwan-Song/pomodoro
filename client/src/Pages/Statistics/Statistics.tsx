@@ -12,7 +12,7 @@ import {
   DailyPomo,
   StatArrType,
 } from "./statRelatedTypes";
-import { postMsgToSW } from "../..";
+import { countDown } from "../..";
 import { PayloadFromRecOfToday, pubsub } from "../../pubsub";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { Overview } from "./Overview";
@@ -353,7 +353,7 @@ export default function Statistics() {
   }, [user]);
 
   useEffect(() => {
-    postMsgToSW("countDown", localStorage.getItem("idOfSetInterval"));
+    countDown(localStorage.getItem("idOfSetInterval"));
     const unsub = pubsub.subscribe(
       "pomoAdded",
       (data: PayloadFromRecOfToday) => {

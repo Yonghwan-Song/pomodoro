@@ -4,6 +4,7 @@ import {
   postMsgToSW,
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
+  stopCountDown,
 } from "../..";
 import { UserInfo } from "../../Context/UserContext";
 import { UserAuth } from "../../Context/AuthContext";
@@ -23,15 +24,13 @@ export default function Main() {
       Object.keys(statesRelatedToTimer).length !== 0 &&
       (statesRelatedToTimer as StatesType).running
     ) {
-      postMsgToSW("stopCountdown", {
-        idOfSetInterval: localStorage.getItem("idOfSetInterval"),
-      });
+      stopCountDown();
     }
   }, [statesRelatedToTimer]);
 
   useEffect(() => {
     const getStatesFromIDB = async () => {
-      let states = await obtainStatesFromIDB();
+      let states = await obtainStatesFromIDB("withoutPomoSetting");
       setStatesRelatedToTimer(states);
     };
     getStatesFromIDB();

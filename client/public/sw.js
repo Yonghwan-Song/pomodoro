@@ -13847,6 +13847,10 @@
           console.log(payload.idOfSetInterval);
           clearInterval(payload.idOfSetInterval);
           break;
+
+        case "endTimer":
+          goNext(payload);
+          break;
       }
     }
   });
@@ -13919,7 +13923,7 @@
                   }, _callee2);
                 }));
 
-                return function (_x11) {
+                return function (_x10) {
                   return _ref2.apply(this, arguments);
                 };
               }();
@@ -13985,7 +13989,7 @@
                   }, _callee4);
                 }));
 
-                return function (_x12) {
+                return function (_x11) {
                   return _ref3.apply(this, arguments);
                 };
               }());
@@ -14130,12 +14134,12 @@
     return _emptyStateStore.apply(this, arguments);
   }
 
-  function goNext(_x5, _x6) {
+  function goNext(_x5) {
     return _goNext.apply(this, arguments);
   }
 
   function _goNext() {
-    _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(states, clientId) {
+    _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(states) {
       var db, store, duration, repetitionCount, running, _states$pomoSetting, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, pause, startTime, endTime, sessionData;
 
       return _regeneratorRuntime().wrap(function _callee8$(_context8) {
@@ -14321,7 +14325,7 @@
     return _goNext.apply(this, arguments);
   }
 
-  function recordPomo(_x7, _x8) {
+  function recordPomo(_x6, _x7) {
     return _recordPomo.apply(this, arguments);
   } // same as the one in the src/index.tsx
 
@@ -14384,7 +14388,7 @@
     return _recordPomo.apply(this, arguments);
   }
 
-  function persistSession(_x9, _x10) {
+  function persistSession(_x8, _x9) {
     return _persistSession.apply(this, arguments);
   }
 
@@ -14424,8 +14428,7 @@
               if (kind === "pomo") {
                 console.log("trying to add pomo", _objectSpread2({
                   kind: kind
-                }, data)); // BC.postMessage({ evName: "pomoAdded", payload: data.timeCountedDown });
-
+                }, data));
                 BC.postMessage({
                   evName: "pomoAdded",
                   payload: data
