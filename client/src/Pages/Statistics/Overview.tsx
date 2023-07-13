@@ -3,44 +3,36 @@ import { FlexBox } from "../../Components/Layouts/FlexBox";
 import { TotalComparison } from "../../Components/Total";
 
 type OverviewProps = {
-  todayTotal: number;
-  lastDayTotal: number;
-  thisWeekTotal: number;
-  lastWeekTotal: number;
-  thisMonthTotal: number;
-  lastMonthTotal: number;
-  total: number;
+  sum: {
+    today: number;
+    lastDay: number;
+    thisWeek: number;
+    lastWeek: number;
+    thisMonth: number;
+    lastMonth: number;
+    allTime: number;
+  };
 };
 
 export function Overview(props: OverviewProps) {
   const {
-    todayTotal,
-    lastDayTotal,
-    thisWeekTotal,
-    lastWeekTotal,
-    thisMonthTotal,
-    lastMonthTotal,
-    total,
+    sum: { today, lastDay, thisWeek, lastWeek, thisMonth, lastMonth, allTime },
   } = props;
 
   return (
     <BoxShadowWrapper fontSize={"1em"}>
       <FlexBox>
-        <TotalComparison
-          thisTotal={todayTotal}
-          lastTotal={lastDayTotal}
-          target="day"
-        />
+        <TotalComparison thisTotal={today} lastTotal={lastDay} target="day" />
 
         <TotalComparison
-          thisTotal={thisWeekTotal}
-          lastTotal={lastWeekTotal}
+          thisTotal={thisWeek}
+          lastTotal={lastWeek}
           target="week"
         />
 
         <TotalComparison
-          thisTotal={thisMonthTotal}
-          lastTotal={lastMonthTotal}
+          thisTotal={thisMonth}
+          lastTotal={lastMonth}
           target="month"
         />
 
@@ -53,7 +45,7 @@ export function Overview(props: OverviewProps) {
               fontSize: "1.2em",
             }}
           >
-            {Math.floor(total / 60)}h {total % 60}m
+            {Math.floor(allTime / 60)}h {allTime % 60}m
           </h3>
         </div>
       </FlexBox>

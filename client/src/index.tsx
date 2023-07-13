@@ -11,6 +11,7 @@ import { PomoSettingType } from "./Context/UserContext";
 import { IDB_VERSION } from "./constants";
 import { pubsub } from "./pubsub";
 
+//#region types
 type dataCombinedFromIDB = {
   running: boolean;
   startTime: number;
@@ -22,19 +23,6 @@ type dataCombinedFromIDB = {
   repetitionCount: number;
   pomoSetting: PomoSettingType;
 };
-export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
-
-export let SW: ServiceWorker | null = null;
-export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
-export let TimerRelatedStates: StatesType | null = null;
-const BC = new BroadcastChannel("pomodoro");
-
-BC.addEventListener("message", (ev) => {
-  const { evName, payload } = ev.data;
-  console.log("payload of BC", payload);
-  pubsub.publish(evName, payload);
-});
-
 interface TimerRelatedDB extends DBSchema {
   stateStore: {
     value: {
@@ -61,6 +49,23 @@ interface TimerRelatedDB extends DBSchema {
     key: [number];
   };
 }
+export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
+//#endregion
+
+//#region var and const
+export let SW: ServiceWorker | null = null;
+export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
+export let TimerRelatedStates: StatesType | null = null;
+const BC = new BroadcastChannel("pomodoro");
+const root = ReactDOM.createRoot(document.getElementById("root")!);
+//#endregion
+
+//#region function calls
+BC.addEventListener("message", (ev) => {
+  const { evName, payload } = ev.data;
+  console.log("payload of BC", payload);
+  pubsub.publish(evName, payload);
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
   registerServiceWorker();
@@ -73,7 +78,6 @@ window.addEventListener("beforeunload", (event) => {
   stopCountDown();
 });
 
-const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
   <BrowserRouter>
     <Routes>
@@ -108,7 +112,9 @@ root.render(
     </Routes>
   </BrowserRouter>
 );
+//#endregion
 
+//#region
 function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
@@ -358,3 +364,4 @@ export async function countDown(setIntervalId: number | string | null) {
     }
   }
 }
+//#endregion

@@ -21,13 +21,15 @@ import { Graph } from "./Graph";
 export default function Statistics() {
   const { user } = UserAuth()!;
   const [statArr, setStatArr] = useState<StatArrType>([]);
-  const [todayTotal, setTodayTotal] = useState(0);
-  const [lastDayTotal, setLastDayTotal] = useState(0);
-  const [thisWeekTotal, setThisWeekTotal] = useState(0);
-  const [lastWeekTotal, setLastWeekTotal] = useState(0);
-  const [thisMonthTotal, setThisMonthTotal] = useState(0);
-  const [lastMonthTotal, setLastMonthTotal] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [sum, setSum] = useState({
+    today: 0,
+    lastDay: 0,
+    thisWeek: 0,
+    lastWeek: 0,
+    thisMonth: 0,
+    lastMonth: 0,
+    allTime: 0,
+  });
   const [week, setWeek] = useState<CertainWeek>(init);
   const [weekStart, setWeekStart] = useState(
     startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
@@ -51,19 +53,12 @@ export default function Statistics() {
       now.getMonth(),
       now.getDate()
     ).getTime();
-
-    let todayObject = statArray.find(
+    const todayPomo = statArray.find(
       (obj) => obj.timestamp === startOfTodayTimestamp
     );
-    if (todayObject) {
-      setTodayTotal(todayObject.total);
-    }
-    let lastDayObject = statArray.find(
+    const lastDayPomo = statArray.find(
       (obj) => obj.timestamp === startOfTodayTimestamp - _24h
     );
-    if (lastDayObject) {
-      setLastDayTotal(lastDayObject.total);
-    }
     //#endregion
 
     //#region week total
@@ -73,28 +68,22 @@ export default function Statistics() {
     const thisWeekEndTimestamp = endOfWeek(now, {
       weekStartsOn: 1,
     }).getTime();
-
-    let thisWeekData = filterWeekData(
-      statArray,
+    const thisWeekData = extractDataInRange(statArray, [
       thisWeekStartTimestamp,
-      thisWeekEndTimestamp
-    );
+      thisWeekEndTimestamp,
+    ]);
     const thisWeekSum = thisWeekData.reduce(
       (acc: number, cur: DailyPomo) => acc + cur.total,
       0
     );
-    setThisWeekTotal(thisWeekSum);
-
-    let lastWeekData = filterWeekData(
-      statArray,
+    const lastWeekData = extractDataInRange(statArray, [
       thisWeekStartTimestamp - 7 * _24h,
-      thisWeekEndTimestamp - 7 * _24h
-    );
+      thisWeekEndTimestamp - 7 * _24h,
+    ]);
     const lastWeekSum = lastWeekData.reduce(
       (acc: number, cur: DailyPomo) => acc + cur.total,
       0
     );
-    setLastWeekTotal(lastWeekSum);
     //#endregion
 
     //#region month total
@@ -102,51 +91,46 @@ export default function Statistics() {
       now.getFullYear(),
       now.getMonth()
     ).getTime();
-    let thisMonthEndTimestamp = 0;
-    if (now.getMonth() === 11) {
-      thisMonthEndTimestamp = new Date(now.getFullYear() + 1, 0).getTime() - 1;
-    } else {
-      thisMonthEndTimestamp =
-        new Date(now.getFullYear(), now.getMonth() + 1).getTime() - 1;
-    }
-
-    let thisMonthData = filterWeekData(
-      statArray,
+    const thisMonthEndTimestamp =
+      now.getMonth() === 11
+        ? new Date(now.getFullYear() + 1, 0).getTime() - 1
+        : new Date(now.getFullYear(), now.getMonth() + 1).getTime() - 1;
+    const thisMonthData = extractDataInRange(statArray, [
       thisMonthStartTimestamp,
-      thisMonthEndTimestamp
-    );
+      thisMonthEndTimestamp,
+    ]);
     const thisMonthSum = thisMonthData.reduce(
       (acc: number, cur: DailyPomo) => acc + cur.total,
       0
     );
-    setThisMonthTotal(thisMonthSum);
-
-    let lastMonthStartTimestamp = 0;
-    if (now.getMonth() === 0) {
-      lastMonthStartTimestamp = new Date(now.getFullYear() - 1, 11).getTime();
-    } else {
-      lastMonthStartTimestamp = new Date(
-        now.getFullYear(),
-        now.getMonth() - 1
-      ).getTime();
-    }
+    const lastMonthStartTimestamp =
+      now.getMonth() === 0
+        ? new Date(now.getFullYear() - 1, 11).getTime()
+        : new Date(now.getFullYear(), now.getMonth() - 1).getTime();
     const lastMonthEndTimestamp = thisMonthStartTimestamp - 1;
-
-    let lastMonthData = filterWeekData(
-      statArray,
+    const lastMonthData = extractDataInRange(statArray, [
       lastMonthStartTimestamp,
-      lastMonthEndTimestamp
-    );
+      lastMonthEndTimestamp,
+    ]);
     const lastMonthSum = lastMonthData.reduce(
       (acc: number, cur: DailyPomo) => acc + cur.total,
       0
     );
-    setLastMonthTotal(lastMonthSum);
     //#endregion
 
     // total of all records
     const sum = statArray.reduce((acc, cur) => acc + cur.total, 0);
-    setTotal(sum);
+    setSum((prev) => {
+      return {
+        today: todayPomo ? todayPomo.total : prev.today,
+        lastDay: lastDayPomo ? lastDayPomo.total : prev.lastDay,
+        thisWeek: thisWeekSum,
+        lastWeek: lastWeekSum,
+        thisMonth: thisMonthSum,
+        lastMonth: lastMonthSum,
+        allTime: sum,
+      };
+    });
   }
   /**
    * Purpose:  to filter the statArray to get the array of this week
@@ -156,7 +140,10 @@ export default function Statistics() {
    */
   function setThisWeek(statArray: StatArrType) {
     let weekCloned = [...week];
-    let correspondingWeekData = filterWeekData(statArray, weekStart, weekEnd);
+    let correspondingWeekData = extractDataInRange(statArray, [
+      weekStart,
+      weekEnd,
+    ]);
     fillWeekCloned(weekCloned as DailyPomo[], correspondingWeekData);
 
     let sum = correspondingWeekData.reduce((acc: number, cur: DailyPomo) => {
@@ -171,8 +158,6 @@ export default function Statistics() {
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    // setWeekRange(`${weekCloned[0].date} - ${weekCloned[6].date}`);
-
     setWeek(weekCloned);
   }
 
@@ -197,11 +182,10 @@ export default function Statistics() {
     setWeekStart(newWeekStart);
     setWeekEnd(newWeekEnd);
 
-    let correspondingWeekData = filterWeekData(
-      statArray,
+    let correspondingWeekData = extractDataInRange(statArray, [
       newWeekStart,
-      newWeekEnd
-    );
+      newWeekEnd,
+    ]);
     fillWeekCloned(weekCloned, correspondingWeekData);
 
     let sum = correspondingWeekData.reduce((acc, cur) => {
@@ -215,7 +199,6 @@ export default function Statistics() {
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    // setWeekRange(`${weekCloned[0].date} - ${weekCloned[6].date}`);
     setWeek(weekCloned);
   }
 
@@ -244,11 +227,10 @@ export default function Statistics() {
       setWeekStart(newWeekStart);
       setWeekEnd(newWeekEnd);
 
-      let correspondingWeekData = filterWeekData(
-        statArray,
+      let correspondingWeekData = extractDataInRange(statArray, [
         newWeekStart,
-        newWeekEnd
-      );
+        newWeekEnd,
+      ]);
 
       fillWeekCloned(weekCloned, correspondingWeekData);
 
@@ -270,7 +252,6 @@ export default function Statistics() {
           .slice(0, -5)
           .replace("/", ". ")}`
       );
-      // setWeekRange(`${weekCloned[0].date} - ${weekCloned[6].date}`);
       setWeek(weekCloned);
     }
   }
@@ -357,14 +338,14 @@ export default function Statistics() {
     const unsub = pubsub.subscribe(
       "pomoAdded",
       (data: PayloadFromRecOfToday) => {
-        console.log("pomoAdded", data);
+        let { startTime, timeCountedDown } = data;
 
         setStatArr((prev) => {
           console.log("prev", prev);
           let cloned = [];
           if (prev.length !== 0) {
             cloned = [...prev];
-            cloned[cloned.length - 1].total += data.timeCountedDown;
+            cloned[cloned.length - 1].total += timeCountedDown;
           } else {
             let today = new Date();
             const todayDateStr = `${
@@ -374,18 +355,23 @@ export default function Statistics() {
 
             cloned.push({
               date: todayDateStr,
-              timestamp: data.startTime,
+              timestamp: startTime,
               dayOfWeek: days[today.getDay()],
-              total: data.timeCountedDown,
+              total: timeCountedDown,
             });
           }
           setThisWeek(cloned);
+          setSum((prev) => {
+            return {
+              ...prev,
+              today: prev.today + timeCountedDown,
+              thisWeek: prev.thisWeek + timeCountedDown,
+              thisMonth: prev.thisMonth + timeCountedDown,
+              allTime: prev.allTime + timeCountedDown,
+            };
+          });
           return cloned;
         });
-        setTodayTotal((prev) => prev + data.timeCountedDown);
-        setThisWeekTotal((prev) => prev + data.timeCountedDown);
-        setThisMonthTotal((prev) => prev + data.timeCountedDown);
-        setTotal((prev) => prev + data.timeCountedDown);
       }
     );
 
@@ -404,15 +390,7 @@ export default function Statistics() {
     <>
       <Grid>
         <GridItem>
-          <Overview
-            todayTotal={todayTotal}
-            lastDayTotal={lastDayTotal}
-            thisWeekTotal={thisWeekTotal}
-            lastWeekTotal={lastWeekTotal}
-            thisMonthTotal={thisMonthTotal}
-            lastMonthTotal={lastMonthTotal}
-            total={total}
-          />
+          <Overview sum={sum} />
         </GridItem>
         <GridItem>
           <Graph
@@ -484,7 +462,6 @@ function init() {
   ];
 
   const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-  // weekArr[0].date = `${start.getMonth() + 1}. ${start.getDate()}`;
   weekArr[0].date = `${
     start.getMonth() + 1
   }/${start.getDate()}/${start.getFullYear()}`;
@@ -495,7 +472,6 @@ function init() {
   const _24h = 24 * 60 * 60 * 1000;
   for (let i = 1; i < 7; i++) {
     let nextDate = new Date(startOfWeekTimestamp + i * _24h);
-    // weekArr[i].date = `${nextDate.getMonth() + 1}. ${nextDate.getDate()}`;
     weekArr[i].date = `${
       nextDate.getMonth() + 1
     }/${nextDate.getDate()}/${nextDate.getFullYear()}`;
@@ -512,15 +488,14 @@ function init() {
  * @param {*} timestampOfEndOfWeek
  * @returns a particular week array determined by the second and the third argument.
  */
-function filterWeekData(
+function extractDataInRange(
   statArray: StatArrType,
-  timestampOfStartOfWeek: number,
-  timestampOfEndOfWeek: number
+  range: [number, number]
 ): StatArrType {
   return statArray.filter((ele) => {
     return (
-      ele.timestamp <= timestampOfEndOfWeek && //! eg. value is ending with multiple 9s like 1665374399999
-      ele.timestamp >= timestampOfStartOfWeek
+      ele.timestamp >= range[0] && //! eg. value is ending with multiple 9s like 1665374399999
+      ele.timestamp <= range[1]
     );
   });
 }
@@ -530,11 +505,7 @@ function filterWeekData(
  * @param {*} weekCloned the local week state in this component
  * @param {*} filteredWeek a filtered array representing a particular week
  */
-function fillWeekCloned(
-  // week: Omit<DailyPomo, "total">[],
-  weekCloned: CertainWeek,
-  filteredWeek: StatArrType
-) {
+function fillWeekCloned(weekCloned: CertainWeek, filteredWeek: StatArrType) {
   for (let element of weekCloned) {
     let matchingObj = filteredWeek.find((obj) => obj.date === element.date);
     console.log("matchingObj in fillWeekCloned", matchingObj);
