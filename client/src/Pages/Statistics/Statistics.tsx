@@ -341,25 +341,31 @@ export default function Statistics() {
         let { startTime, timeCountedDown } = data;
 
         setStatArr((prev) => {
-          console.log("prev", prev);
-          let cloned = [];
-          if (prev.length !== 0) {
-            cloned = [...prev];
-            cloned[cloned.length - 1].total += timeCountedDown;
-          } else {
-            let today = new Date();
-            const todayDateStr = `${
-              today.getMonth() + 1
-            }/${today.getDate()}/${today.getFullYear()}`;
-            let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          // console.log("prev", prev);
+          let today = new Date();
+          const todayDateStr = `${
+            today.getMonth() + 1
+          }/${today.getDate()}/${today.getFullYear()}`;
+          let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          let cloned = [...prev];
+          console.log("todayDateStr", todayDateStr);
+          let doesTodayObjExist =
+            cloned.length !== 0 &&
+            cloned[cloned.length - 1].date === todayDateStr;
 
+          if (doesTodayObjExist) {
+            cloned[cloned.length - 1].total += timeCountedDown;
+            // console.log("cloned", cloned);
+          } else {
             cloned.push({
               date: todayDateStr,
               timestamp: startTime,
               dayOfWeek: days[today.getDay()],
               total: timeCountedDown,
             });
+            // console.log("cloned", cloned);
           }
+
           setThisWeek(cloned);
           setSum((prev) => {
             return {
