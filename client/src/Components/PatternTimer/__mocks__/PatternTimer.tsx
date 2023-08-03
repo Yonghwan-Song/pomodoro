@@ -10,7 +10,7 @@ export function PatternTimer() {
   const { pomoSetting } = UserInfo()!;
 
   let { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
-    pomoSetting;
+    pomoSetting!;
 
   /**
    * Decide this time rendering is whether a pomo duration or a break
@@ -50,10 +50,10 @@ export function PatternTimer() {
   }
 
   useEffect(() => {
-    if (Object.entries(pomoSetting).length === 0) {
+    if (Object.entries(pomoSetting!).length === 0) {
       setDuration(0);
     } else {
-      setDuration(pomoSetting.pomoDuration);
+      setDuration(pomoSetting!.pomoDuration);
     }
   }, []);
 

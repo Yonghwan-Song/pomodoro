@@ -1,26 +1,23 @@
-import axios from "axios";
 import { useState } from "react";
 import { useEffect } from "react";
-import { UserAuth } from "../../Context/AuthContext";
 import * as CONSTANTS from "../../constants/index";
 import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
-import { User } from "firebase/auth";
 import {
-  pomoType,
   CertainWeek,
   DailyPomo,
   StatArrType,
+  DataArray,
 } from "./statRelatedTypes";
 import { countDown } from "../..";
 import { PayloadFromRecOfToday, pubsub } from "../../pubsub";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { Overview } from "./Overview";
 import { Graph } from "./Graph";
+import { useFetch } from "../../Custom-Hooks/useFetch";
+import { getStat } from "./utilFunctions";
 
 export default function Statistics() {
-  const { user } = UserAuth()!;
-  const [statArr, setStatArr] = useState<StatArrType>([]);
   const [sum, setSum] = useState({
     today: 0,
     lastDay: 0,
@@ -40,12 +37,18 @@ export default function Statistics() {
   const [average, setAverage] = useState(0);
   const [weekRange, setWeekRange] = useState("");
   const _24h = 24 * 60 * 60 * 1000;
+  const [statData, setStatData] = useFetch<DataArray, DailyPomo[]>({
+    urlSegment: CONSTANTS.URLs.POMO + "/stat",
+    modifier: getStat,
+    callbacks: [calculateOverview, calculateThisWeekData],
+  });
+
   //#region from the previous useWeek.tsx
   /**
    * Purpose: to calculate overview, such as the totals of today, this week, and this month as well as the total of all pomo records.
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
-  function calculateOverview(statArray: StatArrType) {
+  function calculateOverview(statArray: DailyPomo[]) {
     const now = new Date();
     //#region today and the last day total
     const startOfTodayTimestamp = new Date(
@@ -136,9 +139,9 @@ export default function Statistics() {
    * Purpose:  to filter the statArray to get the array of this week
    *           and use the filtered array to set the week state variable.
    *           An average and weekRange are calcuated and set using the filtered array.
-   * @param {StatArrType} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   * @param {DailyPomo[]} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
-  function setThisWeek(statArray: StatArrType) {
+  function calculateThisWeekData(statArray: DailyPomo[]) {
     let weekCloned = [...week];
     let correspondingWeekData = extractDataInRange(statArray, [
       weekStart,
@@ -165,9 +168,9 @@ export default function Statistics() {
    * Purpose:  to filter the statArray to get the array of one week before the week currently appearing on the chart
    *           and set the week state to the filtered array.
    *           An average and weekRange are calcuated and set using the filtered array.
-   * @param {StatArrType} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
+   * @param {DailyPomo[]} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
-  function setPrevWeek(statArray: StatArrType) {
+  function calculatePrevWeekData(statArray: DailyPomo[]) {
     let weekCloned = [...week] as DailyPomo[];
     let newWeekStart = weekStart - 7 * _24h;
     let newWeekEnd = weekEnd - 7 * _24h;
@@ -208,7 +211,7 @@ export default function Statistics() {
    *           An average and weekRange are calcuated and set using the filtered array.
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
-  function setNextWeek(statArray: StatArrType) {
+  function calculateNextWeekData(statArray: DailyPomo[]) {
     let weekCloned = [...week];
 
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
@@ -257,97 +260,20 @@ export default function Statistics() {
   }
   //#endregion
 
-  /**
-   * TODO: Purpose:
-   * @param user
-   */
-  async function getStatArr(user: User) {
-    try {
-      const idToken = await user.getIdToken();
-      const response = await axios.get(
-        CONSTANTS.URLs.POMO + `/stat/${user.email}`,
-        {
-          headers: {
-            Authorization: "Bearer " + idToken,
-          },
-        }
-      );
-      let pomoRecords = response.data;
-      let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      // [{ date: '9/12/2022', total: 300 }, ... ]
-      let durationByDateArr = pomoRecords
-        .sort((a: pomoType, b: pomoType) => a.startTime - b.startTime)
-        .reduce((acc: StatArrType, curRec: pomoType) => {
-          // check if the date property of the last element in the acc
-          // has the same value as the curRec's date value.
-          if (acc.length === 0) {
-            const dayOfWeek = new Date(curRec.date).getDay();
-            return [
-              {
-                date: curRec.date,
-                timestamp: new Date(curRec.date).getTime(),
-                dayOfWeek: days[dayOfWeek],
-                total: curRec.duration,
-              },
-            ];
-          }
-
-          if (acc[acc.length - 1].date === curRec.date) {
-            acc[acc.length - 1].total += curRec.duration;
-            return acc;
-          } else {
-            const dayOfWeek = new Date(curRec.date).getDay();
-            return [
-              ...acc,
-              {
-                date: curRec.date,
-                timestamp: new Date(curRec.date).getTime(),
-                dayOfWeek: days[dayOfWeek],
-                total: curRec.duration,
-              },
-            ];
-          }
-        }, []);
-      console.log("pomoRecords", pomoRecords);
-      console.log("durationByDateArr", durationByDateArr);
-      setStatArr(durationByDateArr); //!
-      calculateOverview(durationByDateArr);
-      setThisWeek(durationByDateArr);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  useEffect(() => {
-    if (
-      user !== null &&
-      Object.entries(user).length !== 0 &&
-      statArr.length === 0
-    ) {
-      getStatArr(user);
-    }
-
-    // console.log(week);
-    // console.log(`Average - ${average}`);
-    // console.log(`todayTotal - ${todayTotal}`);
-    // console.log(`lastDayTotal - ${lastDayTotal}`);
-  }, [user]);
-
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
     const unsub = pubsub.subscribe(
       "pomoAdded",
       (data: PayloadFromRecOfToday) => {
         let { startTime, timeCountedDown } = data;
-
-        setStatArr((prev) => {
+        setStatData((prev) => {
           // console.log("prev", prev);
           let today = new Date();
           const todayDateStr = `${
             today.getMonth() + 1
           }/${today.getDate()}/${today.getFullYear()}`;
           let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-          let cloned = [...prev];
+          let cloned = [...(prev as DailyPomo[])];
           console.log("todayDateStr", todayDateStr);
           let doesTodayObjExist =
             cloned.length !== 0 &&
@@ -366,7 +292,7 @@ export default function Statistics() {
             // console.log("cloned", cloned);
           }
 
-          setThisWeek(cloned);
+          calculateThisWeekData(cloned);
           setSum((prev) => {
             return {
               ...prev,
@@ -388,27 +314,41 @@ export default function Statistics() {
 
   useEffect(() => {
     console.log("sth has changed");
-    console.log("statArr", statArr);
+    console.log("statArr", statData);
     console.log("week", week);
   });
 
   return (
     <>
-      <Grid>
-        <GridItem>
-          <Overview sum={sum} />
-        </GridItem>
-        <GridItem>
-          <Graph
-            setPrevWeek={setPrevWeek}
-            setNextWeek={setNextWeek}
-            weekRange={weekRange}
-            statArr={statArr}
-            average={average}
-            week={week}
-          />
-        </GridItem>
-      </Grid>
+      {statData === null ? (
+        <h3
+          style={{
+            position: "absolute",
+            margin: "auto",
+            top: "17.5%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          loading data...
+        </h3>
+      ) : (
+        <Grid>
+          <GridItem>
+            <Overview sum={sum} />
+          </GridItem>
+          <GridItem>
+            <Graph
+              calculatePrevWeekData={calculatePrevWeekData}
+              calculateNextWeekData={calculateNextWeekData}
+              weekRange={weekRange}
+              statArr={statData}
+              average={average}
+              week={week}
+            />
+          </GridItem>
+        </Grid>
+      )}
     </>
   );
 }

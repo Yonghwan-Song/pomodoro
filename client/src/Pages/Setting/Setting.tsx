@@ -16,12 +16,16 @@ import {
   User,
 } from "firebase/auth";
 import styles from "./Setting.module.css";
-import { countDown, postMsgToSW, stopCountDown } from "../..";
+import { clearStateStore, countDown, postMsgToSW, stopCountDown } from "../..";
 
 function Setting() {
   const { user } = UserAuth()!;
-  const { pomoSetting, setPomoSetting } = UserInfo()!;
-  const [settingInputs, setSettingInputs] = useState(pomoSetting);
+  const userInfoContext = UserInfo()!;
+  const setPomoSetting = userInfoContext.setPomoSetting;
+  const pomoSetting = userInfoContext.pomoSetting ?? ({} as PomoSettingType);
+  const [settingInputs, setSettingInputs] = useState(
+    () => userInfoContext.pomoSetting ?? ({} as PomoSettingType)
+  );
 
   function handleInputChange(event: {
     target: { value: string | number; name: any };
@@ -204,6 +208,7 @@ async function deleteAccount(user: User) {
     console.log("deleteAccount res", res.data);
     //await user.delete();
     let result = await deleteUser(user);
+    await clearStateStore();
     window.location.reload();
     console.log(result);
   } catch (error) {
