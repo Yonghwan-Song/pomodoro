@@ -10,18 +10,25 @@ import {
   YAxis,
   TooltipProps,
 } from "recharts";
-import { CertainWeek, StatArrType } from "./statRelatedTypes";
+import { CertainWeek, DailyPomo, StatArrType } from "./statRelatedTypes";
 
 type GraphProps = {
-  setPrevWeek: (statArray: StatArrType) => void;
-  setNextWeek: (statArray: StatArrType) => void;
+  calculatePrevWeekData: (statArray: StatArrType) => void;
+  calculateNextWeekData: (statArray: StatArrType) => void;
   weekRange: string;
-  statArr: StatArrType;
+  statArr: DailyPomo[];
   average: number;
   week: CertainWeek;
 };
 export function Graph(props: GraphProps) {
-  const { setPrevWeek, setNextWeek, weekRange, statArr, average, week } = props;
+  const {
+    calculatePrevWeekData,
+    calculateNextWeekData,
+    weekRange,
+    statArr,
+    average,
+    week,
+  } = props;
   return (
     <BoxShadowWrapper>
       <div
@@ -34,9 +41,9 @@ export function Graph(props: GraphProps) {
           zIndex: 2,
         }}
       >
-        <LeftArrow handleClick={() => setPrevWeek(statArr)} />
+        <LeftArrow handleClick={() => calculatePrevWeekData(statArr)} />
         <p>{weekRange}</p>
-        <RightArrow handleClick={() => setNextWeek(statArr)} />
+        <RightArrow handleClick={() => calculateNextWeekData(statArr)} />
       </div>
 
       <ResponsiveContainer width="100%" height={300}>

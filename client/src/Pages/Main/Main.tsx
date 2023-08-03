@@ -6,16 +6,17 @@ import {
   retrieveTodaySessionsFromIDB,
   stopCountDown,
 } from "../..";
-import { UserInfo } from "../../Context/UserContext";
+import { PomoSettingType, UserInfo } from "../../Context/UserContext";
 import { UserAuth } from "../../Context/AuthContext";
 import { StatesType } from "../..";
 
 export default function Main() {
-  const { pomoSetting } = UserInfo()!;
   const { user } = UserAuth()!;
   const [statesRelatedToTimer, setStatesRelatedToTimer] = useState<
     StatesType | {} | null
   >(null);
+  const userInfoContext = UserInfo()!;
+  const pomoSetting = userInfoContext.pomoSetting ?? ({} as PomoSettingType);
 
   useEffect(() => {
     console.log("statesRelatedToTimer", statesRelatedToTimer);
@@ -41,8 +42,7 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    if (Object.entries(pomoSetting).length === 0) {
-    } else {
+    if (Object.entries(pomoSetting).length !== 0) {
       postMsgToSW("saveStates", {
         component: "PatternTimer",
         stateArr: [{ name: "pomoSetting", value: pomoSetting }],

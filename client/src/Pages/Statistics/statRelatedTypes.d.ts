@@ -34,3 +34,11 @@ export interface DailyPomo {
 }
 
 export type StatArrType = DailyPomo[];
+
+export type DataArray = {
+  userEmail: string;
+  duration: number;
+  startTime: number;
+  date: string;
+  isDummy: boolean;
+}[];
