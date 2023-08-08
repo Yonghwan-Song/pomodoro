@@ -8,7 +8,7 @@ import { IDBPDatabase, DBSchema, openDB } from "idb";
 import { PauseType, TimerState } from "./Components/reducers";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./Context/UserContext";
-import { IDB_VERSION } from "./constants";
+import { CacheName, IDB_VERSION } from "./constants";
 import { pubsub } from "./pubsub";
 
 //#region types
@@ -55,6 +55,7 @@ export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
 //#region var and const
 export let SW: ServiceWorker | null = null;
 export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
+export let DynamicCache: Cache | null = null;
 export let TimerRelatedStates: StatesType | null = null;
 const BC = new BroadcastChannel("pomodoro");
 const root = ReactDOM.createRoot(document.getElementById("root")!);
@@ -72,10 +73,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // openIDB();
   DB = await openIndexedDB();
   await deleteRecordsBeforeTodayInIDB();
+  DynamicCache = await openCache(CacheName);
 });
 
-window.addEventListener("beforeunload", (event) => {
+window.addEventListener("beforeunload", async (event) => {
   stopCountDown();
+  await caches.delete(CacheName);
 });
 
 root.render(
@@ -170,13 +173,24 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
 export async function clearStateStore() {
   let db = DB || (await openIndexedDB());
   try {
-    const store = db
+    let store = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
     await store.clear();
+    let another = db
+      .transaction("recOfToday", "readwrite")
+      .objectStore("recOfToday");
+    await another.clear();
   } catch (error) {
     console.warn(error);
   }
+}
+
+export async function openCache(name: string) {
+  let cache: Cache | null = null;
+
+  cache = await caches.open(name);
+  return cache;
 }
 
 async function openIndexedDB() {
