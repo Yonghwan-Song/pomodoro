@@ -4,7 +4,13 @@ import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
 import { UserAuth } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
-import { StatesType, persistSession, postMsgToSW } from "../..";
+import {
+  DynamicCache,
+  StatesType,
+  openCache,
+  persistSession,
+  postMsgToSW,
+} from "../..";
 import { TimerState } from "../reducers";
 
 type PatternTimerProps = {
@@ -161,6 +167,28 @@ async function recordPomo(user: User, duration: number, startTime: number) {
         LocaleDateString,
       })
     );
+
+    // update
+    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let statResponse = await cache.match(
+      CONSTANTS.URLs.POMO + "/stat/" + user.email
+    );
+    if (statResponse !== undefined) {
+      let statData = await statResponse?.json();
+      console.log("statistics - ", statData);
+      statData.push({
+        userEmail: user.email,
+        duration,
+        startTime,
+        date: LocaleDateString,
+        isDummy: false,
+      });
+      cache.put(
+        CONSTANTS.URLs.POMO + "/stat/" + user.email,
+        new Response(JSON.stringify(statData))
+      );
+    }
+
     const response = await axios.post(
       CONSTANTS.URLs.POMO,
       {

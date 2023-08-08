@@ -2,11 +2,12 @@
 import { openDB } from "idb";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../src/firebase";
-import { URLs } from "./constants/index";
+import { URLs, CacheName } from "./constants/index";
 import { IDB_VERSION } from "./constants/index";
 import { pubsub } from "./pubsub";
 
 let DB = null;
+let CACHE = null;
 const BC = new BroadcastChannel("pomodoro");
 
 const getIdTokenAndEmail = () => {
@@ -31,6 +32,11 @@ const getIdTokenAndEmail = () => {
 
 self.addEventListener("install", (ev) => {
   console.log("sw - installed");
+  ev.waitUntil(
+    Promise.resolve().then(async () => {
+      CACHE = await openCache(CacheName);
+    })
+  );
   self.skipWaiting();
 });
 
@@ -75,6 +81,17 @@ self.addEventListener("message", (ev) => {
     }
   }
 });
+
+async function openCache(name) {
+  let cache = null;
+  try {
+    cache = await caches.open(name);
+  } catch (err) {
+    console.warn(err);
+  }
+  // console.log("cache opened - ", cache);
+  return cache;
+}
 
 async function openIndexedDB() {
   let db = await openDB("timerRelatedDB", IDB_VERSION, {
@@ -301,13 +318,33 @@ async function recordPomo(duration, startTime) {
     const { idToken, email } = await getIdTokenAndEmail();
     console.log("idToken", idToken);
     console.log("email", email);
-    let body = JSON.stringify({
+    const record = {
       userEmail: email,
       duration,
       startTime,
       LocaleDateString,
-    });
+    };
+    let body = JSON.stringify(record);
     console.log("body", body);
+
+    // update
+    let cache = CACHE || (await openCache(CacheName));
+    let statResponse = await cache.match(URLs.POMO + `/stat/${email}`);
+    if (statResponse !== undefined) {
+      let statData = await statResponse.json();
+      statData.push({
+        userEmail: email,
+        duration,
+        startTime,
+        date: LocaleDateString,
+        isDummy: false,
+      });
+      cache.put(
+        URLs.POMO + `/stat/${email}`,
+        new Response(JSON.stringify(statData))
+      );
+    }
+
     const res = await fetch(URLs.POMO, {
       method: "POST",
       body,

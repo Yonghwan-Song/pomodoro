@@ -23,4 +23,6 @@ export const URLs = {
 };
 
 export const IDB_VERSION = 5;
+const cacheVersion = 1;
+export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion
