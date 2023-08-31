@@ -1,0 +1,9 @@
+.span {
+  display: inline-block;
+  width: 0.6em;
+}
+.div {
+  display: inline-block;
+  width: 0.65em;
+  text-align: center;
+}

@@ -31,6 +31,18 @@ function App() {
   });
 
   useEffect(() => {
+    const disableArrowLeftAndRight = (ev: KeyboardEvent) => {
+      if (ev.code === "ArrowLeft" || ev.code === "ArrowRight") {
+        ev.preventDefault();
+      }
+    };
+    document.addEventListener("keydown", disableArrowLeftAndRight, false);
+    return () => {
+      document.removeEventListener("keydown", disableArrowLeftAndRight);
+    };
+  }, []);
+
+  useEffect(() => {
     console.log("APP is being mounted");
 
     //#region notification

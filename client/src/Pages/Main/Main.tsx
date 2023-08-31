@@ -4,17 +4,20 @@ import {
   postMsgToSW,
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
-  stopCountDown,
+  stopCountDownInBackground,
 } from "../..";
 import { PomoSettingType, UserInfo } from "../../Context/UserContext";
 import { UserAuth } from "../../Context/AuthContext";
 import { StatesType } from "../..";
+import RecOfToday from "../../Components/RecOfToday/RecOfToday";
+import { RecType } from "../../types/clientStatesType";
 
 export default function Main() {
   const { user } = UserAuth()!;
   const [statesRelatedToTimer, setStatesRelatedToTimer] = useState<
     StatesType | {} | null
   >(null);
+  const [records, setRecords] = useState<RecType[]>([]);
   const userInfoContext = UserInfo()!;
   const pomoSetting = userInfoContext.pomoSetting ?? ({} as PomoSettingType);
 
@@ -25,7 +28,7 @@ export default function Main() {
       Object.keys(statesRelatedToTimer).length !== 0 &&
       (statesRelatedToTimer as StatesType).running
     ) {
-      stopCountDown();
+      stopCountDownInBackground();
     }
   }, [statesRelatedToTimer]);
 
@@ -38,7 +41,11 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    retrieveTodaySessionsFromIDB(); //I'm gonna use this for a new feature soon.
+    async function getTodaySession() {
+      let data = await retrieveTodaySessionsFromIDB();
+      setRecords(data);
+    }
+    getTodaySession();
   }, []);
 
   useEffect(() => {
@@ -51,17 +58,21 @@ export default function Main() {
   }, [user, pomoSetting]);
 
   return (
-    <div>
-      {!!Object.entries(pomoSetting).length &&
-        statesRelatedToTimer !== null && (
-          <PatternTimer
-            statesRelatedToTimer={statesRelatedToTimer}
-            pomoDuration={pomoSetting.pomoDuration}
-            shortBreakDuration={pomoSetting.shortBreakDuration}
-            longBreakDuration={pomoSetting.longBreakDuration}
-            numOfPomo={pomoSetting.numOfPomo}
-          />
-        )}
-    </div>
+    <main>
+      <RecOfToday records={records} />
+      <section>
+        {!!Object.entries(pomoSetting).length &&
+          statesRelatedToTimer !== null && (
+            <PatternTimer
+              statesRelatedToTimer={statesRelatedToTimer}
+              pomoDuration={pomoSetting.pomoDuration}
+              shortBreakDuration={pomoSetting.shortBreakDuration}
+              longBreakDuration={pomoSetting.longBreakDuration}
+              numOfPomo={pomoSetting.numOfPomo}
+              setRecords={setRecords}
+            />
+          )}
+      </section>
+    </main>
   );
 }

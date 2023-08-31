@@ -6,6 +6,10 @@ type GridProps = {
   justifyItems?: string;
   column?: number;
   gap?: string;
+  marginTop?: string;
+  marginRight?: string;
+  marginBottom?: string;
+  marginLeft?: string;
 };
 
 export function Grid({ children, ...props }: GridProps) {

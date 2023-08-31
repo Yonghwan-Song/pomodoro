@@ -319,7 +319,7 @@ export default function Statistics() {
   });
 
   return (
-    <>
+    <main>
       {statData === null ? (
         <h3
           style={{
@@ -333,7 +333,7 @@ export default function Statistics() {
           loading data...
         </h3>
       ) : (
-        <Grid>
+        <Grid marginTop="100px">
           <GridItem>
             <Overview sum={sum} />
           </GridItem>
@@ -349,7 +349,7 @@ export default function Statistics() {
           </GridItem>
         </Grid>
       )}
-    </>
+    </main>
   );
 }
 

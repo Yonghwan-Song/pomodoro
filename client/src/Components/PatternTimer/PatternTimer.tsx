@@ -8,10 +8,10 @@ import {
   DynamicCache,
   StatesType,
   openCache,
-  persistSession,
+  persistTodaySession,
   postMsgToSW,
 } from "../..";
-import { TimerState } from "../reducers";
+import { RecType, TimerState } from "../../types/clientStatesType";
 
 type PatternTimerProps = {
   statesRelatedToTimer: StatesType | {};
@@ -19,6 +19,7 @@ type PatternTimerProps = {
   shortBreakDuration: number;
   longBreakDuration: number;
   numOfPomo: number;
+  setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
 
 export function PatternTimer({
@@ -27,6 +28,7 @@ export function PatternTimer({
   shortBreakDuration,
   longBreakDuration,
   numOfPomo,
+  setRecords,
 }: PatternTimerProps) {
   const [duration, setDuration] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
@@ -54,20 +56,28 @@ export function PatternTimer({
    *
    * @param {number} howManyCountdown The total number of times the timer is used whether it is for pomo duration or break.
    * @param {*} startTime
-   * @param {*} concentrationTime
+   * @param {*} concentrationTimeInMinutes
    */
   async function next(
     howManyCountdown: number,
     state: TimerState,
-    concentrationTime: number = duration,
-    pauseEnd?: number
+    endTime: number,
+    concentrationTime: number = duration
   ) {
     const { running, ...withoutRunning } = state;
 
-    // When a user end a timer while it's paused, the end of pause is equal to the end of timer.
-    const endTime =
+    // When a user ends a timer while it's paused, the end of pause is equal to the end of the session.
+    /*endTime =
       pauseEnd ||
-      state.startTime + state.pause.totalLength + concentrationTime * 60 * 1000;
+      state.startTime + state.pause.totalLength + concentrationTime * 60 * 1000; // concentrationTime must be in minutes. */
+    // if pause.totalLength ===0 && concentrationTime === duration,
+    // endTime should be state.startTIme + concentrationTime * 60 * 1000
+    // this will prevent the possible error.
+    //? since endTime might be bigger than the endTime calculated below.
+    if (state.pause.totalLength === 0 && concentrationTime === duration) {
+      endTime = state.startTime + concentrationTime * 60 * 1000;
+    }
+
     const sessionData = {
       ...withoutRunning,
       endTime,
@@ -85,7 +95,8 @@ export function PatternTimer({
           component: "PatternTimer",
           stateArr: [{ name: "duration", value: shortBreakDuration }],
         });
-        await persistSession("pomo", sessionData);
+        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        await persistTodaySession("pomo", sessionData);
       } else {
         //! This is when a short break is done.
         notify("pomo");
@@ -94,7 +105,8 @@ export function PatternTimer({
           component: "PatternTimer",
           stateArr: [{ name: "duration", value: pomoDuration }],
         });
-        await persistSession("break", sessionData);
+        setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        await persistTodaySession("break", sessionData);
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
@@ -106,7 +118,8 @@ export function PatternTimer({
         component: "PatternTimer",
         stateArr: [{ name: "duration", value: longBreakDuration }],
       });
-      await persistSession("pomo", sessionData);
+      setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+      await persistTodaySession("pomo", sessionData);
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
       console.log("one cycle is done");
@@ -123,7 +136,8 @@ export function PatternTimer({
           { name: "repetitionCount", value: 0 },
         ],
       });
-      await persistSession("break", sessionData);
+      setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+      await persistTodaySession("break", sessionData);
     }
   }
 
