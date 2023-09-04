@@ -1,6 +1,7 @@
 import styled from "styled-components";
 
 export const StyledNav = styled.nav`
+  position: sticky;
   display: flex;
   justify-content: space-between;
   padding: 0 2rem;

@@ -22,7 +22,7 @@ import {
   countDown,
   openCache,
   postMsgToSW,
-  stopCountDown,
+  stopCountDownInBackground,
 } from "../..";
 
 function Setting() {
@@ -73,7 +73,7 @@ function Setting() {
   function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
     postMsgToSW("emptyStateStore", {});
-    stopCountDown();
+    stopCountDownInBackground();
     updatePomoSetting(user!, settingInputs);
     setPomoSetting(settingInputs);
   }
@@ -101,7 +101,7 @@ function Setting() {
   }, []);
 
   return (
-    <>
+    <main>
       <h3
         style={{
           position: "absolute",
@@ -112,7 +112,7 @@ function Setting() {
       >
         {Object.values(settingInputs).length === 0 ? "Loading Data" : ""}
       </h3>
-      <Grid maxWidth="634px" gap="25px">
+      <Grid maxWidth="634px" gap="25px" marginTop="100px">
         <GridItem>
           <BoxShadowWrapper>
             <form onSubmit={handleSubmit}>
@@ -199,7 +199,7 @@ function Setting() {
           </Button>
         </GridItem>
       </Grid>
-    </>
+    </main>
   );
 }
 

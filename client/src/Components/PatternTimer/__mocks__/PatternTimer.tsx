@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Timer } from "../../Timer/Timer";
 import { UserInfo } from "../../../Context/UserContext";
-import { TimerState } from "../../reducers";
+import { TimerState } from "../../../types/clientStatesType";
 
 export function PatternTimer() {
   const [duration, setDuration] = useState(0);

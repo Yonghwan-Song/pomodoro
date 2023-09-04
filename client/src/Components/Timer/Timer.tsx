@@ -5,18 +5,15 @@ import {
   Dispatch,
   SetStateAction,
 } from "react";
-import {
-  reducerTimer as reducer,
-  ACTION,
-  TimerState,
-  TimerAction,
-} from "../reducers";
-import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
+import { reducerTimer as reducer, ACTION, TimerAction } from "../reducers";
+import { TimerState } from "../../types/clientStatesType";
 import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
 import { StatesType, postMsgToSW } from "../..";
+import CountDownTimer from "../CountDownTimer/CountDownTimer";
+import PauseTimer from "../PauseTimer/PauseTimer";
 
 type TimerProps = {
   statesRelatedToTimer: StatesType | {};
@@ -24,6 +21,7 @@ type TimerProps = {
   next: (
     howManyCountdown: number,
     state: TimerState,
+    endTime: number,
     concentrationTime?: number,
     pauseEnd?: number
   ) => void;
@@ -115,8 +113,6 @@ export function Timer({
   }
   //#endregion
 
-  let seconds = 0;
-
   function toggleTimer() {
     if (isFirstStart()) {
       // initial start
@@ -159,10 +155,10 @@ export function Timer({
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
     if (state.running) {
-      next(repetitionCount + 1, state, timeCountedDown);
+      next(repetitionCount + 1, state, now, timeCountedDown);
     } else {
-      // end a timer when it's paused.
-      next(repetitionCount + 1, state, timeCountedDown, now);
+      // end a paused timer.
+      next(repetitionCount + 1, state, now, timeCountedDown);
     }
     dispatch({ type: ACTION.RESET });
     setRemainingDuration(0);
@@ -227,62 +223,44 @@ export function Timer({
         component: "PatternTimer",
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });
-      next(repetitionCount + 1, state);
+      next(repetitionCount + 1, state, Date.now()); // possible error.
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
     }
   }, [remainingDuration, durationInSeconds, state.running]);
   //#endregion
 
-  let durationRemaining =
-    remainingDuration < 0 ? (
-      <h2>0:00</h2>
-    ) : (
-      <h2>
-        {Math.trunc(remainingDuration / 60)}:
-        {(seconds = remainingDuration % 60) < 10 ? "0" + seconds : seconds}
-      </h2>
-    );
-
-  let durationBeforeStart = (
-    <h2>
-      {!!(durationInSeconds / 60) === false
-        ? "Loading data"
-        : durationInSeconds / 60 + ":00"}
-    </h2>
-  );
-
   return (
-    <Grid gap={"13px"} justifyItems={"center"}>
+    <Grid
+      gap={"15px"}
+      justifyItems={"center"}
+      marginTop="148px"
+      marginBottom="40px"
+    >
       <GridItem>
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
-          {state.startTime === 0 ? durationBeforeStart : durationRemaining}
-        </div>
-      </GridItem>
-
-      <GridItem>
-        <CircularProgressBar
-          progress={
-            durationInSeconds === 0
-              ? 0
-              : remainingDuration < 0
-              ? 1
-              : 1 - remainingDuration / durationInSeconds
-          }
+        <CountDownTimer
+          repetitionCount={repetitionCount}
+          startTime={state.startTime}
+          durationInSeconds={durationInSeconds}
+          remainingDuration={remainingDuration}
         />
       </GridItem>
-
+      <GridItem>
+        <PauseTimer
+          isOnSession={state.running || state.startTime !== 0}
+          isPaused={state.running === false && state.startTime !== 0}
+          pauseData={state.pause}
+          startTime={state.startTime}
+        />
+      </GridItem>
       <GridItem>
         <FlexBox>
           <Button type={"submit"} color={"primary"} handleClick={toggleTimer}>
-            {state.running && remainingDuration !== 0 ? "Pause" : "Start"}
+            {state.running === true
+              ? "Pause"
+              : state.startTime === 0
+              ? "Start"
+              : "Resume"}
           </Button>
           <Button
             handleClick={() => {

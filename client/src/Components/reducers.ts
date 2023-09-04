@@ -1,4 +1,5 @@
 import { postMsgToSW } from "..";
+import { TimerState } from "../types/clientStatesType";
 
 export type PauseType = {
   totalLength: number;
@@ -6,15 +7,6 @@ export type PauseType = {
     start: number;
     end: number | undefined;
   }[];
-};
-
-export type TimerState = {
-  running: boolean;
-  startTime: number;
-  pause: {
-    totalLength: number;
-    record: { start: number; end: number | undefined }[];
-  };
 };
 
 export type TimerAction = UpdateAction | ResetAction | ContinueAction;

@@ -5,7 +5,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Main, Signin, Setting, Statistics } from "./Pages/index";
 import Protected from "./Components/Protected";
 import { IDBPDatabase, DBSchema, openDB } from "idb";
-import { PauseType, TimerState } from "./Components/reducers";
+import { PauseType } from "./Components/reducers";
+import { TimerState } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./Context/UserContext";
 import { CacheName, IDB_VERSION } from "./constants";
@@ -77,7 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 window.addEventListener("beforeunload", async (event) => {
-  stopCountDown();
+  stopCountDownInBackground();
   await caches.delete(CacheName);
 });
 
@@ -282,9 +283,10 @@ export async function retrieveTodaySessionsFromIDB() {
     .objectStore("recOfToday");
   const allSessions = await store.getAll();
   console.log("allSessions", allSessions);
+  return allSessions;
 }
 
-export async function persistSession(
+export async function persistTodaySession(
   kind: "pomo" | "break",
   data: Omit<TimerState, "running"> & {
     endTime: number;
@@ -343,7 +345,7 @@ export function postMsgToSW(
   }
 }
 
-export function stopCountDown() {
+export function stopCountDownInBackground() {
   let id = localStorage.getItem("idOfSetInterval");
   if (id !== null) {
     clearInterval(id);
