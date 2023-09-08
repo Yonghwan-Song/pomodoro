@@ -18,7 +18,7 @@ export interface ThemeCustomized extends DefaultTheme {
 const theme = {
   colors: {
     navBar: "#44475a",
-    green: "#50fa7b",
+    link: "#50fa7b",
     text: "#181313",
   },
   tablet: "1024px",

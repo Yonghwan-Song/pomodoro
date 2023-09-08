@@ -98,7 +98,7 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
       style={{
         position: "absolute",
         top: "80px",
-        backgroundColor: "#adb9c5",
+        backgroundColor: "#9ca0bb",
         height: "50px",
         width: 1920 * 6 + "px",
       }}
