@@ -7,10 +7,12 @@ type OneHourProps = {
 };
 
 export default function OneHour({ cssLeft, index }: OneHourProps) {
+  const borderColor = "#9ca0bb";
+
   useEffect(() => {
     console.log(`OneHourScale(${index}) is updated!`);
   });
-  const borderColor = "#44475a";
+
   return (
     <>
       <p
@@ -27,12 +29,12 @@ export default function OneHour({ cssLeft, index }: OneHourProps) {
       </p>
       <div
         style={{
-          height: "79px",
+          height: "80px",
           width: "480px",
           position: "absolute",
           top: "0px",
           left: cssLeft + "px",
-          borderLeft: `2px solid ${borderColor}`,
+          borderLeft: `1px solid ${borderColor}`,
           borderBottom: `1px solid ${borderColor}`,
         }}
       >

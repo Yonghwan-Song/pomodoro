@@ -31,7 +31,7 @@ export default function PauseTimer({
         let timePassedInMilliSeconds =
           Date.now() - pauseData.record[pauseData.record.length - 1].start;
         setCount(Math.floor(timePassedInMilliSeconds / 1000));
-      }, 1000);
+      }, 500);
 
       return () => {
         clearInterval(id);

@@ -31,10 +31,10 @@ const Linkk = ({
 
 export const StyledLink = styled(Linkk)`
   text-decoration: none;
-  color: ${({ color, theme }) => color || theme.colors.green};
+  color: ${({ color, theme }) => color || theme.colors.link};
 
   &:visited {
-    color: ${({ color, theme }) => color || theme.colors.green};
+    color: ${({ color, theme }) => color || theme.colors.link};
   }
 
   font-size: ${({ size }) => size || "1.5rem"};
