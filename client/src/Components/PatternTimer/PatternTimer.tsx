@@ -249,6 +249,12 @@ function notify(which: string) {
 
   let noti = new Notification(title, options);
 
+  noti.addEventListener("click", (ev) => {
+    console.log("notification is clicked");
+    noti.close();
+    window.focus();
+  });
+
   setTimeout(() => {
     noti.close();
   }, 4000);

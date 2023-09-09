@@ -82,6 +82,21 @@ self.addEventListener("message", (ev) => {
   }
 });
 
+self.addEventListener("notificationclick", async (ev) => {
+  console.log("notification from sw is clicked");
+  ev.notification.close();
+
+  let pm = Promise.resolve()
+    .then(async () => {
+      return await self.clients.matchAll();
+    })
+    .then(async (matchingClients) => {
+      // console.log("matchingClients", matchingClients);
+      await matchingClients[0].focus();
+    });
+  ev.waitUntil(pm);
+});
+
 async function openCache(name) {
   let cache = null;
   try {
