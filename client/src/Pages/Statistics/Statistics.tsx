@@ -16,6 +16,7 @@ import { Overview } from "./Overview";
 import { Graph } from "./Graph";
 import { useFetch } from "../../Custom-Hooks/useFetch";
 import { getStat } from "./utilFunctions";
+import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
 
 export default function Statistics() {
   const [sum, setSum] = useState({
@@ -321,17 +322,7 @@ export default function Statistics() {
   return (
     <main>
       {statData === null ? (
-        <h3
-          style={{
-            position: "absolute",
-            margin: "auto",
-            top: "17.5%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          loading data...
-        </h3>
+        <StyledLoadingMessage>loading data...</StyledLoadingMessage>
       ) : (
         <Grid marginTop="100px">
           <GridItem>

@@ -11,6 +11,7 @@ import { UserAuth } from "../../Context/AuthContext";
 import { StatesType } from "../..";
 import RecOfToday from "../../Components/RecOfToday/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
+import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
 
 export default function Main() {
   const { user } = UserAuth()!;
@@ -57,21 +58,27 @@ export default function Main() {
     }
   }, [user, pomoSetting]);
 
+  const isDataReady =
+    !!Object.entries(pomoSetting).length && statesRelatedToTimer !== null;
+
   return (
     <main>
       <RecOfToday records={records} />
       <section>
-        {!!Object.entries(pomoSetting).length &&
-          statesRelatedToTimer !== null && (
-            <PatternTimer
-              statesRelatedToTimer={statesRelatedToTimer}
-              pomoDuration={pomoSetting.pomoDuration}
-              shortBreakDuration={pomoSetting.shortBreakDuration}
-              longBreakDuration={pomoSetting.longBreakDuration}
-              numOfPomo={pomoSetting.numOfPomo}
-              setRecords={setRecords}
-            />
-          )}
+        {isDataReady ? (
+          <PatternTimer
+            statesRelatedToTimer={statesRelatedToTimer}
+            pomoDuration={pomoSetting.pomoDuration}
+            shortBreakDuration={pomoSetting.shortBreakDuration}
+            longBreakDuration={pomoSetting.longBreakDuration}
+            numOfPomo={pomoSetting.numOfPomo}
+            setRecords={setRecords}
+          />
+        ) : (
+          <StyledLoadingMessage top="51%">
+            loading timer...
+          </StyledLoadingMessage>
+        )}
       </section>
     </main>
   );
