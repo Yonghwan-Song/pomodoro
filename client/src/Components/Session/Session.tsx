@@ -6,17 +6,17 @@ type SessionProps = {
 };
 export default function Session({ durations: durationArr }: SessionProps) {
   const now = new Date();
-
-  //#region today and the last day total
   const startOfTodayTimestamp = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate()
   ).getTime();
-  const xCoordinateInMilliSec =
-    durationArr[0].startTime - startOfTodayTimestamp;
-  const milliSecToMin = 1 / (1000 * 60);
-  const xCoordinateInMin = Math.floor(xCoordinateInMilliSec * milliSecToMin);
+
+  // 8px/min -> 480px/h -> 1980px/4h
+  // If this const value is 0, it means that this session started at the start of today.
+  const xCoordinateInSeconds = Math.floor(
+    (durationArr[0].startTime - startOfTodayTimestamp) / 1000
+  );
 
   return (
     <div
@@ -25,7 +25,7 @@ export default function Session({ durations: durationArr }: SessionProps) {
         height: "60px",
         position: "absolute",
         top: "10px",
-        left: xCoordinateInMin * 8 + "px", // 8px/min -> 480px/h -> 1980px/4h
+        left: (xCoordinateInSeconds / 60) * 8 + "px",
       }}
     >
       {durationArr.map((aDuration) => {
