@@ -112,7 +112,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
   }
   //#endregion
 
-  function getCSSLeft(): number {
+  function getCSSLeftAndRight() {
     const now = new Date();
     const hours = now.getHours();
 
@@ -131,11 +131,16 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       n = 5;
     }
 
-    return -FHDWidth * n;
+    if (n === 5) {
+      return { left: "", right: "0px" };
+    } else {
+      return { left: -FHDWidth * n + "px", right: "" };
+    }
   }
 
   useEffect(() => {
     window.onresize = (ev) => {
+      console.log(window.innerWidth);
       if (
         window.document.documentElement.clientWidth >=
         FullWithOfTimeline - Math.abs(parseInt(divRef.current!.style.left))
@@ -155,7 +160,8 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       ref={divRef}
       style={{
         position: "absolute",
-        left: getCSSLeft() + "px",
+        left: getCSSLeftAndRight().left,
+        right: getCSSLeftAndRight().right,
         top: "10vh",
         height: "80px",
         width: `${FullWithOfTimeline}px`,
