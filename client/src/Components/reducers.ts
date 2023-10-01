@@ -1,5 +1,5 @@
 import { postMsgToSW } from "..";
-import { TimerState } from "../types/clientStatesType";
+import { TimerStateType } from "../types/clientStatesType";
 
 export type PauseType = {
   totalLength: number;
@@ -21,20 +21,19 @@ type ResetAction = {
 
 type ContinueAction = {
   type: Continue;
-  payload: TimerState;
+  payload: TimerStateType;
 };
 type Update = "start" | "pause" | "resume";
 type Reset = "reset";
 type Continue = "continue";
 
 export function reducerTimer(
-  state: TimerState,
+  state: TimerStateType,
   action: TimerAction
-): TimerState {
+): TimerStateType {
   switch (action.type) {
     case "start":
       postMsgToSW("saveStates", {
-        component: "Timer",
         stateArr: [
           { name: "startTime", value: action.payload },
           { name: "running", value: true },
@@ -51,7 +50,6 @@ export function reducerTimer(
 
     case "pause":
       postMsgToSW("saveStates", {
-        component: "Timer",
         stateArr: [
           { name: "running", value: false },
           {
@@ -80,7 +78,6 @@ export function reducerTimer(
 
     case "resume":
       postMsgToSW("saveStates", {
-        component: "Timer",
         stateArr: [
           { name: "running", value: true },
           {
@@ -127,7 +124,6 @@ export function reducerTimer(
 
     case "reset":
       postMsgToSW("saveStates", {
-        component: "Timer",
         stateArr: [
           { name: "startTime", value: 0 },
           { name: "running", value: false },

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Timer } from "../Timer/Timer";
+import { TimerVVV } from "../Timer/Timer_v";
 import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
 import { UserAuth } from "../../Context/AuthContext";
@@ -22,7 +23,7 @@ type PatternTimerProps = {
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
 
-export function PatternTimer({
+export function PatternTimerVVV({
   statesRelatedToTimer,
   pomoDuration,
   shortBreakDuration,
@@ -49,6 +50,19 @@ export function PatternTimer({
 
   const { user } = UserAuth()!;
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
+
+  function checkRendering() {
+    console.log("user", user === null ? null : "non-null");
+    console.log("isOnCycle", isOnCycle);
+    console.log("PatternTimer");
+    console.log("duration", duration);
+    console.log("repetitionCount", repetitionCount);
+    console.log(
+      "------------------------------------------------------------------"
+    );
+  }
+  useEffect(checkRendering);
+
   /**
    * Decide this time rendering is whether a pomo duration or a break
    * and decide how many pomo durations or breaks are left.
@@ -87,7 +101,7 @@ export function PatternTimer({
     if (howManyCountdown < numOfPomo! * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
         //! This is when a pomo, which is not the last one of a cycle, is completed.
-        console.log("ONE POMO DURATION IS FINISHED");
+        // console.log("ONE POMO DURATION IS FINISHED");
         user && recordPomo(user, concentrationTime, state.startTime); // Non null assertion is correct because a user is already signed in at this point.
         notify("shortBreak");
         setDuration(shortBreakDuration!);
@@ -112,7 +126,7 @@ export function PatternTimer({
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
-      console.log("ONE POMO DURATION IS FINISHED");
+      // console.log("ONE POMO DURATION IS FINISHED");
       user && recordPomo(user, concentrationTime, state.startTime);
       notify("longBreak");
       setDuration(longBreakDuration!);
@@ -125,7 +139,7 @@ export function PatternTimer({
       await persistTodaySession("pomo", sessionData);
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
-      console.log("one cycle is done");
+      // console.log("one cycle is done");
       //cycle completion notification
       notify("nextCycle");
       //setCycleCount((prev) => prev + 1);
@@ -145,15 +159,36 @@ export function PatternTimer({
     }
   }
 
+  useEffect(() => {
+    console.log("Pattern Timer was mounted");
+    return () => {
+      console.log("Pattern Timer was unmounted");
+    };
+  }, []);
+
   return (
     <>
-      <Timer
+      {/* <Timer
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
         durationInSeconds={duration * 60}
-        next={next}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}
+        next={next}
+        isOnCycle={isOnCycle}
+        setIsOnCycle={setIsOnCycle}
+        pomoDuration={pomoDuration}
+        shortBreakDuration={shortBreakDuration}
+        longBreakDuration={longBreakDuration}
+        numOfPomo={numOfPomo}
+      /> */}
+      <TimerVVV
+        //min to seconds
+        statesRelatedToTimer={statesRelatedToTimer}
+        durationInSeconds={duration * 60}
+        repetitionCount={repetitionCount}
+        setRepetitionCount={setRepetitionCount}
+        next={next}
         isOnCycle={isOnCycle}
         setIsOnCycle={setIsOnCycle}
         pomoDuration={pomoDuration}
@@ -216,9 +251,9 @@ async function recordPomo(user: User, duration: number, startTime: number) {
         },
       }
     );
-    console.log("res of recordPomo", response);
+    // console.log("res obj", response);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   }
 }
 
@@ -249,7 +284,7 @@ function notify(which: string) {
   let noti = new Notification(title, options);
 
   noti.addEventListener("click", (ev) => {
-    console.log("notification is clicked");
+    // console.log("notification is clicked");
     noti.close();
     window.focus();
   });

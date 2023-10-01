@@ -22,7 +22,7 @@ export const URLs = {
   POMO: "https://pomodoro-apis.onrender.com/pomos",
 };
 
-export const IDB_VERSION = 5;
+export const IDB_VERSION = 6;
 const cacheVersion = 1;
 export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion

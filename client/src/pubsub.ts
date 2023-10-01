@@ -1,23 +1,10 @@
 // reference: https://www.youtube.com/watch?v=aynSM8llOBs
 
-export type PayloadFromRecOfToday = {
-  startTime: number;
-  timeCountedDown: number; //in minutes
-};
 interface PubsubType {
-  events: { [index: string]: Set<(data: PayloadFromRecOfToday) => void> };
-  // subscribe: (evName: string, fn: (data: number) => void) => () => void;
-  // unsubscribe: (evName: string, fn: (data: number) => void) => void;
-  // publish: (evName: string, data: number) => void;
-  subscribe: (
-    evName: string,
-    fn: (data: PayloadFromRecOfToday) => void
-  ) => () => void;
-  unsubscribe: (
-    evName: string,
-    fn: (data: PayloadFromRecOfToday) => void
-  ) => void;
-  publish: (evName: string, data: PayloadFromRecOfToday) => void;
+  events: { [index: string]: Set<(data: any) => void> };
+  subscribe: (evName: string, fn: (data: any) => void) => () => void;
+  unsubscribe: (evName: string, fn: (data: any) => void) => void;
+  publish: (evName: string, data: any) => void;
 }
 export const pubsub: PubsubType = {
   events: {},
@@ -38,10 +25,11 @@ export const pubsub: PubsubType = {
   unsubscribe: function (evName, fn) {
     if (evName in this.events) {
       this.events[evName].delete(fn);
+      console.log(`The Subscription to the ${evName} has been unsubscribed.`);
     }
   },
 
-  publish: function (evName, data: PayloadFromRecOfToday) {
+  publish: function (evName, data: any) {
     console.log("publish is called with data", data);
     console.log("this.events[evName]", this.events[evName]);
     console.log("this is", this);

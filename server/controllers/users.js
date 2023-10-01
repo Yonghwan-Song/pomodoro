@@ -50,6 +50,26 @@ export const getPomoSetting = async (req, res) => {
   }
 };
 
+export const getPomoSettingAndTimersStates = async (req, res) => {
+  try {
+    let currentUser = await User.findOne({ email: req.params.email });
+
+    if (currentUser) {
+      console.log("current user", currentUser);
+      res.send({
+        pomoSetting: currentUser.pomoSetting,
+        timersStates: currentUser.timersStates,
+      });
+    } else {
+      res.status(404).send("User is not found");
+    }
+  } catch (error) {
+    console.log(
+      `getPomoSettingAndTimersStates in controllers/users.js\n ${error}`
+    );
+  }
+};
+
 export const updatePomoSetting = async (req, res) => {
   try {
     let currentUser = await User.findOne({ email: req.params.email });
@@ -58,5 +78,20 @@ export const updatePomoSetting = async (req, res) => {
     res.send(updatedUser);
   } catch (error) {
     console.log(`updatePomoSetting in controllers/users.js\n ${error}`);
+  }
+};
+
+export const updateTimersStates = async (req, res) => {
+  try {
+    let currentUser = await User.findOne({ email: req.params.email });
+    console.log("req.body in updateRequiredStatesToRunTimer", req.body);
+    currentUser.timersStates = {
+      ...currentUser.timersStates,
+      ...req.body.states,
+    };
+    const updatedUser = await currentUser.save();
+    res.send(updatedUser);
+  } catch (error) {
+    console.log(`updateTimersStates in controllers/users.js\n ${error}`);
   }
 };

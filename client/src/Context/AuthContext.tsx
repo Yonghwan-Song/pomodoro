@@ -20,6 +20,8 @@ type AuthContextType = {
   isNewUserRegistered: boolean;
 };
 
+// AuthContext is going to be provided by AuthContextProvider,
+// thus, AuthContext cannot be null.
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthContextProvider({
@@ -43,7 +45,7 @@ export function AuthContextProvider({
         console.log(userRegistered);
       }
     } catch (error) {
-      console.log(`------------------------googleSignIn in AuthContext.js-------------------------
+      console.warn(`------------------------googleSignIn in AuthContext.js-------------------------
       ${error}`);
     }
   };

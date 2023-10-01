@@ -1,4 +1,4 @@
-export type TimerState = {
+export type TimerStateType = {
   running: boolean;
   startTime: number;
   pause: {
@@ -7,14 +7,30 @@ export type TimerState = {
   };
 };
 
-export type RecType = Omit<TimerState, "running"> & {
+export type PatternTimerStatesType = {
+  duration: number;
+  repetitionCount: number;
+};
+
+export type PomoSettingType = {
+  pomoDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  numOfPomo: number;
+};
+
+export type RequiredStatesToRunTimerType = {
+  pomoSetting: PomoSettingType;
+  timersStates: TimerStateType & PatternTimerStatesType;
+};
+
+export type RecType = Omit<TimerStateType, "running"> & {
   kind: "pomo" | "break";
   endTime: number;
   timeCountedDown: number;
 };
 
 export type KindOfDuration = "pomo" | "break" | "pause";
-// export type DurationType = [KindOfDuration, number];
 export type DurationType = {
   startTime: number;
   endTime: number;

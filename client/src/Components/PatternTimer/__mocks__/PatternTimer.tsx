@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Timer } from "../../Timer/Timer";
 import { UserInfo } from "../../../Context/UserContext";
-import { TimerState } from "../../../types/clientStatesType";
+import { TimerStateType } from "../../../types/clientStatesType";
 
 export function PatternTimer() {
   const [duration, setDuration] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0); // How many times the timer used by this Pattern timer.
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false);
-  const { pomoSetting } = UserInfo()!;
+  const { pomoInfo } = UserInfo()!;
 
   let { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
-    pomoSetting!;
+    pomoInfo?.pomoSetting!;
 
   /**
    * Decide this time rendering is whether a pomo duration or a break
@@ -23,7 +23,7 @@ export function PatternTimer() {
    */
   function next(
     howManyCountdown: number,
-    startTime: TimerState,
+    startTime: TimerStateType,
     concentrationTime: number = duration
   ) {
     if (howManyCountdown < numOfPomo! * 2 - 1) {
@@ -50,10 +50,10 @@ export function PatternTimer() {
   }
 
   useEffect(() => {
-    if (Object.entries(pomoSetting!).length === 0) {
+    if (Object.entries(pomoInfo?.pomoSetting!).length === 0) {
       setDuration(0);
     } else {
-      setDuration(pomoSetting!.pomoDuration);
+      setDuration(pomoInfo?.pomoSetting!.pomoDuration!);
     }
   }, []);
 
@@ -77,6 +77,10 @@ export function PatternTimer() {
         setRepetitionCount={setRepetitionCount}
         isOnCycle={isOnCycle}
         setIsOnCycle={setIsOnCycle}
+        pomoDuration={pomoDuration}
+        shortBreakDuration={shortBreakDuration}
+        longBreakDuration={longBreakDuration}
+        numOfPomo={numOfPomo}
       />
     </>
   );

@@ -9,9 +9,9 @@ type OneHourProps = {
 export default function OneHour({ cssLeft, index }: OneHourProps) {
   const borderColor = "#9ca0bb";
 
-  useEffect(() => {
-    console.log(`OneHourScale(${index}) is updated!`);
-  });
+  // useEffect(() => {
+  //   console.log(`OneHourScale(${index}) is updated!`);
+  // });
 
   return (
     <>

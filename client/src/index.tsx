@@ -2,36 +2,30 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Main, Signin, Setting, Statistics } from "./Pages/index";
+import { Main, Signin, Settings, Statistics } from "./Pages/index";
 import Protected from "./Components/Protected";
 import { IDBPDatabase, DBSchema, openDB } from "idb";
 import { PauseType } from "./Components/reducers";
-import { TimerState } from "./types/clientStatesType";
+import {
+  TimerStateType,
+  PatternTimerStatesType,
+} from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
-import { PomoSettingType } from "./Context/UserContext";
+import { PomoSettingType } from "./types/clientStatesType";
 import { CacheName, IDB_VERSION } from "./constants";
 import { pubsub } from "./pubsub";
+import { User } from "firebase/auth";
+import axios from "axios";
+import * as CONSTANTS from "./constants";
 
-//#region types
-type dataCombinedFromIDB = {
-  running: boolean;
-  startTime: number;
-  pause: {
-    totalLength: number;
-    record: { start: number; end: number | undefined }[];
-  };
-  duration: number;
-  repetitionCount: number;
-  pomoSetting: PomoSettingType;
-};
+//#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
   stateStore: {
     value: {
       name: string;
-      value: number | PauseType | PomoSettingType;
-      component: string;
+      value: number | boolean | PauseType | PomoSettingType;
     };
-    key: [string, string];
+    key: string;
   };
   recOfToday: {
     value: {
@@ -50,6 +44,19 @@ interface TimerRelatedDB extends DBSchema {
     key: [number];
   };
 }
+//#endregion
+//#region types
+export type dataCombinedFromIDB = {
+  running: boolean;
+  startTime: number;
+  pause: {
+    totalLength: number;
+    record: { start: number; end: number | undefined }[];
+  };
+  duration: number;
+  repetitionCount: number;
+  pomoSetting: PomoSettingType;
+};
 export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
 //#endregion
 
@@ -82,26 +89,50 @@ window.addEventListener("beforeunload", async (event) => {
   await caches.delete(CacheName);
 });
 
+//#region
+export async function updateTimersStates(
+  user: User,
+  states: Partial<PatternTimerStatesType> & TimerStateType
+) {
+  try {
+    // caching
+    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let pomoSettingAndTimersStatesResponse = await cache.match(
+      CONSTANTS.URLs.USER + `/${user.email}`
+    );
+    if (pomoSettingAndTimersStatesResponse !== undefined) {
+      let pomoSettingAndTimersStates =
+        await pomoSettingAndTimersStatesResponse.json();
+      pomoSettingAndTimersStates.timersStates = states;
+      await cache.put(
+        CONSTANTS.URLs.USER + `/${user.email}`,
+        new Response(JSON.stringify(pomoSettingAndTimersStates))
+      );
+    }
+
+    const idToken = await user.getIdToken();
+    const res = await axios.put(
+      CONSTANTS.URLs.USER + `/updateTimersStates/${user.email}`,
+      { states },
+      {
+        headers: {
+          Authorization: "Bearer " + idToken,
+        },
+      }
+    );
+    console.log("res obj.data in updateTimersStates ===>", res.data);
+  } catch (err) {
+    console.warn(err);
+  }
+}
+//#endregion
+
 root.render(
   <BrowserRouter>
     <Routes>
       <Route path="/" element={<App />}>
-        <Route
-          path="timer"
-          element={
-            <Protected>
-              <Main />
-            </Protected>
-          }
-        />
-        <Route
-          path="setting"
-          element={
-            <Protected>
-              <Setting />
-            </Protected>
-          }
-        />
+        <Route path="timer" element={<Main />} />
+        <Route path="settings" element={<Settings />} />
         <Route
           path="statistics"
           element={
@@ -203,7 +234,7 @@ async function openIndexedDB() {
         db.deleteObjectStore("stateStore");
       }
       db.createObjectStore("stateStore", {
-        keyPath: ["name", "component"],
+        keyPath: "name",
       });
       if (db.objectStoreNames.contains("recOfToday")) {
         db.deleteObjectStore("recOfToday");
@@ -288,7 +319,7 @@ export async function retrieveTodaySessionsFromIDB() {
 
 export async function persistTodaySession(
   kind: "pomo" | "break",
-  data: Omit<TimerState, "running"> & {
+  data: Omit<TimerStateType, "running"> & {
     endTime: number;
     timeCountedDown: number;
   }
@@ -304,6 +335,35 @@ export async function persistTodaySession(
     if (kind === "pomo") {
       console.log("trying to add pomo", { kind, ...data });
     }
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function persistStatesToIDB(
+  states: TimerStateType & PatternTimerStatesType
+) {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("stateStore", "readwrite")
+    .objectStore("stateStore");
+  try {
+    for (const [key, value] of Object.entries(states)) {
+      let obj = { name: key, value: value };
+      await store.put(obj);
+    }
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function emptyStateStore() {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("stateStore", "readwrite")
+      .objectStore("stateStore");
+    await store.clear();
   } catch (error) {
     console.warn(error);
   }

@@ -115,7 +115,7 @@ async function openIndexedDB() {
 
       if (!db.objectStoreNames.contains("stateStore")) {
         db.createObjectStore("stateStore", {
-          keyPath: ["name", "component"],
+          keyPath: "name",
         });
       }
       if (!db.objectStoreNames.contains("recOfToday")) {
@@ -157,9 +157,8 @@ async function saveStates(data) {
 
   console.log(data);
 
-  let component = data.component;
   Array.from(data.stateArr).forEach(async (obj) => {
-    await store.put({ ...obj, component });
+    await store.put(obj);
   });
 }
 
@@ -247,25 +246,24 @@ async function goNext(states) {
   pause = { totalLength: 0, record: [] };
 
   await store.put({
-    name: "repetitionCount",
-    component: "PatternTimer",
-    value: repetitionCount,
-  });
-  await store.put({
     name: "running",
-    component: "Timer",
     value: running,
   });
   await store.put({
     name: "startTime",
-    component: "Timer",
     value: 0,
   });
   await store.put({
     name: "pause",
-    component: "Timer",
     value: pause,
   });
+
+  await store.put({
+    name: "repetitionCount",
+    value: repetitionCount,
+  });
+
+  const idTokenAndEmail = await getIdTokenAndEmail();
 
   if (repetitionCount < numOfPomo * 2 - 1) {
     if (repetitionCount % 2 === 1) {
@@ -273,13 +271,20 @@ async function goNext(states) {
       self.registration.showNotification("shortBreak", {
         body: "time to take a short break",
       });
-      recordPomo(duration, startTime);
+      idTokenAndEmail && recordPomo(idTokenAndEmail, duration, startTime);
       await store.put({
         name: "duration",
-        component: "PatternTimer",
         value: shortBreakDuration,
       });
       await persistSession("pomo", sessionData);
+      updateTimersStates(idTokenAndEmail, {
+        running,
+        startTime: 0,
+        pause,
+        repetitionCount,
+        duration: shortBreakDuration,
+      });
+
       // console.log(await getIdTokenAndEmail());
     } else {
       //* This is when a short break is done.
@@ -288,23 +293,35 @@ async function goNext(states) {
       });
       await store.put({
         name: "duration",
-        component: "PatternTimer",
         value: pomoDuration,
       });
       await persistSession("break", sessionData);
+      updateTimersStates(idTokenAndEmail, {
+        running,
+        startTime: 0,
+        pause,
+        repetitionCount,
+        duration: pomoDuration,
+      });
     }
   } else if (repetitionCount === numOfPomo * 2 - 1) {
     //This is when the last pomo of a cycle is completed.
     self.registration.showNotification("longBreak", {
       body: "time to take a long break",
     });
-    recordPomo(duration, startTime);
+    idTokenAndEmail && recordPomo(idTokenAndEmail, duration, startTime);
     await store.put({
       name: "duration",
-      component: "PatternTimer",
       value: longBreakDuration,
     });
     await persistSession("pomo", sessionData);
+    updateTimersStates(idTokenAndEmail, {
+      running,
+      startTime: 0,
+      pause,
+      repetitionCount,
+      duration: longBreakDuration,
+    });
   } else if (repetitionCount === numOfPomo * 2) {
     //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
     self.registration.showNotification("nextCycle", {
@@ -312,27 +329,30 @@ async function goNext(states) {
     });
     await store.put({
       name: "repetitionCount",
-      component: "PatternTimer",
       value: 0,
     });
     await store.put({
       name: "duration",
-      component: "PatternTimer",
       value: pomoDuration,
     });
     await persistSession("break", sessionData);
+    updateTimersStates(idTokenAndEmail, {
+      running,
+      startTime: 0,
+      pause,
+      repetitionCount: 0,
+      duration: pomoDuration,
+    });
   }
 }
 
-async function recordPomo(duration, startTime) {
+async function recordPomo(idTokenAndEmail, duration, startTime) {
   try {
     const today = new Date(startTime);
     let LocaleDateString = `${
       today.getMonth() + 1
     }/${today.getDate()}/${today.getFullYear()}`;
-    const { idToken, email } = await getIdTokenAndEmail();
-    console.log("idToken", idToken);
-    console.log("email", email);
+    const { idToken, email } = idTokenAndEmail;
     const record = {
       userEmail: email,
       duration,
@@ -389,6 +409,37 @@ async function persistSession(kind, data) {
       BC.postMessage({ evName: "pomoAdded", payload: data });
       console.log("pubsub event from sw", pubsub.events);
     }
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+async function updateTimersStates(user, states) {
+  try {
+    // caching
+    let cache = CACHE || (await openCache(CacheName));
+    let pomoSettingAndTimerStatesResponse = await cache.match(
+      URLs.USER + `/${user.email}`
+    );
+    if (pomoSettingAndTimerStatesResponse !== undefined) {
+      let pomoSettingAndTimersStates =
+        await pomoSettingAndTimerStatesResponse.json();
+      pomoSettingAndTimersStates.timersStates = states;
+      await cache.put(
+        URLs.USER + `/${user.email}`,
+        new Response(JSON.stringify(pomoSettingAndTimersStates))
+      );
+    }
+
+    const res = await fetch(URLs.USER + `/updateTimersStates/${user.email}`, {
+      method: "PUT",
+      body: JSON.stringify({ states }),
+      headers: {
+        Authorization: "Bearer " + user.idToken,
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("res of updateTimersStates in sw: ", res);
   } catch (error) {
     console.warn(error);
   }

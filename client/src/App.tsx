@@ -4,7 +4,6 @@ import { AuthContextProvider } from "./Context/AuthContext";
 import { UserContextProvider } from "./Context/UserContext";
 import Navbar from "./Components/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
-
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
     navBar: string;
@@ -27,10 +26,6 @@ const theme = {
 
 function App() {
   useEffect(() => {
-    console.log("App is updated");
-  });
-
-  useEffect(() => {
     const disableArrowLeftAndRight = (ev: KeyboardEvent) => {
       if (ev.code === "ArrowLeft" || ev.code === "ArrowRight") {
         ev.preventDefault();
@@ -43,8 +38,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("APP is being mounted");
-
     //#region notification
     if ("Notification" in window) {
       console.log("The Notification property exists in the window namespace");
@@ -59,7 +52,7 @@ function App() {
             }
           })
           .catch((err) => {
-            console.log(err);
+            console.warn(err);
           });
       }
     } else {

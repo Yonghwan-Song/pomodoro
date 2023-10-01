@@ -13,7 +13,7 @@
 
 import Main from "./Main/Main";
 import Signin from "./Signin/Signin";
-import Setting from "./Setting/Setting";
+import Settings from "./Settings/Settings";
 import Statistics from "./Statistics/Statistics";
 
-export { Main, Signin, Setting, Statistics };
+export { Main, Signin, Settings, Statistics };

@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { PatternTimer } from "../../Components/PatternTimer/PatternTimer";
 import {
   postMsgToSW,
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
 } from "../..";
-import { PomoSettingType, UserInfo } from "../../Context/UserContext";
+import { UserInfo } from "../../Context/UserContext";
+import { PomoSettingType } from "../../types/clientStatesType";
 import { UserAuth } from "../../Context/AuthContext";
 import { StatesType } from "../..";
 import RecOfToday from "../../Components/RecOfToday/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
 import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
+import { pubsub } from "../../pubsub";
+import TogglingTimer from "./TogglingTimer";
 
 export default function Main() {
   const { user } = UserAuth()!;
@@ -19,44 +21,113 @@ export default function Main() {
     StatesType | {} | null
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
+  const [toggle, setToggle] = useState(false);
   const userInfoContext = UserInfo()!;
-  const pomoSetting = userInfoContext.pomoSetting ?? ({} as PomoSettingType);
+  const { pomoInfo } = userInfoContext;
 
-  useEffect(() => {
+  let pomoSetting = {} as PomoSettingType;
+  if (pomoInfo !== null && pomoInfo.pomoSetting !== undefined) {
+    pomoSetting = pomoInfo.pomoSetting;
+  }
+
+  //#region UseEffects
+  // useEffect(checkRendering);
+
+  useEffect(endTimerInBackground, [statesRelatedToTimer]);
+
+  useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
+
+  useEffect(setRecordsUsingTodaySessionsFromIDB, []);
+
+  useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
+
+  // Because of log out in the Main page... actually this makes it unnecessary to refresh app to provide PT and T with default pomoSetting.
+  useEffect(subscribeToClearStateStore, []);
+
+  useEffect(postSaveStatesMessageToServiceWorkerAndSetToggle, [
+    user,
+    pomoSetting,
+  ]);
+  //#endregion
+
+  //#region Side Effect Callbacks
+  function checkRendering() {
+    console.log("Main");
+    console.log("user", user === null ? null : "non-null");
+    console.log("pomoInfo", pomoInfo);
     console.log("statesRelatedToTimer", statesRelatedToTimer);
-    if (
-      statesRelatedToTimer !== null &&
-      Object.keys(statesRelatedToTimer).length !== 0 &&
-      (statesRelatedToTimer as StatesType).running
-    ) {
-      stopCountDownInBackground();
-    }
-  }, [statesRelatedToTimer]);
+    console.log("records", records);
+    console.log(
+      "------------------------------------------------------------------"
+    );
+  }
 
-  useEffect(() => {
+  function endTimerInBackground() {
+    statesRelatedToTimer !== null &&
+      Object.keys(statesRelatedToTimer).length !== 0 &&
+      (statesRelatedToTimer as StatesType).running &&
+      stopCountDownInBackground();
+  }
+
+  function setStatesRelatedToTimerUsingDataFromIDB() {
     const getStatesFromIDB = async () => {
       let states = await obtainStatesFromIDB("withoutPomoSetting");
       setStatesRelatedToTimer(states);
     };
     getStatesFromIDB();
-  }, []);
+  }
 
-  useEffect(() => {
+  function setRecordsUsingTodaySessionsFromIDB() {
     async function getTodaySession() {
       let data = await retrieveTodaySessionsFromIDB();
       setRecords(data);
     }
     getTodaySession();
-  }, []);
+  }
 
-  useEffect(() => {
+  //! This event is published in the `persistTimersStatesToIDB()` defined in UserContext.tsx
+  function subscribeToSuccessOfPersistingTimerStatesToIDB() {
+    // Since UserContext component is rendered after this Main component is rendered when signing in.
+    const unsub = pubsub.subscribe(
+      "successOfPersistingTimersStatesToIDB",
+      (data) => {
+        setStatesRelatedToTimer(data);
+        setToggle((prev) => !prev);
+      }
+    );
+
+    return () => {
+      unsub();
+    };
+  }
+
+  function subscribeToClearStateStore() {
+    const getStatesFromIDB = async () => {
+      let states = await obtainStatesFromIDB("withoutPomoSetting");
+      console.log(
+        "set this to statesRelatedToTimer after clearing stateStore",
+        states
+      );
+      setStatesRelatedToTimer(states);
+      setToggle((prev) => !prev);
+    };
+    const unsub = pubsub.subscribe("clearStateStore", (data) => {
+      getStatesFromIDB();
+    });
+
+    return () => {
+      unsub();
+    };
+  }
+
+  function postSaveStatesMessageToServiceWorkerAndSetToggle() {
     if (Object.entries(pomoSetting).length !== 0) {
       postMsgToSW("saveStates", {
-        component: "PatternTimer",
         stateArr: [{ name: "pomoSetting", value: pomoSetting }],
       });
     }
-  }, [user, pomoSetting]);
+  }
+  //#endregion
 
   // When this main page is loaded,
   // pomoSetting is fetched from a remote server unlike the statesRelatedToTimer is retrieved from a browser's storage (client side).
@@ -75,7 +146,8 @@ export default function Main() {
       <section>
         {isStatesRelatedToTimerReady &&
           (isPomoSettingReady ? (
-            <PatternTimer
+            <TogglingTimer
+              toggle={toggle}
               statesRelatedToTimer={statesRelatedToTimer}
               pomoDuration={pomoSetting.pomoDuration}
               shortBreakDuration={pomoSetting.shortBreakDuration}

@@ -49,7 +49,7 @@ let argumentOfInitializer = {
   pause: { totalLength: 0, record: [] },
 };
 
-export function Timer({
+export function TimerVVV({
   statesRelatedToTimer,
   durationInSeconds,
   next,
@@ -140,7 +140,6 @@ export function Timer({
       if (repetitionCount === 0) {
         //! repetitionCount is the information from the PatternTimer component.
         // a cylce of pomo durations has started.
-        //* 1.
         user !== null &&
           updateTimersStates(user, {
             startTime: momentTimerIsToggled,
@@ -158,7 +157,6 @@ export function Timer({
         setIsOnCycle(true);
       } else {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
-        //* 2.
         user !== null &&
           updateTimersStates(user, {
             startTime: momentTimerIsToggled,
@@ -170,7 +168,6 @@ export function Timer({
       // resume
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
-      //* 3.
       user &&
         updateTimersStates(user, {
           startTime: timerState.startTime,
@@ -199,7 +196,6 @@ export function Timer({
       // pause
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
-      //* 4.
       user &&
         updateTimersStates(user, {
           startTime: timerState.startTime,
@@ -229,9 +225,7 @@ export function Timer({
       repetitionCount + 1,
       numOfPomo
     );
-    //Todo: this conditional block can be improved I guess for some reason.
     if (patternTimerStates !== null) {
-      //* 5.
       user &&
         updateTimersStates(user, {
           running: false,
@@ -333,7 +327,6 @@ export function Timer({
         numOfPomo
       );
       if (patternTimerStates !== null) {
-        //* 6.
         user &&
           updateTimersStates(user, {
             running: false,
@@ -351,7 +344,6 @@ export function Timer({
   //#endregion
 
   //#region Etc functions
-  //Todo: Documentation
   function determineNextPatternTimerStates(
     howManyCountdown: number,
     numOfPomo: number

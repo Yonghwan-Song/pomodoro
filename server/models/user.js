@@ -14,6 +14,19 @@ const userSchema = new Schema(
       longBreakDuration: { type: Number, default: 15 },
       numOfPomo: { type: Number, default: 4 },
     },
+    timersStates: {
+      duration: { type: Number, default: 25 },
+      pause: {
+        type: {
+          totalLength: Number,
+          record: [{ start: Number, end: Number }],
+        },
+        default: { totalLength: 0, record: [] },
+      },
+      repetitionCount: { type: Number, default: 0 },
+      running: { type: Boolean, default: false },
+      startTime: { type: Number, default: 0 },
+    },
   },
   { timestamps: true }
 );

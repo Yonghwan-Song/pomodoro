@@ -8,16 +8,54 @@ import { StyledLink } from "../styles/Link.styled";
 import { useTheme } from "styled-components";
 import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
-import { stopCountDownInBackground } from "../..";
+import {
+  StatesType,
+  emptyStateStore,
+  obtainStatesFromIDB,
+  stopCountDownInBackground,
+  updateTimersStates,
+} from "../..";
+import { RequiredStatesToRunTimerType } from "../../types/clientStatesType";
+import * as CONSTANTS from "../../constants/index";
+import { UserInfo } from "../../Context/UserContext";
+import { pubsub } from "../../pubsub";
 
 function Navbar() {
   const { user, logOut } = UserAuth()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
+  const { setPomoInfo } = UserInfo()!;
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef<HTMLUListElement | null>(null); // interface MutableRefObject<T> { current: T;}
-  const theme = useTheme() as ThemeCustomized; //TODO: 우선 error는 없어졌는데 이게 맞는건지 잘 모르겠어...
+  const theme = useTheme() as ThemeCustomized;
 
   async function handleSignOut() {
     try {
+      // For the signing out user to continue his timer when re-signing in.
+      const statesFromIDB = await obtainStatesFromIDB("withoutPomoSetting");
+      if (Object.entries(statesFromIDB).length !== 0) {
+        if (user !== null) {
+          await updateTimersStates(user, statesFromIDB as StatesType);
+          // await updateTimersStatesWithFetch(user, statesFromIDB as StatesType);
+        }
+      }
+      localStorage.setItem("user", "unAuthenticated");
+      // For an unauthenticated user to use default pomoSetting.
+      await emptyStateStore();
+      pubsub.publish("clearStateStore", 1);
+      await caches.delete(CONSTANTS.CacheName);
+      //#region To allow un-logged-in users to start to use this app with default pomoSetting. (the default value for pomoSetting set in the server-sdie is the same one as below)
+      setPomoInfo((prev) => {
+        return {
+          ...(prev as RequiredStatesToRunTimerType),
+          pomoSetting: {
+            pomoDuration: 25,
+            shortBreakDuration: 5,
+            longBreakDuration: 15,
+            numOfPomo: 4,
+          },
+        };
+      });
+      //#endregion
+
       await logOut();
     } catch (error) {
       console.log(error);
@@ -70,14 +108,16 @@ function Navbar() {
       </StyledLink>
 
       <UnorderedList ref={ulRef} isSideBarActive={isActive} liOpacity>
+        {user !== null && (
+          <li>
+            <StyledLink to="/statistics" onClick={handleLinkClick}>
+              Statistics
+            </StyledLink>
+          </li>
+        )}
         <li>
-          <StyledLink to="/statistics" onClick={handleLinkClick}>
-            Statistics
-          </StyledLink>
-        </li>
-        <li>
-          <StyledLink to="/setting" onClick={handleLinkClick}>
-            Setting
+          <StyledLink to="/settings" onClick={handleLinkClick}>
+            Settings
           </StyledLink>
         </li>
         {user?.displayName ? (

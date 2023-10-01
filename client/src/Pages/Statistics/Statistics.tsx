@@ -10,7 +10,7 @@ import {
   DataArray,
 } from "./statRelatedTypes";
 import { countDown } from "../..";
-import { PayloadFromRecOfToday, pubsub } from "../../pubsub";
+import { pubsub } from "../../pubsub";
 import { startOfWeek, endOfWeek } from "date-fns";
 import { Overview } from "./Overview";
 import { Graph } from "./Graph";
@@ -263,50 +263,47 @@ export default function Statistics() {
 
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
-    const unsub = pubsub.subscribe(
-      "pomoAdded",
-      (data: PayloadFromRecOfToday) => {
-        let { startTime, timeCountedDown } = data;
-        setStatData((prev) => {
-          // console.log("prev", prev);
-          let today = new Date();
-          const todayDateStr = `${
-            today.getMonth() + 1
-          }/${today.getDate()}/${today.getFullYear()}`;
-          let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-          let cloned = [...(prev as DailyPomo[])];
-          console.log("todayDateStr", todayDateStr);
-          let doesTodayObjExist =
-            cloned.length !== 0 &&
-            cloned[cloned.length - 1].date === todayDateStr;
+    const unsub = pubsub.subscribe("pomoAdded", (data: any) => {
+      let { startTime, timeCountedDown } = data;
+      setStatData((prev) => {
+        // console.log("prev", prev);
+        let today = new Date();
+        const todayDateStr = `${
+          today.getMonth() + 1
+        }/${today.getDate()}/${today.getFullYear()}`;
+        let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        let cloned = [...(prev as DailyPomo[])];
+        console.log("todayDateStr", todayDateStr);
+        let doesTodayObjExist =
+          cloned.length !== 0 &&
+          cloned[cloned.length - 1].date === todayDateStr;
 
-          if (doesTodayObjExist) {
-            cloned[cloned.length - 1].total += timeCountedDown;
-            // console.log("cloned", cloned);
-          } else {
-            cloned.push({
-              date: todayDateStr,
-              timestamp: startTime,
-              dayOfWeek: days[today.getDay()],
-              total: timeCountedDown,
-            });
-            // console.log("cloned", cloned);
-          }
-
-          calculateThisWeekData(cloned);
-          setSum((prev) => {
-            return {
-              ...prev,
-              today: prev.today + timeCountedDown,
-              thisWeek: prev.thisWeek + timeCountedDown,
-              thisMonth: prev.thisMonth + timeCountedDown,
-              allTime: prev.allTime + timeCountedDown,
-            };
+        if (doesTodayObjExist) {
+          cloned[cloned.length - 1].total += timeCountedDown;
+          // console.log("cloned", cloned);
+        } else {
+          cloned.push({
+            date: todayDateStr,
+            timestamp: startTime,
+            dayOfWeek: days[today.getDay()],
+            total: timeCountedDown,
           });
-          return cloned;
+          // console.log("cloned", cloned);
+        }
+
+        calculateThisWeekData(cloned);
+        setSum((prev) => {
+          return {
+            ...prev,
+            today: prev.today + timeCountedDown,
+            thisWeek: prev.thisWeek + timeCountedDown,
+            thisMonth: prev.thisMonth + timeCountedDown,
+            allTime: prev.allTime + timeCountedDown,
+          };
         });
-      }
-    );
+        return cloned;
+      });
+    });
 
     return () => {
       unsub();
