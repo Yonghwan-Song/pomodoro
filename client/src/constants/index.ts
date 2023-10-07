@@ -24,7 +24,7 @@ export const URLs = {
   // RECORD_OF_TODAY: "http://pomodoro-apis.onrender.com/recordOfToday",
   USER: "https://pomodoro-apis-test.onrender.com/users",
   POMO: "https://pomodoro-apis-test.onrender.com/pomos",
-  RECORD_OF_TODAY: "http://pomodoro-apis-test.onrender.com/recordOfToday",
+  RECORD_OF_TODAY: "https://pomodoro-apis-test.onrender.com/recordOfToday",
 };
 
 export const IDB_VERSION = 6;
