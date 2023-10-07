@@ -58,6 +58,7 @@ self.addEventListener("message", (ev) => {
         saveStates(payload);
         break;
 
+      // not used anymore. Instead, we use countDown() in the index.tsx
       case "countDown":
         countDown(payload, ev.source.id);
         break;
@@ -182,6 +183,7 @@ async function countDown(setIntervalId, clientId) {
         console.log("idOfSetInterval", idOfSetInterval);
         clearInterval(idOfSetInterval);
         client.postMessage({ timerHasEnded: "clearLocalStorage" });
+        console.log("states in countDown() - ", states);
         goNext(states, clientId);
       }
     }, 500);
@@ -211,11 +213,10 @@ async function emptyStateStore(clientId) {
 
 // Purpose: to decide whether the the following duration is a pomo or break.
 async function goNext(states) {
-  let db = DB || (await openIndexedDB());
-  const store = db
-    .transaction("stateStore", "readwrite")
-    .objectStore("stateStore");
-
+  console.log(
+    "states as a parameter in goNext(): Before Destructuring- ",
+    states
+  );
   let {
     duration,
     repetitionCount,
@@ -229,7 +230,16 @@ async function goNext(states) {
     pause,
     startTime,
   } = states;
+  console.log("pomoDuration", pomoDuration);
+  console.log("shortBreakDuration", shortBreakDuration);
+  console.log("longBreakDuratin", longBreakDuration);
+  console.log("numOfPomo", numOfPomo);
+  console.log(
+    "states as a parameter in goNext(): After Destructuring- ",
+    states
+  );
 
+  //TODO: why am I deleting these properties?
   delete states.duration;
   delete states.repetitionCount;
   delete states.running;
@@ -240,157 +250,134 @@ async function goNext(states) {
     endTime,
     timeCountedDown: duration,
   };
+  console.log("sessionData - ", sessionData);
 
   repetitionCount++;
   running = false;
   pause = { totalLength: 0, record: [] };
 
-  await store.put({
-    name: "running",
-    value: running,
-  });
-  await store.put({
-    name: "startTime",
-    value: 0,
-  });
-  await store.put({
-    name: "pause",
-    value: pause,
-  });
+  await persistStates([
+    {
+      name: "running",
+      value: running,
+    },
+    {
+      name: "startTime",
+      value: 0,
+    },
+    {
+      name: "pause",
+      value: pause,
+    },
+    {
+      name: "repetitionCount",
+      value: repetitionCount,
+    },
+  ]);
 
-  await store.put({
-    name: "repetitionCount",
-    value: repetitionCount,
-  });
-
-  const idTokenAndEmail = await getIdTokenAndEmail();
+  // let idTokenAndEmail = await getIdTokenAndEmail();
 
   if (repetitionCount < numOfPomo * 2 - 1) {
     if (repetitionCount % 2 === 1) {
+      console.log("1");
+      console.log("SB - ", shortBreakDuration);
       //This is when a pomo, which is not the last one of a cycle, is completed.
       self.registration.showNotification("shortBreak", {
         body: "time to take a short break",
       });
-      idTokenAndEmail && recordPomo(idTokenAndEmail, duration, startTime);
-      await store.put({
-        name: "duration",
-        value: shortBreakDuration,
-      });
+      await recordPomo(duration, startTime);
+      await persistStates([
+        {
+          name: "duration",
+          value: shortBreakDuration,
+        },
+      ]);
       await persistSession("pomo", sessionData);
-      updateTimersStates(idTokenAndEmail, {
+      updateTimersStates({
         running,
         startTime: 0,
         pause,
         repetitionCount,
         duration: shortBreakDuration,
       });
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
 
       // console.log(await getIdTokenAndEmail());
     } else {
+      console.log("2");
+      console.log("P - ", pomoDuration);
       //* This is when a short break is done.
       self.registration.showNotification("pomo", {
         body: "time to focus",
       });
-      await store.put({
-        name: "duration",
-        value: pomoDuration,
-      });
+      await persistStates([
+        {
+          name: "duration",
+          value: pomoDuration,
+        },
+      ]);
       await persistSession("break", sessionData);
-      updateTimersStates(idTokenAndEmail, {
+
+      updateTimersStates({
         running,
         startTime: 0,
         pause,
         repetitionCount,
         duration: pomoDuration,
       });
+      persistRecOfTodayToServer({ kind: "break", ...sessionData });
     }
   } else if (repetitionCount === numOfPomo * 2 - 1) {
+    console.log("3");
+    console.log("LB - ", longBreakDuration);
     //This is when the last pomo of a cycle is completed.
     self.registration.showNotification("longBreak", {
       body: "time to take a long break",
     });
-    idTokenAndEmail && recordPomo(idTokenAndEmail, duration, startTime);
-    await store.put({
-      name: "duration",
-      value: longBreakDuration,
-    });
+    await recordPomo(duration, startTime);
+    await persistStates([
+      {
+        name: "duration",
+        value: longBreakDuration,
+      },
+    ]);
     await persistSession("pomo", sessionData);
-    updateTimersStates(idTokenAndEmail, {
+    updateTimersStates({
       running,
       startTime: 0,
       pause,
       repetitionCount,
       duration: longBreakDuration,
     });
+    persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
   } else if (repetitionCount === numOfPomo * 2) {
+    console.log("4");
+    console.log("P - ", pomoDuration);
     //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
     self.registration.showNotification("nextCycle", {
       body: "time to do the next cycle of pomos",
     });
-    await store.put({
-      name: "repetitionCount",
-      value: 0,
-    });
-    await store.put({
-      name: "duration",
-      value: pomoDuration,
-    });
+    await persistStates([
+      {
+        name: "duration",
+        value: pomoDuration,
+      },
+      {
+        name: "repetitionCount",
+        value: 0,
+      },
+    ]);
     await persistSession("break", sessionData);
-    updateTimersStates(idTokenAndEmail, {
+    updateTimersStates({
       running,
       startTime: 0,
       pause,
       repetitionCount: 0,
       duration: pomoDuration,
     });
-  }
-}
-
-async function recordPomo(idTokenAndEmail, duration, startTime) {
-  try {
-    const today = new Date(startTime);
-    let LocaleDateString = `${
-      today.getMonth() + 1
-    }/${today.getDate()}/${today.getFullYear()}`;
-    const { idToken, email } = idTokenAndEmail;
-    const record = {
-      userEmail: email,
-      duration,
-      startTime,
-      LocaleDateString,
-    };
-    let body = JSON.stringify(record);
-    console.log("body", body);
-
-    // update
-    let cache = CACHE || (await openCache(CacheName));
-    let statResponse = await cache.match(URLs.POMO + `/stat/${email}`);
-    if (statResponse !== undefined) {
-      let statData = await statResponse.json();
-      statData.push({
-        userEmail: email,
-        duration,
-        startTime,
-        date: LocaleDateString,
-        isDummy: false,
-      });
-      cache.put(
-        URLs.POMO + `/stat/${email}`,
-        new Response(JSON.stringify(statData))
-      );
-    }
-
-    const res = await fetch(URLs.POMO, {
-      method: "POST",
-      body,
-      headers: {
-        Authorization: "Bearer " + idToken,
-        "Content-Type": "application/json",
-      },
-    });
-    console.log("res of recordPomo in sw: ", res);
-  } catch (err) {
-    console.warn(err);
+    persistRecOfTodayToServer({ kind: "break", ...sessionData });
+  } else {
+    console.log("5");
   }
 }
 
@@ -414,32 +401,146 @@ async function persistSession(kind, data) {
   }
 }
 
-async function updateTimersStates(user, states) {
+async function persistStates(stateArr) {
   try {
-    // caching
-    let cache = CACHE || (await openCache(CacheName));
-    let pomoSettingAndTimerStatesResponse = await cache.match(
-      URLs.USER + `/${user.email}`
-    );
-    if (pomoSettingAndTimerStatesResponse !== undefined) {
-      let pomoSettingAndTimersStates =
-        await pomoSettingAndTimerStatesResponse.json();
-      pomoSettingAndTimersStates.timersStates = states;
-      await cache.put(
-        URLs.USER + `/${user.email}`,
-        new Response(JSON.stringify(pomoSettingAndTimersStates))
-      );
-    }
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("stateStore", "readwrite")
+      .objectStore("stateStore");
 
-    const res = await fetch(URLs.USER + `/updateTimersStates/${user.email}`, {
-      method: "PUT",
-      body: JSON.stringify({ states }),
-      headers: {
-        Authorization: "Bearer " + user.idToken,
-        "Content-Type": "application/json",
-      },
+    Array.from(stateArr).forEach(async (obj) => {
+      await store.put(obj);
     });
-    console.log("res of updateTimersStates in sw: ", res);
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+async function recordPomo(duration, startTime) {
+  try {
+    let idTokenAndEmail = await getIdTokenAndEmail();
+    if (idTokenAndEmail) {
+      const { idToken, email } = idTokenAndEmail;
+      const today = new Date(startTime);
+      let LocaleDateString = `${
+        today.getMonth() + 1
+      }/${today.getDate()}/${today.getFullYear()}`;
+      const record = {
+        userEmail: email,
+        duration,
+        startTime,
+        LocaleDateString,
+      };
+      let body = JSON.stringify(record);
+      console.log("body", body);
+
+      // update
+      let cache = CACHE || (await openCache(CacheName));
+      console.log("cache in recordPomo", cache);
+      let statResponse = await cache.match(URLs.POMO + `/stat/${email}`);
+      if (statResponse !== undefined) {
+        let statData = await statResponse.json();
+        console.log("statData before push", statData);
+        statData.push({
+          userEmail: email,
+          duration,
+          startTime,
+          date: LocaleDateString,
+          isDummy: false,
+        });
+        console.log("statData after push", statData);
+        cache.put(
+          URLs.POMO + `/stat/${email}`,
+          new Response(JSON.stringify(statData))
+        );
+      }
+
+      const res = await fetch(URLs.POMO, {
+        method: "POST",
+        body,
+        headers: {
+          Authorization: "Bearer " + idToken,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("res of recordPomo in sw: ", res);
+    }
+  } catch (err) {
+    console.warn(err);
+  }
+}
+
+async function updateTimersStates(states) {
+  try {
+    let idTokenAndEmail = await getIdTokenAndEmail();
+    if (idTokenAndEmail) {
+      const { idToken, email } = idTokenAndEmail;
+      // caching
+      let cache = CACHE || (await openCache(CacheName));
+      let pomoSettingAndTimerStatesResponse = await cache.match(
+        URLs.USER + `/${email}`
+      );
+      if (pomoSettingAndTimerStatesResponse !== undefined) {
+        let pomoSettingAndTimersStates =
+          await pomoSettingAndTimerStatesResponse.json();
+        pomoSettingAndTimersStates.timersStates = states;
+        await cache.put(
+          URLs.USER + `/${email}`,
+          new Response(JSON.stringify(pomoSettingAndTimersStates))
+        );
+      }
+
+      const res = await fetch(URLs.USER + `/updateTimersStates/${email}`, {
+        method: "PUT",
+        body: JSON.stringify({ states }),
+        headers: {
+          Authorization: "Bearer " + idToken,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("res of updateTimersStates in sw: ", res);
+    }
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+async function persistRecOfTodayToServer(record) {
+  try {
+    let idTokenAndEmail = await getIdTokenAndEmail();
+    if (idTokenAndEmail) {
+      console.log("in the if block");
+      const { idToken, email } = idTokenAndEmail;
+      // caching
+      let cache = CACHE || (await openCache(CacheName));
+      let resOfRecordOfToday = await cache.match(
+        URLs.RECORD_OF_TODAY + "/" + email
+      );
+      if (resOfRecordOfToday !== undefined) {
+        let recordsOfToday = await resOfRecordOfToday.json();
+        recordsOfToday.push({
+          record,
+        });
+        await cache.put(
+          URLs.RECORD_OF_TODAY + "/" + email,
+          new Response(JSON.stringify(recordsOfToday))
+        );
+      }
+
+      // http requeset
+      const res = await fetch(URLs.RECORD_OF_TODAY, {
+        method: "POST",
+        body: JSON.stringify({
+          userEmail: email,
+          ...record,
+        }),
+        headers: {
+          Authorization: "Bearer " + idToken,
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("res of persistRecOfTodayToSever", res);
+    }
   } catch (error) {
     console.warn(error);
   }

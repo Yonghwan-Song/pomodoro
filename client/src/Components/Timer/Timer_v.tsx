@@ -17,7 +17,7 @@ import { FlexBox } from "../Layouts/FlexBox";
 import { StatesType, postMsgToSW, updateTimersStates } from "../..";
 import CountDownTimer from "../CountDownTimer/CountDownTimer";
 import PauseTimer from "../PauseTimer/PauseTimer";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 
 type TimerProps = {
   statesRelatedToTimer: StatesType | {};
@@ -63,7 +63,7 @@ export function TimerVVV({
   numOfPomo,
 }: TimerProps) {
   //#region States
-  const { user } = UserAuth()!;
+  const { user } = useAuthContext()!;
   // lazy Initialization
   const [timerState, dispatch] = useReducer<
     (state: TimerStateType, action: TimerAction) => TimerStateType,

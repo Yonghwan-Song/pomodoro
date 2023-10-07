@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Timer } from "../../Timer/Timer";
-import { UserInfo } from "../../../Context/UserContext";
+import { useUserContext } from "../../../Context/UserContext";
 import { TimerStateType } from "../../../types/clientStatesType";
 
 export function PatternTimer() {
   const [duration, setDuration] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0); // How many times the timer used by this Pattern timer.
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false);
-  const { pomoInfo } = UserInfo()!;
+  const { pomoInfo } = useUserContext()!;
 
   let { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
     pomoInfo?.pomoSetting!;

@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import usersRoutes from "./routes/users.js";
 import pomosRoutes from "./routes/pomos.js";
+import recordOfToday from "./routes/recordOfToday.js";
 
 //???
 // import * as dotenv from "dotenv"; // this works.
@@ -44,6 +45,7 @@ app.use(express.urlencoded({ extended: true }));
 //app.use(middleware.decodeToken(req, res, next));
 app.use("/users", usersRoutes);
 app.use("/pomos", pomosRoutes);
+app.use("/recordOfToday", recordOfToday);
 
 app.listen(port, () => {
   console.log(`Server is running on port: http://localhost:${port}`);

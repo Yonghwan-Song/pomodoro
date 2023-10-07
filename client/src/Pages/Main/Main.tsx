@@ -5,9 +5,9 @@ import {
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
 } from "../..";
-import { UserInfo } from "../../Context/UserContext";
+import { useUserContext } from "../../Context/UserContext";
 import { PomoSettingType } from "../../types/clientStatesType";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { StatesType } from "../..";
 import RecOfToday from "../../Components/RecOfToday/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
@@ -16,13 +16,13 @@ import { pubsub } from "../../pubsub";
 import TogglingTimer from "./TogglingTimer";
 
 export default function Main() {
-  const { user } = UserAuth()!;
+  const { user } = useAuthContext()!;
   const [statesRelatedToTimer, setStatesRelatedToTimer] = useState<
     StatesType | {} | null
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
   const [toggle, setToggle] = useState(false);
-  const userInfoContext = UserInfo()!;
+  const userInfoContext = useUserContext()!;
   const { pomoInfo } = userInfoContext;
 
   let pomoSetting = {} as PomoSettingType;
@@ -33,35 +33,22 @@ export default function Main() {
   //#region UseEffects
   // useEffect(checkRendering);
 
-  useEffect(endTimerInBackground, [statesRelatedToTimer]);
-
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
 
-  useEffect(setRecordsUsingTodaySessionsFromIDB, []);
+  useEffect(setRecordsUsingDataFromIDB, []);
 
   useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
 
-  // Because of log out in the Main page... actually this makes it unnecessary to refresh app to provide PT and T with default pomoSetting.
-  useEffect(subscribeToClearStateStore, []);
+  useEffect(subscribeToSuccessOfPersistingRecordsOfTodayToIDB, []);
 
-  useEffect(postSaveStatesMessageToServiceWorkerAndSetToggle, [
-    user,
-    pomoSetting,
-  ]);
+  useEffect(subscribeToClearObjectStores, []);
+
+  useEffect(endTimerInBackground, [statesRelatedToTimer]);
+
+  useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);
   //#endregion
 
   //#region Side Effect Callbacks
-  function checkRendering() {
-    console.log("Main");
-    console.log("user", user === null ? null : "non-null");
-    console.log("pomoInfo", pomoInfo);
-    console.log("statesRelatedToTimer", statesRelatedToTimer);
-    console.log("records", records);
-    console.log(
-      "------------------------------------------------------------------"
-    );
-  }
-
   function endTimerInBackground() {
     statesRelatedToTimer !== null &&
       Object.keys(statesRelatedToTimer).length !== 0 &&
@@ -77,7 +64,7 @@ export default function Main() {
     getStatesFromIDB();
   }
 
-  function setRecordsUsingTodaySessionsFromIDB() {
+  function setRecordsUsingDataFromIDB() {
     async function getTodaySession() {
       let data = await retrieveTodaySessionsFromIDB();
       setRecords(data);
@@ -101,18 +88,32 @@ export default function Main() {
     };
   }
 
-  function subscribeToClearStateStore() {
-    const getStatesFromIDB = async () => {
-      let states = await obtainStatesFromIDB("withoutPomoSetting");
-      console.log(
-        "set this to statesRelatedToTimer after clearing stateStore",
-        states
-      );
-      setStatesRelatedToTimer(states);
-      setToggle((prev) => !prev);
+  function subscribeToSuccessOfPersistingRecordsOfTodayToIDB() {
+    const unsub = pubsub.subscribe(
+      "successOfPersistingRecordsOfTodayToIDB",
+      (data) => {
+        setRecords(data);
+        setToggle((prev) => !prev);
+      }
+    );
+
+    return () => {
+      unsub();
     };
-    const unsub = pubsub.subscribe("clearStateStore", (data) => {
-      getStatesFromIDB();
+  }
+
+  function subscribeToClearObjectStores() {
+    const getDataFromIDB = async () => {
+      const states = await obtainStatesFromIDB("withoutPomoSetting");
+      const sessionsOfToday = await retrieveTodaySessionsFromIDB();
+
+      setStatesRelatedToTimer(states);
+      setRecords(sessionsOfToday); //!<-----
+      setToggle((prev) => !prev); // this makes it the mounting with appropriate data unlike the commented one below.
+    };
+
+    const unsub = pubsub.subscribe("clearObjectStores", (data) => {
+      getDataFromIDB();
     });
 
     return () => {
@@ -120,7 +121,7 @@ export default function Main() {
     };
   }
 
-  function postSaveStatesMessageToServiceWorkerAndSetToggle() {
+  function postSaveStatesMessageToServiceWorker() {
     if (Object.entries(pomoSetting).length !== 0) {
       postMsgToSW("saveStates", {
         stateArr: [{ name: "pomoSetting", value: pomoSetting }],

@@ -1,16 +1,18 @@
 import { useEffect } from "react";
 import GoogleButton from "react-google-button";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { emptyRecOfToday } from "../..";
 
 function Signin() {
-  const { googleSignIn, user } = UserAuth()!;
+  const { googleSignIn, user } = useAuthContext()!;
 
   const navigate = useNavigate();
 
   const handleGoogleSignIn = async () => {
     try {
       await googleSignIn();
+      await emptyRecOfToday();
     } catch (error) {
       console.log(error);
     }

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Timer } from "../Timer/Timer";
 import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
 import {
   DynamicCache,
@@ -47,7 +47,7 @@ export function PatternTimer({
   //Thus, e.g. if repetitionCount is 0 and duration is 20, the timer is going to run for 20 minutes when start buttion is clicked.
   //And also the timer actually has not run yet since repetitionCount is 0.
 
-  const { user } = UserAuth()!;
+  const { user } = useAuthContext()!;
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
   /**
    * Decide this time rendering is whether a pomo duration or a break
@@ -98,6 +98,8 @@ export function PatternTimer({
         // for timeline
         setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
         await persistTodaySession("pomo", sessionData);
+        user &&
+          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
       } else {
         //! This is when a short break is done.
         notify("pomo");
@@ -109,6 +111,8 @@ export function PatternTimer({
         // for timeline
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
         await persistTodaySession("break", sessionData);
+        user &&
+          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
@@ -123,6 +127,7 @@ export function PatternTimer({
       // for timeline
       setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
       await persistTodaySession("pomo", sessionData);
+      user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
       console.log("one cycle is done");
@@ -142,6 +147,8 @@ export function PatternTimer({
       // for timeline
       setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
       await persistTodaySession("break", sessionData);
+      user &&
+        persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
     }
   }
 
@@ -174,6 +181,45 @@ export function PatternTimer({
   );
 }
 
+async function persistRecOfTodayToServer(user: User, record: RecType) {
+  try {
+    // caching
+    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let resOfRecordOfToday = await cache.match(
+      CONSTANTS.URLs.RECORD_OF_TODAY + "/" + user.email
+    );
+    if (resOfRecordOfToday !== undefined) {
+      let recordsOfToday = await resOfRecordOfToday.json();
+      recordsOfToday.push({
+        record,
+      });
+      await cache.put(
+        CONSTANTS.URLs.RECORD_OF_TODAY + "/" + user.email,
+        new Response(JSON.stringify(recordsOfToday))
+      );
+    }
+
+    // http requeset
+    const idToken = await user.getIdToken();
+    const response = await axios.post(
+      CONSTANTS.URLs.RECORD_OF_TODAY,
+      {
+        userEmail: user.email,
+        ...record,
+      },
+
+      {
+        headers: {
+          Authorization: "Bearer " + idToken,
+        },
+      }
+    );
+    console.log("res of persistRecOfTodayToSever", response);
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
 async function recordPomo(user: User, duration: number, startTime: number) {
   try {
     const today = new Date(startTime);
@@ -199,7 +245,7 @@ async function recordPomo(user: User, duration: number, startTime: number) {
         CONSTANTS.URLs.POMO + "/stat/" + user.email,
         new Response(JSON.stringify(statData))
       );
-    }
+    } //TODO: what if statResponse is undefined
 
     const idToken = await user.getIdToken();
     const response = await axios.post(
@@ -256,5 +302,5 @@ function notify(which: string) {
 
   setTimeout(() => {
     noti.close();
-  }, 4000);
+  }, 5000);
 }

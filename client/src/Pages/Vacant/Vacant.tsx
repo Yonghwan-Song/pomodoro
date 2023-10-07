@@ -1,10 +1,9 @@
 import { useEffect } from "react";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { postMsgToSW } from "../..";
 
 export function Vacant() {
-  const { user } = UserAuth()!;
+  const { user } = useAuthContext()!;
   const navigate = useNavigate();
 
   useEffect(() => {

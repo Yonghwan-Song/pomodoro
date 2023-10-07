@@ -5,7 +5,7 @@ import {
   SetStateAction,
   useEffect,
 } from "react";
-import { UserAuth } from "./AuthContext";
+import { useAuthContext } from "./AuthContext";
 import * as C from "../constants/index";
 import { useFetch } from "../Custom-Hooks/useFetch";
 import {
@@ -28,46 +28,52 @@ export function UserContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isNewUser, isNewUserRegistered } = UserAuth()!;
+  console.log(
+    `localStorage.getItem("user") === ${localStorage.getItem("user")}`
+  );
+  const { user, isNewUser, isNewUserRegistered } = useAuthContext()!;
   const [pomoInfo, setPomoInfo] = useFetch<RequiredStatesToRunTimerType>({
     urlSegment: C.URLs.USER,
     callbacks:
-      localStorage.getItem("user") === "unAuthenticated" || null
+      localStorage.getItem("user") === "unAuthenticated" ||
+      localStorage.getItem("user") === null
         ? [persistTimersStatesToIDB]
         : undefined,
     additionalDeps: [isNewUser, isNewUserRegistered],
     additionalCondition: isNewUser === false || isNewUserRegistered,
   });
 
-  useEffect(() => {
-    console.log("user", user === null ? null : "non-null");
-    console.log("pomoInfo", pomoInfo);
-    console.log("pomoSetting", pomoInfo?.pomoSetting);
-    console.log("timersStates", pomoInfo?.timersStates);
-    console.log(
-      "------------------------------------------------------------------"
-    );
-  });
-  //! 여기이 sideEffect가 사실... 저 useFetch랑 어떻게보면 합쳐진다고 봐야하는 듯.
-  //! pomoSetting이 data fetch해오지도 않았는데 어디서 그랬나 보니 여기인듯.
-  useEffect(() => {
-    // Purpose:
-    // To allow _unauthenticated(un-logged-in) users_ to continue to run timer
-    // from where they left when refreshing the app.
+  //#region UseEffects
+  //* pomoInfo ends up receiving null from useFetch hook when a user is an unlogged-in user.
+  // TODO: better way is, I guess, not calling http api request inside useFetch when user is null. check it out.
+  // useEffect(setPomoInfoOfUnLoggedInUser, [pomoInfo]); // Previously, the dep was [user, pomoInfo].
+  useEffect(setPomoInfoOfUnLoggedInUser, [user, pomoInfo]); // Previously, the dep was [user, pomoInfo].
+  //#endregion
+
+  //#region Side Effects
+  // Purpose: to allow _unauthenticated(un-logged-in) users_ to continue to run timer from where they left when refreshing the app.
+  function setPomoInfoOfUnLoggedInUser() {
     if (pomoInfo === null) {
+      // What this condition mean? - unauthenticated user is using the app.
+      // How?
+      // 1.close and reopen 2.after refreshing app 3.when deleting all history including indexed DB
+      // TODO: write codes for the third case.
       const getPomoSettingFromIDB = async () => {
+        // when deleting all history including indexed DB... it does not work.
+        //TODO: 1. What's a bit weird in this code below is that I considered only the pomoSetting.
+        //TODO: 2. At the same time, I did updated the pomoSetting in the NavBar.tsx when it comes to signing out.
         let states = await obtainStatesFromIDB("withPomoSetting");
-        if (
-          Object.entries(states).length !== 0 &&
-          (states as dataCombinedFromIDB).pomoSetting
-        ) {
+        console.log("states in the setPomoInfoOfUnLoggedInUser", states);
+
+        if (doesPomoSettingExist()) {
           setPomoInfo((prev) => {
             return {
               ...(prev as RequiredStatesToRunTimerType), // since pomoInfo is not null in this block
               pomoSetting: (states as dataCombinedFromIDB).pomoSetting,
             };
           });
-        } else {
+        }
+        if (!doesPomoSettingExist()) {
           setPomoInfo((prev) => {
             return {
               ...(prev as RequiredStatesToRunTimerType),
@@ -80,10 +86,18 @@ export function UserContextProvider({
             };
           });
         }
+
+        function doesPomoSettingExist() {
+          return (
+            Object.entries(states).length !== 0 &&
+            (states as dataCombinedFromIDB).pomoSetting
+          );
+        }
       };
       getPomoSettingFromIDB();
     }
-  }, [user, pomoInfo]);
+  }
+  //#endregion
 
   return (
     <>
@@ -96,7 +110,7 @@ export function UserContextProvider({
   );
 }
 
-export function UserInfo() {
+export function useUserContext() {
   return useContext(UserContext);
 }
 
@@ -111,5 +125,5 @@ async function persistTimersStatesToIDB(states: RequiredStatesToRunTimerType) {
   await persistStatesToIDB(states.timersStates);
   localStorage.setItem("user", "authenticated");
   console.log("persist success - ", states.timersStates);
-  pubsub.publish("successOfPersistingTimersStatesToIDB", states.timersStates);
+  pubsub.publish("successOfPersistingTimersStatesToIDB", states.timersStates); // Actually, this event is also indicating that clearing recOfToday objectStore has finished because we put this line after the emptyRecOfToday().
 }

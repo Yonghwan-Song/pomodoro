@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthContextProvider } from "./Context/AuthContext";
 import { UserContextProvider } from "./Context/UserContext";
+import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
 import Navbar from "./Components/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
 export interface ThemeCustomized extends DefaultTheme {
@@ -66,10 +67,12 @@ function App() {
   return (
     <AuthContextProvider>
       <UserContextProvider>
-        <ThemeProvider theme={theme}>
-          <Navbar />
-          <Outlet />
-        </ThemeProvider>
+        <RecordsOfTodayContextProvider>
+          <ThemeProvider theme={theme}>
+            <Navbar />
+            <Outlet />
+          </ThemeProvider>
+        </RecordsOfTodayContextProvider>
       </UserContextProvider>
     </AuthContextProvider>
   );

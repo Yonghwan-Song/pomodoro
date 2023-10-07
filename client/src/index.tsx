@@ -9,6 +9,7 @@ import { PauseType } from "./Components/reducers";
 import {
   TimerStateType,
   PatternTimerStatesType,
+  RecType,
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
@@ -69,7 +70,27 @@ const BC = new BroadcastChannel("pomodoro");
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 //#endregion
 
-//#region function calls
+root.render(
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<App />}>
+        <Route path="timer" element={<Main />} />
+        <Route path="settings" element={<Settings />} />
+        <Route
+          path="statistics"
+          element={
+            <Protected>
+              <Statistics />
+            </Protected>
+          }
+        />
+        <Route path="signin" element={<Signin />} />
+        <Route index element={<Vacant />} />
+      </Route>
+    </Routes>
+  </BrowserRouter>
+);
+//#region event handlers
 BC.addEventListener("message", (ev) => {
   const { evName, payload } = ev.data;
   console.log("payload of BC", payload);
@@ -87,7 +108,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
   await caches.delete(CacheName);
+  if (localStorage.getItem("user") === "authenticated") {
+    localStorage.removeItem("user");
+    await clearStateStore();
+  }
 });
+//#endregion
 
 //#region
 export async function updateTimersStates(
@@ -125,28 +151,6 @@ export async function updateTimersStates(
     console.warn(err);
   }
 }
-//#endregion
-
-root.render(
-  <BrowserRouter>
-    <Routes>
-      <Route path="/" element={<App />}>
-        <Route path="timer" element={<Main />} />
-        <Route path="settings" element={<Settings />} />
-        <Route
-          path="statistics"
-          element={
-            <Protected>
-              <Statistics />
-            </Protected>
-          }
-        />
-        <Route path="signin" element={<Signin />} />
-        <Route index element={<Vacant />} />
-      </Route>
-    </Routes>
-  </BrowserRouter>
-);
 //#endregion
 
 //#region
@@ -245,8 +249,7 @@ async function openIndexedDB() {
     },
     blocking(currentVersion, blockedVersion, event) {
       console.log("blocking", event);
-      //TODO: test prompt
-      prompt("Please refresh the current webpage");
+      window.location.reload();
     },
   });
 
@@ -307,7 +310,8 @@ export async function deleteRecordsBeforeTodayInIDB() {
     }
   });
 }
-export async function retrieveTodaySessionsFromIDB() {
+
+export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   let db = DB || (await openIndexedDB());
   const store = db
     .transaction("recOfToday", "readwrite")
@@ -340,6 +344,20 @@ export async function persistTodaySession(
   }
 }
 
+export async function persistManyTodaySessions(records: RecType[]) {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("recOfToday", "readwrite")
+      .objectStore("recOfToday");
+    for (const val of records) {
+      await store.put(val);
+    }
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
 export async function persistStatesToIDB(
   states: TimerStateType & PatternTimerStatesType
 ) {
@@ -363,6 +381,18 @@ export async function emptyStateStore() {
     const store = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
+    await store.clear();
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function emptyRecOfToday() {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("recOfToday", "readwrite")
+      .objectStore("recOfToday");
     await store.clear();
   } catch (error) {
     console.warn(error);

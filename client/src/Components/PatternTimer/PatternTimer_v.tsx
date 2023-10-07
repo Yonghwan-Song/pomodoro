@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Timer } from "../Timer/Timer";
 import { TimerVVV } from "../Timer/Timer_v";
 import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
 import {
   DynamicCache,
@@ -48,7 +47,7 @@ export function PatternTimerVVV({
   //Thus, e.g. if repetitionCount is 0 and duration is 20, the timer is going to run for 20 minutes when start buttion is clicked.
   //And also the timer actually has not run yet since repetitionCount is 0.
 
-  const { user } = UserAuth()!;
+  const { user } = useAuthContext()!;
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
 
   function checkRendering() {
@@ -112,6 +111,8 @@ export function PatternTimerVVV({
         // for timeline
         setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
         await persistTodaySession("pomo", sessionData);
+        user &&
+          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
       } else {
         //! This is when a short break is done.
         notify("pomo");
@@ -123,6 +124,8 @@ export function PatternTimerVVV({
         // for timeline
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
         await persistTodaySession("break", sessionData);
+        user &&
+          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
@@ -137,6 +140,7 @@ export function PatternTimerVVV({
       // for timeline
       setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
       await persistTodaySession("pomo", sessionData);
+      user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
       // console.log("one cycle is done");
@@ -156,6 +160,8 @@ export function PatternTimerVVV({
       // for timeline
       setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
       await persistTodaySession("break", sessionData);
+      user &&
+        persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
     }
   }
 
@@ -168,20 +174,6 @@ export function PatternTimerVVV({
 
   return (
     <>
-      {/* <Timer
-        //min to seconds
-        statesRelatedToTimer={statesRelatedToTimer}
-        durationInSeconds={duration * 60}
-        repetitionCount={repetitionCount}
-        setRepetitionCount={setRepetitionCount}
-        next={next}
-        isOnCycle={isOnCycle}
-        setIsOnCycle={setIsOnCycle}
-        pomoDuration={pomoDuration}
-        shortBreakDuration={shortBreakDuration}
-        longBreakDuration={longBreakDuration}
-        numOfPomo={numOfPomo}
-      /> */}
       <TimerVVV
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
@@ -207,6 +199,45 @@ export function PatternTimerVVV({
       </h3>
     </>
   );
+}
+
+async function persistRecOfTodayToServer(user: User, record: RecType) {
+  try {
+    // caching
+    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let resOfRecordOfToday = await cache.match(
+      CONSTANTS.URLs.RECORD_OF_TODAY + "/" + user.email
+    );
+    if (resOfRecordOfToday !== undefined) {
+      let recordsOfToday = await resOfRecordOfToday.json();
+      recordsOfToday.push({
+        record,
+      });
+      await cache.put(
+        CONSTANTS.URLs.RECORD_OF_TODAY + "/" + user.email,
+        new Response(JSON.stringify(recordsOfToday))
+      );
+    }
+
+    // http requeset
+    const idToken = await user.getIdToken();
+    const response = await axios.post(
+      CONSTANTS.URLs.RECORD_OF_TODAY,
+      {
+        userEmail: user.email,
+        ...record,
+      },
+
+      {
+        headers: {
+          Authorization: "Bearer " + idToken,
+        },
+      }
+    );
+    console.log("res of persistRecOfTodayToSever", response);
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 async function recordPomo(user: User, duration: number, startTime: number) {
@@ -291,5 +322,5 @@ function notify(which: string) {
 
   setTimeout(() => {
     noti.close();
-  }, 4000);
+  }, 5000);
 }

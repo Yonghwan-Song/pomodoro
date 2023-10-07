@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useState } from "react";
-import { UserAuth } from "../../Context/AuthContext";
-import { UserInfo } from "../../Context/UserContext";
+import { useAuthContext } from "../../Context/AuthContext";
+import { useUserContext } from "../../Context/UserContext";
 import {
   PomoSettingType,
   RequiredStatesToRunTimerType,
@@ -32,14 +32,19 @@ import {
 } from "../..";
 
 function Settings() {
-  const { user } = UserAuth()!;
-  const userInfoContext = UserInfo()!;
+  const { user } = useAuthContext()!;
+  const userInfoContext = useUserContext()!;
   //#region revised
   const setPomoInfo = userInfoContext.setPomoInfo;
+
+  //* Why I did not use useMemo here - there was no possibility that this pomoSetting becomes {}.
+  //? When and where is this value initialized or assigned a value? e.g default setting?
+  console.log("userInfoContext.pomoInfo.pomoSetting", userInfoContext.pomoInfo); // fucking null - why wasn't this changed by side effect in the UserContextProvider?
   const pomoSetting =
     userInfoContext.pomoInfo !== null
       ? userInfoContext.pomoInfo.pomoSetting
       : ({} as PomoSettingType);
+
   const [settingInputs, setSettingInputs] = useState(() =>
     userInfoContext.pomoInfo !== null
       ? userInfoContext.pomoInfo.pomoSetting
@@ -54,11 +59,7 @@ function Settings() {
   // );
   //#endregion
 
-  useEffect(() => {
-    console.log("pomoSetting", pomoSetting);
-    console.log("setPomoSetting", setPomoInfo);
-  });
-
+  //#region Event Handlers
   function handleInputChange(event: {
     target: { value: string | number; name: any };
   }) {
@@ -113,6 +114,13 @@ function Settings() {
       };
     });
   }
+  //#endregion
+
+  //#region UseEffects
+  useEffect(() => {
+    console.log("pomoSetting", pomoSetting);
+    console.log("setPomoSetting", setPomoInfo);
+  });
 
   useEffect(() => {
     if (user !== null && Object.entries(user).length !== 0) {
@@ -145,6 +153,7 @@ function Settings() {
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
   }, []);
+  //#endregion
 
   return (
     <main>
@@ -348,6 +357,7 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
       CONSTANTS.URLs.USER + `/editPomoSetting/${user.email}`,
       {
         pomoSetting,
+        //todo: update ... timersStates
       },
       {
         headers: {

@@ -5,7 +5,7 @@ import {
   SetStateAction,
   DependencyList,
 } from "react";
-import { UserAuth } from "../Context/AuthContext";
+import { useAuthContext } from "../Context/AuthContext";
 import axios from "axios";
 import { DynamicCache, openCache } from "..";
 import { CacheName } from "../constants";
@@ -37,7 +37,7 @@ export function useFetch<T, S = undefined>({
   additionalCondition,
 }: ArgType<T, S>): CustomReturnType<T, S> {
   const [data, setData] = useState<DataType<T, S> | null>(null);
-  const { user } = UserAuth()!;
+  const { user } = useAuthContext()!;
 
   let moreDeps: DependencyList = additionalDeps ?? [];
 

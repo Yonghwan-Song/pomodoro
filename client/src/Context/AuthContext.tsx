@@ -111,6 +111,6 @@ export function AuthContextProvider({
   );
 }
 
-export const UserAuth = () => {
+export const useAuthContext = () => {
   return useContext(AuthContext);
 };

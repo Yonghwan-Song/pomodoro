@@ -1,7 +1,7 @@
 import React from "react";
 import { useRef } from "react";
 import { useState } from "react";
-import { UserAuth } from "../../Context/AuthContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { StyledNav } from "../styles/Nav.styled";
 import { UnorderedList } from "../UnorderedList";
 import { StyledLink } from "../styles/Link.styled";
@@ -10,6 +10,7 @@ import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
 import {
   StatesType,
+  emptyRecOfToday,
   emptyStateStore,
   obtainStatesFromIDB,
   stopCountDownInBackground,
@@ -17,12 +18,12 @@ import {
 } from "../..";
 import { RequiredStatesToRunTimerType } from "../../types/clientStatesType";
 import * as CONSTANTS from "../../constants/index";
-import { UserInfo } from "../../Context/UserContext";
+import { useUserContext } from "../../Context/UserContext";
 import { pubsub } from "../../pubsub";
 
 function Navbar() {
-  const { user, logOut } = UserAuth()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
-  const { setPomoInfo } = UserInfo()!;
+  const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
+  const { setPomoInfo } = useUserContext()!;
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef<HTMLUListElement | null>(null); // interface MutableRefObject<T> { current: T;}
   const theme = useTheme() as ThemeCustomized;
@@ -38,9 +39,9 @@ function Navbar() {
         }
       }
       localStorage.setItem("user", "unAuthenticated");
-      // For an unauthenticated user to use default pomoSetting.
       await emptyStateStore();
-      pubsub.publish("clearStateStore", 1);
+      await emptyRecOfToday(); //!<-----
+      pubsub.publish("clearObjectStores", 1); // move this to after `await logOut()`
       await caches.delete(CONSTANTS.CacheName);
       //#region To allow un-logged-in users to start to use this app with default pomoSetting. (the default value for pomoSetting set in the server-sdie is the same one as below)
       setPomoInfo((prev) => {
