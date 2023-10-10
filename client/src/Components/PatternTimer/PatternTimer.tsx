@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Timer } from "../Timer/Timer";
 import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
@@ -30,7 +30,7 @@ export function PatternTimer({
   numOfPomo,
   setRecords,
 }: PatternTimerProps) {
-  const [duration, setDuration] = useState(() => {
+  const [durationInMinutes, setDurationInMinutes] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       return (statesRelatedToTimer as StatesType).duration;
     } else {
@@ -49,48 +49,72 @@ export function PatternTimer({
 
   const { user } = useAuthContext()!;
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
+
+  function checkRendering() {
+    console.log("user", user === null ? null : "non-null");
+    console.log("isOnCycle", isOnCycle);
+    console.log("PatternTimer");
+    console.log("duration", durationInMinutes);
+    console.log("repetitionCount", repetitionCount);
+    console.log(
+      "------------------------------------------------------------------"
+    );
+  }
+  useEffect(checkRendering);
+
   /**
    * Decide this time rendering is whether a pomo duration or a break
    * and decide how many pomo durations or breaks are left.
    * Based on that decision, update states of this PatternTimer component.
    *
    * @param {number} howManyCountdown The total number of times the timer is used whether it is for pomo duration or break.
-   * @param {*} startTime
-   * @param {*} concentrationTimeInMinutes
    */
-  async function next(
-    howManyCountdown: number,
-    state: TimerStateType,
-    endTime: number,
-    concentrationTime: number = duration
-  ) {
-    const { running, ...withoutRunning } = state;
+  /**
+   * endTime을 계산하려면 세션이 종료되는 몇가지 시나리오를 생각해봐야 한다.
+   * 1. pause없이 진행한 경우
+   *    1) 끝까지 완료       timeCountedDown=== duration
+   *    2) 끝까지 완료(x)    timeCountedDown < duration
+   *      (end button을 클릭한 것)
+   * 2. puase가 있는 경우
+   *    1) 끝까지 완료
+   *    2) 끝까지 완료(x)
+   *      a. resume 버튼을 누르고 세션을 마저 이어 진행하다가 세션이 끝나기 전에 end button을 클릭
+   *      b. pause 도중에 end button을 클릭
+   * endTime을 계산하는 공식
+   * startTime + pause.totalLength + timeCountedDown* 60 * 1000
+   */
 
-    // When a user ends a timer while it's paused, the end of pause is equal to the end of the session.
-    /*endTime =
-      pauseEnd ||
-      state.startTime + state.pause.totalLength + concentrationTime * 60 * 1000; // concentrationTime must be in minutes. */
-    // if pause.totalLength ===0 && concentrationTime === duration,
-    // endTime should be state.startTIme + concentrationTime * 60 * 1000
-    // this will prevent the possible error.
-    //? since endTime might be bigger than the endTime calculated below.
-    if (state.pause.totalLength === 0 && concentrationTime === duration) {
-      endTime = state.startTime + concentrationTime * 60 * 1000;
-    }
+  async function next({
+    howManyCountdown,
+    state,
+    timeCountedDownInMilliSeconds = durationInMinutes * 60 * 1000,
+  }: {
+    howManyCountdown: number;
+    state: TimerStateType;
+    timeCountedDownInMilliSeconds?: number;
+  }) {
+    const { running, ...withoutRunning } = state;
+    const endTime =
+      state.startTime + state.pause.totalLength + timeCountedDownInMilliSeconds;
 
     const sessionData = {
       ...withoutRunning,
       endTime,
-      timeCountedDown: concentrationTime,
+      timeCountedDown: timeCountedDownInMilliSeconds,
     };
 
     if (howManyCountdown < numOfPomo! * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
         //! This is when a pomo, which is not the last one of a cycle, is completed.
-        console.log("ONE POMO DURATION IS FINISHED");
-        user && recordPomo(user, concentrationTime, state.startTime); // Non null assertion is correct because a user is already signed in at this point.
+        // console.log("ONE POMO DURATION IS FINISHED");
+        user &&
+          recordPomo(
+            user,
+            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+            state.startTime
+          ); // Non null assertion is correct because a user is already signed in at this point.
         notify("shortBreak");
-        setDuration(shortBreakDuration!);
+        setDurationInMinutes(shortBreakDuration!);
         postMsgToSW("saveStates", {
           stateArr: [{ name: "duration", value: shortBreakDuration }],
         });
@@ -103,7 +127,7 @@ export function PatternTimer({
       } else {
         //! This is when a short break is done.
         notify("pomo");
-        setDuration(pomoDuration!);
+        setDurationInMinutes(pomoDuration!);
         postMsgToSW("saveStates", {
           stateArr: [{ name: "duration", value: pomoDuration }],
         });
@@ -116,10 +140,15 @@ export function PatternTimer({
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
-      console.log("ONE POMO DURATION IS FINISHED");
-      user && recordPomo(user, concentrationTime, state.startTime);
+      // console.log("ONE POMO DURATION IS FINISHED");
+      user &&
+        recordPomo(
+          user,
+          Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+          state.startTime
+        );
       notify("longBreak");
-      setDuration(longBreakDuration!);
+      setDurationInMinutes(longBreakDuration!);
       postMsgToSW("saveStates", {
         stateArr: [{ name: "duration", value: longBreakDuration }],
       });
@@ -130,11 +159,11 @@ export function PatternTimer({
       user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
-      console.log("one cycle is done");
+      // console.log("one cycle is done");
       //cycle completion notification
       notify("nextCycle");
       //setCycleCount((prev) => prev + 1);
-      setDuration(pomoDuration!); //TODO: non-null assertion....
+      setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
       setRepetitionCount(0);
       setIsOnCycle(false);
       postMsgToSW("saveStates", {
@@ -152,15 +181,22 @@ export function PatternTimer({
     }
   }
 
+  useEffect(() => {
+    console.log("Pattern Timer was mounted");
+    return () => {
+      console.log("Pattern Timer was unmounted");
+    };
+  }, []);
+
   return (
     <>
       <Timer
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
-        durationInSeconds={duration * 60}
-        next={next}
+        durationInSeconds={durationInMinutes * 60}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}
+        next={next}
         isOnCycle={isOnCycle}
         setIsOnCycle={setIsOnCycle}
         pomoDuration={pomoDuration}
@@ -220,7 +256,11 @@ async function persistRecOfTodayToServer(user: User, record: RecType) {
   }
 }
 
-async function recordPomo(user: User, duration: number, startTime: number) {
+async function recordPomo(
+  user: User,
+  durationInMinutes: number,
+  startTime: number
+) {
   try {
     const today = new Date(startTime);
     let LocaleDateString = `${
@@ -236,7 +276,7 @@ async function recordPomo(user: User, duration: number, startTime: number) {
       let statData = await statResponse.json();
       statData.push({
         userEmail: user.email,
-        duration,
+        duration: durationInMinutes,
         startTime,
         date: LocaleDateString,
         isDummy: false,
@@ -245,14 +285,14 @@ async function recordPomo(user: User, duration: number, startTime: number) {
         CONSTANTS.URLs.POMO + "/stat/" + user.email,
         new Response(JSON.stringify(statData))
       );
-    } //TODO: what if statResponse is undefined
+    }
 
     const idToken = await user.getIdToken();
     const response = await axios.post(
       CONSTANTS.URLs.POMO,
       {
         userEmail: user.email,
-        duration,
+        duration: durationInMinutes,
         startTime,
         LocaleDateString,
       },
@@ -262,9 +302,9 @@ async function recordPomo(user: User, duration: number, startTime: number) {
         },
       }
     );
-    console.log("res of recordPomo", response);
+    // console.log("res obj", response);
   } catch (err) {
-    console.log(err);
+    // console.log(err);
   }
 }
 
@@ -295,7 +335,7 @@ function notify(which: string) {
   let noti = new Notification(title, options);
 
   noti.addEventListener("click", (ev) => {
-    console.log("notification is clicked");
+    // console.log("notification is clicked");
     noti.close();
     window.focus();
   });
