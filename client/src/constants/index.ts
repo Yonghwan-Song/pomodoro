@@ -19,12 +19,12 @@ export const URLs = {
   // USER: "http://localhost:4444/users",
   // POMO: "http://localhost:4444/pomos",
   // RECORD_OF_TODAY: "http://localhost:4444/recordOfToday",
-  // USER: "https://pomodoro-apis.onrender.com/users",
-  // POMO: "https://pomodoro-apis.onrender.com/pomos",
-  // RECORD_OF_TODAY: "http://pomodoro-apis.onrender.com/recordOfToday",
-  USER: "https://pomodoro-apis-test.onrender.com/users",
-  POMO: "https://pomodoro-apis-test.onrender.com/pomos",
-  RECORD_OF_TODAY: "https://pomodoro-apis-test.onrender.com/recordOfToday",
+  USER: "https://pomodoro-apis.onrender.com/users",
+  POMO: "https://pomodoro-apis.onrender.com/pomos",
+  RECORD_OF_TODAY: "http://pomodoro-apis.onrender.com/recordOfToday",
+  // USER: "https://pomodoro-apis-test.onrender.com/users",
+  // POMO: "https://pomodoro-apis-test.onrender.com/pomos",
+  // RECORD_OF_TODAY: "https://pomodoro-apis-test.onrender.com/recordOfToday",
 };
 
 export const IDB_VERSION = 6;

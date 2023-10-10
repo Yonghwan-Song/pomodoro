@@ -11,7 +11,7 @@ const pomoSchema = new Schema({
   // },
   userEmail: String,
   duration: Number,
-  startTime: Number,
+  startTime: { type: Number, unique: true },
   date: String,
   isDummy: { type: Boolean, default: false },
 });

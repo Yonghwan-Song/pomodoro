@@ -22,13 +22,15 @@ import { useAuthContext } from "../../Context/AuthContext";
 type TimerProps = {
   statesRelatedToTimer: StatesType | {};
   durationInSeconds: number;
-  next: (
-    howManyCountdown: number,
-    state: TimerStateType,
-    endTime: number,
-    concentrationTime?: number,
-    pauseEnd?: number
-  ) => void;
+  next: ({
+    howManyCountdown,
+    state,
+    timeCountedDownInMilliSeconds,
+  }: {
+    howManyCountdown: number;
+    state: TimerStateType;
+    timeCountedDownInMilliSeconds?: number;
+  }) => void;
 
   // Let's assume that one cycle is like below
   // {(focus, short break) * 4 + Long break}.
@@ -129,18 +131,13 @@ export function Timer({
   //#endregion
 
   //#region Button Click Handlers
+  //문제점: toggle이 나타내는 case들 중 분명 resume이라는게 존재하는데 조건식에서 resume이라는 단어는 코빼기도 보이지 않는다.
   async function toggleTimer(momentTimerIsToggled: number) {
-    const isFirstStart =
-      !timerState.running && timerState.pause!.record.length === 0; // if this is not the first start of the timer, it means resuming the timer.
-    const isPaused =
-      !timerState.running && timerState.pause!.record.length !== 0;
-    if (isFirstStart) {
+    if (isStarting()) {
       // initial start
       dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
       if (repetitionCount === 0) {
-        //! repetitionCount is the information from the PatternTimer component.
-        // a cylce of pomo durations has started.
-        //* 1.
+        //new cycle
         user !== null &&
           updateTimersStates(user, {
             startTime: momentTimerIsToggled,
@@ -156,9 +153,10 @@ export function Timer({
           ],
         });
         setIsOnCycle(true);
-      } else {
+      }
+
+      if (repetitionCount !== 0) {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
-        //* 2.
         user !== null &&
           updateTimersStates(user, {
             startTime: momentTimerIsToggled,
@@ -166,11 +164,10 @@ export function Timer({
             pause: { totalLength: 0, record: [] },
           });
       }
-    } else if (isPaused) {
+    } else if (isResuming()) {
       // resume
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
-      //* 3.
       user &&
         updateTimersStates(user, {
           startTime: timerState.startTime,
@@ -199,7 +196,6 @@ export function Timer({
       // pause
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
-      //* 4.
       user &&
         updateTimersStates(user, {
           startTime: timerState.startTime,
@@ -215,38 +211,78 @@ export function Timer({
           duration: durationInSeconds / 60,
         });
     }
+    function isStarting() {
+      return (
+        timerState.running === false && timerState.pause!.record.length === 0
+      ); // if this is not the first start of the timer, it means resuming the timer.
+    }
+    function isResuming() {
+      return (
+        timerState.running === false && timerState.pause!.record.length !== 0
+      );
+    }
+    function isPausing() {
+      return timerState.running;
+    }
   }
 
+  //TODO: calculate totalLength of the pause and pass it
   async function endTimer(now: number) {
-    let timeCountedDown = Math.floor(
-      (durationInSeconds - remainingDuration) / 60
-    );
-    setRepetitionCount(repetitionCount + 1);
     postMsgToSW("saveStates", {
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
-    let patternTimerStates = determineNextPatternTimerStates(
+
+    const timeCountedDownInMilliSeconds =
+      (durationInSeconds - remainingDuration) * 1000;
+    // 이전에 puase되었던 것이 있다면 이 계산을 해줘야함 그러니까 조건을 잡아보자.
+    // if (!timerState.running) {
+
+    //#region purpose: to manually caclulate the total length of pause in case of ending timer while a session was paused.
+    if (
+      timerState.pause.record.length !== 0 &&
+      timerState.pause.record[timerState.pause.record.length - 1].end ===
+        undefined
+    ) {
+      let stateRevised = { ...timerState };
+      stateRevised.pause.totalLength +=
+        now -
+        stateRevised.pause.record[stateRevised.pause.record.length - 1].start;
+      stateRevised.pause.record[stateRevised.pause.record.length - 1].end = now;
+      console.log("stateCloned", stateRevised);
+      next({
+        howManyCountdown: repetitionCount + 1,
+        state: stateRevised,
+        timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+      });
+    } else {
+      next({
+        howManyCountdown: repetitionCount + 1,
+        state: timerState,
+        timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+      });
+    }
+    //#endregion
+
+    dispatch({ type: ACTION.RESET });
+    setRepetitionCount(repetitionCount + 1);
+    setRemainingDuration(0);
+
+    //중복
+    const patternTimerStates = determineNextPatternTimerStates(
       repetitionCount + 1,
       numOfPomo
     );
-    //Todo: this conditional block can be improved I guess for some reason.
-    if (patternTimerStates !== null) {
-      //* 5.
+    patternTimerStates &&
       user &&
-        updateTimersStates(user, {
-          running: false,
-          startTime: 0,
-          pause: { totalLength: 0, record: [] },
-          duration: patternTimerStates.duration!,
-          repetitionCount:
-            patternTimerStates.repetitionCount ?? repetitionCount + 1,
-        });
-    } else {
-      console.warn("patternTimerStates is null");
-    }
-    next(repetitionCount + 1, timerState, now, timeCountedDown);
-    dispatch({ type: ACTION.RESET });
-    setRemainingDuration(0);
+      updateTimersStates(user, {
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+        duration: patternTimerStates.duration!,
+        repetitionCount:
+          patternTimerStates.repetitionCount ?? repetitionCount + 1,
+      });
+    patternTimerStates ?? console.warn("patternTimerStates is null");
   }
   //#endregion
 
@@ -256,21 +292,26 @@ export function Timer({
     durationInSeconds,
     timerState.running,
   ]);
+
   useEffect(setRemainingDurationAfterReset, [
     remainingDuration,
     durationInSeconds,
     timerState.running,
   ]);
+
   useEffect(setRemainingDurationAfterMount, [
     remainingDuration,
     durationInSeconds,
     timerState.running,
   ]);
+
   useEffect(countDown, [
     remainingDuration,
     durationInSeconds,
     timerState.running,
   ]);
+  // isPaused={timerState.running === false && timerState.startTime !== 0}
+
   useEffect(checkIfSessionShouldBeFinished, [
     remainingDuration,
     durationInSeconds,
@@ -298,7 +339,13 @@ export function Timer({
       setRemainingDuration(durationInSeconds);
   }
   function countDown() {
-    // remainingDuration !== 0 && state.startTime !== 0 && state.running === true
+    /**
+     * 리팩터 하기 전의 조건식: remainingDuration !== 0 && state.startTime !== 0 && state.running === true
+     * 조금 헷갈리지만, timerState.running === true 이면 timerState.startTime !== 0이다.
+     * pause했을 때는 최소한 timerState.running===false이므로 countDown은 되지 않는다.
+     * timerState.startTime에 영향을 주는 ACTION은 START과 RESET.
+     * RESET은 starTime을 0으로 만들고 START은 0이 아닌 값을 갖게 한다.
+     */
     if (timerState.running && remainingDuration > 0) {
       const id = setInterval(() => {
         setRemainingDuration(
@@ -317,6 +364,8 @@ export function Timer({
       };
     }
   }
+  // 이 함수에 의해 종료되는 세션은 next함수에서 concentrationTime === duration인 경우에 해당된다.
+  // 왜냐하면 remainingDuration <= 0인 경우에 발동되기 때문이다.
   function checkIfSessionShouldBeFinished() {
     console.log("check if remainingDuratin is less than 0");
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
@@ -324,34 +373,38 @@ export function Timer({
       postMsgToSW("saveStates", {
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });
-      next(repetitionCount + 1, timerState, Date.now());
+      next({
+        howManyCountdown: repetitionCount + 1,
+        state: timerState,
+        // endTime: Date.now(), //<-- 이게 문제네, remainingDuration이 딱 0인 경우만 endTime값이 정확함.
+        //걍 계산할 수 있음.
+      });
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
 
-      let patternTimerStates = determineNextPatternTimerStates(
+      const patternTimerStates = determineNextPatternTimerStates(
         repetitionCount + 1,
         numOfPomo
       );
-      if (patternTimerStates !== null) {
-        //* 6.
+
+      patternTimerStates &&
         user &&
-          updateTimersStates(user, {
-            running: false,
-            startTime: 0,
-            pause: { totalLength: 0, record: [] },
-            duration: patternTimerStates.duration!,
-            repetitionCount:
-              patternTimerStates.repetitionCount ?? repetitionCount + 1,
-          });
-      } else {
-        console.warn("patternTimerStates is null");
-      }
+        updateTimersStates(user, {
+          running: false,
+          startTime: 0,
+          pause: { totalLength: 0, record: [] },
+          duration: patternTimerStates.duration!,
+          repetitionCount:
+            patternTimerStates.repetitionCount ?? repetitionCount + 1,
+        });
+
+      patternTimerStates ?? console.warn("patternTimerStates is null");
     }
   }
   //#endregion
 
   //#region Etc functions
-  //Todo: Documentation
+  //이 함수의 논리는 next함수에서 사용하는 것과 동일하다.
   function determineNextPatternTimerStates(
     howManyCountdown: number,
     numOfPomo: number
