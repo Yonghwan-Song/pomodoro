@@ -21,11 +21,15 @@ export function PatternTimer() {
    * @param {*} startTime
    * @param {*} concentrationTime
    */
-  function next(
-    howManyCountdown: number,
-    startTime: TimerStateType,
-    concentrationTime: number = duration
-  ) {
+  function next({
+    howManyCountdown,
+    state,
+    timeCountedDown = duration * 60 * 1000,
+  }: {
+    howManyCountdown: number;
+    state: TimerStateType;
+    timeCountedDown?: number;
+  }) {
     if (howManyCountdown < numOfPomo! * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
         //! This is when a pomo, which is not the last one of a cycle, is completed.
