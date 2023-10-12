@@ -29,9 +29,11 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
             rec.pause.record.forEach((value) => {
               let { start, end } = value;
               arrOfStartAndEnd.push(start);
-              // This is checking if end is undefined
-              // since end can be undefined if a user ends a paused timer.
-              end && arrOfStartAndEnd.push(end);
+
+              // end can be undefined when a pause is not ended yet.
+              if (end !== undefined && end !== rec.endTime) {
+                arrOfStartAndEnd.push(end);
+              }
             });
           }
           arrOfStartAndEnd.push(rec.endTime); //! Wrong rec.endTime possibly caused the problem.
@@ -62,6 +64,10 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
         })
     );
   }, [records]);
+
+  // useEffect(() => {
+  //   console.log("arrOfSessions", arrOfSessions);
+  // });
 
   return <Timeline arrOfSessions={arrOfSessions} />;
 }

@@ -26,10 +26,12 @@ type TimerProps = {
     howManyCountdown,
     state,
     timeCountedDownInMilliSeconds,
+    endForced,
   }: {
     howManyCountdown: number;
     state: TimerStateType;
     timeCountedDownInMilliSeconds?: number;
+    endForced?: number;
   }) => void;
 
   // Let's assume that one cycle is like below
@@ -253,12 +255,14 @@ export function Timer({
         howManyCountdown: repetitionCount + 1,
         state: stateRevised,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+        endForced: now,
       });
     } else {
       next({
         howManyCountdown: repetitionCount + 1,
         state: timerState,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+        endForced: now,
       });
     }
     //#endregion
