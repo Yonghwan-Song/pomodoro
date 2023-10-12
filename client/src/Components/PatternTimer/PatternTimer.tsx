@@ -60,7 +60,7 @@ export function PatternTimer({
       "------------------------------------------------------------------"
     );
   }
-  useEffect(checkRendering);
+  // useEffect(checkRendering);
 
   /**
    * Decide this time rendering is whether a pomo duration or a break
@@ -88,13 +88,16 @@ export function PatternTimer({
     howManyCountdown,
     state,
     timeCountedDownInMilliSeconds = durationInMinutes * 60 * 1000,
+    endForced,
   }: {
     howManyCountdown: number;
     state: TimerStateType;
     timeCountedDownInMilliSeconds?: number;
+    endForced?: number;
   }) {
     const { running, ...withoutRunning } = state;
     const endTime =
+      endForced ||
       state.startTime + state.pause.totalLength + timeCountedDownInMilliSeconds;
 
     const sessionData = {

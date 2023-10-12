@@ -28,29 +28,31 @@ export function RecordsOfTodayContextProvider({
   useEffect(deleteRecordsBeforeTodayInServer, [user]);
 
   function deleteRecordsBeforeTodayInServer() {
-    const now = new Date();
-    const startOfTodayTimestamp = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    ).getTime();
+    if (user) {
+      const now = new Date();
+      const startOfTodayTimestamp = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      ).getTime();
 
-    async function sendRequest() {
-      axios.put(
-        C.URLs.RECORD_OF_TODAY,
-        {
-          userEmail: user!.email,
-          startOfTodayTimestamp,
-        },
-        {
-          headers: {
-            Authorization: "Bearer " + (await user!.getIdToken()),
+      async function sendRequest() {
+        axios.put(
+          C.URLs.RECORD_OF_TODAY,
+          {
+            userEmail: user!.email,
+            startOfTodayTimestamp,
           },
-        }
-      );
-    }
+          {
+            headers: {
+              Authorization: "Bearer " + (await user!.getIdToken()),
+            },
+          }
+        );
+      }
 
-    sendRequest();
+      sendRequest();
+    }
   }
 
   return (

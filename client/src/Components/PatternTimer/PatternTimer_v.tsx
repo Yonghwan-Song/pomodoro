@@ -60,7 +60,7 @@ export function PatternTimerVVV({
       "------------------------------------------------------------------"
     );
   }
-  useEffect(checkRendering);
+  // useEffect(checkRendering);
 
   /**
    * Decide this time rendering is whether a pomo duration or a break
@@ -88,13 +88,16 @@ export function PatternTimerVVV({
     howManyCountdown,
     state,
     timeCountedDownInMilliSeconds = durationInMinutes * 60 * 1000,
+    endForced,
   }: {
     howManyCountdown: number;
     state: TimerStateType;
     timeCountedDownInMilliSeconds?: number;
+    endForced?: number;
   }) {
     const { running, ...withoutRunning } = state;
     const endTime =
+      endForced ||
       state.startTime + state.pause.totalLength + timeCountedDownInMilliSeconds;
 
     const sessionData = {
@@ -182,9 +185,9 @@ export function PatternTimerVVV({
   }
 
   useEffect(() => {
-    console.log("Pattern Timer was mounted");
+    console.log("Pattern Timer_v was mounted");
     return () => {
-      console.log("Pattern Timer was unmounted");
+      console.log("Pattern Timer_v was unmounted");
     };
   }, []);
 

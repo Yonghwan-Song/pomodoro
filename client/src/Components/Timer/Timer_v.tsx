@@ -26,10 +26,12 @@ type TimerProps = {
     howManyCountdown,
     state,
     timeCountedDownInMilliSeconds,
+    endForced,
   }: {
     howManyCountdown: number;
     state: TimerStateType;
     timeCountedDownInMilliSeconds?: number;
+    endForced?: number;
   }) => void;
 
   // Let's assume that one cycle is like below
@@ -123,9 +125,9 @@ export function TimerVVV({
 
   //#region Tracking Unmount
   useEffect(() => {
-    console.log("Timer was mounted");
+    console.log("Timer_v was mounted");
     return () => {
-      console.log("Timer was unmounted");
+      console.log("Timer_v was unmounted");
     };
   }, []);
   //#endregion
@@ -254,12 +256,14 @@ export function TimerVVV({
         howManyCountdown: repetitionCount + 1,
         state: stateRevised,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+        endForced: now,
       });
     } else {
       next({
         howManyCountdown: repetitionCount + 1,
         state: timerState,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+        endForced: now,
       });
     }
     //#endregion
