@@ -29,6 +29,7 @@ import {
   openCache,
   postMsgToSW,
   stopCountDownInBackground,
+  updateTimersStates,
 } from "../..";
 
 function Settings() {
@@ -102,6 +103,13 @@ function Settings() {
     stopCountDownInBackground();
     if (user !== null) {
       updatePomoSetting(user, settingInputs);
+      updateTimersStates(user, {
+        duration: settingInputs.pomoDuration,
+        repetitionCount: 0,
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+      });
     }
     //! Question: is it possible that prev is null at this point?:
     //! Answer: it is possible when this component is first rendered before the UserContext is updated with its useEffect hook.
@@ -157,16 +165,6 @@ function Settings() {
 
   return (
     <main>
-      {/* <h3
-        style={{
-          position: "absolute",
-          top: "16.5%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-        }}
-      >
-        {Object.values(settingInputs).length === 0 ? "Loading Data" : ""}
-      </h3> */}
       {userInfoContext.pomoInfo === null ? (
         <LoadingMessage>"Loading Data"</LoadingMessage>
       ) : (
