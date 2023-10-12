@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   postMsgToSW,
   obtainStatesFromIDB,
@@ -22,6 +22,11 @@ export default function Main() {
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
   const [toggle, setToggle] = useState(false);
+  const areUserDataFetchedCompletely = useRef<[boolean, boolean]>([
+    false, // for persisting timersStates to idb
+    false, // for persisting recordsOfToday to idb
+  ]);
+  const toggleCounter = useRef(0);
   const userInfoContext = useUserContext()!;
   const { pomoInfo } = userInfoContext;
 
@@ -31,7 +36,7 @@ export default function Main() {
   }
 
   //#region UseEffects
-  // useEffect(checkRendering);
+  // useEffect(showToggleCount);
 
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
 
@@ -79,7 +84,19 @@ export default function Main() {
       "successOfPersistingTimersStatesToIDB",
       (data) => {
         setStatesRelatedToTimer(data);
-        setToggle((prev) => !prev);
+
+        //#region restriction on calling setToggle using a ref.
+        areUserDataFetchedCompletely.current[0] = true;
+
+        // toggle timer only when both data are fetched
+        if (
+          areUserDataFetchedCompletely.current[0] &&
+          areUserDataFetchedCompletely.current[1]
+        ) {
+          setToggle((prev) => !prev);
+          toggleCounter.current += 1;
+        }
+        //#endregion
       }
     );
 
@@ -93,7 +110,19 @@ export default function Main() {
       "successOfPersistingRecordsOfTodayToIDB",
       (data) => {
         setRecords(data);
-        setToggle((prev) => !prev);
+
+        //#region restriction on calling setToggle using a ref.
+        areUserDataFetchedCompletely.current[1] = true;
+
+        // toggle timer only when both data are fetched
+        if (
+          areUserDataFetchedCompletely.current[0] &&
+          areUserDataFetchedCompletely.current[1]
+        ) {
+          setToggle((prev) => !prev);
+          toggleCounter.current += 1;
+        }
+        //#endregion
       }
     );
 
@@ -102,6 +131,11 @@ export default function Main() {
     };
   }
 
+  /**
+   * Purpose: to mount unlogged-in user's timer using default pomoSetting and timersStates.
+   *                                            not using the previous user's pomoSetting and timersStates.
+   *   User logs out -> recOfToday and stateStore are cleared.
+   */
   function subscribeToClearObjectStores() {
     const getDataFromIDB = async () => {
       const states = await obtainStatesFromIDB("withoutPomoSetting");
@@ -127,6 +161,10 @@ export default function Main() {
         stateArr: [{ name: "pomoSetting", value: pomoSetting }],
       });
     }
+  }
+
+  function showToggleCount() {
+    console.log("toggleCount - ", toggleCounter.current);
   }
   //#endregion
 
