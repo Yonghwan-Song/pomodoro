@@ -335,9 +335,12 @@ export async function persistTodaySession(
 
   console.log("sessionData", { kind, ...data });
   try {
-    await store.add({ kind, ...data });
-    if (kind === "pomo") {
-      console.log("trying to add pomo", { kind, ...data });
+    if (data.startTime !== 0) {
+      // if it is 0, it means user just clicks end button without having not started the session.
+      await store.add({ kind, ...data });
+      if (kind === "pomo") {
+        console.log("trying to add pomo", { kind, ...data });
+      }
     }
   } catch (error) {
     console.warn(error);

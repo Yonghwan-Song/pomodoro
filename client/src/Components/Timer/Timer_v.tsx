@@ -234,13 +234,14 @@ export function TimerVVV({
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
 
+    const patternTimerStates = determineNextPatternTimerStates({
+      howManyCountdown: repetitionCount + 1,
+      numOfPomo: numOfPomo,
+    });
+
     const timeCountedDownInMilliSeconds =
       (durationInSeconds - remainingDuration) * 1000;
 
-    // 이전에 puase되었던 것이 있다면 이 계산을 해줘야함 그러니까 조건을 잡아보자.
-    // if (!timerState.running) {
-
-    //#region purpose: to manually caclulate the total length of pause in case of ending timer while a session was paused.
     if (
       timerState.pause.record.length !== 0 &&
       timerState.pause.record[timerState.pause.record.length - 1].end ===
@@ -266,28 +267,27 @@ export function TimerVVV({
         endForced: now,
       });
     }
-    //#endregion
 
     dispatch({ type: ACTION.RESET });
-    setRepetitionCount(repetitionCount + 1);
+    setRepetitionCount(
+      patternTimerStates.repetitionCount ?? repetitionCount + 1
+    );
     setRemainingDuration(0);
 
-    //중복
-    const patternTimerStates = determineNextPatternTimerStates(
-      repetitionCount + 1,
-      numOfPomo
-    );
-    patternTimerStates &&
+    if (patternTimerStates !== null) {
+      //* 6.
       user &&
-      updateTimersStates(user, {
-        running: false,
-        startTime: 0,
-        pause: { totalLength: 0, record: [] },
-        duration: patternTimerStates.duration!,
-        repetitionCount:
-          patternTimerStates.repetitionCount ?? repetitionCount + 1,
-      });
-    patternTimerStates ?? console.warn("patternTimerStates is null");
+        updateTimersStates(user, {
+          running: false,
+          startTime: 0,
+          pause: { totalLength: 0, record: [] },
+          duration: patternTimerStates.duration!,
+          repetitionCount:
+            patternTimerStates.repetitionCount ?? repetitionCount + 1,
+        });
+    } else {
+      console.warn("patternTimerStates is null");
+    }
   }
   //#endregion
 
@@ -372,25 +372,24 @@ export function TimerVVV({
   // 이 함수에 의해 종료되는 세션은 next함수에서 concentrationTime === duration인 경우에 해당된다.
   // 왜냐하면 remainingDuration <= 0인 경우에 발동되기 때문이다.
   function checkIfSessionShouldBeFinished() {
+    const patternTimerStates = determineNextPatternTimerStates({
+      howManyCountdown: repetitionCount + 1,
+      numOfPomo: numOfPomo,
+    });
     console.log("check if remainingDuratin is less than 0");
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
-      setRepetitionCount(repetitionCount + 1);
+      setRepetitionCount(
+        patternTimerStates.repetitionCount ?? repetitionCount + 1
+      );
       postMsgToSW("saveStates", {
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });
       next({
         howManyCountdown: repetitionCount + 1,
         state: timerState,
-        // endTime: Date.now(), //<-- 이게 문제네, remainingDuration이 딱 0인 경우만 endTime값이 정확함.
-        //걍 계산할 수 있음.
       });
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
-
-      const patternTimerStates = determineNextPatternTimerStates(
-        repetitionCount + 1,
-        numOfPomo
-      );
 
       patternTimerStates &&
         user &&
@@ -410,10 +409,13 @@ export function TimerVVV({
 
   //#region Etc functions
   //이 함수의 논리는 next함수에서 사용하는 것과 동일하다.
-  function determineNextPatternTimerStates(
-    howManyCountdown: number,
-    numOfPomo: number
-  ): Partial<PatternTimerStatesType> | null {
+  function determineNextPatternTimerStates({
+    howManyCountdown,
+    numOfPomo,
+  }: {
+    howManyCountdown: number;
+    numOfPomo: number;
+  }): Partial<PatternTimerStatesType> {
     let retVal = null;
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
@@ -423,7 +425,7 @@ export function TimerVVV({
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
       retVal = { duration: longBreakDuration };
-    } else if (howManyCountdown === numOfPomo * 2) {
+    } else {
       retVal = { duration: pomoDuration, repetitionCount: 0 };
     }
     return retVal;

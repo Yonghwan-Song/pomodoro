@@ -167,7 +167,6 @@ export function PatternTimerVVV({
       notify("nextCycle");
       //setCycleCount((prev) => prev + 1);
       setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
-      setRepetitionCount(0);
       setIsOnCycle(false);
       postMsgToSW("saveStates", {
         stateArr: [
