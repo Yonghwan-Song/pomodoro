@@ -234,26 +234,29 @@ export function Timer({
       stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
     });
 
+    const patternTimerStates = determineNextPatternTimerStates({
+      howManyCountdown: repetitionCount + 1,
+      numOfPomo: numOfPomo,
+    });
+
     const timeCountedDownInMilliSeconds =
       (durationInSeconds - remainingDuration) * 1000;
-    // 이전에 puase되었던 것이 있다면 이 계산을 해줘야함 그러니까 조건을 잡아보자.
-    // if (!timerState.running) {
 
-    //#region purpose: to manually caclulate the total length of pause in case of ending timer while a session was paused.
+    // pause의 totalLength 와 pause.record의 마지막 element의 end값을 여기서 계산해서 PatternTimer의 next함수에 넘겨야, 거기서 recOfToday에 session 완성된 data를 persist한다.
     if (
       timerState.pause.record.length !== 0 &&
       timerState.pause.record[timerState.pause.record.length - 1].end ===
         undefined
     ) {
-      let stateRevised = { ...timerState };
-      stateRevised.pause.totalLength +=
+      let stateCloned = { ...timerState };
+      stateCloned.pause.totalLength +=
         now -
-        stateRevised.pause.record[stateRevised.pause.record.length - 1].start;
-      stateRevised.pause.record[stateRevised.pause.record.length - 1].end = now;
-      console.log("stateCloned", stateRevised);
+        stateCloned.pause.record[stateCloned.pause.record.length - 1].start;
+      stateCloned.pause.record[stateCloned.pause.record.length - 1].end = now;
+      console.log("stateCloned", stateCloned);
       next({
         howManyCountdown: repetitionCount + 1,
-        state: stateRevised,
+        state: stateCloned,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
         endForced: now,
       });
@@ -268,25 +271,25 @@ export function Timer({
     //#endregion
 
     dispatch({ type: ACTION.RESET });
-    setRepetitionCount(repetitionCount + 1);
+    setRepetitionCount(
+      patternTimerStates.repetitionCount ?? repetitionCount + 1
+    );
     setRemainingDuration(0);
 
-    //중복
-    const patternTimerStates = determineNextPatternTimerStates(
-      repetitionCount + 1,
-      numOfPomo
-    );
-    patternTimerStates &&
+    if (patternTimerStates !== null) {
+      //* 6.
       user &&
-      updateTimersStates(user, {
-        running: false,
-        startTime: 0,
-        pause: { totalLength: 0, record: [] },
-        duration: patternTimerStates.duration!,
-        repetitionCount:
-          patternTimerStates.repetitionCount ?? repetitionCount + 1,
-      });
-    patternTimerStates ?? console.warn("patternTimerStates is null");
+        updateTimersStates(user, {
+          running: false,
+          startTime: 0,
+          pause: { totalLength: 0, record: [] },
+          duration: patternTimerStates.duration!,
+          repetitionCount:
+            patternTimerStates.repetitionCount ?? repetitionCount + 1,
+        });
+    } else {
+      console.warn("patternTimerStates is null");
+    }
   }
   //#endregion
 
@@ -371,25 +374,24 @@ export function Timer({
   // 이 함수에 의해 종료되는 세션은 next함수에서 concentrationTime === duration인 경우에 해당된다.
   // 왜냐하면 remainingDuration <= 0인 경우에 발동되기 때문이다.
   function checkIfSessionShouldBeFinished() {
+    const patternTimerStates = determineNextPatternTimerStates({
+      howManyCountdown: repetitionCount + 1,
+      numOfPomo: numOfPomo,
+    });
     console.log("check if remainingDuratin is less than 0");
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
-      setRepetitionCount(repetitionCount + 1);
+      setRepetitionCount(
+        patternTimerStates.repetitionCount ?? repetitionCount + 1
+      );
       postMsgToSW("saveStates", {
         stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
       });
       next({
         howManyCountdown: repetitionCount + 1,
         state: timerState,
-        // endTime: Date.now(), //<-- 이게 문제네, remainingDuration이 딱 0인 경우만 endTime값이 정확함.
-        //걍 계산할 수 있음.
       });
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
-
-      const patternTimerStates = determineNextPatternTimerStates(
-        repetitionCount + 1,
-        numOfPomo
-      );
 
       patternTimerStates &&
         user &&
@@ -409,10 +411,13 @@ export function Timer({
 
   //#region Etc functions
   //이 함수의 논리는 next함수에서 사용하는 것과 동일하다.
-  function determineNextPatternTimerStates(
-    howManyCountdown: number,
-    numOfPomo: number
-  ): Partial<PatternTimerStatesType> | null {
+  function determineNextPatternTimerStates({
+    howManyCountdown,
+    numOfPomo,
+  }: {
+    howManyCountdown: number;
+    numOfPomo: number;
+  }): Partial<PatternTimerStatesType> {
     let retVal = null;
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
@@ -422,7 +427,7 @@ export function Timer({
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
       retVal = { duration: longBreakDuration };
-    } else if (howManyCountdown === numOfPomo * 2) {
+    } else {
       retVal = { duration: pomoDuration, repetitionCount: 0 };
     }
     return retVal;
