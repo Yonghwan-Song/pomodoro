@@ -108,10 +108,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
   await caches.delete(CacheName);
-  if (localStorage.getItem("user") === "authenticated") {
-    localStorage.removeItem("user");
-    await clearStateStore();
-  }
 });
 //#endregion
 
@@ -206,7 +202,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
   }
 }
 
-export async function clearStateStore() {
+export async function clearStateStoreAndRecOfToday() {
   let db = DB || (await openIndexedDB());
   try {
     let store = db
@@ -321,7 +317,7 @@ export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   return allSessions;
 }
 
-export async function persistTodaySession(
+export async function persistSingleTodaySessionToIDB(
   kind: "pomo" | "break",
   data: Omit<TimerStateType, "running"> & {
     endTime: number;
@@ -339,7 +335,10 @@ export async function persistTodaySession(
       // if it is 0, it means user just clicks end button without having not started the session.
       await store.add({ kind, ...data });
       if (kind === "pomo") {
-        console.log("trying to add pomo", { kind, ...data });
+        console.log(
+          "adding pomo in --------------persistingSingleTodaySessionToIDB--------------",
+          { kind, ...data }
+        );
       }
     }
   } catch (error) {
@@ -347,7 +346,7 @@ export async function persistTodaySession(
   }
 }
 
-export async function persistManyTodaySessions(records: RecType[]) {
+export async function persistManyTodaySessionsToIDB(records: RecType[]) {
   try {
     let db = DB || (await openIndexedDB());
     const store = db

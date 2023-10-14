@@ -8,7 +8,7 @@ import {
   DynamicCache,
   StatesType,
   openCache,
-  persistTodaySession,
+  persistSingleTodaySessionToIDB,
   postMsgToSW,
 } from "../..";
 import { RecType, TimerStateType } from "../../types/clientStatesType";
@@ -110,12 +110,16 @@ export function PatternTimer({
       if (howManyCountdown % 2 === 1) {
         //! This is when a pomo, which is not the last one of a cycle, is completed.
         // console.log("ONE POMO DURATION IS FINISHED");
-        user &&
+
+        if (user) {
           recordPomo(
             user,
             Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
             state.startTime
           ); // Non null assertion is correct because a user is already signed in at this point.
+        } else {
+          console.log("user is not ready", user);
+        }
         notify("shortBreak");
         setDurationInMinutes(shortBreakDuration!);
         postMsgToSW("saveStates", {
@@ -124,7 +128,7 @@ export function PatternTimer({
 
         // for timeline
         setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
-        await persistTodaySession("pomo", sessionData);
+        await persistSingleTodaySessionToIDB("pomo", sessionData);
         user &&
           persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
       } else {
@@ -137,19 +141,23 @@ export function PatternTimer({
 
         // for timeline
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
-        await persistTodaySession("break", sessionData);
+        await persistSingleTodaySessionToIDB("break", sessionData);
         user &&
           persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
       }
     } else if (howManyCountdown === numOfPomo! * 2 - 1) {
       //! This is when the last pomo of a cycle is completed.
       // console.log("ONE POMO DURATION IS FINISHED");
-      user &&
+
+      if (user) {
         recordPomo(
           user,
           Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
           state.startTime
         );
+      } else {
+        console.log("user is not ready", user);
+      }
       notify("longBreak");
       setDurationInMinutes(longBreakDuration!);
       postMsgToSW("saveStates", {
@@ -158,7 +166,7 @@ export function PatternTimer({
 
       // for timeline
       setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
-      await persistTodaySession("pomo", sessionData);
+      await persistSingleTodaySessionToIDB("pomo", sessionData);
       user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
     } else if (howManyCountdown === numOfPomo! * 2) {
       //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
@@ -177,7 +185,7 @@ export function PatternTimer({
 
       // for timeline
       setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
-      await persistTodaySession("break", sessionData);
+      await persistSingleTodaySessionToIDB("break", sessionData);
       user &&
         persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
     }

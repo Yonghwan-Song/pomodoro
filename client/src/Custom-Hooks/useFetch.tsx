@@ -41,41 +41,19 @@ export function useFetch<T, S = undefined>({
 
   let moreDeps: DependencyList = additionalDeps ?? [];
 
-  useEffect(() => {
-    console.log("useFetch");
-    console.log("user", user === null ? null : "non-null");
-    console.log("data", data);
-    console.log(
-      "------------------------------------------------------------------"
-    );
-  });
+  // useEffect(() => {
+  //   console.log("useFetch");
+  //   console.log("user", user === null ? null : "non-null");
+  //   console.log("data", data);
+  //   console.log("callbacks", callbacks);
+  //   console.log(
+  //     "------------------------------------------------------------------"
+  //   );
+  // });
 
   useEffect(() => {
-    // This is going to be used in te getDate() function defined below.
-    async function fetchData() {
-      try {
-        const idToken = await user?.getIdToken();
-        const response = await axios.get(urlSegment + `/${user!.email}`, {
-          headers: {
-            Authorization: "Bearer " + idToken,
-          },
-        });
-
-        let data =
-          modifier !== undefined ? modifier(response.data as T) : response.data;
-
-        console.log("data from remote server", data);
-        setData(data);
-        if (callbacks !== undefined) {
-          callbacks.forEach((fn) => {
-            fn(data);
-          });
-        }
-
-        return response;
-      } catch (error) {
-        console.warn(error);
-      }
+    if (isUserSignedIn() && isAdditionalConditionSatisfiedWhenProvided()) {
+      getData();
     }
 
     async function getData() {
@@ -110,8 +88,39 @@ export function useFetch<T, S = undefined>({
       }
     }
 
-    if (user !== null && (additionalCondition ?? true)) {
-      getData();
+    // This is going to be used in te getDate() function defined below.
+    async function fetchData() {
+      try {
+        const idToken = await user?.getIdToken();
+        const response = await axios.get(urlSegment + `/${user!.email}`, {
+          headers: {
+            Authorization: "Bearer " + idToken,
+          },
+        });
+
+        let data =
+          modifier !== undefined ? modifier(response.data as T) : response.data;
+
+        console.log("data from remote server", data);
+        setData(data);
+        if (callbacks !== undefined) {
+          callbacks.forEach((fn) => {
+            fn(data);
+          });
+        }
+
+        return response;
+      } catch (error) {
+        console.warn(error);
+      }
+    }
+
+    function isUserSignedIn() {
+      return user !== null;
+    }
+
+    function isAdditionalConditionSatisfiedWhenProvided() {
+      return additionalCondition ?? true;
     }
 
     console.log("Fetching Data", typeof data);

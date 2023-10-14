@@ -23,7 +23,7 @@ import {
 import styles from "./Settings.module.css";
 import {
   DynamicCache,
-  clearStateStore,
+  clearStateStoreAndRecOfToday,
   countDown,
   emptyStateStore,
   openCache,
@@ -254,6 +254,7 @@ function Settings() {
                     const provider = new GoogleAuthProvider();
                     let result = await reauthenticateWithPopup(user!, provider);
                     await emptyStateStore();
+                    localStorage.removeItem("user");
                     deleteAccount(result.user);
                   }}
                 >
@@ -280,7 +281,7 @@ async function deleteAccount(user: User) {
     console.log("deleteAccount res", res.data);
     //await user.delete();
     let result = await deleteUser(user);
-    await clearStateStore();
+    await clearStateStoreAndRecOfToday();
     await caches.delete(CONSTANTS.CacheName);
     window.location.reload();
     console.log(result);

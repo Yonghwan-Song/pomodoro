@@ -37,6 +37,16 @@ export default function Main() {
 
   //#region UseEffects
   // useEffect(showToggleCount);
+  // useEffect(() => {
+  //   console.log("Main was mounted");
+  //   return () => {
+  //     console.log("Main was unmounted");
+  //   };
+  // }, []);
+
+  // useEffect(() => {
+  //   console.log("Main was rendered with records", records);
+  // });
 
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
 
@@ -185,15 +195,34 @@ export default function Main() {
       <section>
         {isStatesRelatedToTimerReady &&
           (isPomoSettingReady ? (
-            <TogglingTimer
-              toggle={toggle}
-              statesRelatedToTimer={statesRelatedToTimer}
-              pomoDuration={pomoSetting.pomoDuration}
-              shortBreakDuration={pomoSetting.shortBreakDuration}
-              longBreakDuration={pomoSetting.longBreakDuration}
-              numOfPomo={pomoSetting.numOfPomo}
-              setRecords={setRecords}
-            />
+            localStorage.getItem("user") === "authenticated" ? (
+              user !== null ? (
+                <TogglingTimer
+                  toggle={toggle}
+                  statesRelatedToTimer={statesRelatedToTimer}
+                  pomoDuration={pomoSetting.pomoDuration}
+                  shortBreakDuration={pomoSetting.shortBreakDuration}
+                  longBreakDuration={pomoSetting.longBreakDuration}
+                  numOfPomo={pomoSetting.numOfPomo}
+                  setRecords={setRecords}
+                />
+              ) : (
+                <StyledLoadingMessage top="51%">
+                  {/* loading timer... */}
+                  fetching data...
+                </StyledLoadingMessage>
+              )
+            ) : (
+              <TogglingTimer
+                toggle={toggle}
+                statesRelatedToTimer={statesRelatedToTimer}
+                pomoDuration={pomoSetting.pomoDuration}
+                shortBreakDuration={pomoSetting.shortBreakDuration}
+                longBreakDuration={pomoSetting.longBreakDuration}
+                numOfPomo={pomoSetting.numOfPomo}
+                setRecords={setRecords}
+              />
+            )
           ) : (
             <StyledLoadingMessage top="51%">
               loading timer...
