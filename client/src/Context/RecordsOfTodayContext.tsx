@@ -2,7 +2,7 @@ import { useContext, createContext, useEffect } from "react";
 import { useFetch } from "../Custom-Hooks/useFetch";
 import { RecType } from "../types/clientStatesType";
 import * as C from "../constants/index";
-import { persistManyTodaySessions } from "..";
+import { persistManyTodaySessionsToIDB } from "..";
 import { pubsub } from "../pubsub";
 import { useAuthContext } from "./AuthContext";
 import axios from "axios";
@@ -76,7 +76,7 @@ function removeRecordsBeforeToday(records: RecType[]): RecType[] {
 }
 
 async function persistRecordsOfTodayToIDB(records: RecType[]) {
-  await persistManyTodaySessions(records);
+  await persistManyTodaySessionsToIDB(records);
   console.log("persisting recordsOfToday succeeded");
   pubsub.publish("successOfPersistingRecordsOfTodayToIDB", records);
 }
