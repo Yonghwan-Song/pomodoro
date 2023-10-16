@@ -1,6 +1,7 @@
 import admin from "../firebase/config.js";
 import { User } from "../models/user.js";
 import { Pomo } from "../models/pomo.js";
+import { RecordOfToday } from "../models/recordOfToday.js";
 
 /*export const createUser = async (req, res) {
 }*/
@@ -22,13 +23,20 @@ export const createUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    let deletedCount = await Pomo.deleteAllByUserEmail(req.params.email);
-    let currentUser = await User.findOne({ email: req.params.email });
-
+    let deletedPomosCount = await Pomo.deleteAllByUserEmail(req.params.email);
+    let deletedRecordscount = await RecordOfToday.deleteAllByUserEmail(
+      req.params.email
+    );
     let userDeleted = await User.deleteOne({ email: req.params.email });
 
-    console.log({ deletedCount, userDeleted });
-    res.send({ deletedCount, userDeleted });
+    const whatIsDeleted = {
+      deletedPomosCount,
+      deletedRecordscount,
+      userDeleted,
+    };
+
+    console.log(whatIsDeleted);
+    res.send(whatIsDeleted);
   } catch (error) {
     console.log(error);
     console.log(`******DB error: deleteUser in controllers/users.js******`);

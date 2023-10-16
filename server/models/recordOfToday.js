@@ -19,4 +19,8 @@ recordOfTodaySchema.statics.findByUserEmail = function (userEmail) {
   return this.find({ userEmail });
 };
 
+recordOfTodaySchema.statics.deleteAllByUserEmail = function (userEmail) {
+  return this.deleteMany({ userEmail });
+};
+
 export const RecordOfToday = mongoose.model("todayRecord", recordOfTodaySchema);
