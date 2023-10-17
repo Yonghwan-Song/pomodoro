@@ -34,11 +34,29 @@ export function UserContextProvider({
   const { user, isNewUser, isNewUserRegistered } = useAuthContext()!;
   const [pomoInfo, setPomoInfo] = useFetch<RequiredStatesToRunTimerType>({
     urlSegment: C.URLs.USER,
-    callbacks:
-      localStorage.getItem("user") === "unAuthenticated" ||
-      localStorage.getItem("user") === null
-        ? [persistTimersStatesToIDB]
-        : undefined,
+
+    /**
+     * 다시 생각해보니,
+     * 1. 로그인하는 경우
+     *  1) 아예 처음 앱을 사용하는 경우 이거나 고의로 로컬 스토리지를 삭제한 후 로그인 하는 경우.
+     *     localStorage.getItem("user")  === null
+     *  2) 앱을 처음 사용하는 것은 아닌 경우
+     *     localStorage.getItem("user")  === "unAuthenticated"
+     *
+     * 2. 앱이 제로에서 마운트 되는 경우(refresh 하거나 닫았던 앱 다시 열 때)
+     *  1) 만약 로그인 한 상태였다면
+     *     localStorage.getItem("user") === "authenticated"
+     *  2) 그게 아니라면
+     *     localStorage.getItem("user") === "unAuthenticated" || null
+     *
+     * 결론: 2-2)의 경우를 제외한 모든 경우에 callbacks 가 필요하다.
+     * 이유:
+     *      1은 서버에서 데이터 가져와야하고
+     *      2는 다른 브라우저에서 앱을 사용한 경우가 존재한다면,
+     *      그 앱에서 서버쪽으로 persist한 데이터들을 받아와서 싱크를 맞추어 줘야 하기 때문.
+     *
+     */
+    callbacks: [persistTimersStatesToIDB],
     additionalDeps: [isNewUser, isNewUserRegistered],
     additionalCondition: isNewUser === false || isNewUserRegistered,
   });
