@@ -82,7 +82,15 @@ export default function Main() {
   function setRecordsUsingDataFromIDB() {
     async function getTodaySession() {
       let data = await retrieveTodaySessionsFromIDB();
-      setRecords(data);
+
+      let dataSet = new Set(data);
+
+      setRecords((prev) => {
+        prev.forEach((val) => {
+          dataSet.add(val);
+        });
+        return Array.from(dataSet);
+      });
     }
     getTodaySession();
   }
