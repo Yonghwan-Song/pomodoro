@@ -10,52 +10,29 @@ import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
 import {
   StatesType,
-  emptyRecOfToday,
-  emptyStateStore,
   obtainStatesFromIDB,
   stopCountDownInBackground,
   updateTimersStates,
 } from "../..";
-import { RequiredStatesToRunTimerType } from "../../types/clientStatesType";
-import * as CONSTANTS from "../../constants/index";
-import { useUserContext } from "../../Context/UserContext";
-import { pubsub } from "../../pubsub";
 
 function Navbar() {
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
-  const { setPomoInfo } = useUserContext()!;
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef<HTMLUListElement | null>(null); // interface MutableRefObject<T> { current: T;}
   const theme = useTheme() as ThemeCustomized;
 
   async function handleSignOut() {
     try {
-      // For the signing out user to continue his timer when re-signing in.
+      // 로그아웃 시도하는 당시의 데이터를 서버에 persist해 놓기 는다.
+      // 이유: 다음에 다시 로그인 했을 때, 이어서 사용할 수 있도록 하기 위해.
       const statesFromIDB = await obtainStatesFromIDB("withoutPomoSetting");
       if (Object.entries(statesFromIDB).length !== 0) {
         if (user !== null) {
           await updateTimersStates(user, statesFromIDB as StatesType);
-          // await updateTimersStatesWithFetch(user, statesFromIDB as StatesType);
         }
       }
+
       localStorage.setItem("user", "unAuthenticated");
-      await emptyStateStore();
-      await emptyRecOfToday(); //!<-----
-      pubsub.publish("clearObjectStores", 1); // move this to after `await logOut()`
-      await caches.delete(CONSTANTS.CacheName);
-      //#region To allow un-logged-in users to start to use this app with default pomoSetting. (the default value for pomoSetting set in the server-sdie is the same one as below)
-      setPomoInfo((prev) => {
-        return {
-          ...(prev as RequiredStatesToRunTimerType),
-          pomoSetting: {
-            pomoDuration: 25,
-            shortBreakDuration: 5,
-            longBreakDuration: 15,
-            numOfPomo: 4,
-          },
-        };
-      });
-      //#endregion
 
       await logOut();
     } catch (error) {

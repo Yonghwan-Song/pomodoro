@@ -104,11 +104,14 @@ BC.addEventListener("message", (ev) => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
-  registerServiceWorker();
-  // openIDB();
-  DB = await openIndexedDB();
-  await deleteRecordsBeforeTodayInIDB();
-  DynamicCache = await openCache(CacheName);
+  try {
+    registerServiceWorker();
+    DB = await openIndexedDB();
+    await deleteRecordsBeforeTodayInIDB();
+    DynamicCache = await openCache(CacheName);
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 window.addEventListener("beforeunload", async (event) => {

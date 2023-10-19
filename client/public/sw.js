@@ -14076,20 +14076,21 @@
         while (1) {
           switch (_context10.prev = _context10.next) {
             case 0:
+              _context10.prev = 0;
               _context10.t0 = DB;
 
               if (_context10.t0) {
-                _context10.next = 5;
+                _context10.next = 6;
                 break;
               }
 
-              _context10.next = 4;
+              _context10.next = 5;
               return openIndexedDB();
 
-            case 4:
+            case 5:
               _context10.t0 = _context10.sent;
 
-            case 5:
+            case 6:
               db = _context10.t0;
               store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
               console.log(data);
@@ -14114,13 +14115,20 @@
                   return _ref7.apply(this, arguments);
                 };
               }());
+              _context10.next = 15;
+              break;
 
-            case 9:
+            case 12:
+              _context10.prev = 12;
+              _context10.t1 = _context10["catch"](0);
+              console.warn(_context10.t1);
+
+            case 15:
             case "end":
               return _context10.stop();
           }
         }
-      }, _callee10);
+      }, _callee10, null, [[0, 12]]);
     }));
     return _saveStates.apply(this, arguments);
   }
@@ -14144,39 +14152,40 @@
         while (1) {
           switch (_context11.prev = _context11.next) {
             case 0:
+              _context11.prev = 0;
               _context11.t0 = DB;
 
               if (_context11.t0) {
-                _context11.next = 5;
+                _context11.next = 6;
                 break;
               }
 
-              _context11.next = 4;
+              _context11.next = 5;
               return openIndexedDB();
 
-            case 4:
+            case 5:
               _context11.t0 = _context11.sent;
 
-            case 5:
+            case 6:
               db = _context11.t0;
               store = db.transaction("stateStore").objectStore("stateStore");
-              _context11.next = 9;
+              _context11.next = 10;
               return store.getAll();
 
-            case 9:
+            case 10:
               states = _context11.sent.reduce(function (acc, cur) {
                 return _objectSpread2(_objectSpread2({}, acc), {}, _defineProperty({}, cur.name, cur.value));
               }, {});
 
               if (!(states.running && setIntervalId === null)) {
-                _context11.next = 16;
+                _context11.next = 17;
                 break;
               }
 
-              _context11.next = 13;
+              _context11.next = 14;
               return self.clients.get(clientId);
 
-            case 13:
+            case 14:
               client = _context11.sent;
               idOfSetInterval = setInterval(function () {
                 var remainingDuration = Math.floor((states.duration * 60 * 1000 - (Date.now() - states.startTime - states.pause.totalLength)) / 1000);
@@ -14196,12 +14205,21 @@
                 idOfSetInterval: idOfSetInterval
               });
 
-            case 16:
+            case 17:
+              _context11.next = 22;
+              break;
+
+            case 19:
+              _context11.prev = 19;
+              _context11.t1 = _context11["catch"](0);
+              console.warn(_context11.t1);
+
+            case 22:
             case "end":
               return _context11.stop();
           }
         }
-      }, _callee11);
+      }, _callee11, null, [[0, 19]]);
     }));
     return _countDown.apply(this, arguments);
   }
@@ -14218,40 +14236,49 @@
         while (1) {
           switch (_context12.prev = _context12.next) {
             case 0:
+              _context12.prev = 0;
               _context12.t0 = DB;
 
               if (_context12.t0) {
-                _context12.next = 5;
+                _context12.next = 6;
                 break;
               }
 
-              _context12.next = 4;
+              _context12.next = 5;
               return openIndexedDB();
 
-            case 4:
+            case 5:
               _context12.t0 = _context12.sent;
 
-            case 5:
+            case 6:
               db = _context12.t0;
               store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
-              _context12.next = 9;
+              _context12.next = 10;
               return store.clear();
 
-            case 9:
+            case 10:
               console.log("stateStore has been cleared");
-              _context12.next = 12;
+              _context12.next = 13;
               return self.clients.get(clientId);
 
-            case 12:
+            case 13:
               client = _context12.sent;
               client.postMessage({}); //TODO: 이거 아직도 필요한가?...
 
-            case 14:
+              _context12.next = 20;
+              break;
+
+            case 17:
+              _context12.prev = 17;
+              _context12.t1 = _context12["catch"](0);
+              console.warn(_context12.t1);
+
+            case 20:
             case "end":
               return _context12.stop();
           }
         }
-      }, _callee12);
+      }, _callee12, null, [[0, 17]]);
     }));
     return _emptyStateStore.apply(this, arguments);
   }
@@ -14490,26 +14517,26 @@
         while (1) {
           switch (_context14.prev = _context14.next) {
             case 0:
+              _context14.prev = 0;
               _context14.t0 = DB;
 
               if (_context14.t0) {
-                _context14.next = 5;
+                _context14.next = 6;
                 break;
               }
 
-              _context14.next = 4;
+              _context14.next = 5;
               return openIndexedDB();
 
-            case 4:
+            case 5:
               _context14.t0 = _context14.sent;
 
-            case 5:
+            case 6:
               db = _context14.t0;
               store = db.transaction("recOfToday", "readwrite").objectStore("recOfToday");
               console.log("sessionData", _objectSpread2({
                 kind: kind
               }, data));
-              _context14.prev = 8;
               _context14.next = 11;
               return store.add(_objectSpread2({
                 kind: kind
@@ -14532,7 +14559,7 @@
 
             case 14:
               _context14.prev = 14;
-              _context14.t1 = _context14["catch"](8);
+              _context14.t1 = _context14["catch"](0);
               console.warn(_context14.t1);
 
             case 17:
@@ -14540,7 +14567,7 @@
               return _context14.stop();
           }
         }
-      }, _callee14, null, [[8, 14]]);
+      }, _callee14, null, [[0, 14]]);
     }));
     return _persistSession.apply(this, arguments);
   }

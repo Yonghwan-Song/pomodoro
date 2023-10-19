@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
@@ -35,30 +35,22 @@ import {
 function Settings() {
   const { user } = useAuthContext()!;
   const userInfoContext = useUserContext()!;
-  //#region revised
   const setPomoInfo = userInfoContext.setPomoInfo;
 
-  //* Why I did not use useMemo here - there was no possibility that this pomoSetting becomes {}.
-  //? When and where is this value initialized or assigned a value? e.g default setting?
-  console.log("userInfoContext.pomoInfo.pomoSetting", userInfoContext.pomoInfo); // fucking null - why wasn't this changed by side effect in the UserContextProvider?
-  const pomoSetting =
-    userInfoContext.pomoInfo !== null
-      ? userInfoContext.pomoInfo.pomoSetting
-      : ({} as PomoSettingType);
+  // to prevent infinite loop after clearing history from a browser including cache.
+  const pomoSetting = useMemo(
+    () =>
+      userInfoContext.pomoInfo !== null
+        ? userInfoContext.pomoInfo.pomoSetting
+        : ({} as PomoSettingType),
+    [userInfoContext.pomoInfo]
+  );
 
   const [settingInputs, setSettingInputs] = useState(() =>
     userInfoContext.pomoInfo !== null
       ? userInfoContext.pomoInfo.pomoSetting
       : ({} as PomoSettingType)
   );
-  //#endregion
-  //#region original
-  // const setPomoSetting = userInfoContext.setPomoSetting;
-  // const pomoSetting = userInfoContext.pomoSetting ?? ({} as PomoSettingType);
-  // const [settingInputs, setSettingInputs] = useState(
-  //   () => userInfoContext.pomoSetting ?? ({} as PomoSettingType)
-  // );
-  //#endregion
 
   //#region Event Handlers
   function handleInputChange(event: {

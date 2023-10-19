@@ -312,9 +312,9 @@ async function recordPomo(
         },
       }
     );
-    // console.log("res obj", response);
+    console.log("res obj of recordPomo", response);
   } catch (err) {
-    // console.log(err);
+    console.warn(err);
   }
 }
 
