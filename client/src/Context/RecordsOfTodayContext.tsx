@@ -17,11 +17,7 @@ export function RecordsOfTodayContextProvider({
   const [recordsOfToday, setRecordsOfToday] = useFetch<RecType[]>({
     urlSegment: C.URLs.RECORD_OF_TODAY,
     modifier: removeRecordsBeforeToday,
-    callbacks:
-      localStorage.getItem("user") === "unAuthenticated" ||
-      localStorage.getItem("user") === null
-        ? [persistRecordsOfTodayToIDB]
-        : undefined,
+    callbacks: [persistRecordsOfTodayToIDB],
   });
   const { user } = useAuthContext()!;
 

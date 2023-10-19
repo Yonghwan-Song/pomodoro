@@ -151,44 +151,52 @@ async function openIndexedDB() {
 //   ],
 // };
 async function saveStates(data) {
-  let db = DB || (await openIndexedDB());
-  const store = db
-    .transaction("stateStore", "readwrite")
-    .objectStore("stateStore");
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("stateStore", "readwrite")
+      .objectStore("stateStore");
 
-  console.log(data);
+    console.log(data);
 
-  Array.from(data.stateArr).forEach(async (obj) => {
-    await store.put(obj);
-  });
+    Array.from(data.stateArr).forEach(async (obj) => {
+      await store.put(obj);
+    });
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 // If the timer was running in the timer page, continue to count down the timer.
 async function countDown(setIntervalId, clientId) {
-  let db = DB || (await openIndexedDB());
-  const store = db.transaction("stateStore").objectStore("stateStore");
-  let states = (await store.getAll()).reduce((acc, cur) => {
-    return { ...acc, [cur.name]: cur.value };
-  }, {});
-  if (states.running && setIntervalId === null) {
-    let client = await self.clients.get(clientId);
-    let idOfSetInterval = setInterval(() => {
-      let remainingDuration = Math.floor(
-        (states.duration * 60 * 1000 -
-          (Date.now() - states.startTime - states.pause.totalLength)) /
-          1000
-      );
-      console.log("count down remaining duration", remainingDuration);
-      if (remainingDuration <= 0) {
-        console.log("idOfSetInterval", idOfSetInterval);
-        clearInterval(idOfSetInterval);
-        client.postMessage({ timerHasEnded: "clearLocalStorage" });
-        console.log("states in countDown() - ", states);
-        goNext(states, clientId);
-      }
-    }, 500);
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db.transaction("stateStore").objectStore("stateStore");
+    let states = (await store.getAll()).reduce((acc, cur) => {
+      return { ...acc, [cur.name]: cur.value };
+    }, {});
+    if (states.running && setIntervalId === null) {
+      let client = await self.clients.get(clientId);
+      let idOfSetInterval = setInterval(() => {
+        let remainingDuration = Math.floor(
+          (states.duration * 60 * 1000 -
+            (Date.now() - states.startTime - states.pause.totalLength)) /
+            1000
+        );
+        console.log("count down remaining duration", remainingDuration);
+        if (remainingDuration <= 0) {
+          console.log("idOfSetInterval", idOfSetInterval);
+          clearInterval(idOfSetInterval);
+          client.postMessage({ timerHasEnded: "clearLocalStorage" });
+          console.log("states in countDown() - ", states);
+          goNext(states, clientId);
+        }
+      }, 500);
 
-    client.postMessage({ idOfSetInterval });
+      client.postMessage({ idOfSetInterval });
+    }
+  } catch (error) {
+    console.warn(error);
   }
 }
 
@@ -200,15 +208,19 @@ async function countDown(setIntervalId, clientId) {
  * @param {*} clientId
  */
 async function emptyStateStore(clientId) {
-  let db = DB || (await openIndexedDB());
-  const store = db
-    .transaction("stateStore", "readwrite")
-    .objectStore("stateStore");
-  await store.clear();
-  console.log("stateStore has been cleared");
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("stateStore", "readwrite")
+      .objectStore("stateStore");
+    await store.clear();
+    console.log("stateStore has been cleared");
 
-  let client = await self.clients.get(clientId);
-  client.postMessage({}); //TODO: 이거 아직도 필요한가?...
+    let client = await self.clients.get(clientId);
+    client.postMessage({}); //TODO: 이거 아직도 필요한가?...
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 // Purpose: to decide whether the the following duration is a pomo or break.
@@ -383,13 +395,13 @@ async function goNext(states) {
 
 // same as the one in the src/index.tsx
 async function persistSession(kind, data) {
-  let db = DB || (await openIndexedDB());
-  const store = db
-    .transaction("recOfToday", "readwrite")
-    .objectStore("recOfToday");
-
-  console.log("sessionData", { kind, ...data });
   try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("recOfToday", "readwrite")
+      .objectStore("recOfToday");
+
+    console.log("sessionData", { kind, ...data });
     await store.add({ kind, ...data });
     if (kind === "pomo") {
       console.log("trying to add pomo", { kind, ...data });

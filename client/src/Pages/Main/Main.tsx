@@ -14,6 +14,7 @@ import { RecType } from "../../types/clientStatesType";
 import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
 import { pubsub } from "../../pubsub";
 import TogglingTimer from "./TogglingTimer";
+import { deciderOfWhetherUserDataFetchedCompletely } from "../..";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -22,10 +23,9 @@ export default function Main() {
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
   const [toggle, setToggle] = useState(false);
-  const areUserDataFetchedCompletely = useRef<[boolean, boolean]>([
-    false, // for persisting timersStates to idb
-    false, // for persisting recordsOfToday to idb
-  ]);
+  const areUserDataFetchedCompletely = useRef<[boolean, boolean]>(
+    deciderOfWhetherUserDataFetchedCompletely
+  );
   const toggleCounter = useRef(0);
   const userInfoContext = useUserContext()!;
   const { pomoInfo } = userInfoContext;
@@ -82,7 +82,15 @@ export default function Main() {
   function setRecordsUsingDataFromIDB() {
     async function getTodaySession() {
       let data = await retrieveTodaySessionsFromIDB();
-      setRecords(data);
+
+      let dataSet = new Set(data);
+
+      setRecords((prev) => {
+        prev.forEach((val) => {
+          dataSet.add(val);
+        });
+        return Array.from(dataSet);
+      });
     }
     getTodaySession();
   }
@@ -197,15 +205,18 @@ export default function Main() {
           (isPomoSettingReady ? (
             localStorage.getItem("user") === "authenticated" ? (
               user !== null ? (
-                <TogglingTimer
-                  toggle={toggle}
-                  statesRelatedToTimer={statesRelatedToTimer}
-                  pomoDuration={pomoSetting.pomoDuration}
-                  shortBreakDuration={pomoSetting.shortBreakDuration}
-                  longBreakDuration={pomoSetting.longBreakDuration}
-                  numOfPomo={pomoSetting.numOfPomo}
-                  setRecords={setRecords}
-                />
+                areUserDataFetchedCompletely.current[0] &&
+                areUserDataFetchedCompletely.current[1] && (
+                  <TogglingTimer
+                    toggle={toggle}
+                    statesRelatedToTimer={statesRelatedToTimer}
+                    pomoDuration={pomoSetting.pomoDuration}
+                    shortBreakDuration={pomoSetting.shortBreakDuration}
+                    longBreakDuration={pomoSetting.longBreakDuration}
+                    numOfPomo={pomoSetting.numOfPomo}
+                    setRecords={setRecords}
+                  />
+                )
               ) : (
                 <StyledLoadingMessage top="51%">
                   {/* loading timer... */}

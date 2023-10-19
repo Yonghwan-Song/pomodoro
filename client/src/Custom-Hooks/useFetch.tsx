@@ -4,6 +4,7 @@ import {
   Dispatch,
   SetStateAction,
   DependencyList,
+  useRef,
 } from "react";
 import { useAuthContext } from "../Context/AuthContext";
 import axios from "axios";
@@ -41,21 +42,45 @@ export function useFetch<T, S = undefined>({
 
   let moreDeps: DependencyList = additionalDeps ?? [];
 
-  // useEffect(() => {
-  //   console.log("useFetch");
-  //   console.log("user", user === null ? null : "non-null");
-  //   console.log("data", data);
-  //   console.log("callbacks", callbacks);
-  //   console.log(
-  //     "------------------------------------------------------------------"
-  //   );
-  // });
+  //#region To Observe LifeCycle
+  const mountCount = useRef(0);
+  const updateCount = useRef(0);
+  //#endregion
+
+  //#region To Observe Lifecycle
+  useEffect(() => {
+    console.log(
+      "----------------------------useFetch Mounted----------------------------"
+    );
+    console.log("user", user);
+    console.log("data", data);
+    console.log("mount count", ++mountCount.current);
+
+    return () => {
+      console.log(
+        "----------------------------useFetch unMounted----------------------------"
+      );
+    };
+  });
+
+  useEffect(() => {
+    console.log(
+      "----------------------------useFetch Updated----------------------------"
+    );
+    console.log("user", user);
+    console.log("data", data);
+    console.log("render count", ++updateCount.current);
+  });
+  //#endregion
 
   useEffect(() => {
     if (isUserSignedIn() && isAdditionalConditionSatisfiedWhenProvided()) {
       getData();
     }
 
+    /**
+     * Purpose: to get data from either remote server or cache storage.
+     */
     async function getData() {
       let resData = await caches.match(urlSegment + `/${user!.email}`);
       if (resData) {
@@ -78,7 +103,7 @@ export function useFetch<T, S = undefined>({
         console.log(
           "------------------------------- useFetch with HTTP response -------------------------------"
         );
-        let res = await fetchData();
+        let res = await fetchDataFromServer();
 
         if (res !== undefined) {
           let resFetched = new Response(JSON.stringify(res.data));
@@ -88,8 +113,8 @@ export function useFetch<T, S = undefined>({
       }
     }
 
-    // This is going to be used in te getDate() function defined below.
-    async function fetchData() {
+    // This is going to be used in the getDate() function.
+    async function fetchDataFromServer() {
       try {
         const idToken = await user?.getIdToken();
         const response = await axios.get(urlSegment + `/${user!.email}`, {
@@ -123,7 +148,7 @@ export function useFetch<T, S = undefined>({
       return additionalCondition ?? true;
     }
 
-    console.log("Fetching Data", typeof data);
+    // console.log("Fetching Data", typeof data);
   }, [user, ...moreDeps]);
 
   return [data, setData];

@@ -66,6 +66,12 @@ export let SW: ServiceWorker | null = null;
 export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let DynamicCache: Cache | null = null;
 export let TimerRelatedStates: StatesType | null = null;
+
+export let deciderOfWhetherUserDataFetchedCompletely: [boolean, boolean] = [
+  false, // for persisting timersStates to idb
+  false, // for persisting recordsOfToday to idb
+];
+
 const BC = new BroadcastChannel("pomodoro");
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 //#endregion
@@ -98,16 +104,22 @@ BC.addEventListener("message", (ev) => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
-  registerServiceWorker();
-  // openIDB();
-  DB = await openIndexedDB();
-  await deleteRecordsBeforeTodayInIDB();
-  DynamicCache = await openCache(CacheName);
+  try {
+    registerServiceWorker();
+    DB = await openIndexedDB();
+    await deleteRecordsBeforeTodayInIDB();
+    DynamicCache = await openCache(CacheName);
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
-  await caches.delete(CacheName);
+  if (localStorage.getItem("user") === "authenticated") {
+    await caches.delete(CacheName);
+    await clearStateStoreAndRecOfToday();
+  }
 });
 //#endregion
 

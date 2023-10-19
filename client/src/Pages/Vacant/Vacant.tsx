@@ -7,9 +7,7 @@ export function Vacant() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user !== null) {
-      navigate("/timer");
-    }
+    navigate("/timer");
   }, [user]);
 
   return <div></div>;

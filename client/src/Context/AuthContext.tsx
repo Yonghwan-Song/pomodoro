@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, createContext } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  createContext,
+  useRef,
+} from "react";
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -32,6 +38,11 @@ export function AuthContextProvider({
   const [user, setUser] = useState<User | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [isNewUserRegistered, setIsNewUserRegistered] = useState(false);
+
+  //#region To Observe LifeCycle
+  const mountCount = useRef(0);
+  const updateCount = useRef(0);
+  //#endregion
 
   const googleSignIn = async () => {
     try {
@@ -81,14 +92,40 @@ export function AuthContextProvider({
     }
   }
 
+  //#region To Observe LifeCycle
   useEffect(() => {
-    console.log(`------------Auth Context Provider Component------------`);
-    console.log(user);
+    console.log(
+      `------------Auth Context Provider Component was Mounted------------`
+    );
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    console.log(user);
+    console.log("mount count", ++mountCount.current);
+
+    return () => {
+      console.log(
+        `------------Auth Context Provider Component was unMounted------------`
+      );
+      console.log(user);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log(
+      "------------Auth Context Provider Component was updated------------"
+    );
+    console.log(user);
+    console.log("render count", ++updateCount.current);
+  });
+  //#endregion
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (incomingUser) => {
       console.log(`------------Auth State Changed------------`);
-      console.log(currentUser);
-      setUser(currentUser);
+      console.log("currentUser", user);
+      console.log("incomingUser", incomingUser);
+
+      // null -> null does not update AuthContextProvider:::...
+      setUser(incomingUser);
     });
 
     return () => {
