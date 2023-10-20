@@ -231,16 +231,14 @@ async function persistRecOfTodayToServer(user: User, record: RecType) {
   try {
     // caching
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    let resOfRecordOfToday = await cache.match(
-      CONSTANTS.URLs.RECORD_OF_TODAY + "/" + user.email
-    );
+    let resOfRecordOfToday = await cache.match(CONSTANTS.URLs.RECORD_OF_TODAY);
     if (resOfRecordOfToday !== undefined) {
       let recordsOfToday = await resOfRecordOfToday.json();
       recordsOfToday.push({
         record,
       });
       await cache.put(
-        CONSTANTS.URLs.RECORD_OF_TODAY + "/" + user.email,
+        CONSTANTS.URLs.RECORD_OF_TODAY,
         new Response(JSON.stringify(recordsOfToday))
       );
     }
@@ -279,9 +277,7 @@ async function recordPomo(
 
     // update
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    let statResponse = await cache.match(
-      CONSTANTS.URLs.POMO + "/stat/" + user.email
-    );
+    let statResponse = await cache.match(CONSTANTS.URLs.POMO + "/stat");
     if (statResponse !== undefined) {
       let statData = await statResponse.json();
       statData.push({
@@ -292,7 +288,7 @@ async function recordPomo(
         isDummy: false,
       });
       await cache.put(
-        CONSTANTS.URLs.POMO + "/stat/" + user.email,
+        CONSTANTS.URLs.POMO + "/stat",
         new Response(JSON.stringify(statData))
       );
     }

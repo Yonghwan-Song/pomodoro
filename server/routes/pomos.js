@@ -14,18 +14,17 @@ const router = express.Router();
 
 router.use(middleware.decodeToken);
 
-router.get("/:userEmail", getPomoRecords);
-
-router.get("/stat/:userEmail", getStat);
+router.get("/stat", getStat);
 
 router.post("/", recordPomo);
 
-router.post("/generateDummies/:userEmail", generateDummies);
+router.post("/generateDemoData", generateDemoData);
 
-router.post("/generateDemoData/:userEmail", generateDemoData);
+router.delete("/demo", deleteDemoData);
 
-router.delete("/:userEmail", deletePomoRecords);
-
-router.delete("/demo/:userEmail", deleteDemoData);
+// not used currently
+router.get("/", getPomoRecords); // "/stat" is currently used.
+router.post("/generateDummies", generateDummies); // "/generateDemoData" is currently used.
+router.delete("", deletePomoRecords); // "/demo" is currently used.
 
 export default router;

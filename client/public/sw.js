@@ -14691,7 +14691,7 @@
               cache = _context17.t0;
               console.log("cache in recordPomo", cache);
               _context17.next = 20;
-              return cache.match(URLs.POMO + "/stat/".concat(email));
+              return cache.match(URLs.POMO + "/stat");
 
             case 20:
               statResponse = _context17.sent;
@@ -14715,7 +14715,7 @@
                 isDummy: false
               });
               console.log("statData after push", statData);
-              cache.put(URLs.POMO + "/stat/".concat(email), new Response(JSON.stringify(statData)));
+              cache.put(URLs.POMO + "/stat}", new Response(JSON.stringify(statData)));
 
             case 29:
               _context17.next = 31;
@@ -14757,7 +14757,7 @@
 
   function _updateTimersStates() {
     _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee18(states) {
-      var idTokenAndEmail, idToken, email, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates, res;
+      var idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates, res;
       return _regeneratorRuntime().wrap(function _callee18$(_context18) {
         while (1) {
           switch (_context18.prev = _context18.next) {
@@ -14774,7 +14774,7 @@
                 break;
               }
 
-              idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email; // caching
+              idToken = idTokenAndEmail.idToken, idTokenAndEmail.email; // caching
 
               _context18.t0 = CACHE;
 
@@ -14792,7 +14792,7 @@
             case 11:
               cache = _context18.t0;
               _context18.next = 14;
-              return cache.match(URLs.USER + "/".concat(email));
+              return cache.match(URLs.USER);
 
             case 14:
               pomoSettingAndTimerStatesResponse = _context18.sent;
@@ -14809,11 +14809,11 @@
               pomoSettingAndTimersStates = _context18.sent;
               pomoSettingAndTimersStates.timersStates = states;
               _context18.next = 22;
-              return cache.put(URLs.USER + "/".concat(email), new Response(JSON.stringify(pomoSettingAndTimersStates)));
+              return cache.put(URLs.USER, new Response(JSON.stringify(pomoSettingAndTimersStates)));
 
             case 22:
               _context18.next = 24;
-              return fetch(URLs.USER + "/updateTimersStates/".concat(email), {
+              return fetch(URLs.USER + "/updateTimersStates", {
                 method: "PUT",
                 body: JSON.stringify({
                   states: states
@@ -14889,7 +14889,7 @@
             case 12:
               cache = _context19.t0;
               _context19.next = 15;
-              return cache.match(URLs.RECORD_OF_TODAY + "/" + email);
+              return cache.match(URLs.RECORD_OF_TODAY);
 
             case 15:
               resOfRecordOfToday = _context19.sent;
@@ -14908,7 +14908,7 @@
                 record: record
               });
               _context19.next = 23;
-              return cache.put(URLs.RECORD_OF_TODAY + "/" + email, new Response(JSON.stringify(recordsOfToday)));
+              return cache.put(URLs.RECORD_OF_TODAY, new Response(JSON.stringify(recordsOfToday)));
 
             case 23:
               _context19.next = 25;

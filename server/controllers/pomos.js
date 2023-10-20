@@ -39,7 +39,7 @@ export const recordPomo = async (req, res) => {
 
 export const getStat = async (req, res) => {
   try {
-    let pomoRecords = await Pomo.findByUserEmail(req.params.userEmail);
+    let pomoRecords = await Pomo.findByUserEmail(req.userEmail);
 
     res.json(pomoRecords);
   } catch (error) {
@@ -49,7 +49,7 @@ export const getStat = async (req, res) => {
 
 export const getPomoRecords = async (req, res) => {
   try {
-    let pomoRecords = await Pomo.findByUserEmail(req.params.userEmail);
+    let pomoRecords = await Pomo.findByUserEmail(req.userEmail);
 
     //#region calculate the total cocentration time of today
     const now = new Date();
@@ -103,8 +103,8 @@ export const getPomoRecords = async (req, res) => {
 
 export const deletePomoRecords = async (req, res) => {
   try {
-    let deletedCount = await Pomo.deleteAllByUserEmail(req.params.userEmail);
-    let currentUser = await User.findOne({ email: req.params.userEmail });
+    let deletedCount = await Pomo.deleteAllByUserEmail(req.userEmail);
+    let currentUser = await User.findOne({ email: req.userEmail });
     currentUser.pomoSet = [];
     currentUser.save();
     res.json(deletedCount);
@@ -120,7 +120,7 @@ export const deleteDemoData = async (req, res) => {
     console.log(arrOf_id);
     let deletedCount = await Pomo.deleteMany({ isDummy: true });
 
-    let currentUser = await User.findOne({ email: req.params.userEmail });
+    let currentUser = await User.findOne({ email: req.userEmail });
 
     let pomoSetStringArr = currentUser.pomoSet.map((ele) => ele.toString());
     let firstIndex = pomoSetStringArr.findIndex((ele) => ele == arrOf_id[0]);
@@ -136,7 +136,7 @@ export const deleteDemoData = async (req, res) => {
 
 export const generateDummies = async (req, res) => {
   try {
-    let userEmail = req.params.userEmail;
+    let userEmail = req.userEmail;
     let { year, month, day, hours, numOfPomo, numOfCycle } = req.body;
     const pomoRecords = createRecords(
       {
@@ -181,7 +181,7 @@ export const generateDummies = async (req, res) => {
 
 export const generateDemoData = async (req, res) => {
   try {
-    let userEmail = req.params.userEmail;
+    let userEmail = req.userEmail;
     let { timestamp, timezoneOffset } = req.body;
     let pomoRecords = [];
     const _24h = 24 * 60 * 60 * 1000;

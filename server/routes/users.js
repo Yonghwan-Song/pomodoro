@@ -14,17 +14,17 @@ const router = express.Router();
 router.use(middleware.decodeToken);
 // all routes in here start with /users
 
-router.get("/:email", getPomoSettingAndTimersStates);
+router.get("/", getPomoSettingAndTimersStates);
 
 // Create a new user
 router.post("/", createUser);
 
 // Set a new pomo setting
-router.put("/editPomoSetting/:email", updatePomoSetting);
+router.put("/editPomoSetting/", updatePomoSetting);
 
 // Update timersStates
-router.put("/updateTimersStates/:email", updateTimersStates);
+router.put("/updateTimersStates/", updateTimersStates);
 
-router.delete("/:email", deleteUser);
+router.delete("/", deleteUser);
 
 export default router;

@@ -265,7 +265,7 @@ async function deleteAccount(user: User) {
   console.log(`--------------------DELETE ACCOUNT-------------------`);
   try {
     const idToken = await user.getIdToken();
-    const res = await axios.delete(CONSTANTS.URLs.USER + `/${user.email}`, {
+    const res = await axios.delete(CONSTANTS.URLs.USER, {
       headers: {
         Authorization: "Bearer " + idToken,
       },
@@ -288,9 +288,9 @@ async function createDemoData(user: User) {
     const yesterdayTimestamp = today.getTime() - 24 * 60 * 60 * 1000;
     const idToken = await user.getIdToken();
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat/" + user.email);
+    await cache.delete(CONSTANTS.URLs.POMO + "/stat");
     const res = await axios.post(
-      CONSTANTS.URLs.POMO + `/generateDemoData/${user.email}`,
+      CONSTANTS.URLs.POMO + `/generateDemoData`,
       {
         timestamp: yesterdayTimestamp,
         timezoneOffset: now.getTimezoneOffset(),
@@ -308,17 +308,16 @@ async function createDemoData(user: User) {
 }
 async function removeDemoData(user: User) {
   try {
-    const idToken = await user.getIdToken();
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat/" + user.email);
-    const res = await axios.delete(
-      CONSTANTS.URLs.POMO + `/demo/${user.email}`,
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    await cache.delete(CONSTANTS.URLs.POMO + "/stat");
+
+    const idToken = await user.getIdToken();
+    const res = await axios.delete(CONSTANTS.URLs.POMO + `/demo`, {
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);
@@ -328,7 +327,7 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
   try {
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(
-      CONSTANTS.URLs.USER + `/${user.email}`
+      CONSTANTS.URLs.USER
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
@@ -339,16 +338,16 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
         pomoSettingAndTimersStates
       );
       await cache.put(
-        CONSTANTS.URLs.USER + `/${user.email}`,
+        CONSTANTS.URLs.USER,
         new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
+
     const idToken = await user.getIdToken();
     const res = await axios.put(
-      CONSTANTS.URLs.USER + `/editPomoSetting/${user.email}`,
+      CONSTANTS.URLs.USER + `/editPomoSetting`,
       {
         pomoSetting,
-        //todo: update ... timersStates
       },
       {
         headers: {
@@ -356,6 +355,7 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
         },
       }
     );
+
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);

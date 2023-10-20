@@ -2,7 +2,7 @@ import { RecordOfToday } from "../models/recordOfToday.js";
 
 export const getRecordsOfToday = async (req, res) => {
   try {
-    let records = await RecordOfToday.findByUserEmail(req.params.userEmail);
+    let records = await RecordOfToday.findByUserEmail(req.userEmail);
     //? should we remove useEmail property at this point?
     res.json(records);
   } catch (error) {
@@ -31,8 +31,7 @@ export const storeRecordOfToday = async (req, res) => {
   }
 };
 
-//TODO: is it okay to _just send a timestamp_ that is going to be used to determine which data are before today?
-export const deleteRecordsBeforeToday = async (req, res) => {
+export const removeRecordsBeforeToday = async (req, res) => {
   try {
     let { startOfTodayTimestamp, userEmail } = req.body;
     const deletedCount = await RecordOfToday.deleteMany({

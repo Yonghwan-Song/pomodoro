@@ -23,11 +23,11 @@ export const createUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    let deletedPomosCount = await Pomo.deleteAllByUserEmail(req.params.email);
+    let deletedPomosCount = await Pomo.deleteAllByUserEmail(req.userEmail);
     let deletedRecordscount = await RecordOfToday.deleteAllByUserEmail(
-      req.params.email
+      req.userEmail
     );
-    let userDeleted = await User.deleteOne({ email: req.params.email });
+    let userDeleted = await User.deleteOne({ email: req.userEmail });
 
     const whatIsDeleted = {
       deletedPomosCount,
@@ -45,7 +45,7 @@ export const deleteUser = async (req, res) => {
 
 export const getPomoSetting = async (req, res) => {
   try {
-    let currentUser = await User.findOne({ email: req.params.email });
+    let currentUser = await User.findOne({ email: req.userEmail });
 
     if (currentUser) {
       console.log(currentUser.pomoSetting);
@@ -60,7 +60,7 @@ export const getPomoSetting = async (req, res) => {
 
 export const getPomoSettingAndTimersStates = async (req, res) => {
   try {
-    let currentUser = await User.findOne({ email: req.params.email });
+    let currentUser = await User.findOne({ email: req.userEmail });
 
     if (currentUser) {
       console.log("current user", currentUser);
@@ -80,7 +80,7 @@ export const getPomoSettingAndTimersStates = async (req, res) => {
 
 export const updatePomoSetting = async (req, res) => {
   try {
-    let currentUser = await User.findOne({ email: req.params.email });
+    let currentUser = await User.findOne({ email: req.userEmail });
     currentUser.pomoSetting = req.body.pomoSetting;
     const updatedUser = await currentUser.save();
     res.send(updatedUser);
@@ -91,7 +91,7 @@ export const updatePomoSetting = async (req, res) => {
 
 export const updateTimersStates = async (req, res) => {
   try {
-    let currentUser = await User.findOne({ email: req.params.email });
+    let currentUser = await User.findOne({ email: req.userEmail });
     console.log("req.body in updateRequiredStatesToRunTimer", req.body);
     currentUser.timersStates = {
       ...currentUser.timersStates,

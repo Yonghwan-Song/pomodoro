@@ -82,7 +82,7 @@ export function useFetch<T, S = undefined>({
      * Purpose: to get data from either remote server or cache storage.
      */
     async function getData() {
-      let resData = await caches.match(urlSegment + `/${user!.email}`);
+      let resData = await caches.match(urlSegment);
       if (resData) {
         console.log(
           "------------------------------- useFetch with cached response -------------------------------"
@@ -108,7 +108,7 @@ export function useFetch<T, S = undefined>({
         if (res !== undefined) {
           let resFetched = new Response(JSON.stringify(res.data));
           let cache = DynamicCache || (await openCache(CacheName));
-          await cache.put(urlSegment + `/${user!.email}`, resFetched);
+          await cache.put(urlSegment, resFetched);
         }
       }
     }
@@ -117,7 +117,7 @@ export function useFetch<T, S = undefined>({
     async function fetchDataFromServer() {
       try {
         const idToken = await user?.getIdToken();
-        const response = await axios.get(urlSegment + `/${user!.email}`, {
+        const response = await axios.get(urlSegment, {
           headers: {
             Authorization: "Bearer " + idToken,
           },
