@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
@@ -51,6 +51,11 @@ function Settings() {
       ? userInfoContext.pomoInfo.pomoSetting
       : ({} as PomoSettingType)
   );
+
+  //#region To Observe LifeCycle
+  const mountCount = useRef(0);
+  const updateCount = useRef(0);
+  //#endregion
 
   //#region Event Handlers
   function handleInputChange(event: {
@@ -117,10 +122,28 @@ function Settings() {
   //#endregion
 
   //#region UseEffects
+
+  //#region To Observe LifeCycle
   useEffect(() => {
+    console.log(`------------Settings Component was Mounted------------`);
+    console.log("user", user);
     console.log("pomoSetting", pomoSetting);
-    console.log("setPomoSetting", setPomoInfo);
+    console.log("settingsInput", settingInputs);
+    console.log("mount count", ++mountCount.current);
+
+    return () => {
+      console.log(`------------Settings Component was unMounted------------`);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("------------Settings Component was updated------------");
+    console.log("user", user);
+    console.log("pomoSetting", pomoSetting);
+    console.log("settingsInput", settingInputs);
+    console.log("render count", ++updateCount.current);
   });
+  //#endregion
 
   useEffect(() => {
     if (user !== null && Object.entries(user).length !== 0) {
@@ -128,27 +151,15 @@ function Settings() {
     }
     console.log(pomoSetting);
 
-    //#region Original
-    // we assume that a user using this page is always logged in and that this condition is going to be false soon after getting pomoSetting from server.
-    // if (Object.entries(settingInputs).length === 0) {
-    //   setSettingInputs(pomoSetting);
-    // }
-    //#endregion
-
-    //#region Edited - infinite re-rendering is fixed.
-    // if (user !== null && Object.entries(settingInputs).length === 0) {
-    //   setSettingInputs(pomoSetting);
-    // }
-    //#endregion
-
-    //#region v2
     if (Object.entries(settingInputs).length === 0) {
       setSettingInputs(pomoSetting);
     }
-    //#endregion
-
     console.log("POMO SETTING INPUTS", settingInputs);
   }, [user, pomoSetting, settingInputs]);
+
+  useEffect(() => {
+    setSettingInputs(pomoSetting);
+  }, [pomoSetting]);
 
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
