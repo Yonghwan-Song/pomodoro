@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
@@ -51,6 +51,11 @@ function Settings() {
       ? userInfoContext.pomoInfo.pomoSetting
       : ({} as PomoSettingType)
   );
+
+  //#region To Observe LifeCycle
+  const mountCount = useRef(0);
+  const updateCount = useRef(0);
+  //#endregion
 
   //#region Event Handlers
   function handleInputChange(event: {
@@ -117,10 +122,28 @@ function Settings() {
   //#endregion
 
   //#region UseEffects
+
+  //#region To Observe LifeCycle
   useEffect(() => {
+    console.log(`------------Settings Component was Mounted------------`);
+    console.log("user", user);
     console.log("pomoSetting", pomoSetting);
-    console.log("setPomoSetting", setPomoInfo);
+    console.log("settingsInput", settingInputs);
+    console.log("mount count", ++mountCount.current);
+
+    return () => {
+      console.log(`------------Settings Component was unMounted------------`);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("------------Settings Component was updated------------");
+    console.log("user", user);
+    console.log("pomoSetting", pomoSetting);
+    console.log("settingsInput", settingInputs);
+    console.log("render count", ++updateCount.current);
   });
+  //#endregion
 
   useEffect(() => {
     if (user !== null && Object.entries(user).length !== 0) {
@@ -128,27 +151,15 @@ function Settings() {
     }
     console.log(pomoSetting);
 
-    //#region Original
-    // we assume that a user using this page is always logged in and that this condition is going to be false soon after getting pomoSetting from server.
-    // if (Object.entries(settingInputs).length === 0) {
-    //   setSettingInputs(pomoSetting);
-    // }
-    //#endregion
-
-    //#region Edited - infinite re-rendering is fixed.
-    // if (user !== null && Object.entries(settingInputs).length === 0) {
-    //   setSettingInputs(pomoSetting);
-    // }
-    //#endregion
-
-    //#region v2
     if (Object.entries(settingInputs).length === 0) {
       setSettingInputs(pomoSetting);
     }
-    //#endregion
-
     console.log("POMO SETTING INPUTS", settingInputs);
   }, [user, pomoSetting, settingInputs]);
+
+  useEffect(() => {
+    setSettingInputs(pomoSetting);
+  }, [pomoSetting]);
 
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
@@ -265,7 +276,7 @@ async function deleteAccount(user: User) {
   console.log(`--------------------DELETE ACCOUNT-------------------`);
   try {
     const idToken = await user.getIdToken();
-    const res = await axios.delete(CONSTANTS.URLs.USER + `/${user.email}`, {
+    const res = await axios.delete(CONSTANTS.URLs.USER, {
       headers: {
         Authorization: "Bearer " + idToken,
       },
@@ -288,9 +299,9 @@ async function createDemoData(user: User) {
     const yesterdayTimestamp = today.getTime() - 24 * 60 * 60 * 1000;
     const idToken = await user.getIdToken();
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat/" + user.email);
+    await cache.delete(CONSTANTS.URLs.POMO + "/stat");
     const res = await axios.post(
-      CONSTANTS.URLs.POMO + `/generateDemoData/${user.email}`,
+      CONSTANTS.URLs.POMO + `/generateDemoData`,
       {
         timestamp: yesterdayTimestamp,
         timezoneOffset: now.getTimezoneOffset(),
@@ -308,17 +319,16 @@ async function createDemoData(user: User) {
 }
 async function removeDemoData(user: User) {
   try {
-    const idToken = await user.getIdToken();
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat/" + user.email);
-    const res = await axios.delete(
-      CONSTANTS.URLs.POMO + `/demo/${user.email}`,
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    await cache.delete(CONSTANTS.URLs.POMO + "/stat");
+
+    const idToken = await user.getIdToken();
+    const res = await axios.delete(CONSTANTS.URLs.POMO + `/demo`, {
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);
@@ -328,7 +338,7 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
   try {
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(
-      CONSTANTS.URLs.USER + `/${user.email}`
+      CONSTANTS.URLs.USER
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
@@ -339,16 +349,16 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
         pomoSettingAndTimersStates
       );
       await cache.put(
-        CONSTANTS.URLs.USER + `/${user.email}`,
+        CONSTANTS.URLs.USER,
         new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
+
     const idToken = await user.getIdToken();
     const res = await axios.put(
-      CONSTANTS.URLs.USER + `/editPomoSetting/${user.email}`,
+      CONSTANTS.URLs.USER + `/editPomoSetting`,
       {
         pomoSetting,
-        //todo: update ... timersStates
       },
       {
         headers: {
@@ -356,6 +366,7 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
         },
       }
     );
+
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);

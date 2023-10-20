@@ -449,7 +449,7 @@ async function recordPomo(duration, startTime) {
       // update
       let cache = CACHE || (await openCache(CacheName));
       console.log("cache in recordPomo", cache);
-      let statResponse = await cache.match(URLs.POMO + `/stat/${email}`);
+      let statResponse = await cache.match(URLs.POMO + `/stat`);
       if (statResponse !== undefined) {
         let statData = await statResponse.json();
         console.log("statData before push", statData);
@@ -461,10 +461,7 @@ async function recordPomo(duration, startTime) {
           isDummy: false,
         });
         console.log("statData after push", statData);
-        cache.put(
-          URLs.POMO + `/stat/${email}`,
-          new Response(JSON.stringify(statData))
-        );
+        cache.put(URLs.POMO + `/stat}`, new Response(JSON.stringify(statData)));
       }
 
       const res = await fetch(URLs.POMO, {
@@ -489,20 +486,18 @@ async function updateTimersStates(states) {
       const { idToken, email } = idTokenAndEmail;
       // caching
       let cache = CACHE || (await openCache(CacheName));
-      let pomoSettingAndTimerStatesResponse = await cache.match(
-        URLs.USER + `/${email}`
-      );
+      let pomoSettingAndTimerStatesResponse = await cache.match(URLs.USER);
       if (pomoSettingAndTimerStatesResponse !== undefined) {
         let pomoSettingAndTimersStates =
           await pomoSettingAndTimerStatesResponse.json();
         pomoSettingAndTimersStates.timersStates = states;
         await cache.put(
-          URLs.USER + `/${email}`,
+          URLs.USER,
           new Response(JSON.stringify(pomoSettingAndTimersStates))
         );
       }
 
-      const res = await fetch(URLs.USER + `/updateTimersStates/${email}`, {
+      const res = await fetch(URLs.USER + `/updateTimersStates`, {
         method: "PUT",
         body: JSON.stringify({ states }),
         headers: {
@@ -525,16 +520,14 @@ async function persistRecOfTodayToServer(record) {
       const { idToken, email } = idTokenAndEmail;
       // caching
       let cache = CACHE || (await openCache(CacheName));
-      let resOfRecordOfToday = await cache.match(
-        URLs.RECORD_OF_TODAY + "/" + email
-      );
+      let resOfRecordOfToday = await cache.match(URLs.RECORD_OF_TODAY);
       if (resOfRecordOfToday !== undefined) {
         let recordsOfToday = await resOfRecordOfToday.json();
         recordsOfToday.push({
           record,
         });
         await cache.put(
-          URLs.RECORD_OF_TODAY + "/" + email,
+          URLs.RECORD_OF_TODAY,
           new Response(JSON.stringify(recordsOfToday))
         );
       }

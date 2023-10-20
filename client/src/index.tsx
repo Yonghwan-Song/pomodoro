@@ -132,21 +132,21 @@ export async function updateTimersStates(
     // caching
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(
-      CONSTANTS.URLs.USER + `/${user.email}`
+      CONSTANTS.URLs.USER
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json();
       pomoSettingAndTimersStates.timersStates = states;
       await cache.put(
-        CONSTANTS.URLs.USER + `/${user.email}`,
+        CONSTANTS.URLs.USER,
         new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
 
     const idToken = await user.getIdToken();
     const res = await axios.put(
-      CONSTANTS.URLs.USER + `/updateTimersStates/${user.email}`,
+      CONSTANTS.URLs.USER + `/updateTimersStates`,
       { states },
       {
         headers: {
