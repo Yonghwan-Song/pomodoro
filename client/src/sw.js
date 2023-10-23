@@ -461,7 +461,7 @@ async function recordPomo(duration, startTime) {
           isDummy: false,
         });
         console.log("statData after push", statData);
-        cache.put(URLs.POMO + `/stat}`, new Response(JSON.stringify(statData)));
+        cache.put(URLs.POMO + `/stat`, new Response(JSON.stringify(statData)));
       }
 
       const res = await fetch(URLs.POMO, {

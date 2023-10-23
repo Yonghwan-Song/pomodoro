@@ -14718,7 +14718,7 @@
                 isDummy: false
               });
               console.log("statData after push", statData);
-              cache.put(URLs.POMO + "/stat}", new Response(JSON.stringify(statData)));
+              cache.put(URLs.POMO + "/stat", new Response(JSON.stringify(statData)));
 
             case 29:
               _context17.next = 31;
