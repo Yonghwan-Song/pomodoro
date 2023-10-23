@@ -294,9 +294,12 @@ async function goNext(states) {
       console.log("1");
       console.log("SB - ", shortBreakDuration);
       //This is when a pomo, which is not the last one of a cycle, is completed.
+      BC.postMessage({ evName: "makeSound", payload: null });
       self.registration.showNotification("shortBreak", {
         body: "time to take a short break",
+        silent: true,
       });
+
       await recordPomo(duration, startTime);
       await persistStates([
         {
@@ -319,8 +322,10 @@ async function goNext(states) {
       console.log("2");
       console.log("P - ", pomoDuration);
       //* This is when a short break is done.
+      BC.postMessage({ evName: "makeSound", payload: null });
       self.registration.showNotification("pomo", {
         body: "time to focus",
+        silent: true,
       });
       await persistStates([
         {
@@ -343,8 +348,10 @@ async function goNext(states) {
     console.log("3");
     console.log("LB - ", longBreakDuration);
     //This is when the last pomo of a cycle is completed.
+    BC.postMessage({ evName: "makeSound", payload: null });
     self.registration.showNotification("longBreak", {
       body: "time to take a long break",
+      silent: true,
     });
     await recordPomo(duration, startTime);
     await persistStates([
@@ -366,8 +373,10 @@ async function goNext(states) {
     console.log("4");
     console.log("P - ", pomoDuration);
     //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
+    BC.postMessage({ evName: "makeSound", payload: null });
     self.registration.showNotification("nextCycle", {
       body: "time to do the next cycle of pomos",
+      silent: true,
     });
     await persistStates([
       {
