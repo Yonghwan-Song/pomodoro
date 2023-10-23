@@ -100,7 +100,11 @@ root.render(
 BC.addEventListener("message", (ev) => {
   const { evName, payload } = ev.data;
   console.log("payload of BC", payload);
-  pubsub.publish(evName, payload);
+  if (evName === "pomoAdded") {
+    pubsub.publish(evName, payload);
+  } else if (evName === "makeSound") {
+    makeSound();
+  }
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -482,6 +486,24 @@ export async function countDown(setIntervalId: number | string | null) {
 
       localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
     }
+  }
+}
+
+// source of audio asset: https://notificationsounds.com/about
+export async function makeSound() {
+  try {
+    let audioContext = new AudioContext();
+    const buffer = await (
+      await fetch("/the-little-dwarf-498.ogg")
+    ).arrayBuffer();
+    console.log("buffer", buffer);
+    const audioBuffer = await audioContext.decodeAudioData(buffer);
+    const audioBufferSourceNode = audioContext.createBufferSource();
+    audioBufferSourceNode.buffer = audioBuffer;
+    audioBufferSourceNode.connect(audioContext.destination);
+    audioBufferSourceNode.start();
+  } catch (error) {
+    console.warn(error);
   }
 }
 //#endregion

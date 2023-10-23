@@ -10,6 +10,7 @@ import {
   openCache,
   persistSingleTodaySessionToIDB,
   postMsgToSW,
+  makeSound,
 } from "../..";
 import { RecType, TimerStateType } from "../../types/clientStatesType";
 
@@ -314,7 +315,7 @@ async function recordPomo(
   }
 }
 
-function notify(which: string) {
+async function notify(which: string) {
   let title = "Pomodoro";
   let body = "";
 
@@ -336,12 +337,14 @@ function notify(which: string) {
 
   let options = {
     body,
+    silent: true,
   };
+
+  await makeSound();
 
   let noti = new Notification(title, options);
 
   noti.addEventListener("click", (ev) => {
-    // console.log("notification is clicked");
     noti.close();
     window.focus();
   });

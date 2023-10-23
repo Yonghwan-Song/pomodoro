@@ -14337,36 +14337,41 @@
 
             case 19:
               if (!(repetitionCount < numOfPomo * 2 - 1)) {
-                _context13.next = 45;
+                _context13.next = 47;
                 break;
               }
 
               if (!(repetitionCount % 2 === 1)) {
-                _context13.next = 34;
+                _context13.next = 35;
                 break;
               }
 
               console.log("1");
               console.log("SB - ", shortBreakDuration); //This is when a pomo, which is not the last one of a cycle, is completed.
 
-              self.registration.showNotification("shortBreak", {
-                body: "time to take a short break"
+              BC.postMessage({
+                evName: "makeSound",
+                payload: null
               });
-              _context13.next = 26;
+              self.registration.showNotification("shortBreak", {
+                body: "time to take a short break",
+                silent: true
+              });
+              _context13.next = 27;
               return recordPomo(duration, startTime);
 
-            case 26:
-              _context13.next = 28;
+            case 27:
+              _context13.next = 29;
               return persistStates([{
                 name: "duration",
                 value: shortBreakDuration
               }]);
 
-            case 28:
-              _context13.next = 30;
+            case 29:
+              _context13.next = 31;
               return persistSession("pomo", sessionData);
 
-            case 30:
+            case 31:
               updateTimersStates({
                 running: running,
                 startTime: 0,
@@ -14378,27 +14383,32 @@
                 kind: "pomo"
               }, sessionData)); // console.log(await getIdTokenAndEmail());
 
-              _context13.next = 43;
+              _context13.next = 45;
               break;
 
-            case 34:
+            case 35:
               console.log("2");
               console.log("P - ", pomoDuration); //* This is when a short break is done.
 
-              self.registration.showNotification("pomo", {
-                body: "time to focus"
+              BC.postMessage({
+                evName: "makeSound",
+                payload: null
               });
-              _context13.next = 39;
+              self.registration.showNotification("pomo", {
+                body: "time to focus",
+                silent: true
+              });
+              _context13.next = 41;
               return persistStates([{
                 name: "duration",
                 value: pomoDuration
               }]);
 
-            case 39:
-              _context13.next = 41;
+            case 41:
+              _context13.next = 43;
               return persistSession("break", sessionData);
 
-            case 41:
+            case 43:
               updateTimersStates({
                 running: running,
                 startTime: 0,
@@ -14410,37 +14420,42 @@
                 kind: "break"
               }, sessionData));
 
-            case 43:
-              _context13.next = 72;
+            case 45:
+              _context13.next = 76;
               break;
 
-            case 45:
+            case 47:
               if (!(repetitionCount === numOfPomo * 2 - 1)) {
-                _context13.next = 59;
+                _context13.next = 62;
                 break;
               }
 
               console.log("3");
               console.log("LB - ", longBreakDuration); //This is when the last pomo of a cycle is completed.
 
-              self.registration.showNotification("longBreak", {
-                body: "time to take a long break"
+              BC.postMessage({
+                evName: "makeSound",
+                payload: null
               });
-              _context13.next = 51;
+              self.registration.showNotification("longBreak", {
+                body: "time to take a long break",
+                silent: true
+              });
+              _context13.next = 54;
               return recordPomo(duration, startTime);
 
-            case 51:
-              _context13.next = 53;
+            case 54:
+              _context13.next = 56;
               return persistStates([{
                 name: "duration",
                 value: longBreakDuration
               }]);
 
-            case 53:
-              _context13.next = 55;
+            case 56:
+              _context13.next = 58;
               return persistSession("pomo", sessionData);
 
-            case 55:
+            case 58:
               updateTimersStates({
                 running: running,
                 startTime: 0,
@@ -14451,22 +14466,27 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData));
-              _context13.next = 72;
+              _context13.next = 76;
               break;
 
-            case 59:
+            case 62:
               if (!(repetitionCount === numOfPomo * 2)) {
-                _context13.next = 71;
+                _context13.next = 75;
                 break;
               }
 
               console.log("4");
               console.log("P - ", pomoDuration); //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
 
-              self.registration.showNotification("nextCycle", {
-                body: "time to do the next cycle of pomos"
+              BC.postMessage({
+                evName: "makeSound",
+                payload: null
               });
-              _context13.next = 65;
+              self.registration.showNotification("nextCycle", {
+                body: "time to do the next cycle of pomos",
+                silent: true
+              });
+              _context13.next = 69;
               return persistStates([{
                 name: "duration",
                 value: pomoDuration
@@ -14475,11 +14495,11 @@
                 value: 0
               }]);
 
-            case 65:
-              _context13.next = 67;
+            case 69:
+              _context13.next = 71;
               return persistSession("break", sessionData);
 
-            case 67:
+            case 71:
               updateTimersStates({
                 running: running,
                 startTime: 0,
@@ -14490,13 +14510,13 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData));
-              _context13.next = 72;
+              _context13.next = 76;
               break;
 
-            case 71:
+            case 75:
               console.log("5");
 
-            case 72:
+            case 76:
             case "end":
               return _context13.stop();
           }
