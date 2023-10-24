@@ -67,10 +67,17 @@ export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let DynamicCache: Cache | null = null;
 export let TimerRelatedStates: StatesType | null = null;
 
+//
 export let deciderOfWhetherUserDataFetchedCompletely: [boolean, boolean] = [
   false, // for persisting timersStates to idb
   false, // for persisting recordsOfToday to idb
 ];
+pubsub.subscribe("successOfPersistingTimersStatesToIDB", (data) => {
+  deciderOfWhetherUserDataFetchedCompletely[0] = true;
+});
+pubsub.subscribe("successOfPersistingRecordsOfTodayToIDB", (data) => {
+  deciderOfWhetherUserDataFetchedCompletely[1] = true;
+});
 
 const BC = new BroadcastChannel("pomodoro");
 const root = ReactDOM.createRoot(document.getElementById("root")!);

@@ -43,34 +43,34 @@ export function useFetch<T, S = undefined>({
   let moreDeps: DependencyList = additionalDeps ?? [];
 
   //#region To Observe LifeCycle
-  const mountCount = useRef(0);
-  const updateCount = useRef(0);
+  // const mountCount = useRef(0);
+  // const updateCount = useRef(0);
   //#endregion
 
   //#region To Observe Lifecycle
-  useEffect(() => {
-    console.log(
-      "----------------------------useFetch Mounted----------------------------"
-    );
-    console.log("user", user);
-    console.log("data", data);
-    console.log("mount count", ++mountCount.current);
+  // useEffect(() => {
+  //   console.log(
+  //     "----------------------------useFetch Mounted----------------------------"
+  //   );
+  //   console.log("user", user);
+  //   console.log("data", data);
+  //   console.log("mount count", ++mountCount.current);
 
-    return () => {
-      console.log(
-        "----------------------------useFetch unMounted----------------------------"
-      );
-    };
-  });
+  //   return () => {
+  //     console.log(
+  //       "----------------------------useFetch unMounted----------------------------"
+  //     );
+  //   };
+  // });
 
-  useEffect(() => {
-    console.log(
-      "----------------------------useFetch Updated----------------------------"
-    );
-    console.log("user", user);
-    console.log("data", data);
-    console.log("render count", ++updateCount.current);
-  });
+  // useEffect(() => {
+  //   console.log(
+  //     "----------------------------useFetch Updated----------------------------"
+  //   );
+  //   console.log("user", user);
+  //   console.log("data", data);
+  //   console.log("render count", ++updateCount.current);
+  // });
   //#endregion
 
   useEffect(() => {
