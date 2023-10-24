@@ -65,8 +65,8 @@ export function UserContextProvider({
   });
 
   //#region To Observe LifeCycle
-  const mountCount = useRef(0);
-  const updateCount = useRef(0);
+  // const mountCount = useRef(0);
+  // const updateCount = useRef(0);
   //#endregion
 
   //#region UseEffects
@@ -75,30 +75,30 @@ export function UserContextProvider({
   useEffect(setPomoInfoOfUnLoggedInUser, [user, pomoInfo]);
 
   //#region To Observe LifeCycle
-  useEffect(() => {
-    console.log(
-      `------------User Context Provider Component was Mounted------------`
-    );
-    console.log("user", user);
-    console.log("pomoInfo", pomoInfo);
-    console.log("mount count", ++mountCount.current);
+  // useEffect(() => {
+  //   console.log(
+  //     `------------User Context Provider Component was Mounted------------`
+  //   );
+  //   console.log("user", user);
+  //   console.log("pomoInfo", pomoInfo);
+  //   console.log("mount count", ++mountCount.current);
 
-    return () => {
-      console.log(
-        `------------User Context Provider Component was unMounted------------`
-      );
-      console.log(user);
-    };
-  }, []);
+  //   return () => {
+  //     console.log(
+  //       `------------User Context Provider Component was unMounted------------`
+  //     );
+  //     console.log(user);
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    console.log(
-      "------------User Context Provider Component was updated------------"
-    );
-    console.log("user", user);
-    console.log("pomoInfo", pomoInfo);
-    console.log("render count", ++updateCount.current);
-  });
+  // useEffect(() => {
+  //   console.log(
+  //     "------------User Context Provider Component was updated------------"
+  //   );
+  //   console.log("user", user);
+  //   console.log("pomoInfo", pomoInfo);
+  //   console.log("render count", ++updateCount.current);
+  // });
   //#endregion
 
   //#endregion
