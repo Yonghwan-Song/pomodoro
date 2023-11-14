@@ -7,10 +7,15 @@ type GridItemType = {
   columnEnd?: number;
   rowStart?: number;
   rowEnd?: number;
+  minWidth?: number;
+  minHeight?: number;
 };
 
 export const StyledGridItem = styled.div<GridItemType>`
-  min-width: 0px;
+  /* align-self: center;
+  justify-self: center; */
+  min-width: ${({ minWidth }) => minWidth + "px"};
+  min-height: ${({ minHeight }) => minHeight + "px"};
   text-align: ${({ textAlign }) => textAlign};
   background-color: ${({ backgroundColor }) => backgroundColor};
   ${({ columnStart }) =>

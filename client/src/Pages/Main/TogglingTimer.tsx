@@ -1,11 +1,10 @@
 import { PatternTimer } from "../../Components/PatternTimer/PatternTimer";
 import { PatternTimerVVV } from "../../Components/PatternTimer/PatternTimer_v";
-import { StatesType } from "../..";
-import { RecType } from "../../types/clientStatesType";
+import { RecType, TimersStatesType } from "../../types/clientStatesType";
 
 type TogglingTimerProps = {
   toggle: boolean;
-  statesRelatedToTimer: StatesType | {};
+  statesRelatedToTimer: TimersStatesType | {};
   pomoDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;

@@ -6,9 +6,11 @@ import {
   stopCountDownInBackground,
 } from "../..";
 import { useUserContext } from "../../Context/UserContext";
-import { PomoSettingType } from "../../types/clientStatesType";
+import {
+  PomoSettingType,
+  TimersStatesType,
+} from "../../types/clientStatesType";
 import { useAuthContext } from "../../Context/AuthContext";
-import { StatesType } from "../..";
 import RecOfToday from "../../Components/RecOfToday/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
 import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
@@ -19,7 +21,7 @@ import { deciderOfWhetherUserDataFetchedCompletely } from "../..";
 export default function Main() {
   const { user } = useAuthContext()!;
   const [statesRelatedToTimer, setStatesRelatedToTimer] = useState<
-    StatesType | {} | null
+    TimersStatesType | {} | null
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
   const [toggle, setToggle] = useState(false);
@@ -60,14 +62,16 @@ export default function Main() {
 
   useEffect(endTimerInBackground, [statesRelatedToTimer]);
 
-  useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);
+  //TODO: pomoInfo가 변하면, 결국 pomoSetting이 변하든 autoStartSetting이 변하든, 즉각 즉각 idb statesStore에 반영을 해 줘야 하는데, 그거를 왜 이제와서 여기에서 했는지 잘 모르겠네.
+  //TODO: setPomoInfo call할 때 거기에서 바로 save해줘야 하는 거 아니야?
+  // useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);
   //#endregion
 
   //#region Side Effect Callbacks
   function endTimerInBackground() {
     statesRelatedToTimer !== null &&
       Object.keys(statesRelatedToTimer).length !== 0 &&
-      (statesRelatedToTimer as StatesType).running &&
+      (statesRelatedToTimer as TimersStatesType).running &&
       stopCountDownInBackground();
   }
 

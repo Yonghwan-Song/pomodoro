@@ -12,6 +12,8 @@ export type PatternTimerStatesType = {
   repetitionCount: number;
 };
 
+export type TimersStatesType = TimerStateType & PatternTimerStatesType;
+
 export type PomoSettingType = {
   pomoDuration: number;
   shortBreakDuration: number;
@@ -19,9 +21,15 @@ export type PomoSettingType = {
   numOfPomo: number;
 };
 
+export type AutoStartSettingType = {
+  doesPomoStartAutomatically: boolean;
+  doesBreakStartAutomatically: boolean;
+};
+
 export type RequiredStatesToRunTimerType = {
   pomoSetting: PomoSettingType;
-  timersStates: TimerStateType & PatternTimerStatesType;
+  timersStates: TimersStatesType;
+  autoStartSetting: AutoStartSettingType;
 };
 
 export type RecType = Omit<TimerStateType, "running"> & {

@@ -24,7 +24,7 @@ export const URLs = {
   RECORD_OF_TODAY: "https://pomodoro-apis.onrender.com/recordOfToday",
 };
 
-export const IDB_VERSION = 6;
+export const IDB_VERSION = 7;
 const cacheVersion = 1;
 export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion

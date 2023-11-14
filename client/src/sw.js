@@ -9,6 +9,12 @@ import { pubsub } from "./pubsub";
 let DB = null;
 let CACHE = null;
 const BC = new BroadcastChannel("pomodoro");
+const SESSION = {
+  POMO: 1,
+  SHORT_BREAK: 2,
+  LAST_POMO: 3,
+  LONG_BREAK: 4,
+};
 
 const getIdTokenAndEmail = () => {
   return new Promise((res, rej) => {
@@ -49,7 +55,7 @@ self.addEventListener("activate", (ev) => {
   );
 });
 
-self.addEventListener("message", (ev) => {
+self.addEventListener("message", async (ev) => {
   if (typeof ev.data === "object" && ev.data !== null) {
     const { action, payload } = ev.data;
 
@@ -60,7 +66,7 @@ self.addEventListener("message", (ev) => {
 
       // not used anymore. Instead, we use countDown() in the index.tsx
       case "countDown":
-        countDown(payload, ev.source.id);
+        // countDown(payload, ev.source.id);
         break;
 
       case "emptyStateStore":
@@ -74,7 +80,7 @@ self.addEventListener("message", (ev) => {
         break;
 
       case "endTimer":
-        goNext(payload);
+        await goNext(payload);
         break;
 
       default:
@@ -168,37 +174,37 @@ async function saveStates(data) {
 }
 
 // If the timer was running in the timer page, continue to count down the timer.
-async function countDown(setIntervalId, clientId) {
-  try {
-    let db = DB || (await openIndexedDB());
-    const store = db.transaction("stateStore").objectStore("stateStore");
-    let states = (await store.getAll()).reduce((acc, cur) => {
-      return { ...acc, [cur.name]: cur.value };
-    }, {});
-    if (states.running && setIntervalId === null) {
-      let client = await self.clients.get(clientId);
-      let idOfSetInterval = setInterval(() => {
-        let remainingDuration = Math.floor(
-          (states.duration * 60 * 1000 -
-            (Date.now() - states.startTime - states.pause.totalLength)) /
-            1000
-        );
-        console.log("count down remaining duration", remainingDuration);
-        if (remainingDuration <= 0) {
-          console.log("idOfSetInterval", idOfSetInterval);
-          clearInterval(idOfSetInterval);
-          client.postMessage({ timerHasEnded: "clearLocalStorage" });
-          console.log("states in countDown() - ", states);
-          goNext(states, clientId);
-        }
-      }, 500);
+// async function countDown(setIntervalId, clientId) {
+//   try {
+//     let db = DB || (await openIndexedDB());
+//     const store = db.transaction("stateStore").objectStore("stateStore");
+//     let states = (await store.getAll()).reduce((acc, cur) => {
+//       return { ...acc, [cur.name]: cur.value };
+//     }, {});
+//     if (states.running && setIntervalId === null) {
+//       let client = await self.clients.get(clientId);
+//       let idOfSetInterval = setInterval(() => {
+//         let remainingDuration = Math.floor(
+//           (states.duration * 60 * 1000 -
+//             (Date.now() - states.startTime - states.pause.totalLength)) /
+//             1000
+//         );
+//         console.log("count down remaining duration", remainingDuration);
+//         if (remainingDuration <= 0) {
+//           console.log("idOfSetInterval", idOfSetInterval);
+//           clearInterval(idOfSetInterval);
+//           client.postMessage({ timerHasEnded: "clearLocalStorage" });
+//           console.log("states in countDown() - ", states);
+//           goNext(states, clientId);
+//         }
+//       }, 500);
 
-      client.postMessage({ idOfSetInterval });
-    }
-  } catch (error) {
-    console.warn(error);
-  }
-}
+//       client.postMessage({ idOfSetInterval });
+//     }
+//   } catch (error) {
+//     console.warn(error);
+//   }
+// }
 
 /**
  * purpose: to make TimerRelatedStates in the index.tsx be assigned an empty object.
@@ -217,61 +223,62 @@ async function emptyStateStore(clientId) {
     console.log("stateStore has been cleared");
 
     let client = await self.clients.get(clientId);
-    client.postMessage({}); //TODO: 이거 아직도 필요한가?...
+    client.postMessage({}); //TODO: 이거 아직도 필요한가?... -> 딱히 이거 받아다가 뭘 하지를 않는데 그냥 지우지는 말자. (navigator.serviceWorker.addEventListener "message"에서 else)
   } catch (error) {
     console.warn(error);
   }
 }
 
-// Purpose: to decide whether the the following duration is a pomo or break.
-async function goNext(states) {
-  console.log(
-    "states as a parameter in goNext(): Before Destructuring- ",
-    states
-  );
-  let {
-    duration,
-    repetitionCount,
-    running,
-    pomoSetting: {
-      pomoDuration,
-      shortBreakDuration,
-      longBreakDuration,
-      numOfPomo,
-    },
+//
+/**
+ * Purpose: 1. states를 가공 2. 가공된 states를 가지고 wrapUpSession을 호출.
+ * @param {*} payload timersStates and pomoSetting of the session that was just finished.
+ */
+async function goNext(payload) {
+  console.log("payload", payload);
+  let { pomoSetting, ...timersStates } = payload;
+  console.log("pomoSetting", pomoSetting);
+  console.log("timersStates", timersStates);
+  let { duration, repetitionCount, pause, startTime } = timersStates;
+
+  const sessionData = {
     pause,
     startTime,
-  } = states;
-  console.log("pomoDuration", pomoDuration);
-  console.log("shortBreakDuration", shortBreakDuration);
-  console.log("longBreakDuratin", longBreakDuration);
-  console.log("numOfPomo", numOfPomo);
-  console.log(
-    "states as a parameter in goNext(): After Destructuring- ",
-    states
-  );
-
-  //TODO: why am I deleting these properties?
-  delete states.duration;
-  delete states.repetitionCount;
-  delete states.running;
-  delete states.pomoSetting;
-  const endTime = startTime + pause.totalLength + duration * 60 * 1000;
-  const sessionData = {
-    ...states,
-    endTime,
+    endTime: startTime + pause.totalLength + duration * 60 * 1000,
     timeCountedDown: duration,
   };
-  console.log("sessionData - ", sessionData);
 
-  repetitionCount++;
-  running = false;
-  pause = { totalLength: 0, record: [] };
+  wrapUpSession({
+    session: identifySession({
+      howManyCountdown: repetitionCount + 1,
+      numOfPomo: pomoSetting.numOfPomo,
+    }),
+    timersStates,
+    pomoSetting,
+    sessionData,
+  });
+}
 
-  await persistStates([
+// Purpose: 방금 종료된 세션의 종류에 따라 호출하는 함수와 그 함수의 argument들이 약간 다르다.
+async function wrapUpSession({
+  session,
+  timersStates,
+  pomoSetting,
+  sessionData,
+}) {
+  let timersStatesForNextSession = { ...timersStates };
+  // reset TimerState
+  timersStatesForNextSession.running = false;
+  timersStatesForNextSession.startTime = 0;
+  timersStatesForNextSession.pause = { totalLength: 0, record: [] };
+  // PatternTimerStates - 1. repetitionCount: new cycle의 경우를 제외하고는 모두 1 더하면 되기 때문에 여기에서 미리 처리.
+  //                      2. duration: 방금 끝난 세션의 종류에 따라 달라지기 때문에 각 case에서 처리.
+  timersStatesForNextSession.repetitionCount++;
+
+  const arrOfStatesOfTimerReset = [
     {
       name: "running",
-      value: running,
+      value: false,
     },
     {
       name: "startTime",
@@ -279,131 +286,177 @@ async function goNext(states) {
     },
     {
       name: "pause",
-      value: pause,
+      value: { totalLength: 0, record: [] },
     },
-    {
-      name: "repetitionCount",
-      value: repetitionCount,
-    },
-  ]);
+  ];
+  BC.postMessage({ evName: "makeSound", payload: null });
 
-  // let idTokenAndEmail = await getIdTokenAndEmail();
-
-  if (repetitionCount < numOfPomo * 2 - 1) {
-    if (repetitionCount % 2 === 1) {
-      console.log("1");
-      console.log("SB - ", shortBreakDuration);
-      //This is when a pomo, which is not the last one of a cycle, is completed.
-      BC.postMessage({ evName: "makeSound", payload: null });
+  switch (session) {
+    case SESSION.POMO:
       self.registration.showNotification("shortBreak", {
         body: "time to take a short break",
         silent: true,
       });
 
-      await recordPomo(duration, startTime);
-      await persistStates([
+      timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
+
+      await recordPomo(timersStates.duration, timersStates.startTime);
+
+      await persistStatesToIDB([
+        ...arrOfStatesOfTimerReset,
+        {
+          name: "repetitionCount",
+          value: timersStatesForNextSession.repetitionCount,
+        },
         {
           name: "duration",
-          value: shortBreakDuration,
+          value: timersStatesForNextSession.duration,
         },
       ]);
-      await persistSession("pomo", sessionData);
-      updateTimersStates({
-        running,
-        startTime: 0,
-        pause,
-        repetitionCount,
-        duration: shortBreakDuration,
-      });
+
+      await persistSessionToIDB("pomo", sessionData);
+
+      updateTimersStates(timersStatesForNextSession);
+
       persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
 
-      // console.log(await getIdTokenAndEmail());
-    } else {
-      console.log("2");
-      console.log("P - ", pomoDuration);
-      //* This is when a short break is done.
-      BC.postMessage({ evName: "makeSound", payload: null });
+      BC.postMessage({
+        evName: "autoStartNextSession",
+        payload: {
+          timersStates: timersStatesForNextSession,
+          pomoSetting: pomoSetting,
+          kind: "break",
+          endTime: sessionData.endTime,
+        },
+      });
+
+      break;
+
+    case SESSION.SHORT_BREAK:
       self.registration.showNotification("pomo", {
         body: "time to focus",
         silent: true,
       });
-      await persistStates([
+
+      timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+
+      await persistStatesToIDB([
+        ...arrOfStatesOfTimerReset,
+        {
+          name: "repetitionCount",
+          value: timersStatesForNextSession.repetitionCount,
+        },
         {
           name: "duration",
-          value: pomoDuration,
+          value: timersStatesForNextSession.duration,
         },
       ]);
-      await persistSession("break", sessionData);
 
-      updateTimersStates({
-        running,
-        startTime: 0,
-        pause,
-        repetitionCount,
-        duration: pomoDuration,
-      });
+      await persistSessionToIDB("break", sessionData);
+
+      updateTimersStates(timersStatesForNextSession);
+
       persistRecOfTodayToServer({ kind: "break", ...sessionData });
-    }
-  } else if (repetitionCount === numOfPomo * 2 - 1) {
-    console.log("3");
-    console.log("LB - ", longBreakDuration);
-    //This is when the last pomo of a cycle is completed.
-    BC.postMessage({ evName: "makeSound", payload: null });
-    self.registration.showNotification("longBreak", {
-      body: "time to take a long break",
-      silent: true,
-    });
-    await recordPomo(duration, startTime);
-    await persistStates([
-      {
-        name: "duration",
-        value: longBreakDuration,
-      },
-    ]);
-    await persistSession("pomo", sessionData);
-    updateTimersStates({
-      running,
-      startTime: 0,
-      pause,
-      repetitionCount,
-      duration: longBreakDuration,
-    });
-    persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
-  } else if (repetitionCount === numOfPomo * 2) {
-    console.log("4");
-    console.log("P - ", pomoDuration);
-    //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
-    BC.postMessage({ evName: "makeSound", payload: null });
-    self.registration.showNotification("nextCycle", {
-      body: "time to do the next cycle of pomos",
-      silent: true,
-    });
-    await persistStates([
-      {
-        name: "duration",
-        value: pomoDuration,
-      },
-      {
-        name: "repetitionCount",
-        value: 0,
-      },
-    ]);
-    await persistSession("break", sessionData);
-    updateTimersStates({
-      running,
-      startTime: 0,
-      pause,
-      repetitionCount: 0,
-      duration: pomoDuration,
-    });
-    persistRecOfTodayToServer({ kind: "break", ...sessionData });
-  } else {
-    console.log("5");
+
+      BC.postMessage({
+        evName: "autoStartNextSession",
+        payload: {
+          timersStates: timersStatesForNextSession,
+          pomoSetting: pomoSetting,
+          kind: "pomo",
+          endTime: sessionData.endTime,
+        },
+      });
+
+      break;
+
+    case SESSION.LAST_POMO:
+      self.registration.showNotification("longBreak", {
+        body: "time to take a long break",
+        silent: true,
+      });
+
+      timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
+
+      await recordPomo(timersStates.duration, timersStates.startTime);
+
+      await persistStatesToIDB([
+        ...arrOfStatesOfTimerReset,
+        {
+          name: "repetitionCount",
+          value: timersStatesForNextSession.repetitionCount,
+        },
+        {
+          name: "duration",
+          value: timersStatesForNextSession.duration,
+        },
+      ]);
+
+      await persistSessionToIDB("pomo", sessionData);
+
+      updateTimersStates(timersStatesForNextSession);
+
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
+
+      // 이거의 위치를 어떻게 놔야할지 잘 모르겠네...
+      BC.postMessage({
+        evName: "autoStartNextSession",
+        payload: {
+          timersStates: timersStatesForNextSession,
+          pomoSetting: pomoSetting,
+          kind: "break",
+          endTime: sessionData.endTime,
+        },
+      });
+
+      break;
+
+    case SESSION.LONG_BREAK:
+      self.registration.showNotification("nextCycle", {
+        body: "time to do the next cycle of pomos",
+        silent: true,
+      });
+
+      timersStatesForNextSession.repetitionCount = 0;
+      timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+
+      await persistStatesToIDB([
+        ...arrOfStatesOfTimerReset,
+        {
+          name: "repetitionCount",
+          value: timersStatesForNextSession.repetitionCount,
+        },
+        {
+          name: "duration",
+          value: timersStatesForNextSession.duration,
+        },
+      ]);
+
+      await persistSessionToIDB("break", sessionData);
+
+      updateTimersStates(timersStatesForNextSession);
+
+      persistRecOfTodayToServer({ kind: "break", ...sessionData });
+
+      BC.postMessage({
+        evName: "autoStartNextSession",
+        payload: {
+          timersStates: timersStatesForNextSession,
+          pomoSetting: pomoSetting,
+          kind: "pomo",
+          endTime: sessionData.endTime,
+        },
+      });
+
+      break;
+
+    default:
+      break;
   }
 }
 
 // same as the one in the src/index.tsx
-async function persistSession(kind, data) {
+async function persistSessionToIDB(kind, data) {
   try {
     let db = DB || (await openIndexedDB());
     const store = db
@@ -422,7 +475,7 @@ async function persistSession(kind, data) {
   }
 }
 
-async function persistStates(stateArr) {
+async function persistStatesToIDB(stateArr) {
   try {
     let db = DB || (await openIndexedDB());
     const store = db
@@ -557,5 +610,20 @@ async function persistRecOfTodayToServer(record) {
     }
   } catch (error) {
     console.warn(error);
+  }
+}
+
+function identifySession({ howManyCountdown, numOfPomo }) {
+  if (howManyCountdown < numOfPomo * 2 - 1 && howManyCountdown % 2 === 1) {
+    return SESSION.POMO;
+  } else if (
+    howManyCountdown < numOfPomo * 2 - 1 &&
+    howManyCountdown % 2 === 0
+  ) {
+    return SESSION.SHORT_BREAK;
+  } else if (howManyCountdown === numOfPomo * 2 - 1) {
+    return SESSION.LAST_POMO;
+  } else {
+    return SESSION.LONG_BREAK;
   }
 }

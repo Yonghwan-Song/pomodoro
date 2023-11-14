@@ -10,12 +10,15 @@ import {
   TimerStateType,
   PatternTimerStatesType,
   RecType,
+  AutoStartSettingType,
+  TimersStatesType,
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
 import { CacheName, IDB_VERSION } from "./constants";
 import { pubsub } from "./pubsub";
-import { User } from "firebase/auth";
+import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
+import { auth } from "./firebase";
 import axios from "axios";
 import * as CONSTANTS from "./constants";
 
@@ -24,7 +27,12 @@ interface TimerRelatedDB extends DBSchema {
   stateStore: {
     value: {
       name: string;
-      value: number | boolean | PauseType | PomoSettingType;
+      value:
+        | number
+        | boolean
+        | PauseType
+        | PomoSettingType
+        | AutoStartSettingType;
     };
     key: string;
   };
@@ -57,15 +65,20 @@ export type dataCombinedFromIDB = {
   duration: number;
   repetitionCount: number;
   pomoSetting: PomoSettingType;
+  autoStartSetting: AutoStartSettingType;
 };
-export type StatesType = Omit<dataCombinedFromIDB, "pomoSetting">;
 //#endregion
 
 //#region var and const
 export let SW: ServiceWorker | null = null;
 export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let DynamicCache: Cache | null = null;
-export let TimerRelatedStates: StatesType | null = null;
+export let TimerRelatedStates: TimersStatesType | null = null;
+
+let autoStartSetting: AutoStartSettingType | null = null;
+pubsub.subscribe("updateAutoStartSetting", (data) => {
+  autoStartSetting = data;
+});
 
 //
 export let deciderOfWhetherUserDataFetchedCompletely: [boolean, boolean] = [
@@ -104,13 +117,62 @@ root.render(
   </BrowserRouter>
 );
 //#region event handlers
-BC.addEventListener("message", (ev) => {
+BC.addEventListener("message", async (ev) => {
   const { evName, payload } = ev.data;
   console.log("payload of BC", payload);
   if (evName === "pomoAdded") {
     pubsub.publish(evName, payload);
   } else if (evName === "makeSound") {
     makeSound();
+  } else if (evName === "autoStartNextSession") {
+    let { timersStates, pomoSetting, kind, endTime } = payload;
+
+    if (autoStartSetting !== null) {
+      if (timersStates.repetitionCount !== 0) {
+        if (kind === "pomo" && autoStartSetting.doesPomoStartAutomatically) {
+          autoStartNextSession({
+            timersStates,
+            pomoSetting,
+            endTimeOfPrevSession: endTime,
+          });
+        }
+
+        if (kind === "break" && autoStartSetting.doesBreakStartAutomatically) {
+          autoStartNextSession({
+            timersStates,
+            pomoSetting,
+            endTimeOfPrevSession: endTime,
+          });
+        }
+      }
+    } else {
+      let statesFromIDB = await obtainStatesFromIDB("withPomoSetting");
+      if (Object.entries(statesFromIDB).length !== 0) {
+        autoStartSetting = (statesFromIDB as dataCombinedFromIDB)
+          .autoStartSetting;
+
+        if (timersStates.repetitionCount !== 0) {
+          if (kind === "pomo" && autoStartSetting.doesPomoStartAutomatically) {
+            autoStartNextSession({
+              timersStates,
+              pomoSetting,
+              endTimeOfPrevSession: endTime,
+            });
+          }
+
+          if (
+            kind === "break" &&
+            autoStartSetting.doesBreakStartAutomatically
+          ) {
+            autoStartNextSession({
+              timersStates,
+              pomoSetting,
+              endTimeOfPrevSession: endTime,
+            });
+          }
+        }
+      }
+    }
   }
 });
 
@@ -134,7 +196,45 @@ window.addEventListener("beforeunload", async (event) => {
 });
 //#endregion
 
-//#region
+//#region utility functions
+// This accepts idToken as its first unlike `updateTimersStates()`'s first arg is User.
+export async function updateTimersStates_with_token({
+  idToken,
+  states,
+}: {
+  idToken: string;
+  states: Partial<PatternTimerStatesType> & TimerStateType;
+}) {
+  try {
+    // caching
+    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let pomoSettingAndTimersStatesResponse = await cache.match(
+      CONSTANTS.URLs.USER
+    );
+    if (pomoSettingAndTimersStatesResponse !== undefined) {
+      let pomoSettingAndTimersStates =
+        await pomoSettingAndTimersStatesResponse.json();
+      pomoSettingAndTimersStates.timersStates = states;
+      await cache.put(
+        CONSTANTS.URLs.USER,
+        new Response(JSON.stringify(pomoSettingAndTimersStates))
+      );
+    }
+
+    const res = await axios.put(
+      CONSTANTS.URLs.USER + `/updateTimersStates`,
+      { states },
+      {
+        headers: {
+          Authorization: "Bearer " + idToken,
+        },
+      }
+    );
+    console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
+  } catch (err) {
+    console.warn(err);
+  }
+}
 export async function updateTimersStates(
   user: User,
   states: Partial<PatternTimerStatesType> & TimerStateType
@@ -147,7 +247,7 @@ export async function updateTimersStates(
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
-        await pomoSettingAndTimersStatesResponse.json();
+        await pomoSettingAndTimersStatesResponse.json(); // returns a JS object.
       pomoSettingAndTimersStates.timersStates = states;
       await cache.put(
         CONSTANTS.URLs.USER,
@@ -165,14 +265,51 @@ export async function updateTimersStates(
         },
       }
     );
-    console.log("res obj.data in updateTimersStates ===>", res.data);
+    console.log("res.data in updateTimersStates ===>", res.data);
   } catch (err) {
     console.warn(err);
   }
 }
-//#endregion
 
-//#region
+export async function updateAutoStartSetting(
+  user: User,
+  autoStartSetting: AutoStartSettingType
+) {
+  try {
+    // caching
+    //TODO: 사실 이거 만약에 PUT이 fail하면 바로 불일치 생기는거야.
+    //?     그런데 왠지 모르게 저 Request가 성공했는지 여부를 Response의
+    //?     status로 확인 할 수 있잖아. 그런데 그렇게하면 뭔가 페이지 이동하거나 할때
+    //?     삑 날것 같아서 그랬어. e.g 시작 버튼 누르고 곧바로 뭐 다른 페이지로 이동한다거나
+    //!     그러니까 이거다. update을 하고(e.g. start pomo)존나 빨리
+    //!     cache를 사용하게 되는 경우가 있을지 찾아봐
+    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let pomoInfoResponse = await cache.match(CONSTANTS.URLs.USER);
+    if (pomoInfoResponse !== undefined) {
+      let pomoInfo = await pomoInfoResponse.json();
+      pomoInfo.autoStartSetting = autoStartSetting;
+      await cache.put(
+        CONSTANTS.URLs.USER,
+        new Response(JSON.stringify(pomoInfo))
+      );
+    }
+
+    const idToken = await user.getIdToken();
+    const res = await axios.put(
+      CONSTANTS.URLs.USER + "/updateAutoStartSetting",
+      { autoStartSetting: autoStartSetting },
+      {
+        headers: {
+          Authorization: "Bearer " + idToken,
+        },
+      }
+    );
+    console.log("res.data in updateAutoStartSetting ===>", res.data);
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
 function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
@@ -283,7 +420,7 @@ async function openIndexedDB() {
 
 export async function obtainStatesFromIDB(
   opt: "withoutPomoSetting"
-): Promise<StatesType | {}>;
+): Promise<TimersStatesType | {}>;
 export async function obtainStatesFromIDB(
   opt: "withPomoSetting"
 ): Promise<dataCombinedFromIDB | {}>;
@@ -340,13 +477,16 @@ export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   return allSessions;
 }
 
-export async function persistSingleTodaySessionToIDB(
-  kind: "pomo" | "break",
+export async function persistSingleTodaySessionToIDB({
+  kind,
+  data,
+}: {
+  kind: "pomo" | "break";
   data: Omit<TimerStateType, "running"> & {
     endTime: number;
     timeCountedDown: number;
-  }
-) {
+  };
+}) {
   let db = DB || (await openIndexedDB());
   const store = db
     .transaction("recOfToday", "readwrite")
@@ -424,16 +564,15 @@ export async function emptyRecOfToday() {
   }
 }
 
-export function postMsgToSW(
-  action:
-    | "saveStates"
-    | "sendDataToIndexAndCountDown"
-    | "emptyStateStore"
-    | "stopCountdown"
-    | "countDown"
-    | "endTimer",
-  payload: any
-) {
+export type ActionType =
+  | "saveStates"
+  | "sendDataToIndexAndCountDown"
+  | "emptyStateStore"
+  | "stopCountdown"
+  // | "countDown" // not used anymore
+  | "endTimer";
+
+export function postMsgToSW(action: ActionType, payload: any) {
   if (SW !== null && SW.state !== "redundant") {
     console.log(`SW !== null && SW.state !== "redundant"`, SW);
     SW.postMessage({ action, payload });
@@ -468,18 +607,30 @@ export function stopCountDownInBackground() {
   }
 }
 
-// TODO: type narrowing
+/**
+ *  At the end, we need to run timer right here though we get a message from SW to run it.
+ ** But then basically what do we need to run timer?..
+ *! The timersStates
+ */
 export async function countDown(setIntervalId: number | string | null) {
-  let states = await obtainStatesFromIDB("withPomoSetting");
-  console.log("states in countDown()", states);
-  if (Object.entries(states).length !== 0) {
-    if ((states as dataCombinedFromIDB).running && setIntervalId === null) {
+  let timersStates = await obtainStatesFromIDB("withPomoSetting");
+
+  console.log("states in countDown()", timersStates);
+
+  if (Object.entries(timersStates).length !== 0) {
+    //* 1. 만약 Main과 그 children들에 의해 한 session이 시작되었고,
+    //* 2. backbround에서 돌아가고 있지 않으면
+    //*   (사실.. background는 아님.. 원래는 sw.js에서 돌려서 background가 맞았는데 이게 몇초 이내에 지맘대로 꺼져서.. 결국 main thread(index.tsx파일에서..?)돌리게 되었기 때문)
+    if (
+      DoesTimerStarted(timersStates as dataCombinedFromIDB) && //* 1.
+      timerIsNotRunningInBackground() //* 2.
+    ) {
       let idOfSetInterval = setInterval(() => {
         let remainingDuration = Math.floor(
-          ((states as dataCombinedFromIDB).duration * 60 * 1000 -
+          ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
             (Date.now() -
-              (states as dataCombinedFromIDB).startTime -
-              (states as dataCombinedFromIDB).pause.totalLength)) /
+              (timersStates as dataCombinedFromIDB).startTime -
+              (timersStates as dataCombinedFromIDB).pause.totalLength)) /
             1000
         );
         console.log("count down remaining duration", remainingDuration);
@@ -487,12 +638,29 @@ export async function countDown(setIntervalId: number | string | null) {
           console.log("idOfSetInterval", idOfSetInterval);
           clearInterval(idOfSetInterval);
           localStorage.removeItem("idOfSetInterval");
-          postMsgToSW("endTimer", states);
+          console.log(
+            "-------------------------------------About To Call EndTimer()-------------------------------------"
+          );
+          postMsgToSW("endTimer", timersStates);
         }
       }, 500);
 
       localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
     }
+  }
+
+  /**
+   * 뭘 의미하는 거지?
+   * 예를들면, 1)"/timer" -> 2)"/statistics" -> 3)"/settings" 이렇게 차례대로 페이지들을 방문한다고 할 때,
+   * 2)에서 countDown한번 call되고, 3)에서 한번 더 call된다.
+   * 이 때 중복으로 run 하지 않게 하려고.
+   */
+  function timerIsNotRunningInBackground() {
+    return setIntervalId === null;
+  }
+
+  function DoesTimerStarted(timersStates: dataCombinedFromIDB) {
+    return timersStates.running;
   }
 }
 
@@ -512,5 +680,123 @@ export async function makeSound() {
   } catch (error) {
     console.warn(error);
   }
+}
+
+// 시작한다는 의미 <=> 결국 TimersStates를 update한다음에
+// 이거를
+// 1. persist locally
+// 2. persist remotely
+// async function autoStartNextSession(
+//   timersStates: TimerStateType & PatternTimerStatesType
+
+// )
+async function autoStartNextSession({
+  timersStates,
+  pomoSetting,
+  endTimeOfPrevSession,
+}: {
+  timersStates: TimerStateType & PatternTimerStatesType;
+  pomoSetting: PomoSettingType;
+  endTimeOfPrevSession: number;
+}) {
+  console.log("moment when autoStartNextSession starts", new Date());
+  timersStates.startTime = endTimeOfPrevSession;
+  timersStates.running = true;
+
+  // 1. persist locally.
+  // Problem:  We don't need to do assign this job to SW.
+  // It might be not enough fast since there are some steps to be done
+  // before the APIs of indexed db are actually called.
+  postMsgToSW("saveStates", {
+    stateArr: [
+      { name: "startTime", value: timersStates.startTime },
+      { name: "running", value: timersStates.running },
+      { name: "pause", value: timersStates.pause },
+    ],
+  });
+
+  // The Issue that currently is occuring
+  // 1. start a session in "/timer"
+  // 2. navigate to "/statistics"
+  // 3. the session ends
+  // 4. move to "/timer" and you see the next session has started by the autoStartNextSession() in index.tsx
+  // 5. refresh
+  // 6. the next session starts over.
+  //
+  // What it menas:
+  // the timersStates fetched from server is not same as the timersStates stored in idb before refreshing.
+
+  // 2. persist remotely.
+  let idTokenAndEmail = await obtainIdToken();
+  if (idTokenAndEmail) {
+    const { idToken } = idTokenAndEmail;
+    updateTimersStates_with_token({
+      idToken: idToken,
+      states: {
+        startTime: timersStates.startTime,
+        running: timersStates.running,
+        pause: timersStates.pause,
+      },
+    });
+  }
+
+  let idOfSetInterval = setInterval(() => {
+    let remainingDuration = Math.floor(
+      ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
+        (Date.now() -
+          (timersStates as dataCombinedFromIDB).startTime -
+          (timersStates as dataCombinedFromIDB).pause.totalLength)) /
+        1000
+    );
+    console.log("count down remaining duration", remainingDuration);
+    if (remainingDuration <= 0) {
+      console.log("idOfSetInterval", idOfSetInterval);
+      clearInterval(idOfSetInterval);
+      localStorage.removeItem("idOfSetInterval");
+      console.log(
+        "-------------------------------------About To Call EndTimer()-------------------------------------"
+      );
+      postMsgToSW("endTimer", { pomoSetting, ...timersStates });
+    }
+  }, 500);
+
+  localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+  // let timePassed = Date.now() - timersStates.startTime;
+  // let timeSpentOnSessionExcludingPause =
+  //   timePassed - timersStates.pause.totalLength; // milliseconds
+
+  // let idOfSetInterval = setInterval(() => {
+  //   let remainingDurationInSeconds = Math.floor(
+  //     (timersStates.duration * 60 * 1000 - timeSpentOnSessionExcludingPause) /
+  //       1000
+  //   );
+  //   if (remainingDurationInSeconds <= 0) {
+  //     clearInterval(idOfSetInterval);
+  //     localStorage.removeItem("idOfSetInterval");
+  //     postMsgToSW("endTimer", { pomoSetting, ...timersStates }); // pomoSetting should also be sent
+  //   }
+  // }, 500);
+
+  // localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+}
+
+function obtainIdToken(): Promise<{ idToken: string } | null> {
+  return new Promise((res, rej) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      if (user) {
+        getIdToken(user).then(
+          (idToken) => {
+            res({ idToken });
+          },
+          (error) => {
+            res(null);
+          }
+        );
+      } else {
+        res(null);
+      }
+    });
+  });
 }
 //#endregion

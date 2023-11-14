@@ -559,6 +559,42 @@
     return _wrapNativeSuper(Class);
   }
 
+  function _objectWithoutPropertiesLoose(source, excluded) {
+    if (source == null) return {};
+    var target = {};
+    var sourceKeys = Object.keys(source);
+    var key, i;
+
+    for (i = 0; i < sourceKeys.length; i++) {
+      key = sourceKeys[i];
+      if (excluded.indexOf(key) >= 0) continue;
+      target[key] = source[key];
+    }
+
+    return target;
+  }
+
+  function _objectWithoutProperties(source, excluded) {
+    if (source == null) return {};
+
+    var target = _objectWithoutPropertiesLoose(source, excluded);
+
+    var key, i;
+
+    if (Object.getOwnPropertySymbols) {
+      var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+
+      for (i = 0; i < sourceSymbolKeys.length; i++) {
+        key = sourceSymbolKeys[i];
+        if (excluded.indexOf(key) >= 0) continue;
+        if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+        target[key] = source[key];
+      }
+    }
+
+    return target;
+  }
+
   function _assertThisInitialized(self) {
     if (self === void 0) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -13738,7 +13774,7 @@
     POMO: "https://pomodoro-apis.onrender.com/pomos",
     RECORD_OF_TODAY: "https://pomodoro-apis.onrender.com/recordOfToday"
   };
-  var IDB_VERSION = 6;
+  var IDB_VERSION = 7;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
 
@@ -13778,9 +13814,16 @@
     }
   };
 
+  var _excluded = ["pomoSetting"];
   var DB = null;
   var CACHE = null;
   var BC = new BroadcastChannel("pomodoro");
+  var SESSION = {
+    POMO: 1,
+    SHORT_BREAK: 2,
+    LAST_POMO: 3,
+    LONG_BREAK: 4
+  };
 
   var getIdTokenAndEmail = function getIdTokenAndEmail() {
     return new Promise(function (res, rej) {
@@ -13846,135 +13889,160 @@
       }, _callee2);
     }))));
   });
-  self.addEventListener("message", function (ev) {
-    if (_typeof(ev.data) === "object" && ev.data !== null) {
-      var _ev$data = ev.data,
-          action = _ev$data.action,
-          payload = _ev$data.payload;
+  self.addEventListener("message", /*#__PURE__*/function () {
+    var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3(ev) {
+      var _ev$data, action, payload;
 
-      switch (action) {
-        case "saveStates":
-          saveStates(payload);
-          break;
-        // not used anymore. Instead, we use countDown() in the index.tsx
-
-        case "countDown":
-          countDown(payload, ev.source.id);
-          break;
-
-        case "emptyStateStore":
-          emptyStateStore(ev.source.id);
-          break;
-
-        case "stopCountdown":
-          //number로 바꿔야하 하는거 아니야?
-          console.log(payload.idOfSetInterval);
-          clearInterval(payload.idOfSetInterval);
-          break;
-
-        case "endTimer":
-          goNext(payload);
-          break;
-      }
-    }
-  });
-  self.addEventListener("notificationclick", /*#__PURE__*/function () {
-    var _ref3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(ev) {
-      var pm;
-      return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) {
-          switch (_context5.prev = _context5.next) {
+          switch (_context3.prev = _context3.next) {
             case 0:
-              console.log("notification from sw is clicked");
-              ev.notification.close();
-              pm = Promise.resolve().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-                return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-                  while (1) {
-                    switch (_context3.prev = _context3.next) {
-                      case 0:
-                        _context3.next = 2;
-                        return self.clients.matchAll();
+              if (!(_typeof(ev.data) === "object" && ev.data !== null)) {
+                _context3.next = 17;
+                break;
+              }
 
-                      case 2:
-                        return _context3.abrupt("return", _context3.sent);
+              _ev$data = ev.data, action = _ev$data.action, payload = _ev$data.payload;
+              _context3.t0 = action;
+              _context3.next = _context3.t0 === "saveStates" ? 5 : _context3.t0 === "countDown" ? 7 : _context3.t0 === "emptyStateStore" ? 8 : _context3.t0 === "stopCountdown" ? 10 : _context3.t0 === "endTimer" ? 13 : 16;
+              break;
 
-                      case 3:
-                      case "end":
-                        return _context3.stop();
-                    }
-                  }
-                }, _callee3);
-              }))).then( /*#__PURE__*/function () {
-                var _ref5 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4(matchingClients) {
-                  return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-                    while (1) {
-                      switch (_context4.prev = _context4.next) {
-                        case 0:
-                          _context4.next = 2;
-                          return matchingClients[0].focus();
+            case 5:
+              saveStates(payload);
+              return _context3.abrupt("break", 17);
 
-                        case 2:
-                        case "end":
-                          return _context4.stop();
-                      }
-                    }
-                  }, _callee4);
-                }));
+            case 7:
+              return _context3.abrupt("break", 17);
 
-                return function (_x2) {
-                  return _ref5.apply(this, arguments);
-                };
-              }());
-              ev.waitUntil(pm);
+            case 8:
+              emptyStateStore(ev.source.id);
+              return _context3.abrupt("break", 17);
 
-            case 4:
+            case 10:
+              //number로 바꿔야하 하는거 아니야?
+              console.log(payload.idOfSetInterval);
+              clearInterval(payload.idOfSetInterval);
+              return _context3.abrupt("break", 17);
+
+            case 13:
+              _context3.next = 15;
+              return goNext(payload);
+
+            case 15:
+              return _context3.abrupt("break", 17);
+
+            case 16:
+              return _context3.abrupt("break", 17);
+
+            case 17:
             case "end":
-              return _context5.stop();
+              return _context3.stop();
           }
         }
-      }, _callee5);
+      }, _callee3);
     }));
 
     return function (_x) {
       return _ref3.apply(this, arguments);
     };
   }());
-
-  function openCache(_x3) {
-    return _openCache.apply(this, arguments);
-  }
-
-  function _openCache() {
-    _openCache = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(name) {
-      var cache;
+  self.addEventListener("notificationclick", /*#__PURE__*/function () {
+    var _ref4 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee6(ev) {
+      var pm;
       return _regeneratorRuntime().wrap(function _callee6$(_context6) {
         while (1) {
           switch (_context6.prev = _context6.next) {
             case 0:
-              cache = null;
-              _context6.prev = 1;
-              _context6.next = 4;
-              return caches.open(name);
+              console.log("notification from sw is clicked");
+              ev.notification.close();
+              pm = Promise.resolve().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+                return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+                  while (1) {
+                    switch (_context4.prev = _context4.next) {
+                      case 0:
+                        _context4.next = 2;
+                        return self.clients.matchAll();
+
+                      case 2:
+                        return _context4.abrupt("return", _context4.sent);
+
+                      case 3:
+                      case "end":
+                        return _context4.stop();
+                    }
+                  }
+                }, _callee4);
+              }))).then( /*#__PURE__*/function () {
+                var _ref6 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee5(matchingClients) {
+                  return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+                    while (1) {
+                      switch (_context5.prev = _context5.next) {
+                        case 0:
+                          _context5.next = 2;
+                          return matchingClients[0].focus();
+
+                        case 2:
+                        case "end":
+                          return _context5.stop();
+                      }
+                    }
+                  }, _callee5);
+                }));
+
+                return function (_x3) {
+                  return _ref6.apply(this, arguments);
+                };
+              }());
+              ev.waitUntil(pm);
 
             case 4:
-              cache = _context6.sent;
-              _context6.next = 10;
-              break;
-
-            case 7:
-              _context6.prev = 7;
-              _context6.t0 = _context6["catch"](1);
-              console.warn(_context6.t0);
-
-            case 10:
-              return _context6.abrupt("return", cache);
-
-            case 11:
             case "end":
               return _context6.stop();
           }
         }
-      }, _callee6, null, [[1, 7]]);
+      }, _callee6);
+    }));
+
+    return function (_x2) {
+      return _ref4.apply(this, arguments);
+    };
+  }());
+
+  function openCache(_x4) {
+    return _openCache.apply(this, arguments);
+  }
+
+  function _openCache() {
+    _openCache = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(name) {
+      var cache;
+      return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+        while (1) {
+          switch (_context7.prev = _context7.next) {
+            case 0:
+              cache = null;
+              _context7.prev = 1;
+              _context7.next = 4;
+              return caches.open(name);
+
+            case 4:
+              cache = _context7.sent;
+              _context7.next = 10;
+              break;
+
+            case 7:
+              _context7.prev = 7;
+              _context7.t0 = _context7["catch"](1);
+              console.warn(_context7.t0);
+
+            case 10:
+              return _context7.abrupt("return", cache);
+
+            case 11:
+            case "end":
+              return _context7.stop();
+          }
+        }
+      }, _callee7, null, [[1, 7]]);
     }));
     return _openCache.apply(this, arguments);
   }
@@ -13992,13 +14060,13 @@
 
 
   function _openIndexedDB() {
-    _openIndexedDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+    _openIndexedDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
       var db;
-      return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+      return _regeneratorRuntime().wrap(function _callee9$(_context9) {
         while (1) {
-          switch (_context8.prev = _context8.next) {
+          switch (_context9.prev = _context9.next) {
             case 0:
-              _context8.next = 2;
+              _context9.next = 2;
               return openDB$1("timerRelatedDB", IDB_VERSION, {
                 upgrade: function upgrade(db, oldVersion, newVersion, transaction, event) {
                   console.log("DB updated from version", oldVersion, "to", newVersion);
@@ -14023,119 +14091,81 @@
               });
 
             case 2:
-              db = _context8.sent;
+              db = _context9.sent;
 
               db.onclose = /*#__PURE__*/function () {
-                var _ref6 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee7(ev) {
-                  return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+                var _ref9 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(ev) {
+                  return _regeneratorRuntime().wrap(function _callee8$(_context8) {
                     while (1) {
-                      switch (_context7.prev = _context7.next) {
+                      switch (_context8.prev = _context8.next) {
                         case 0:
                           console.log("The database connection was unexpectedly closed", ev);
                           DB = null;
-                          _context7.next = 4;
+                          _context8.next = 4;
                           return openIndexedDB();
 
                         case 4:
-                          DB = _context7.sent;
+                          DB = _context8.sent;
 
                         case 5:
                         case "end":
-                          return _context7.stop();
+                          return _context8.stop();
                       }
                     }
-                  }, _callee7);
+                  }, _callee8);
                 }));
 
                 return function (_x16) {
-                  return _ref6.apply(this, arguments);
+                  return _ref9.apply(this, arguments);
                 };
               }();
 
-              return _context8.abrupt("return", db);
+              return _context9.abrupt("return", db);
 
             case 5:
             case "end":
-              return _context8.stop();
+              return _context9.stop();
           }
         }
-      }, _callee8);
+      }, _callee9);
     }));
     return _openIndexedDB.apply(this, arguments);
   }
 
-  function saveStates(_x4) {
+  function saveStates(_x5) {
     return _saveStates.apply(this, arguments);
   } // If the timer was running in the timer page, continue to count down the timer.
+  // async function countDown(setIntervalId, clientId) {
+  //   try {
+  //     let db = DB || (await openIndexedDB());
+  //     const store = db.transaction("stateStore").objectStore("stateStore");
+  //     let states = (await store.getAll()).reduce((acc, cur) => {
+  //       return { ...acc, [cur.name]: cur.value };
+  //     }, {});
+  //     if (states.running && setIntervalId === null) {
+  //       let client = await self.clients.get(clientId);
+  //       let idOfSetInterval = setInterval(() => {
+  //         let remainingDuration = Math.floor(
+  //           (states.duration * 60 * 1000 -
+  //             (Date.now() - states.startTime - states.pause.totalLength)) /
+  //             1000
+  //         );
+  //         console.log("count down remaining duration", remainingDuration);
+  //         if (remainingDuration <= 0) {
+  //           console.log("idOfSetInterval", idOfSetInterval);
+  //           clearInterval(idOfSetInterval);
+  //           client.postMessage({ timerHasEnded: "clearLocalStorage" });
+  //           console.log("states in countDown() - ", states);
+  //           goNext(states, clientId);
+  //         }
+  //       }, 500);
+  //       client.postMessage({ idOfSetInterval });
+  //     }
+  //   } catch (error) {
+  //     console.warn(error);
+  //   }
+  // }
 
-
-  function _saveStates() {
-    _saveStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10(data) {
-      var db, store;
-      return _regeneratorRuntime().wrap(function _callee10$(_context10) {
-        while (1) {
-          switch (_context10.prev = _context10.next) {
-            case 0:
-              _context10.prev = 0;
-              _context10.t0 = DB;
-
-              if (_context10.t0) {
-                _context10.next = 6;
-                break;
-              }
-
-              _context10.next = 5;
-              return openIndexedDB();
-
-            case 5:
-              _context10.t0 = _context10.sent;
-
-            case 6:
-              db = _context10.t0;
-              store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
-              console.log(data);
-              Array.from(data.stateArr).forEach( /*#__PURE__*/function () {
-                var _ref7 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(obj) {
-                  return _regeneratorRuntime().wrap(function _callee9$(_context9) {
-                    while (1) {
-                      switch (_context9.prev = _context9.next) {
-                        case 0:
-                          _context9.next = 2;
-                          return store.put(obj);
-
-                        case 2:
-                        case "end":
-                          return _context9.stop();
-                      }
-                    }
-                  }, _callee9);
-                }));
-
-                return function (_x17) {
-                  return _ref7.apply(this, arguments);
-                };
-              }());
-              _context10.next = 15;
-              break;
-
-            case 12:
-              _context10.prev = 12;
-              _context10.t1 = _context10["catch"](0);
-              console.warn(_context10.t1);
-
-            case 15:
-            case "end":
-              return _context10.stop();
-          }
-        }
-      }, _callee10, null, [[0, 12]]);
-    }));
-    return _saveStates.apply(this, arguments);
-  }
-
-  function countDown(_x5, _x6) {
-    return _countDown.apply(this, arguments);
-  }
   /**
    * purpose: to make TimerRelatedStates in the index.tsx be assigned an empty object.
    *          why?
@@ -14145,9 +14175,9 @@
    */
 
 
-  function _countDown() {
-    _countDown = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(setIntervalId, clientId) {
-      var db, store, states, client, idOfSetInterval;
+  function _saveStates() {
+    _saveStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(data) {
+      var db, store;
       return _regeneratorRuntime().wrap(function _callee11$(_context11) {
         while (1) {
           switch (_context11.prev = _context11.next) {
@@ -14168,65 +14198,55 @@
 
             case 6:
               db = _context11.t0;
-              store = db.transaction("stateStore").objectStore("stateStore");
-              _context11.next = 10;
-              return store.getAll();
+              store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
+              console.log(data);
+              Array.from(data.stateArr).forEach( /*#__PURE__*/function () {
+                var _ref10 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10(obj) {
+                  return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+                    while (1) {
+                      switch (_context10.prev = _context10.next) {
+                        case 0:
+                          _context10.next = 2;
+                          return store.put(obj);
 
-            case 10:
-              states = _context11.sent.reduce(function (acc, cur) {
-                return _objectSpread2(_objectSpread2({}, acc), {}, _defineProperty({}, cur.name, cur.value));
-              }, {});
+                        case 2:
+                        case "end":
+                          return _context10.stop();
+                      }
+                    }
+                  }, _callee10);
+                }));
 
-              if (!(states.running && setIntervalId === null)) {
-                _context11.next = 17;
-                break;
-              }
-
-              _context11.next = 14;
-              return self.clients.get(clientId);
-
-            case 14:
-              client = _context11.sent;
-              idOfSetInterval = setInterval(function () {
-                var remainingDuration = Math.floor((states.duration * 60 * 1000 - (Date.now() - states.startTime - states.pause.totalLength)) / 1000);
-                console.log("count down remaining duration", remainingDuration);
-
-                if (remainingDuration <= 0) {
-                  console.log("idOfSetInterval", idOfSetInterval);
-                  clearInterval(idOfSetInterval);
-                  client.postMessage({
-                    timerHasEnded: "clearLocalStorage"
-                  });
-                  console.log("states in countDown() - ", states);
-                  goNext(states, clientId);
-                }
-              }, 500);
-              client.postMessage({
-                idOfSetInterval: idOfSetInterval
-              });
-
-            case 17:
-              _context11.next = 22;
+                return function (_x17) {
+                  return _ref10.apply(this, arguments);
+                };
+              }());
+              _context11.next = 15;
               break;
 
-            case 19:
-              _context11.prev = 19;
+            case 12:
+              _context11.prev = 12;
               _context11.t1 = _context11["catch"](0);
               console.warn(_context11.t1);
 
-            case 22:
+            case 15:
             case "end":
               return _context11.stop();
           }
         }
-      }, _callee11, null, [[0, 19]]);
+      }, _callee11, null, [[0, 12]]);
     }));
-    return _countDown.apply(this, arguments);
+    return _saveStates.apply(this, arguments);
   }
 
-  function emptyStateStore(_x7) {
+  function emptyStateStore(_x6) {
     return _emptyStateStore.apply(this, arguments);
-  } // Purpose: to decide whether the the following duration is a pomo or break.
+  } //
+
+  /**
+   * Purpose: 1. states를 가공 2. 가공된 states를 가지고 wrapUpSession을 호출.
+   * @param {*} payload timersStates and pomoSetting of the session that was just finished.
+   */
 
 
   function _emptyStateStore() {
@@ -14263,7 +14283,7 @@
 
             case 13:
               client = _context12.sent;
-              client.postMessage({}); //TODO: 이거 아직도 필요한가?...
+              client.postMessage({}); //TODO: 이거 아직도 필요한가?... -> 딱히 이거 받아다가 뭘 하지를 않는데 그냥 지우지는 말자. (navigator.serviceWorker.addEventListener "message"에서 else)
 
               _context12.next = 20;
               break;
@@ -14283,240 +14303,40 @@
     return _emptyStateStore.apply(this, arguments);
   }
 
-  function goNext(_x8) {
+  function goNext(_x7) {
     return _goNext.apply(this, arguments);
-  } // same as the one in the src/index.tsx
+  } // Purpose: 방금 종료된 세션의 종류에 따라 호출하는 함수와 그 함수의 argument들이 약간 다르다.
 
 
   function _goNext() {
-    _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee13(states) {
-      var duration, repetitionCount, running, _states$pomoSetting, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, pause, startTime, endTime, sessionData;
-
+    _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee13(payload) {
+      var pomoSetting, timersStates, duration, repetitionCount, pause, startTime, sessionData;
       return _regeneratorRuntime().wrap(function _callee13$(_context13) {
         while (1) {
           switch (_context13.prev = _context13.next) {
             case 0:
-              console.log("states as a parameter in goNext(): Before Destructuring- ", states);
-              duration = states.duration, repetitionCount = states.repetitionCount, running = states.running, _states$pomoSetting = states.pomoSetting, pomoDuration = _states$pomoSetting.pomoDuration, shortBreakDuration = _states$pomoSetting.shortBreakDuration, longBreakDuration = _states$pomoSetting.longBreakDuration, numOfPomo = _states$pomoSetting.numOfPomo, pause = states.pause, startTime = states.startTime;
-              console.log("pomoDuration", pomoDuration);
-              console.log("shortBreakDuration", shortBreakDuration);
-              console.log("longBreakDuratin", longBreakDuration);
-              console.log("numOfPomo", numOfPomo);
-              console.log("states as a parameter in goNext(): After Destructuring- ", states); //TODO: why am I deleting these properties?
-
-              delete states.duration;
-              delete states.repetitionCount;
-              delete states.running;
-              delete states.pomoSetting;
-              endTime = startTime + pause.totalLength + duration * 60 * 1000;
-              sessionData = _objectSpread2(_objectSpread2({}, states), {}, {
-                endTime: endTime,
+              console.log("payload", payload);
+              pomoSetting = payload.pomoSetting, timersStates = _objectWithoutProperties(payload, _excluded);
+              console.log("pomoSetting", pomoSetting);
+              console.log("timersStates", timersStates);
+              duration = timersStates.duration, repetitionCount = timersStates.repetitionCount, pause = timersStates.pause, startTime = timersStates.startTime;
+              sessionData = {
+                pause: pause,
+                startTime: startTime,
+                endTime: startTime + pause.totalLength + duration * 60 * 1000,
                 timeCountedDown: duration
-              });
-              console.log("sessionData - ", sessionData);
-              repetitionCount++;
-              running = false;
-              pause = {
-                totalLength: 0,
-                record: []
               };
-              _context13.next = 19;
-              return persistStates([{
-                name: "running",
-                value: running
-              }, {
-                name: "startTime",
-                value: 0
-              }, {
-                name: "pause",
-                value: pause
-              }, {
-                name: "repetitionCount",
-                value: repetitionCount
-              }]);
-
-            case 19:
-              if (!(repetitionCount < numOfPomo * 2 - 1)) {
-                _context13.next = 47;
-                break;
-              }
-
-              if (!(repetitionCount % 2 === 1)) {
-                _context13.next = 35;
-                break;
-              }
-
-              console.log("1");
-              console.log("SB - ", shortBreakDuration); //This is when a pomo, which is not the last one of a cycle, is completed.
-
-              BC.postMessage({
-                evName: "makeSound",
-                payload: null
+              wrapUpSession({
+                session: identifySession({
+                  howManyCountdown: repetitionCount + 1,
+                  numOfPomo: pomoSetting.numOfPomo
+                }),
+                timersStates: timersStates,
+                pomoSetting: pomoSetting,
+                sessionData: sessionData
               });
-              self.registration.showNotification("shortBreak", {
-                body: "time to take a short break",
-                silent: true
-              });
-              _context13.next = 27;
-              return recordPomo(duration, startTime);
 
-            case 27:
-              _context13.next = 29;
-              return persistStates([{
-                name: "duration",
-                value: shortBreakDuration
-              }]);
-
-            case 29:
-              _context13.next = 31;
-              return persistSession("pomo", sessionData);
-
-            case 31:
-              updateTimersStates({
-                running: running,
-                startTime: 0,
-                pause: pause,
-                repetitionCount: repetitionCount,
-                duration: shortBreakDuration
-              });
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "pomo"
-              }, sessionData)); // console.log(await getIdTokenAndEmail());
-
-              _context13.next = 45;
-              break;
-
-            case 35:
-              console.log("2");
-              console.log("P - ", pomoDuration); //* This is when a short break is done.
-
-              BC.postMessage({
-                evName: "makeSound",
-                payload: null
-              });
-              self.registration.showNotification("pomo", {
-                body: "time to focus",
-                silent: true
-              });
-              _context13.next = 41;
-              return persistStates([{
-                name: "duration",
-                value: pomoDuration
-              }]);
-
-            case 41:
-              _context13.next = 43;
-              return persistSession("break", sessionData);
-
-            case 43:
-              updateTimersStates({
-                running: running,
-                startTime: 0,
-                pause: pause,
-                repetitionCount: repetitionCount,
-                duration: pomoDuration
-              });
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "break"
-              }, sessionData));
-
-            case 45:
-              _context13.next = 76;
-              break;
-
-            case 47:
-              if (!(repetitionCount === numOfPomo * 2 - 1)) {
-                _context13.next = 62;
-                break;
-              }
-
-              console.log("3");
-              console.log("LB - ", longBreakDuration); //This is when the last pomo of a cycle is completed.
-
-              BC.postMessage({
-                evName: "makeSound",
-                payload: null
-              });
-              self.registration.showNotification("longBreak", {
-                body: "time to take a long break",
-                silent: true
-              });
-              _context13.next = 54;
-              return recordPomo(duration, startTime);
-
-            case 54:
-              _context13.next = 56;
-              return persistStates([{
-                name: "duration",
-                value: longBreakDuration
-              }]);
-
-            case 56:
-              _context13.next = 58;
-              return persistSession("pomo", sessionData);
-
-            case 58:
-              updateTimersStates({
-                running: running,
-                startTime: 0,
-                pause: pause,
-                repetitionCount: repetitionCount,
-                duration: longBreakDuration
-              });
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "pomo"
-              }, sessionData));
-              _context13.next = 76;
-              break;
-
-            case 62:
-              if (!(repetitionCount === numOfPomo * 2)) {
-                _context13.next = 75;
-                break;
-              }
-
-              console.log("4");
-              console.log("P - ", pomoDuration); //This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
-
-              BC.postMessage({
-                evName: "makeSound",
-                payload: null
-              });
-              self.registration.showNotification("nextCycle", {
-                body: "time to do the next cycle of pomos",
-                silent: true
-              });
-              _context13.next = 69;
-              return persistStates([{
-                name: "duration",
-                value: pomoDuration
-              }, {
-                name: "repetitionCount",
-                value: 0
-              }]);
-
-            case 69:
-              _context13.next = 71;
-              return persistSession("break", sessionData);
-
-            case 71:
-              updateTimersStates({
-                running: running,
-                startTime: 0,
-                pause: pause,
-                repetitionCount: 0,
-                duration: pomoDuration
-              });
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "break"
-              }, sessionData));
-              _context13.next = 76;
-              break;
-
-            case 75:
-              console.log("5");
-
-            case 76:
+            case 7:
             case "end":
               return _context13.stop();
           }
@@ -14526,38 +14346,246 @@
     return _goNext.apply(this, arguments);
   }
 
-  function persistSession(_x9, _x10) {
-    return _persistSession.apply(this, arguments);
-  }
+  function wrapUpSession(_x8) {
+    return _wrapUpSession.apply(this, arguments);
+  } // same as the one in the src/index.tsx
 
-  function _persistSession() {
-    _persistSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee14(kind, data) {
-      var db, store;
+
+  function _wrapUpSession() {
+    _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee14(_ref7) {
+      var session, timersStates, pomoSetting, sessionData, timersStatesForNextSession, arrOfStatesOfTimerReset;
       return _regeneratorRuntime().wrap(function _callee14$(_context14) {
         while (1) {
           switch (_context14.prev = _context14.next) {
             case 0:
-              _context14.prev = 0;
-              _context14.t0 = DB;
+              session = _ref7.session, timersStates = _ref7.timersStates, pomoSetting = _ref7.pomoSetting, sessionData = _ref7.sessionData;
+              timersStatesForNextSession = _objectSpread2({}, timersStates); // reset TimerState
 
-              if (_context14.t0) {
-                _context14.next = 6;
+              timersStatesForNextSession.running = false;
+              timersStatesForNextSession.startTime = 0;
+              timersStatesForNextSession.pause = {
+                totalLength: 0,
+                record: []
+              }; // PatternTimerStates - 1. repetitionCount: new cycle의 경우를 제외하고는 모두 1 더하면 되기 때문에 여기에서 미리 처리.
+              //                      2. duration: 방금 끝난 세션의 종류에 따라 달라지기 때문에 각 case에서 처리.
+
+              timersStatesForNextSession.repetitionCount++;
+              arrOfStatesOfTimerReset = [{
+                name: "running",
+                value: false
+              }, {
+                name: "startTime",
+                value: 0
+              }, {
+                name: "pause",
+                value: {
+                  totalLength: 0,
+                  record: []
+                }
+              }];
+              BC.postMessage({
+                evName: "makeSound",
+                payload: null
+              });
+              _context14.t0 = session;
+              _context14.next = _context14.t0 === SESSION.POMO ? 11 : _context14.t0 === SESSION.SHORT_BREAK ? 23 : _context14.t0 === SESSION.LAST_POMO ? 33 : _context14.t0 === SESSION.LONG_BREAK ? 45 : 56;
+              break;
+
+            case 11:
+              self.registration.showNotification("shortBreak", {
+                body: "time to take a short break",
+                silent: true
+              });
+              timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
+              _context14.next = 15;
+              return recordPomo(timersStates.duration, timersStates.startTime);
+
+            case 15:
+              _context14.next = 17;
+              return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
+                name: "repetitionCount",
+                value: timersStatesForNextSession.repetitionCount
+              }, {
+                name: "duration",
+                value: timersStatesForNextSession.duration
+              }]));
+
+            case 17:
+              _context14.next = 19;
+              return persistSessionToIDB("pomo", sessionData);
+
+            case 19:
+              updateTimersStates(timersStatesForNextSession);
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "pomo"
+              }, sessionData));
+              BC.postMessage({
+                evName: "autoStartNextSession",
+                payload: {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  kind: "break",
+                  endTime: sessionData.endTime
+                }
+              });
+              return _context14.abrupt("break", 57);
+
+            case 23:
+              self.registration.showNotification("pomo", {
+                body: "time to focus",
+                silent: true
+              });
+              timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+              _context14.next = 27;
+              return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
+                name: "repetitionCount",
+                value: timersStatesForNextSession.repetitionCount
+              }, {
+                name: "duration",
+                value: timersStatesForNextSession.duration
+              }]));
+
+            case 27:
+              _context14.next = 29;
+              return persistSessionToIDB("break", sessionData);
+
+            case 29:
+              updateTimersStates(timersStatesForNextSession);
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "break"
+              }, sessionData));
+              BC.postMessage({
+                evName: "autoStartNextSession",
+                payload: {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  kind: "pomo",
+                  endTime: sessionData.endTime
+                }
+              });
+              return _context14.abrupt("break", 57);
+
+            case 33:
+              self.registration.showNotification("longBreak", {
+                body: "time to take a long break",
+                silent: true
+              });
+              timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
+              _context14.next = 37;
+              return recordPomo(timersStates.duration, timersStates.startTime);
+
+            case 37:
+              _context14.next = 39;
+              return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
+                name: "repetitionCount",
+                value: timersStatesForNextSession.repetitionCount
+              }, {
+                name: "duration",
+                value: timersStatesForNextSession.duration
+              }]));
+
+            case 39:
+              _context14.next = 41;
+              return persistSessionToIDB("pomo", sessionData);
+
+            case 41:
+              updateTimersStates(timersStatesForNextSession);
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "pomo"
+              }, sessionData)); // 이거의 위치를 어떻게 놔야할지 잘 모르겠네...
+
+              BC.postMessage({
+                evName: "autoStartNextSession",
+                payload: {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  kind: "break",
+                  endTime: sessionData.endTime
+                }
+              });
+              return _context14.abrupt("break", 57);
+
+            case 45:
+              self.registration.showNotification("nextCycle", {
+                body: "time to do the next cycle of pomos",
+                silent: true
+              });
+              timersStatesForNextSession.repetitionCount = 0;
+              timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+              _context14.next = 50;
+              return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
+                name: "repetitionCount",
+                value: timersStatesForNextSession.repetitionCount
+              }, {
+                name: "duration",
+                value: timersStatesForNextSession.duration
+              }]));
+
+            case 50:
+              _context14.next = 52;
+              return persistSessionToIDB("break", sessionData);
+
+            case 52:
+              updateTimersStates(timersStatesForNextSession);
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "break"
+              }, sessionData));
+              BC.postMessage({
+                evName: "autoStartNextSession",
+                payload: {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  kind: "pomo",
+                  endTime: sessionData.endTime
+                }
+              });
+              return _context14.abrupt("break", 57);
+
+            case 56:
+              return _context14.abrupt("break", 57);
+
+            case 57:
+            case "end":
+              return _context14.stop();
+          }
+        }
+      }, _callee14);
+    }));
+    return _wrapUpSession.apply(this, arguments);
+  }
+
+  function persistSessionToIDB(_x9, _x10) {
+    return _persistSessionToIDB.apply(this, arguments);
+  }
+
+  function _persistSessionToIDB() {
+    _persistSessionToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15(kind, data) {
+      var db, store;
+      return _regeneratorRuntime().wrap(function _callee15$(_context15) {
+        while (1) {
+          switch (_context15.prev = _context15.next) {
+            case 0:
+              _context15.prev = 0;
+              _context15.t0 = DB;
+
+              if (_context15.t0) {
+                _context15.next = 6;
                 break;
               }
 
-              _context14.next = 5;
+              _context15.next = 5;
               return openIndexedDB();
 
             case 5:
-              _context14.t0 = _context14.sent;
+              _context15.t0 = _context15.sent;
 
             case 6:
-              db = _context14.t0;
+              db = _context15.t0;
               store = db.transaction("recOfToday", "readwrite").objectStore("recOfToday");
               console.log("sessionData", _objectSpread2({
                 kind: kind
               }, data));
-              _context14.next = 11;
+              _context15.next = 11;
               return store.add(_objectSpread2({
                 kind: kind
               }, data));
@@ -14574,89 +14602,89 @@
                 console.log("pubsub event from sw", pubsub.events);
               }
 
-              _context14.next = 17;
+              _context15.next = 17;
               break;
 
             case 14:
-              _context14.prev = 14;
-              _context14.t1 = _context14["catch"](0);
-              console.warn(_context14.t1);
+              _context15.prev = 14;
+              _context15.t1 = _context15["catch"](0);
+              console.warn(_context15.t1);
 
             case 17:
             case "end":
-              return _context14.stop();
+              return _context15.stop();
           }
         }
-      }, _callee14, null, [[0, 14]]);
+      }, _callee15, null, [[0, 14]]);
     }));
-    return _persistSession.apply(this, arguments);
+    return _persistSessionToIDB.apply(this, arguments);
   }
 
-  function persistStates(_x11) {
-    return _persistStates.apply(this, arguments);
+  function persistStatesToIDB(_x11) {
+    return _persistStatesToIDB.apply(this, arguments);
   }
 
-  function _persistStates() {
-    _persistStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee16(stateArr) {
+  function _persistStatesToIDB() {
+    _persistStatesToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee17(stateArr) {
       var db, store;
-      return _regeneratorRuntime().wrap(function _callee16$(_context16) {
+      return _regeneratorRuntime().wrap(function _callee17$(_context17) {
         while (1) {
-          switch (_context16.prev = _context16.next) {
+          switch (_context17.prev = _context17.next) {
             case 0:
-              _context16.prev = 0;
-              _context16.t0 = DB;
+              _context17.prev = 0;
+              _context17.t0 = DB;
 
-              if (_context16.t0) {
-                _context16.next = 6;
+              if (_context17.t0) {
+                _context17.next = 6;
                 break;
               }
 
-              _context16.next = 5;
+              _context17.next = 5;
               return openIndexedDB();
 
             case 5:
-              _context16.t0 = _context16.sent;
+              _context17.t0 = _context17.sent;
 
             case 6:
-              db = _context16.t0;
+              db = _context17.t0;
               store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
               Array.from(stateArr).forEach( /*#__PURE__*/function () {
-                var _ref8 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15(obj) {
-                  return _regeneratorRuntime().wrap(function _callee15$(_context15) {
+                var _ref11 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee16(obj) {
+                  return _regeneratorRuntime().wrap(function _callee16$(_context16) {
                     while (1) {
-                      switch (_context15.prev = _context15.next) {
+                      switch (_context16.prev = _context16.next) {
                         case 0:
-                          _context15.next = 2;
+                          _context16.next = 2;
                           return store.put(obj);
 
                         case 2:
                         case "end":
-                          return _context15.stop();
+                          return _context16.stop();
                       }
                     }
-                  }, _callee15);
+                  }, _callee16);
                 }));
 
                 return function (_x18) {
-                  return _ref8.apply(this, arguments);
+                  return _ref11.apply(this, arguments);
                 };
               }());
-              _context16.next = 14;
+              _context17.next = 14;
               break;
 
             case 11:
-              _context16.prev = 11;
-              _context16.t1 = _context16["catch"](0);
-              console.warn(_context16.t1);
+              _context17.prev = 11;
+              _context17.t1 = _context17["catch"](0);
+              console.warn(_context17.t1);
 
             case 14:
             case "end":
-              return _context16.stop();
+              return _context17.stop();
           }
         }
-      }, _callee16, null, [[0, 11]]);
+      }, _callee17, null, [[0, 11]]);
     }));
-    return _persistStates.apply(this, arguments);
+    return _persistStatesToIDB.apply(this, arguments);
   }
 
   function recordPomo(_x12, _x13) {
@@ -14664,21 +14692,21 @@
   }
 
   function _recordPomo() {
-    _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee17(duration, startTime) {
+    _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee18(duration, startTime) {
       var idTokenAndEmail, idToken, email, today, LocaleDateString, record, body, cache, statResponse, statData, res;
-      return _regeneratorRuntime().wrap(function _callee17$(_context17) {
+      return _regeneratorRuntime().wrap(function _callee18$(_context18) {
         while (1) {
-          switch (_context17.prev = _context17.next) {
+          switch (_context18.prev = _context18.next) {
             case 0:
-              _context17.prev = 0;
-              _context17.next = 3;
+              _context18.prev = 0;
+              _context18.next = 3;
               return getIdTokenAndEmail();
 
             case 3:
-              idTokenAndEmail = _context17.sent;
+              idTokenAndEmail = _context18.sent;
 
               if (!idTokenAndEmail) {
-                _context17.next = 33;
+                _context18.next = 33;
                 break;
               }
 
@@ -14694,38 +14722,38 @@
               body = JSON.stringify(record);
               console.log("body", body); // update
 
-              _context17.t0 = CACHE;
+              _context18.t0 = CACHE;
 
-              if (_context17.t0) {
-                _context17.next = 16;
+              if (_context18.t0) {
+                _context18.next = 16;
                 break;
               }
 
-              _context17.next = 15;
+              _context18.next = 15;
               return openCache(CacheName);
 
             case 15:
-              _context17.t0 = _context17.sent;
+              _context18.t0 = _context18.sent;
 
             case 16:
-              cache = _context17.t0;
+              cache = _context18.t0;
               console.log("cache in recordPomo", cache);
-              _context17.next = 20;
+              _context18.next = 20;
               return cache.match(URLs.POMO + "/stat");
 
             case 20:
-              statResponse = _context17.sent;
+              statResponse = _context18.sent;
 
               if (!(statResponse !== undefined)) {
-                _context17.next = 29;
+                _context18.next = 29;
                 break;
               }
 
-              _context17.next = 24;
+              _context18.next = 24;
               return statResponse.json();
 
             case 24:
-              statData = _context17.sent;
+              statData = _context18.sent;
               console.log("statData before push", statData);
               statData.push({
                 userEmail: email,
@@ -14738,7 +14766,7 @@
               cache.put(URLs.POMO + "/stat", new Response(JSON.stringify(statData)));
 
             case 29:
-              _context17.next = 31;
+              _context18.next = 31;
               return fetch(URLs.POMO, {
                 method: "POST",
                 body: body,
@@ -14749,24 +14777,24 @@
               });
 
             case 31:
-              res = _context17.sent;
+              res = _context18.sent;
               console.log("res of recordPomo in sw: ", res);
 
             case 33:
-              _context17.next = 38;
+              _context18.next = 38;
               break;
 
             case 35:
-              _context17.prev = 35;
-              _context17.t1 = _context17["catch"](0);
-              console.warn(_context17.t1);
+              _context18.prev = 35;
+              _context18.t1 = _context18["catch"](0);
+              console.warn(_context18.t1);
 
             case 38:
             case "end":
-              return _context17.stop();
+              return _context18.stop();
           }
         }
-      }, _callee17, null, [[0, 35]]);
+      }, _callee18, null, [[0, 35]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
@@ -14776,104 +14804,8 @@
   }
 
   function _updateTimersStates() {
-    _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee18(states) {
+    _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(states) {
       var idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates, res;
-      return _regeneratorRuntime().wrap(function _callee18$(_context18) {
-        while (1) {
-          switch (_context18.prev = _context18.next) {
-            case 0:
-              _context18.prev = 0;
-              _context18.next = 3;
-              return getIdTokenAndEmail();
-
-            case 3:
-              idTokenAndEmail = _context18.sent;
-
-              if (!idTokenAndEmail) {
-                _context18.next = 26;
-                break;
-              }
-
-              idToken = idTokenAndEmail.idToken, idTokenAndEmail.email; // caching
-
-              _context18.t0 = CACHE;
-
-              if (_context18.t0) {
-                _context18.next = 11;
-                break;
-              }
-
-              _context18.next = 10;
-              return openCache(CacheName);
-
-            case 10:
-              _context18.t0 = _context18.sent;
-
-            case 11:
-              cache = _context18.t0;
-              _context18.next = 14;
-              return cache.match(URLs.USER);
-
-            case 14:
-              pomoSettingAndTimerStatesResponse = _context18.sent;
-
-              if (!(pomoSettingAndTimerStatesResponse !== undefined)) {
-                _context18.next = 22;
-                break;
-              }
-
-              _context18.next = 18;
-              return pomoSettingAndTimerStatesResponse.json();
-
-            case 18:
-              pomoSettingAndTimersStates = _context18.sent;
-              pomoSettingAndTimersStates.timersStates = states;
-              _context18.next = 22;
-              return cache.put(URLs.USER, new Response(JSON.stringify(pomoSettingAndTimersStates)));
-
-            case 22:
-              _context18.next = 24;
-              return fetch(URLs.USER + "/updateTimersStates", {
-                method: "PUT",
-                body: JSON.stringify({
-                  states: states
-                }),
-                headers: {
-                  Authorization: "Bearer " + idToken,
-                  "Content-Type": "application/json"
-                }
-              });
-
-            case 24:
-              res = _context18.sent;
-              console.log("res of updateTimersStates in sw: ", res);
-
-            case 26:
-              _context18.next = 31;
-              break;
-
-            case 28:
-              _context18.prev = 28;
-              _context18.t1 = _context18["catch"](0);
-              console.warn(_context18.t1);
-
-            case 31:
-            case "end":
-              return _context18.stop();
-          }
-        }
-      }, _callee18, null, [[0, 28]]);
-    }));
-    return _updateTimersStates.apply(this, arguments);
-  }
-
-  function persistRecOfTodayToServer(_x15) {
-    return _persistRecOfTodayToServer.apply(this, arguments);
-  }
-
-  function _persistRecOfTodayToServer() {
-    _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(record) {
-      var idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday, res;
       return _regeneratorRuntime().wrap(function _callee19$(_context19) {
         while (1) {
           switch (_context19.prev = _context19.next) {
@@ -14886,52 +14818,148 @@
               idTokenAndEmail = _context19.sent;
 
               if (!idTokenAndEmail) {
-                _context19.next = 27;
+                _context19.next = 26;
+                break;
+              }
+
+              idToken = idTokenAndEmail.idToken, idTokenAndEmail.email; // caching
+
+              _context19.t0 = CACHE;
+
+              if (_context19.t0) {
+                _context19.next = 11;
+                break;
+              }
+
+              _context19.next = 10;
+              return openCache(CacheName);
+
+            case 10:
+              _context19.t0 = _context19.sent;
+
+            case 11:
+              cache = _context19.t0;
+              _context19.next = 14;
+              return cache.match(URLs.USER);
+
+            case 14:
+              pomoSettingAndTimerStatesResponse = _context19.sent;
+
+              if (!(pomoSettingAndTimerStatesResponse !== undefined)) {
+                _context19.next = 22;
+                break;
+              }
+
+              _context19.next = 18;
+              return pomoSettingAndTimerStatesResponse.json();
+
+            case 18:
+              pomoSettingAndTimersStates = _context19.sent;
+              pomoSettingAndTimersStates.timersStates = states;
+              _context19.next = 22;
+              return cache.put(URLs.USER, new Response(JSON.stringify(pomoSettingAndTimersStates)));
+
+            case 22:
+              _context19.next = 24;
+              return fetch(URLs.USER + "/updateTimersStates", {
+                method: "PUT",
+                body: JSON.stringify({
+                  states: states
+                }),
+                headers: {
+                  Authorization: "Bearer " + idToken,
+                  "Content-Type": "application/json"
+                }
+              });
+
+            case 24:
+              res = _context19.sent;
+              console.log("res of updateTimersStates in sw: ", res);
+
+            case 26:
+              _context19.next = 31;
+              break;
+
+            case 28:
+              _context19.prev = 28;
+              _context19.t1 = _context19["catch"](0);
+              console.warn(_context19.t1);
+
+            case 31:
+            case "end":
+              return _context19.stop();
+          }
+        }
+      }, _callee19, null, [[0, 28]]);
+    }));
+    return _updateTimersStates.apply(this, arguments);
+  }
+
+  function persistRecOfTodayToServer(_x15) {
+    return _persistRecOfTodayToServer.apply(this, arguments);
+  }
+
+  function _persistRecOfTodayToServer() {
+    _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee20(record) {
+      var idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday, res;
+      return _regeneratorRuntime().wrap(function _callee20$(_context20) {
+        while (1) {
+          switch (_context20.prev = _context20.next) {
+            case 0:
+              _context20.prev = 0;
+              _context20.next = 3;
+              return getIdTokenAndEmail();
+
+            case 3:
+              idTokenAndEmail = _context20.sent;
+
+              if (!idTokenAndEmail) {
+                _context20.next = 27;
                 break;
               }
 
               console.log("in the if block");
               idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email; // caching
 
-              _context19.t0 = CACHE;
+              _context20.t0 = CACHE;
 
-              if (_context19.t0) {
-                _context19.next = 12;
+              if (_context20.t0) {
+                _context20.next = 12;
                 break;
               }
 
-              _context19.next = 11;
+              _context20.next = 11;
               return openCache(CacheName);
 
             case 11:
-              _context19.t0 = _context19.sent;
+              _context20.t0 = _context20.sent;
 
             case 12:
-              cache = _context19.t0;
-              _context19.next = 15;
+              cache = _context20.t0;
+              _context20.next = 15;
               return cache.match(URLs.RECORD_OF_TODAY);
 
             case 15:
-              resOfRecordOfToday = _context19.sent;
+              resOfRecordOfToday = _context20.sent;
 
               if (!(resOfRecordOfToday !== undefined)) {
-                _context19.next = 23;
+                _context20.next = 23;
                 break;
               }
 
-              _context19.next = 19;
+              _context20.next = 19;
               return resOfRecordOfToday.json();
 
             case 19:
-              recordsOfToday = _context19.sent;
+              recordsOfToday = _context20.sent;
               recordsOfToday.push({
                 record: record
               });
-              _context19.next = 23;
+              _context20.next = 23;
               return cache.put(URLs.RECORD_OF_TODAY, new Response(JSON.stringify(recordsOfToday)));
 
             case 23:
-              _context19.next = 25;
+              _context20.next = 25;
               return fetch(URLs.RECORD_OF_TODAY, {
                 method: "POST",
                 body: JSON.stringify(_objectSpread2({
@@ -14944,26 +14972,41 @@
               });
 
             case 25:
-              res = _context19.sent;
+              res = _context20.sent;
               console.log("res of persistRecOfTodayToSever", res);
 
             case 27:
-              _context19.next = 32;
+              _context20.next = 32;
               break;
 
             case 29:
-              _context19.prev = 29;
-              _context19.t1 = _context19["catch"](0);
-              console.warn(_context19.t1);
+              _context20.prev = 29;
+              _context20.t1 = _context20["catch"](0);
+              console.warn(_context20.t1);
 
             case 32:
             case "end":
-              return _context19.stop();
+              return _context20.stop();
           }
         }
-      }, _callee19, null, [[0, 29]]);
+      }, _callee20, null, [[0, 29]]);
     }));
     return _persistRecOfTodayToServer.apply(this, arguments);
+  }
+
+  function identifySession(_ref8) {
+    var howManyCountdown = _ref8.howManyCountdown,
+        numOfPomo = _ref8.numOfPomo;
+
+    if (howManyCountdown < numOfPomo * 2 - 1 && howManyCountdown % 2 === 1) {
+      return SESSION.POMO;
+    } else if (howManyCountdown < numOfPomo * 2 - 1 && howManyCountdown % 2 === 0) {
+      return SESSION.SHORT_BREAK;
+    } else if (howManyCountdown === numOfPomo * 2 - 1) {
+      return SESSION.LAST_POMO;
+    } else {
+      return SESSION.LONG_BREAK;
+    }
   }
 
 })();

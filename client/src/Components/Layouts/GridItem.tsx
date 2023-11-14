@@ -8,6 +8,8 @@ type GridItemProps = {
   columnEnd?: number;
   rowStart?: number;
   rowEnd?: number;
+  minWidth?: number;
+  minHeight?: number;
 };
 
 export function GridItem({ children, ...props }: GridItemProps) {

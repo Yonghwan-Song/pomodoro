@@ -4,7 +4,6 @@ import {
   Dispatch,
   SetStateAction,
   useEffect,
-  useRef,
 } from "react";
 import { useAuthContext } from "./AuthContext";
 import * as C from "../constants/index";
@@ -13,6 +12,7 @@ import {
   dataCombinedFromIDB,
   obtainStatesFromIDB,
   persistStatesToIDB,
+  postMsgToSW,
 } from "..";
 import { RequiredStatesToRunTimerType } from "../types/clientStatesType";
 import { pubsub } from "../pubsub";
@@ -24,9 +24,9 @@ type UserInfoContextType = {
   setPomoInfo: Dispatch<SetStateAction<RequiredStatesToRunTimerType | null>>;
 };
 
-export const UserContext = createContext<UserInfoContextType | null>(null);
+export const UserInfoContext = createContext<UserInfoContextType | null>(null);
 
-export function UserContextProvider({
+export function UserInfoContextProvider({
   children,
 }: {
   children: React.ReactNode;
@@ -59,7 +59,8 @@ export function UserContextProvider({
      *      그 앱에서 서버쪽으로 persist한 데이터들을 받아와서 싱크를 맞추어 줘야 하기 때문.
      *
      */
-    callbacks: [persistTimersStatesToIDB],
+    // callbacks: [persistTimersStatesToIDB],
+    callbacks: [persistRequiredStatesToRunTimer],
     additionalDeps: [isNewUser, isNewUserRegistered],
     additionalCondition: isNewUser === false || isNewUserRegistered,
   });
@@ -73,34 +74,6 @@ export function UserContextProvider({
   //* pomoInfo ends up receiving null from useFetch hook when a user is an unlogged-in user.
   useEffect(setPomoSettingToDefault, [user]);
   useEffect(setPomoInfoOfUnLoggedInUser, [user, pomoInfo]);
-
-  //#region To Observe LifeCycle
-  // useEffect(() => {
-  //   console.log(
-  //     `------------User Context Provider Component was Mounted------------`
-  //   );
-  //   console.log("user", user);
-  //   console.log("pomoInfo", pomoInfo);
-  //   console.log("mount count", ++mountCount.current);
-
-  //   return () => {
-  //     console.log(
-  //       `------------User Context Provider Component was unMounted------------`
-  //     );
-  //     console.log(user);
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   console.log(
-  //     "------------User Context Provider Component was updated------------"
-  //   );
-  //   console.log("user", user);
-  //   console.log("pomoInfo", pomoInfo);
-  //   console.log("render count", ++updateCount.current);
-  // });
-  //#endregion
-
   //#endregion
 
   //#region Side Effects
@@ -108,7 +81,7 @@ export function UserContextProvider({
   //! Purpose: to allow _unauthenticated(un-logged-in) users_ to continue to run timer from where they left when refreshing the app.
 
   function setPomoInfoOfUnLoggedInUser() {
-    //? isn't this called when a user logs in but not yet gets its data from server?...
+    //? isn't this called when a user logs in but not yet gets its data from server?... //씨발 몰라..
     /**
      * What this condition mean? - unauthenticated user is using the app.
      * When
@@ -130,27 +103,48 @@ export function UserContextProvider({
         let states = await obtainStatesFromIDB("withPomoSetting");
         console.log("states in the setPomoInfoOfUnLoggedInUser", states);
 
-        if (doesPomoSettingExist()) {
-          setPomoInfo((prev) => {
-            return {
-              ...(prev as RequiredStatesToRunTimerType), // since pomoInfo is not null in this block
-              pomoSetting: (states as dataCombinedFromIDB).pomoSetting,
+        let pomoSetting = doesPomoSettingExist()
+          ? (states as dataCombinedFromIDB).pomoSetting
+          : {
+              pomoDuration: 25,
+              shortBreakDuration: 5,
+              longBreakDuration: 15,
+              numOfPomo: 4,
             };
-          });
-        }
-        if (!doesPomoSettingExist()) {
-          setPomoInfo((prev) => {
-            return {
-              ...(prev as RequiredStatesToRunTimerType),
-              pomoSetting: {
-                pomoDuration: 25,
-                shortBreakDuration: 5,
-                longBreakDuration: 15,
-                numOfPomo: 4,
+
+        let autoStartSetting = doesAutoStartSettingExist()
+          ? (states as dataCombinedFromIDB).autoStartSetting
+          : {
+              doesPomoStartAutomatically: false,
+              doesBreakStartAutomatically: false,
+            };
+
+        setPomoInfo((prev) => {
+          return {
+            ...(prev as RequiredStatesToRunTimerType),
+            pomoSetting: pomoSetting,
+            autoStartSetting: autoStartSetting,
+          };
+        });
+
+        pubsub.publish("updateAutoStartSetting", {
+          autoStartSetting,
+        });
+
+        postMsgToSW("saveStates", {
+          stateArr: [
+            { name: "pomoSetting", value: pomoSetting },
+            {
+              name: "autoStartSetting",
+              value: {
+                doesPomoStartAutomatically:
+                  autoStartSetting.doesPomoStartAutomatically,
+                doesBreakStartAutomatically:
+                  autoStartSetting.doesBreakStartAutomatically,
               },
-            };
-          });
-        }
+            },
+          ],
+        });
 
         function doesPomoSettingExist() {
           return (
@@ -158,11 +152,19 @@ export function UserContextProvider({
             (states as dataCombinedFromIDB).pomoSetting
           );
         }
+        function doesAutoStartSettingExist() {
+          return (
+            Object.entries(states).length !== 0 &&
+            (states as dataCombinedFromIDB).autoStartSetting
+          );
+        }
       };
       getPomoSettingFromIDB();
     }
   }
 
+  // I am going to comment the `useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);` in the Main.tsx
+  // Instead, I will post a message to the service worker to save pomoSetting and autoStartSetting here.
   function setPomoSettingToDefault() {
     if (isRightAfterLogOut()) {
       console.log("setting pomoSetting to default");
@@ -175,7 +177,44 @@ export function UserContextProvider({
             longBreakDuration: 15,
             numOfPomo: 4,
           },
+          autoStartSetting: {
+            doesPomoStartAutomatically: false,
+            doesBreakStartAutomatically: false,
+          },
         };
+      });
+
+      pubsub.publish("updateAutoStartSetting", {
+        autoStartSetting: {
+          doesPomoStartAutomatically: false,
+          doesBreakStartAutomatically: false,
+        },
+      });
+
+      postMsgToSW("saveStates", {
+        stateArr: [
+          {
+            name: "pomoSetting",
+            value: {
+              pomoDuration: 25,
+              shortBreakDuration: 5,
+              longBreakDuration: 15,
+              numOfPomo: 4,
+            },
+          },
+          {
+            name: "autoStartSetting",
+            value: {
+              doesPomoStartAutomatically: false,
+              doesBreakStartAutomatically: false,
+            },
+          },
+          { name: "duration", value: 25 },
+          { name: "repetitionCount", value: 0 },
+          { name: "running", value: false },
+          { name: "startTime", value: 0 },
+          { name: "pause", value: { totalLength: 0, record: [] } },
+        ],
       });
 
       //
@@ -183,14 +222,24 @@ export function UserContextProvider({
         console.log("setting L_user to unAuthenticated");
         localStorage.setItem("user", "unAuthenticated");
       }
-      emptyStateStore()
-        .then(() => {
-          return emptyRecOfToday();
-        })
-        .then(() => {
-          pubsub.publish("clearObjectStores", 1);
-        });
+
+      //#region New
+      emptyRecOfToday().then(() => {
+        pubsub.publish("clearObjectStores", 1);
+      });
       caches.delete(CONSTANTS.CacheName);
+      //#endregion
+
+      //#region Original
+      // emptyStateStore()
+      //   .then(() => {
+      //     return emptyRecOfToday();
+      //   })
+      //   .then(() => {
+      //     pubsub.publish("clearObjectStores", 1);
+      //   });
+      // caches.delete(CONSTANTS.CacheName);
+      //#endregion
     }
 
     function isRightAfterLogOut() {
@@ -207,17 +256,17 @@ export function UserContextProvider({
 
   return (
     <>
-      <UserContext.Provider
+      <UserInfoContext.Provider
         value={{ pomoInfo: pomoInfo, setPomoInfo: setPomoInfo }}
       >
         {children}
-      </UserContext.Provider>
+      </UserInfoContext.Provider>
     </>
   );
 }
 
 export function useUserContext() {
-  return useContext(UserContext);
+  return useContext(UserInfoContext);
 }
 
 //! It probably is problematic to persist the states no matter there is already the user's timersStates.
@@ -227,9 +276,24 @@ export function useUserContext() {
 //if authenticated is true and email is the same, do nothing. Just use what already are in the idb.
 //if authenticated is false, this is not going to be called... we just might remove authenticated property then...
 //if email is different, persist and publish the event.
-async function persistTimersStatesToIDB(states: RequiredStatesToRunTimerType) {
+
+// TODO: clean code. I can extract some functions from this one. Thus, he can say this function does not do one thing.
+async function persistRequiredStatesToRunTimer(
+  states: RequiredStatesToRunTimerType
+) {
   await persistStatesToIDB(states.timersStates);
   localStorage.setItem("user", "authenticated");
   console.log("persist success - ", states.timersStates);
   pubsub.publish("successOfPersistingTimersStatesToIDB", states.timersStates); // Actually, this event is also indicating that clearing recOfToday objectStore has finished because we put this line after the emptyRecOfToday().
+
+  // This works only for logged-in users.
+  // Like the logged-in user, I need to allow unlogged-in users
+  // to continue to use the timer with the same setting as the one before they close the app.
+  // ->
+  postMsgToSW("saveStates", {
+    stateArr: [
+      { name: "pomoSetting", value: states.pomoSetting },
+      { name: "autoStartSetting", value: states.autoStartSetting },
+    ],
+  });
 }

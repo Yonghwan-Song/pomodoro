@@ -6,16 +6,19 @@ import { useAuthContext } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
 import {
   DynamicCache,
-  StatesType,
   openCache,
   persistSingleTodaySessionToIDB,
   postMsgToSW,
   makeSound,
 } from "../..";
-import { RecType, TimerStateType } from "../../types/clientStatesType";
+import {
+  RecType,
+  TimerStateType,
+  TimersStatesType,
+} from "../../types/clientStatesType";
 
 type PatternTimerProps = {
-  statesRelatedToTimer: StatesType | {};
+  statesRelatedToTimer: TimersStatesType | {};
   pomoDuration: number;
   shortBreakDuration: number;
   longBreakDuration: number;
@@ -33,14 +36,14 @@ export function PatternTimer({
 }: PatternTimerProps) {
   const [durationInMinutes, setDurationInMinutes] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      return (statesRelatedToTimer as StatesType).duration;
+      return (statesRelatedToTimer as TimersStatesType).duration;
     } else {
       return pomoDuration;
     }
   }); // How long the timer is going to run next time.
   const [repetitionCount, setRepetitionCount] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      return (statesRelatedToTimer as StatesType).repetitionCount;
+      return (statesRelatedToTimer as TimersStatesType).repetitionCount;
     } else {
       return 0;
     }
@@ -107,11 +110,62 @@ export function PatternTimer({
       timeCountedDown: timeCountedDownInMilliSeconds,
     };
 
-    if (howManyCountdown < numOfPomo! * 2 - 1) {
-      if (howManyCountdown % 2 === 1) {
-        //! This is when a pomo, which is not the last one of a cycle, is completed.
-        // console.log("ONE POMO DURATION IS FINISHED");
+    wrapUpSession({
+      session: identifySession({
+        howManyCountdown,
+        numOfPomo,
+      }),
+      data: {
+        state,
+        timeCountedDownInMilliSeconds,
+        sessionData,
+      },
+    });
+  }
 
+  //#region Utils
+  enum SESSION {
+    POMO = 1,
+    SHORT_BREAK,
+    LAST_POMO,
+    LONG_BREAK,
+  }
+
+  function identifySession({
+    howManyCountdown,
+    numOfPomo,
+  }: {
+    howManyCountdown: number;
+    numOfPomo: number;
+  }): SESSION {
+    if (howManyCountdown < numOfPomo! * 2 - 1 && howManyCountdown % 2 === 1) {
+      return SESSION.POMO;
+    } else if (
+      howManyCountdown < numOfPomo! * 2 - 1 &&
+      howManyCountdown % 2 === 0
+    ) {
+      return SESSION.SHORT_BREAK;
+    } else if (howManyCountdown === numOfPomo * 2 - 1) {
+      return SESSION.LAST_POMO;
+    } else {
+      return SESSION.LONG_BREAK;
+    }
+  }
+
+  async function wrapUpSession({
+    session,
+    data,
+  }: {
+    session: SESSION;
+    data: {
+      state: TimerStateType;
+      timeCountedDownInMilliSeconds: number;
+      sessionData: Omit<RecType, "kind">;
+    };
+  }) {
+    let { state, timeCountedDownInMilliSeconds, sessionData } = data;
+    switch (session) {
+      case SESSION.POMO:
         if (user) {
           recordPomo(
             user,
@@ -129,11 +183,16 @@ export function PatternTimer({
 
         // for timeline
         setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
-        await persistSingleTodaySessionToIDB("pomo", sessionData);
+        await persistSingleTodaySessionToIDB({
+          kind: "pomo",
+          data: sessionData,
+        });
         user &&
           persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
-      } else {
-        //! This is when a short break is done.
+
+        break;
+
+      case SESSION.SHORT_BREAK:
         notify("pomo");
         setDurationInMinutes(pomoDuration!);
         postMsgToSW("saveStates", {
@@ -142,55 +201,108 @@ export function PatternTimer({
 
         // for timeline
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
-        await persistSingleTodaySessionToIDB("break", sessionData);
+        await persistSingleTodaySessionToIDB({
+          kind: "break",
+          data: sessionData,
+        });
         user &&
           persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
-      }
-    } else if (howManyCountdown === numOfPomo! * 2 - 1) {
-      //! This is when the last pomo of a cycle is completed.
-      // console.log("ONE POMO DURATION IS FINISHED");
+        break;
 
-      if (user) {
-        recordPomo(
-          user,
-          Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
-          state.startTime
-        );
-      } else {
-        console.log("user is not ready", user);
-      }
-      notify("longBreak");
-      setDurationInMinutes(longBreakDuration!);
-      postMsgToSW("saveStates", {
-        stateArr: [{ name: "duration", value: longBreakDuration }],
-      });
+      case SESSION.LAST_POMO:
+        if (user) {
+          recordPomo(
+            user,
+            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+            state.startTime
+          );
+        } else {
+          console.log("user is not ready", user);
+        }
+        notify("longBreak");
+        setDurationInMinutes(longBreakDuration!);
+        postMsgToSW("saveStates", {
+          stateArr: [{ name: "duration", value: longBreakDuration }],
+        });
 
-      // for timeline
-      setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
-      await persistSingleTodaySessionToIDB("pomo", sessionData);
-      user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
-    } else if (howManyCountdown === numOfPomo! * 2) {
-      //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
-      // console.log("one cycle is done");
-      //cycle completion notification
-      notify("nextCycle");
-      //setCycleCount((prev) => prev + 1);
-      setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
-      setIsOnCycle(false);
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "duration", value: pomoDuration },
-          { name: "repetitionCount", value: 0 },
-        ],
-      });
+        // for timeline
+        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        await persistSingleTodaySessionToIDB({
+          kind: "pomo",
+          data: sessionData,
+        });
+        user &&
+          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+        break;
 
-      // for timeline
-      setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
-      await persistSingleTodaySessionToIDB("break", sessionData);
-      user &&
-        persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+      case SESSION.LONG_BREAK:
+        notify("nextCycle");
+        //setCycleCount((prev) => prev + 1);
+        setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
+        setIsOnCycle(false);
+        postMsgToSW("saveStates", {
+          stateArr: [
+            { name: "duration", value: pomoDuration },
+            { name: "repetitionCount", value: 0 },
+          ],
+        });
+
+        // for timeline
+        setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        await persistSingleTodaySessionToIDB({
+          kind: "break",
+          data: sessionData,
+        });
+        user &&
+          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+        break;
+
+      default:
+        break;
     }
   }
+
+  async function doTasks({
+    dataToBeArguments,
+  }: {
+    dataToBeArguments: {
+      whatToNotify: string; //TODO: 이거 union of literals로 바꿔야 할 듯.
+      durationToSet: number;
+      dataToPersistToIndexedDB: { stateArr: any[] }; //TODO: 이것도  type 정해야 하는거 아닌가?
+      recordToAdd: RecType;
+      user: User | null; //TODO: | null 이거 뭔가 찝집하다
+      durationInMinutes?: number;
+      startTime?: number;
+    };
+  }) {
+    const {
+      whatToNotify,
+      durationToSet,
+      dataToPersistToIndexedDB,
+      recordToAdd,
+      user,
+      durationInMinutes,
+      startTime,
+    } = dataToBeArguments;
+
+    notify(whatToNotify);
+
+    setDurationInMinutes(durationToSet);
+    setRecords((prev) => [...prev, recordToAdd]);
+
+    postMsgToSW("saveStates", dataToPersistToIndexedDB);
+    const { kind, ...data } = recordToAdd;
+    await persistSingleTodaySessionToIDB({ kind, data }); //TODO: 사실 이 함수의 arg type을 바꾸면 좀더 깔끔하게 쓸 수 있음..
+
+    // HTTP Requests
+    user && persistRecOfTodayToServer(user, recordToAdd);
+    user &&
+      durationInMinutes &&
+      startTime &&
+      recordPomo(user, durationInMinutes, startTime);
+  }
+
+  //#endregion
 
   useEffect(() => {
     console.log("Pattern Timer was mounted");
@@ -353,3 +465,105 @@ async function notify(which: string) {
     noti.close();
   }, 5000);
 }
+
+// if (howManyCountdown < numOfPomo! * 2 - 1 && howManyCountdown % 2 === 1) {
+//   //! --------------------------------------------- 1 ---------------------------------------------
+
+//   //! This is when a pomo, which is not the last one of a cycle, is completed.
+//   // console.log("ONE POMO DURATION IS FINISHED");
+
+//   //#region tasks
+//   if (user) {
+//     recordPomo(
+//       user,
+//       Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+//       state.startTime
+//     ); // Non null assertion is correct because a user is already signed in at this point.
+//   } else {
+//     console.log("user is not ready", user);
+//   }
+//   notify("shortBreak");
+
+//   setDurationInMinutes(shortBreakDuration!);
+//   postMsgToSW("saveStates", {
+//     stateArr: [{ name: "duration", value: shortBreakDuration }],
+//   });
+
+//   // for timeline
+//   setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+//   await persistSingleTodaySessionToIDB("pomo", sessionData);
+//   user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+//   //#endregion
+// } else if (
+//   howManyCountdown < numOfPomo! * 2 - 1 &&
+//   howManyCountdown % 2 === 0
+// ) {
+//   //! --------------------------------------------- 2 ---------------------------------------------
+
+//   //! This is when a short break is done.
+//   //#region tasks
+//   notify("pomo");
+//   setDurationInMinutes(pomoDuration!);
+//   postMsgToSW("saveStates", {
+//     stateArr: [{ name: "duration", value: pomoDuration }],
+//   });
+
+//   // for timeline
+//   setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+//   await persistSingleTodaySessionToIDB("break", sessionData);
+//   user &&
+//     persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+//   //#endregion
+// } else if (howManyCountdown === numOfPomo! * 2 - 1) {
+//   //! --------------------------------------------- 3 ---------------------------------------------
+
+//   //! This is when the last pomo of a cycle is completed.
+//   // console.log("ONE POMO DURATION IS FINISHED");
+
+//   //#region tasks
+//   if (user) {
+//     recordPomo(
+//       user,
+//       Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+//       state.startTime
+//     );
+//   } else {
+//     console.log("user is not ready", user);
+//   }
+//   notify("longBreak");
+//   setDurationInMinutes(longBreakDuration!);
+//   postMsgToSW("saveStates", {
+//     stateArr: [{ name: "duration", value: longBreakDuration }],
+//   });
+
+//   // for timeline
+//   setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+//   await persistSingleTodaySessionToIDB("pomo", sessionData);
+//   user && persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+//   //#endregion
+// } else if (howManyCountdown === numOfPomo! * 2) {
+//   //! --------------------------------------------- 4 ---------------------------------------------
+
+//   //! This is when the long break is done meaning a cycle that consists of pomos, short break, and long break is done.
+//   // console.log("one cycle is done");
+
+//   //#region tasks
+//   //cycle completion notification
+//   notify("nextCycle");
+//   //setCycleCount((prev) => prev + 1);
+//   setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
+//   setIsOnCycle(false);
+//   postMsgToSW("saveStates", {
+//     stateArr: [
+//       { name: "duration", value: pomoDuration },
+//       { name: "repetitionCount", value: 0 },
+//     ],
+//   });
+
+//   // for timeline
+//   setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+//   await persistSingleTodaySessionToIDB("break", sessionData);
+//   user &&
+//     persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+//   //#endregion
+// }

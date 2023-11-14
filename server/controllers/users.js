@@ -43,37 +43,59 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-export const getPomoSetting = async (req, res) => {
+//#region deprecated.
+// export const getPomoSetting = async (req, res) => {
+//   try {
+//     let currentUser = await User.findOne({ email: req.userEmail });
+
+//     if (currentUser) {
+//       console.log(currentUser.pomoSetting);
+//       res.send(currentUser.pomoSetting);
+//     } else {
+//       res.status(404).send("User is not found");
+//     }
+//   } catch (error) {
+//     console.log(`getPomoSetting in controllers/users.js\n ${error}`);
+//   }
+// };
+
+// export const getPomoSettingAndTimersStates = async (req, res) => {
+//   try {
+//     let currentUser = await User.findOne({ email: req.userEmail });
+
+//     if (currentUser) {
+//       console.log("current user", currentUser);
+//       res.send({
+//         pomoSetting: currentUser.pomoSetting,
+//         timersStates: currentUser.timersStates,
+//       });
+//     } else {
+//       res.status(404).send("User is not found");
+//     }
+//   } catch (error) {
+//     console.log(
+//       `getPomoSettingAndTimersStates in controllers/users.js\n ${error}`
+//     );
+//   }
+// };
+//#endregion
+
+export const getUserInfoRelatedToRunningTimer = async (req, res) => {
   try {
     let currentUser = await User.findOne({ email: req.userEmail });
-
-    if (currentUser) {
-      console.log(currentUser.pomoSetting);
-      res.send(currentUser.pomoSetting);
-    } else {
-      res.status(404).send("User is not found");
-    }
-  } catch (error) {
-    console.log(`getPomoSetting in controllers/users.js\n ${error}`);
-  }
-};
-
-export const getPomoSettingAndTimersStates = async (req, res) => {
-  try {
-    let currentUser = await User.findOne({ email: req.userEmail });
-
     if (currentUser) {
       console.log("current user", currentUser);
       res.send({
         pomoSetting: currentUser.pomoSetting,
         timersStates: currentUser.timersStates,
+        autoStartSetting: currentUser.autoStartSetting,
       });
     } else {
       res.status(404).send("User is not found");
     }
   } catch (error) {
     console.log(
-      `getPomoSettingAndTimersStates in controllers/users.js\n ${error}`
+      `getUserInfoRelatedToRunningTimer  in controllers/users.js\n ${error}`
     );
   }
 };
@@ -81,11 +103,18 @@ export const getPomoSettingAndTimersStates = async (req, res) => {
 export const updatePomoSetting = async (req, res) => {
   try {
     let currentUser = await User.findOne({ email: req.userEmail });
-    currentUser.pomoSetting = req.body.pomoSetting;
-    const updatedUser = await currentUser.save();
-    res.send(updatedUser);
+    if (currentUser) {
+      currentUser.pomoSetting = req.body.pomoSetting;
+      const updatedUser = await currentUser.save();
+      res.send(updatedUser);
+    } else {
+      res.status(404).send("User is not found");
+    }
   } catch (error) {
-    console.log(`updatePomoSetting in controllers/users.js\n ${error}`);
+    console.log(
+      "---------------------ERROR (UpdatePomoSetting In controllers/users.js)---------------------"
+    );
+    console.log(error);
   }
 };
 
@@ -93,13 +122,42 @@ export const updateTimersStates = async (req, res) => {
   try {
     let currentUser = await User.findOne({ email: req.userEmail });
     console.log("req.body in updateRequiredStatesToRunTimer", req.body);
-    currentUser.timersStates = {
-      ...currentUser.timersStates,
-      ...req.body.states,
-    };
-    const updatedUser = await currentUser.save();
-    res.send(updatedUser);
+    if (currentUser) {
+      currentUser.timersStates = {
+        ...currentUser.timersStates,
+        ...req.body.states,
+      };
+      const updatedUser = await currentUser.save();
+      res.send(updatedUser);
+    } else {
+      res.status(404).send("User is not found");
+    }
   } catch (error) {
-    console.log(`updateTimersStates in controllers/users.js\n ${error}`);
+    console.log(
+      "---------------------ERROR (UpdateTimersStates In controllers/users.js)---------------------"
+    );
+    console.log(error);
+  }
+};
+
+export const updateAutoStartSetting = async (req, res) => {
+  try {
+    let currentUser = await User.findOne({ email: req.userEmail });
+    console.log("req.body in updateAutoStartSetting", req.body);
+    if (currentUser) {
+      currentUser.autoStartSetting = {
+        ...currentUser.autoStartSetting,
+        ...req.body.autoStartSetting,
+      };
+      const updatedUser = await currentUser.save();
+      res.send(updatedUser);
+    } else {
+      res.status(404).send("User is not found");
+    }
+  } catch (error) {
+    console.log(
+      "---------------------ERROR (UpdateAutoStartSetting In controllers/users.js)---------------------"
+    );
+    console.log(error);
   }
 };

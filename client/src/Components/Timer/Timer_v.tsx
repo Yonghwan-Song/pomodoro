@@ -4,23 +4,27 @@ import {
   useReducer,
   Dispatch,
   SetStateAction,
+  useMemo,
 } from "react";
 import { reducerTimer as reducer, ACTION, TimerAction } from "../reducers";
 import {
+  AutoStartSettingType,
   PatternTimerStatesType,
   TimerStateType,
+  TimersStatesType,
 } from "../../types/clientStatesType";
 import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
-import { StatesType, postMsgToSW, updateTimersStates } from "../..";
+import { postMsgToSW, updateTimersStates } from "../..";
 import CountDownTimer from "../CountDownTimer/CountDownTimer";
 import PauseTimer from "../PauseTimer/PauseTimer";
 import { useAuthContext } from "../../Context/AuthContext";
+import { useUserContext } from "../../Context/UserContext";
 
 type TimerProps = {
-  statesRelatedToTimer: StatesType | {};
+  statesRelatedToTimer: TimersStatesType | {};
   durationInSeconds: number;
   next: ({
     howManyCountdown,
@@ -77,6 +81,14 @@ export function TimerVVV({
   const [remainingDuration, setRemainingDuration] = useState(
     initializeRemainingDuration
   );
+  const userInfoContext = useUserContext()!;
+  const autoStartSetting = useMemo(
+    () =>
+      userInfoContext.pomoInfo !== null
+        ? userInfoContext.pomoInfo.autoStartSetting
+        : ({} as AutoStartSettingType),
+    [userInfoContext.pomoInfo]
+  );
   //#endregion
 
   //#region Initializers
@@ -84,9 +96,9 @@ export function TimerVVV({
     let timerState = initialVal;
     Object.keys(statesRelatedToTimer).length !== 0 &&
       (timerState = {
-        running: (statesRelatedToTimer as StatesType).running,
-        startTime: (statesRelatedToTimer as StatesType).startTime,
-        pause: (statesRelatedToTimer as StatesType).pause,
+        running: (statesRelatedToTimer as TimersStatesType).running,
+        startTime: (statesRelatedToTimer as TimersStatesType).startTime,
+        pause: (statesRelatedToTimer as TimersStatesType).pause,
       });
     return timerState;
   }
@@ -98,7 +110,7 @@ export function TimerVVV({
 
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       let { duration, pause, running, startTime } =
-        statesRelatedToTimer as StatesType;
+        statesRelatedToTimer as TimersStatesType;
       let durationInSeconds = duration * 60;
 
       if (running) {
@@ -292,6 +304,8 @@ export function TimerVVV({
   //#endregion
 
   //#region UseEffects
+  useEffect(autoStartNextSession, [timerState.startTime]);
+
   useEffect(logPause, [
     remainingDuration,
     durationInSeconds,
@@ -365,7 +379,7 @@ export function TimerVVV({
       }, 500);
       return () => {
         clearInterval(id);
-        console.log(`startTime - ${timerState.startTime}`);
+        // console.log(`startTime - ${timerState.startTime}`);
       };
     }
   }
@@ -376,7 +390,6 @@ export function TimerVVV({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
     });
-    console.log("check if remainingDuratin is less than 0");
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
       setRepetitionCount(
         patternTimerStates.repetitionCount ?? repetitionCount + 1
@@ -403,6 +416,42 @@ export function TimerVVV({
         });
 
       patternTimerStates ?? console.warn("patternTimerStates is null");
+    }
+  }
+
+  function autoStartNextSession() {
+    // Auto start all pomo sessions of a cycle
+    if (
+      autoStartSetting.doesPomoStartAutomatically &&
+      isNextSessionNew() &&
+      isNextSessionPomo() &&
+      !isNextSessionStartOfCycle()
+    ) {
+      toggleTimer(Date.now());
+    }
+
+    // Auto start all break sessions of a cycle
+    if (
+      autoStartSetting.doesBreakStartAutomatically &&
+      isNextSessionNew() &&
+      isNextSessionBreak() &&
+      !isNextSessionStartOfCycle()
+    ) {
+      toggleTimer(Date.now());
+    }
+
+    // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
+    function isNextSessionNew() {
+      return timerState.running === false && timerState.startTime === 0;
+    }
+    function isNextSessionStartOfCycle() {
+      return repetitionCount === 0;
+    }
+    function isNextSessionPomo() {
+      return repetitionCount % 2 === 0;
+    }
+    function isNextSessionBreak() {
+      return repetitionCount % 2 !== 0;
     }
   }
   //#endregion

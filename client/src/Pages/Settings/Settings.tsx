@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
 import {
+  AutoStartSettingType,
   PomoSettingType,
   RequiredStatesToRunTimerType,
 } from "../../types/clientStatesType";
@@ -29,8 +30,11 @@ import {
   openCache,
   postMsgToSW,
   stopCountDownInBackground,
+  updateAutoStartSetting,
   updateTimersStates,
 } from "../..";
+import ToggleSwitch from "../../Components/ToggleSwitch/ToggleSwitch";
+import { pubsub } from "../../pubsub";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -46,11 +50,31 @@ function Settings() {
     [userInfoContext.pomoInfo]
   );
 
-  const [settingInputs, setSettingInputs] = useState(() =>
+  const autoStartSetting = useMemo(
+    () =>
+      userInfoContext.pomoInfo !== null
+        ? userInfoContext.pomoInfo.autoStartSetting
+        : ({} as AutoStartSettingType),
+    [userInfoContext.pomoInfo]
+  );
+
+  const [pomoSettingInputs, setPomoSettingInputs] = useState(() =>
     userInfoContext.pomoInfo !== null
       ? userInfoContext.pomoInfo.pomoSetting
       : ({} as PomoSettingType)
   );
+  const [doesPomoStartAutomatically, setDoesPomoStartAutomatically] = useState(
+    () =>
+      userInfoContext.pomoInfo !== null
+        ? userInfoContext.pomoInfo.autoStartSetting.doesPomoStartAutomatically
+        : false
+  );
+  const [doesBreakStartAutomatically, setDoesBreakStartAutomatically] =
+    useState(() =>
+      userInfoContext.pomoInfo !== null
+        ? userInfoContext.pomoInfo.autoStartSetting.doesBreakStartAutomatically
+        : false
+    );
 
   //#region To Observe LifeCycle
   const mountCount = useRef(0);
@@ -58,33 +82,34 @@ function Settings() {
   //#endregion
 
   //#region Event Handlers
-  function handleInputChange(event: {
+  //TODO: 결국 여기에서 case "userOptionForAutoStart" 해서 한번에 보내는 형식으로 하면 걍 되기는 될 듯.
+  function handlePomoSettingChange(event: {
     target: { value: string | number; name: any };
   }) {
     let targetValue = +event.target.value;
     if (targetValue >= 0) {
       switch (event.target.name) {
         case "pomoDuration":
-          setSettingInputs({
-            ...settingInputs,
+          setPomoSettingInputs({
+            ...pomoSettingInputs,
             pomoDuration: targetValue,
           });
           break;
         case "shortBreakDuration":
-          setSettingInputs({
-            ...settingInputs,
+          setPomoSettingInputs({
+            ...pomoSettingInputs,
             shortBreakDuration: targetValue,
           });
           break;
         case "longBreakDuration":
-          setSettingInputs({
-            ...settingInputs,
+          setPomoSettingInputs({
+            ...pomoSettingInputs,
             longBreakDuration: targetValue,
           });
           break;
         case "numOfPomo":
-          setSettingInputs({
-            ...settingInputs,
+          setPomoSettingInputs({
+            ...pomoSettingInputs,
             numOfPomo: targetValue,
           });
           break;
@@ -96,27 +121,56 @@ function Settings() {
 
   function handleSubmit(event: { preventDefault: () => void }) {
     event.preventDefault();
-    postMsgToSW("emptyStateStore", {});
+
+    // postMsgToSW("emptyStateStore", {}); // 여기서 그냥 다른식으로 해보겠음.//! Original
+    postMsgToSW("saveStates", {
+      stateArr: [
+        { name: "pomoSetting", value: pomoSetting },
+        {
+          name: "autoStartSetting",
+          value: {
+            doesPomoStartAutomatically,
+            doesBreakStartAutomatically,
+          },
+        },
+        { name: "duration", value: pomoSettingInputs.pomoDuration },
+        { name: "repetitionCount", value: 0 },
+        { name: "running", value: false },
+        { name: "startTime", value: 0 },
+        { name: "pause", value: { totalLength: 0, record: [] } },
+      ],
+    });
     stopCountDownInBackground();
     if (user !== null) {
-      updatePomoSetting(user, settingInputs);
+      updatePomoSetting(user, pomoSettingInputs);
+      // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
       updateTimersStates(user, {
-        duration: settingInputs.pomoDuration,
+        duration: pomoSettingInputs.pomoDuration,
         repetitionCount: 0,
         running: false,
         startTime: 0,
         pause: { totalLength: 0, record: [] },
       });
+      updateAutoStartSetting(user, {
+        doesPomoStartAutomatically,
+        doesBreakStartAutomatically,
+      });
     }
-    //! Question: is it possible that prev is null at this point?:
-    //! Answer: it is possible when this component is first rendered before the UserContext is updated with its useEffect hook.
-    //! So What Should I do?: I think it would be good to block Setting Inputs and Save button until we get non-null pomoInfo
-    //! with 0.00001 chance, a user might click save button when prev is null, which means between first render and update of this component. :::...
     setPomoInfo((prev) => {
       return {
         ...(prev as RequiredStatesToRunTimerType),
-        pomoSetting: settingInputs,
+        pomoSetting: pomoSettingInputs,
+        autoStartSetting: {
+          doesPomoStartAutomatically,
+          doesBreakStartAutomatically,
+        },
       };
+    });
+    pubsub.publish("updateAutoStartSetting", {
+      autoStartSetting: {
+        doesPomoStartAutomatically,
+        doesBreakStartAutomatically,
+      },
     });
   }
   //#endregion
@@ -128,7 +182,7 @@ function Settings() {
     console.log(`------------Settings Component was Mounted------------`);
     console.log("user", user);
     console.log("pomoSetting", pomoSetting);
-    console.log("settingsInput", settingInputs);
+    console.log("settingsInput", pomoSettingInputs);
     console.log("mount count", ++mountCount.current);
 
     return () => {
@@ -140,7 +194,7 @@ function Settings() {
     console.log("------------Settings Component was updated------------");
     console.log("user", user);
     console.log("pomoSetting", pomoSetting);
-    console.log("settingsInput", settingInputs);
+    console.log("settingsInput", pomoSettingInputs);
     console.log("render count", ++updateCount.current);
   });
   //#endregion
@@ -151,15 +205,25 @@ function Settings() {
     }
     console.log(pomoSetting);
 
-    if (Object.entries(settingInputs).length === 0) {
-      setSettingInputs(pomoSetting);
+    if (Object.entries(pomoSettingInputs).length === 0) {
+      setPomoSettingInputs(pomoSetting);
     }
-    console.log("POMO SETTING INPUTS", settingInputs);
-  }, [user, pomoSetting, settingInputs]);
+    console.log("POMO SETTING INPUTS", pomoSettingInputs);
+  }, [user, pomoSetting, pomoSettingInputs]);
 
   useEffect(() => {
-    setSettingInputs(pomoSetting);
+    setPomoSettingInputs(pomoSetting);
   }, [pomoSetting]);
+
+  //TODO:
+  // What if only one of the autostart settings has changed? e.g. pomo start?
+  // If it does, setDoesBreakStartAutomatically should've not called.
+  useEffect(() => {
+    setDoesPomoStartAutomatically(autoStartSetting.doesPomoStartAutomatically);
+    setDoesBreakStartAutomatically(
+      autoStartSetting.doesBreakStartAutomatically
+    );
+  }, [autoStartSetting]);
 
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
@@ -175,64 +239,102 @@ function Settings() {
           <GridItem>
             <BoxShadowWrapper>
               <form onSubmit={handleSubmit}>
-                <label className={styles.arrangeLabel}>
-                  Pomo Duration
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="pomoDuration"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={settingInputs.pomoDuration || 0}
-                      onChange={handleInputChange}
+                <Grid
+                  column={2}
+                  row={2}
+                  autoRow={45}
+                  gap={"38px"}
+                  justifyItems="center"
+                  alignItems="center"
+                >
+                  <label className={styles.arrangeLabel}>
+                    Pomo Duration
+                    <div className={styles.alignBoxes}>
+                      <input
+                        name="pomoDuration"
+                        type="number"
+                        className={styles.arrangeInput}
+                        value={pomoSettingInputs.pomoDuration || 0}
+                        onChange={handlePomoSettingChange}
+                      />
+                    </div>
+                  </label>
+                  <label className={styles.arrangeLabel}>
+                    Short Break Duration
+                    <div className={styles.alignBoxes}>
+                      <input
+                        name="shortBreakDuration"
+                        type="number"
+                        className={styles.arrangeInput}
+                        value={pomoSettingInputs.shortBreakDuration || 0}
+                        onChange={handlePomoSettingChange}
+                      />
+                    </div>
+                  </label>
+                  <label className={styles.arrangeLabel}>
+                    Long Break Duration
+                    <div className={styles.alignBoxes}>
+                      <input
+                        name="longBreakDuration"
+                        type="number"
+                        className={styles.arrangeInput}
+                        value={pomoSettingInputs.longBreakDuration || 0}
+                        onChange={handlePomoSettingChange}
+                      />
+                    </div>
+                  </label>
+                  <label className={styles.arrangeLabel}>
+                    Number of Pomos
+                    <div className={styles.alignBoxes}>
+                      <input
+                        name="numOfPomo"
+                        type="number"
+                        className={styles.arrangeInput}
+                        value={pomoSettingInputs.numOfPomo || 0}
+                        onChange={handlePomoSettingChange}
+                      />
+                    </div>
+                  </label>
+                  <GridItem>
+                    <ToggleSwitch
+                      labelName="Auto Start Pomo"
+                      name="pomo"
+                      isSwitchOn={doesPomoStartAutomatically}
+                      isHorizontal={true}
+                      onChange={(e) => {
+                        setDoesPomoStartAutomatically(e.target.checked);
+                      }}
+                      unitSize={25}
+                      xAxisEdgeWidth={2}
+                      borderWidth={2}
+                      backgroundColorForOn="#75BBAF"
+                      backgroundColorForOff="#bbc5c7"
+                      backgroundColorForSwitch="#f0f0f0"
                     />
-                  </div>
-                </label>
-                <br />
-                <label className={styles.arrangeLabel}>
-                  Short Break Duration
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="shortBreakDuration"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={settingInputs.shortBreakDuration || 0}
-                      onChange={handleInputChange}
+                  </GridItem>
+                  <GridItem>
+                    <ToggleSwitch
+                      labelName="Auto Start Break"
+                      name="break"
+                      isSwitchOn={doesBreakStartAutomatically}
+                      isHorizontal={true}
+                      onChange={(e) => {
+                        setDoesBreakStartAutomatically(e.target.checked);
+                      }}
+                      unitSize={25}
+                      xAxisEdgeWidth={2}
+                      borderWidth={2}
+                      backgroundColorForOn="#75BBAF"
+                      backgroundColorForOff="#bbc5c7"
+                      backgroundColorForSwitch="#f0f0f0"
                     />
-                  </div>
-                </label>
-                <br />
-                <label className={styles.arrangeLabel}>
-                  Long Break Duration
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="longBreakDuration"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={settingInputs.longBreakDuration || 0}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </label>
-                <br />
-                <label className={styles.arrangeLabel}>
-                  Number of Pomos
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="numOfPomo"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={settingInputs.numOfPomo || 0}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </label>
-
-                <br />
-                <div className={`${styles.flexBox}`}>
-                  <Button type={"submit"} color={"primary"}>
-                    SAVE
-                  </Button>
-                </div>
+                  </GridItem>
+                  <GridItem columnStart={1} columnEnd={3}>
+                    <Button type={"submit"} color={"primary"}>
+                      SAVE
+                    </Button>
+                  </GridItem>
+                </Grid>
               </form>
             </BoxShadowWrapper>
           </GridItem>
@@ -334,6 +436,8 @@ async function removeDemoData(user: User) {
     console.log(err);
   }
 }
+
+//TODO: 1.변수명 바꾸기 pomoInfo나 뭐... requiredStatesToRunTimer로 2.
 async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
   try {
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
@@ -344,10 +448,6 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
       let pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json();
       pomoSettingAndTimersStates.pomoSetting = pomoSetting;
-      console.log(
-        "THIS IS THE FUCKING pomoSettingAndTimersStates",
-        pomoSettingAndTimersStates
-      );
       await cache.put(
         CONSTANTS.URLs.USER,
         new Response(JSON.stringify(pomoSettingAndTimersStates))

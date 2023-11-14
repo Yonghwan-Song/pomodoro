@@ -9,11 +9,11 @@ import { useTheme } from "styled-components";
 import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
 import {
-  StatesType,
   obtainStatesFromIDB,
   stopCountDownInBackground,
   updateTimersStates,
 } from "../..";
+import { TimersStatesType } from "../../types/clientStatesType";
 
 function Navbar() {
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
@@ -28,7 +28,7 @@ function Navbar() {
       const statesFromIDB = await obtainStatesFromIDB("withoutPomoSetting");
       if (Object.entries(statesFromIDB).length !== 0) {
         if (user !== null) {
-          await updateTimersStates(user, statesFromIDB as StatesType);
+          await updateTimersStates(user, statesFromIDB as TimersStatesType);
         }
       }
 

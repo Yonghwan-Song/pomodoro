@@ -4,7 +4,11 @@ type GridProps = {
   children?: React.ReactNode;
   maxWidth?: string;
   justifyItems?: string;
+  alignItems?: string;
   column?: number;
+  row?: number;
+  autoColumn?: number;
+  autoRow?: number;
   gap?: string;
   marginTop?: string;
   marginRight?: string;
