@@ -14,8 +14,26 @@ type GridItemType = {
 export const StyledGridItem = styled.div<GridItemType>`
   /* align-self: center;
   justify-self: center; */
-  min-width: ${({ minWidth }) => minWidth + "px"};
-  min-height: ${({ minHeight }) => minHeight + "px"};
+  min-width: ${({ minWidth }) => {
+    if (minWidth !== undefined) {
+      if (minWidth >= 0) {
+        return minWidth + "px";
+      }
+    } else {
+      return "0px";
+    }
+  }};
+
+  min-height: ${({ minHeight }) => {
+    if (minHeight !== undefined) {
+      if (minHeight >= 0) {
+        return minHeight + "px";
+      }
+    } else {
+      return "0px";
+    }
+  }};
+
   text-align: ${({ textAlign }) => textAlign};
   background-color: ${({ backgroundColor }) => backgroundColor};
   ${({ columnStart }) =>
