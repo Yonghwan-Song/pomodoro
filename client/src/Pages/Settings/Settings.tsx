@@ -125,7 +125,7 @@ function Settings() {
     // postMsgToSW("emptyStateStore", {}); // 여기서 그냥 다른식으로 해보겠음.//! Original
     postMsgToSW("saveStates", {
       stateArr: [
-        { name: "pomoSetting", value: pomoSetting },
+        { name: "pomoSetting", value: pomoSettingInputs },
         {
           name: "autoStartSetting",
           value: {
