@@ -167,10 +167,8 @@ function Settings() {
       };
     });
     pubsub.publish("updateAutoStartSetting", {
-      autoStartSetting: {
-        doesPomoStartAutomatically,
-        doesBreakStartAutomatically,
-      },
+      doesPomoStartAutomatically,
+      doesBreakStartAutomatically,
     });
   }
   //#endregion
