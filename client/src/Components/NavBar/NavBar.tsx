@@ -25,7 +25,7 @@ function Navbar() {
     try {
       // 로그아웃 시도하는 당시의 데이터를 서버에 persist해 놓기 는다.
       // 이유: 다음에 다시 로그인 했을 때, 이어서 사용할 수 있도록 하기 위해.
-      const statesFromIDB = await obtainStatesFromIDB("withoutPomoSetting");
+      const statesFromIDB = await obtainStatesFromIDB("withoutSettings");
       if (Object.entries(statesFromIDB).length !== 0) {
         if (user !== null) {
           await updateTimersStates(user, statesFromIDB as TimersStatesType);

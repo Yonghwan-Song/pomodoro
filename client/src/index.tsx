@@ -146,7 +146,7 @@ BC.addEventListener("message", async (ev) => {
         }
       }
     } else {
-      let statesFromIDB = await obtainStatesFromIDB("withPomoSetting");
+      let statesFromIDB = await obtainStatesFromIDB("withSettings");
       if (Object.entries(statesFromIDB).length !== 0) {
         autoStartSetting = (statesFromIDB as dataCombinedFromIDB)
           .autoStartSetting;
@@ -419,13 +419,13 @@ async function openIndexedDB() {
 }
 
 export async function obtainStatesFromIDB(
-  opt: "withoutPomoSetting"
+  opt: "withoutSettings"
 ): Promise<TimersStatesType | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withPomoSetting"
+  opt: "withSettings"
 ): Promise<dataCombinedFromIDB | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withoutPomoSetting" | "withPomoSetting"
+  opt: "withoutSettings" | "withSettings"
 ): Promise<any | {}> {
   let db = DB || (await openIndexedDB());
   console.log("db", db);
@@ -435,10 +435,10 @@ export async function obtainStatesFromIDB(
     return { ...acc, [cur.name]: cur.value };
   }, {});
   if (Object.keys(states).length !== 0) {
-    if (opt === "withoutPomoSetting") {
-      const { pomoSetting, ...withoutPomoSetting } =
+    if (opt === "withoutSettings") {
+      const { pomoSetting, autoStartSetting, ...timersStates } =
         states as dataCombinedFromIDB;
-      return withoutPomoSetting;
+      return timersStates;
     } else {
       return states;
     }
@@ -613,11 +613,13 @@ export function stopCountDownInBackground() {
  *! The timersStates
  */
 export async function countDown(setIntervalId: number | string | null) {
-  let timersStates = await obtainStatesFromIDB("withPomoSetting");
+  let statesFromIDB = await obtainStatesFromIDB("withSettings");
 
-  console.log("states in countDown()", timersStates);
+  console.log("states in countDown()", statesFromIDB);
 
-  if (Object.entries(timersStates).length !== 0) {
+  if (Object.entries(statesFromIDB).length !== 0) {
+    let { pomoSetting, autoStartSetting, ...timersStates } =
+      statesFromIDB as dataCombinedFromIDB;
     //* 1. 만약 Main과 그 children들에 의해 한 session이 시작되었고,
     //* 2. backbround에서 돌아가고 있지 않으면
     //*   (사실.. background는 아님.. 원래는 sw.js에서 돌려서 background가 맞았는데 이게 몇초 이내에 지맘대로 꺼져서.. 결국 main thread(index.tsx파일에서..?)돌리게 되었기 때문)
@@ -641,7 +643,7 @@ export async function countDown(setIntervalId: number | string | null) {
           console.log(
             "-------------------------------------About To Call EndTimer()-------------------------------------"
           );
-          postMsgToSW("endTimer", timersStates);
+          postMsgToSW("endTimer", { pomoSetting, ...timersStates });
         }
       }, 500);
 

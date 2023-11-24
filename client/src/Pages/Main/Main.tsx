@@ -77,7 +77,7 @@ export default function Main() {
 
   function setStatesRelatedToTimerUsingDataFromIDB() {
     const getStatesFromIDB = async () => {
-      let states = await obtainStatesFromIDB("withoutPomoSetting");
+      let states = await obtainStatesFromIDB("withoutSettings");
       setStatesRelatedToTimer(states);
     };
     getStatesFromIDB();
@@ -160,7 +160,7 @@ export default function Main() {
    */
   function subscribeToClearObjectStores() {
     const getDataFromIDB = async () => {
-      const states = await obtainStatesFromIDB("withoutPomoSetting");
+      const states = await obtainStatesFromIDB("withoutSettings");
       const sessionsOfToday = await retrieveTodaySessionsFromIDB();
 
       setStatesRelatedToTimer(states);

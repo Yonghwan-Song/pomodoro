@@ -100,7 +100,7 @@ export function UserInfoContextProvider({
       );
       const getPomoSettingFromIDB = async () => {
         // when deleting all history including indexed DB... it does not work.
-        let states = await obtainStatesFromIDB("withPomoSetting");
+        let states = await obtainStatesFromIDB("withSettings");
         console.log("states in the setPomoInfoOfUnLoggedInUser", states);
 
         let pomoSetting = doesPomoSettingExist()
