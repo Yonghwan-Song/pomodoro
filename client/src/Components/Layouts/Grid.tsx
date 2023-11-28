@@ -9,7 +9,8 @@ type GridProps = {
   row?: number;
   autoColumn?: number;
   autoRow?: number;
-  gap?: string;
+  columnGap?: string;
+  rowGap?: string;
   marginTop?: string;
   marginRight?: string;
   marginBottom?: string;

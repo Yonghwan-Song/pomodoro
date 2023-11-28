@@ -28,3 +28,11 @@ export const IDB_VERSION = 7;
 const cacheVersion = 1;
 export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion
+
+export const BREAK_POINTS = {
+  PHONE: "576px",
+  TABLET: "768px",
+  FHD: "1920px",
+  QHD: "2560px",
+  UHD: "3840px",
+};

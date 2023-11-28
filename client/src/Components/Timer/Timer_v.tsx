@@ -108,6 +108,7 @@ export function TimerVVV({
     let timePassed = 0;
     let timeCountedDown = 0; // timeCountedDown = timePassed - pause.totalLength
 
+    console.log("statesRelatedToTimer", statesRelatedToTimer);
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       let { duration, pause, running, startTime } =
         statesRelatedToTimer as TimersStatesType;
@@ -123,6 +124,7 @@ export function TimerVVV({
         //running === false && startTime === 0 -> timer has not yet started.
         remainingDuration = durationInSeconds;
       } else {
+        console.log("startTime", startTime);
         //running === false && startTime !== 0 -> timer has not paused.
         timePassed = pause.record[pause.record.length - 1].start - startTime;
         timeCountedDown = timePassed - pause.totalLength;
@@ -483,7 +485,8 @@ export function TimerVVV({
 
   return (
     <Grid
-      gap={"15px"}
+      columnGap={"15px"}
+      rowGap={"15px"}
       justifyItems={"center"}
       marginTop="148px"
       marginBottom="40px"

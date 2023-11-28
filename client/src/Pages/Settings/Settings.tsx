@@ -175,33 +175,11 @@ function Settings() {
 
   //#region UseEffects
 
-  //#region To Observe LifeCycle
-  useEffect(() => {
-    console.log(`------------Settings Component was Mounted------------`);
-    console.log("user", user);
-    console.log("pomoSetting", pomoSetting);
-    console.log("settingsInput", pomoSettingInputs);
-    console.log("mount count", ++mountCount.current);
-
-    return () => {
-      console.log(`------------Settings Component was unMounted------------`);
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("------------Settings Component was updated------------");
-    console.log("user", user);
-    console.log("pomoSetting", pomoSetting);
-    console.log("settingsInput", pomoSettingInputs);
-    console.log("render count", ++updateCount.current);
-  });
-  //#endregion
-
   useEffect(() => {
     if (user !== null && Object.entries(user).length !== 0) {
-      console.log(user);
+      // console.log(user);
     }
-    console.log(pomoSetting);
+    // console.log(pomoSetting);
 
     if (Object.entries(pomoSettingInputs).length === 0) {
       setPomoSettingInputs(pomoSetting);
@@ -233,15 +211,16 @@ function Settings() {
       {userInfoContext.pomoInfo === null ? (
         <LoadingMessage>"Loading Data"</LoadingMessage>
       ) : (
-        <Grid maxWidth="634px" gap="25px" marginTop="100px">
+        <Grid maxWidth="634px" columnGap="25px" rowGap="25px" marginTop="100px">
           <GridItem>
             <BoxShadowWrapper>
               <form onSubmit={handleSubmit}>
                 <Grid
                   column={2}
                   row={2}
-                  autoRow={45}
-                  gap={"38px"}
+                  // autoRow={45}
+                  columnGap={"38px"}
+                  rowGap={"38px"}
                   justifyItems="center"
                   alignItems="center"
                 >
@@ -328,6 +307,7 @@ function Settings() {
                     />
                   </GridItem>
                   <GridItem columnStart={1} columnEnd={3}>
+                    {/* <GridItem columnStart={1} columnEnd={1}> */}
                     <Button type={"submit"} color={"primary"}>
                       SAVE
                     </Button>

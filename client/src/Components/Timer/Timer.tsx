@@ -393,7 +393,7 @@ export function Timer({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
     });
-    console.log("check if remainingDuratin is less than 0");
+    // console.log("check if remainingDuratin is less than 0");
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
       //#region Things that should be done when a session is finished
       setRepetitionCount(
@@ -493,7 +493,8 @@ export function Timer({
 
   return (
     <Grid
-      gap={"15px"}
+      columnGap={"15px"}
+      rowGap={"15px"}
       justifyItems={"center"}
       marginTop="148px"
       marginBottom="40px"
