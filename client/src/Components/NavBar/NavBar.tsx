@@ -54,7 +54,6 @@ function Navbar() {
       ); // children property is inhertied from the Element interface
       console.log(navLinks);
 
-      // navLinks.forEach((link: HTMLLIElement, index) => {
       navLinks.forEach((link: HTMLLIElement, index) => {
         if (link.style.animation) {
           link.style.animation = "";
@@ -81,23 +80,36 @@ function Navbar() {
 
   return (
     <StyledNav>
-      <StyledLink to="/timer" size="2rem" letterSpacing="7px">
+      <StyledLink
+        to="/timer"
+        max={{ constant: "1.5rem", variable: "3.2424vh" }}
+        letterSpacing="7px"
+      >
         Pomodoro
       </StyledLink>
 
       <UnorderedList ref={ulRef} isSideBarActive={isActive} liOpacity>
         {user !== null && (
           <li>
-            <StyledLink to="/statistics" onClick={handleLinkClick}>
+            <StyledLink
+              to="/statistics"
+              max={{ constant: "1rem", variable: "2.4318vh" }}
+              onClick={handleLinkClick}
+            >
               Statistics
             </StyledLink>
           </li>
         )}
         <li>
-          <StyledLink to="/settings" onClick={handleLinkClick}>
+          <StyledLink
+            to="/settings"
+            max={{ constant: "1rem", variable: "2.4318vh" }}
+            onClick={handleLinkClick}
+          >
             Settings
           </StyledLink>
         </li>
+        {/* TODO: signOut도 responsive하게 바꿔야함. */}
         {user?.displayName ? (
           <li>
             <span
@@ -113,8 +125,8 @@ function Navbar() {
             <StyledLink
               to="/signin"
               onClick={toggleSideBar}
-              size="1rem"
-              color={"#181313"}
+              max={{ constant: "0.75rem", variable: "1.6212vh" }}
+              color={"#FFB86C"}
               hover
             >
               Sign in

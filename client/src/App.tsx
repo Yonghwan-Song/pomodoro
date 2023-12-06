@@ -21,6 +21,7 @@ const theme = {
     link: "#50fa7b",
     text: "#181313",
   },
+  //TODO: 이거 src/constants/index.ts와 중복인데..
   tablet: "1024px",
   mobile: "768px",
 };
@@ -62,6 +63,18 @@ function App() {
       );
     }
     //#endregion
+  }, []);
+
+  useEffect(() => {
+    window.onresize = (ev) => {
+      console.log(
+        `resolution - ${document.documentElement.clientWidth} * ${document.documentElement.clientHeight}`
+      );
+    };
+
+    return () => {
+      window.onresize = null;
+    };
   }, []);
 
   return (

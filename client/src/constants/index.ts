@@ -30,9 +30,33 @@ export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion
 
 export const BREAK_POINTS = {
-  PHONE: "576px",
+  MOBILE: "576px",
   TABLET: "768px",
   FHD: "1920px",
   QHD: "2560px",
   UHD: "3840px",
+};
+
+export const PIXEL = {
+  PER_SEC: {
+    IN_MOBILE: 16 / 300,
+    IN_TABLET: 16 / 225,
+    IN_FHD: 8 / 60,
+    IN_QHD: 16 / 90,
+    IN_UHD: 4 / 15,
+  },
+  PER_MIN: {
+    IN_MOBILE: 16 / 5,
+    IN_TABLET: 64 / 15,
+    IN_FHD: 8,
+    IN_QHD: 32 / 3,
+    IN_UHD: 16,
+  },
+  PER_HR: {
+    IN_MOBILE: 192, // 576 <-> 3h
+    IN_TABLET: 256, // 768 <-> 3h
+    IN_FHD: 480, // 1920 <-> 4h
+    IN_QHD: 640, // 2560 <-> 4h
+    IN_UHD: 960, // 3840 <-> 4h
+  },
 };

@@ -82,7 +82,7 @@ export const StyledGrid = styled.div<GridType>`
       margin-left: ${marginLeft};
     `}
 
-  @media (max-width: ${BREAK_POINTS.PHONE}) {
+  @media (width<= ${BREAK_POINTS.MOBILE}) {
     grid-template-columns: 1fr;
     // 1 column이니까 column gap은 소용 없고 row gap만 의미가 있다.
     // TODO: 1. gap을 다 row-gap column-gap으로 바꾸고  2. 여기서 column-gap을 없애.

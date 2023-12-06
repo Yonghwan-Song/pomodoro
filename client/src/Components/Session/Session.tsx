@@ -1,9 +1,11 @@
 import { DurationType } from "../../types/clientStatesType";
 import Duration from "../Duration/Duration";
+import { SessionStyled } from "../styles/timeline-related/Session.styled";
 
 type SessionProps = {
   durations: DurationType[];
 };
+
 export default function Session({ durations: durationArr }: SessionProps) {
   const now = new Date();
   const startOfTodayTimestamp = new Date(
@@ -12,25 +14,16 @@ export default function Session({ durations: durationArr }: SessionProps) {
     now.getDate()
   ).getTime();
 
-  // 8px/min -> 480px/h -> 1980px/4h
-  // If this const value is 0, it means that this session started at the start of today.
-  const xCoordinateInSeconds = Math.floor(
+  // If this value is 0, it means that this session started at the start of today.
+  let seconds = Math.floor(
     (durationArr[0].startTime - startOfTodayTimestamp) / 1000
   );
 
   return (
-    <div
-      style={{
-        display: "inline-block",
-        height: "60px",
-        position: "absolute",
-        top: "10px",
-        left: (xCoordinateInSeconds / 60) * 8 + "px",
-      }}
-    >
+    <SessionStyled seconds={seconds}>
       {durationArr.map((aDuration) => {
         return <Duration data={aDuration} key={aDuration.startTime} />;
       })}
-    </div>
+    </SessionStyled>
   );
 }

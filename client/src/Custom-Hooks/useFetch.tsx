@@ -44,7 +44,7 @@ export function useFetch<T, S = undefined>({
 
   //#region To Observe LifeCycle
   // const mountCount = useRef(0);
-  const updateCount = useRef(0);
+  // const updateCount = useRef(0);
   //#endregion
 
   //#region To Observe Lifecycle
@@ -63,14 +63,14 @@ export function useFetch<T, S = undefined>({
   //   };
   // });
 
-  useEffect(() => {
-    console.log(
-      "----------------------------useFetch Updated----------------------------"
-    );
-    console.log("user", user);
-    console.log("data", data);
-    console.log("render count", ++updateCount.current);
-  });
+  // useEffect(() => {
+  //   console.log(
+  //     "----------------------------useFetch Updated----------------------------"
+  //   );
+  //   console.log("user", user);
+  //   console.log("data", data);
+  //   console.log("render count", ++updateCount.current);
+  // });
   //#endregion
 
   useEffect(() => {

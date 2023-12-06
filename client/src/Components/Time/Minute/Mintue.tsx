@@ -13,6 +13,9 @@ export default function Mintue({ minutes }: MintueProps) {
 
   return (
     <>
+      {/* But I think I need some constraints on the input for the length of break and pomodoro */}
+      {/* If there is no constraints, I need to first check decimal size of minutes. And this makes code unnecessarily complex */}
+      {/* TODO: change _100nPlus10n to _100n and _10n each. */}
       <div className={styles.div}>{_100nPlus10n}</div>
       <div className={styles.div}>{_1n}</div>
     </>

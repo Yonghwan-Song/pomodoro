@@ -22,8 +22,12 @@ body {
   height: 100%;
 } */
 
+/* https://www.youtube.com/watch?v=ru3U8MHbFFI&t=145s */
 #root {
-  height: 100vh;
+  /* height: 100vh;
+  height: 100dvh; */
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .btn {

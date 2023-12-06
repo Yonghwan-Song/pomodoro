@@ -1,5 +1,6 @@
 .span {
-  color: rgb(24, 19, 19);
+  font-size: max(0.75rem, 1.6212vh);
+  color: #ffb86c;
   cursor: pointer;
   text-decoration: none;
 }

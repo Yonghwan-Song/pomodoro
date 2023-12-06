@@ -1,16 +1,14 @@
 import { memo } from "react";
 import OneHour from "./OneHour";
 
-// TODO: prop없이 해도 되는지 문서 읽어보기
 const Scale = memo(function Scale() {
-  let hourScales: number[] = [];
-  for (let i = 0; i < 24; i++) {
-    hourScales.push(i * 480); // 480px/hr, 8px/min
-  }
   return (
     <>
-      {hourScales.map((aScale, index) => {
-        return <OneHour cssLeft={aScale} index={index} key={index} />;
+      {[
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        20, 21, 22, 23,
+      ].map((n) => {
+        return <OneHour base={n} index={n} key={n} />;
       })}
     </>
   );

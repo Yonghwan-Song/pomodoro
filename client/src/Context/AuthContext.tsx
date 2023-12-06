@@ -120,9 +120,9 @@ export function AuthContextProvider({
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (incomingUser) => {
-      console.log(`------------Auth State Changed------------`);
-      console.log("currentUser", user);
-      console.log("incomingUser", incomingUser);
+      // console.log(`------------Auth State Changed------------`);
+      // console.log("currentUser", user);
+      // console.log("incomingUser", incomingUser);
 
       // null -> null does not update AuthContextProvider:::...
       setUser(incomingUser);
