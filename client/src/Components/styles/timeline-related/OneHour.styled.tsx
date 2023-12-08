@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { BREAK_POINTS, PIXEL } from "../../../constants";
+import { BREAK_POINTS, MINIMUMS, PIXEL, VH_RATIO } from "../../../constants";
 
 type StyledOneHourProps = {
   base: number;
@@ -8,8 +8,7 @@ type StyledOneHourProps = {
 
 export const StyledOneHour = styled.div<StyledOneHourProps>`
   position: absolute;
-  height: 80px;
-  /* height: 8.24vh; */
+  height: max(${MINIMUMS.TIMELINE}px, ${VH_RATIO.TIMELINE}vh);
   width: ${PIXEL.PER_HR.IN_FHD + "px"};
   top: 0px;
   border-left: 1px solid ${({ borderColor }) => borderColor};

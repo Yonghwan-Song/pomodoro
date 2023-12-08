@@ -3,7 +3,7 @@ import Session from "../Session/Session";
 import { SessionType } from "../../types/clientStatesType";
 import Scale from "../Scale/Scale";
 import DetailArea from "../DetailArea/DetailArea";
-import { PIXEL } from "../../constants";
+import { MINIMUMS, PIXEL, VH_RATIO } from "../../constants";
 import {
   mobileRange,
   tabletRange,
@@ -354,15 +354,24 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
   }, []);
   //#endregion
 
+  //! Things good to know to understand positioning of this component and its children.
+
+  //1. Timeline is a `positioned` element. Its containing block is the initial containing block.
+  //   https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Positioning#positioning_contexts
+  //
+  //*  2. StyledNumberForTime and StyledOneHour are positioned absolutely to their containing block Timeline.
+  //    3. A `StyledTenMinutes` component is positioned absolutely to its containing block StyledOneHour.
+  //*  4. SessionStyled is positioned absolutely to its containing block Timeline.
+  //    5. DurationStyled is following normal flow since its position is static (default value).
+  //*  6. DetailArea is positioned absolutely to its containing block Timeline.
+
   return (
     <div
       ref={divRef}
       style={{
         position: "absolute",
-        top: "10vh",
-
-        //TODO 1.should be the same as the height of OneHour. 2.should be responsive to the QHD and UHD.
-        height: "80px",
+        top: `max(${MINIMUMS.NAV_BAR}px, ${VH_RATIO.NAV_BAR}vh)`,
+        height: `max(${MINIMUMS.TIMELINE}px, ${VH_RATIO.TIMELINE}vh)`,
         backgroundColor: "#c6d1e6",
 
         // properties below should change dynamically.

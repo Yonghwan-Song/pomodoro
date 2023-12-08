@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { MINIMUMS, VH_RATIO } from "../../constants";
 
 export type StyledUnorderedListProps = {
   liOpacity: boolean;
@@ -34,7 +35,7 @@ export const StyledUnorderedList = styled.ul<StyledUnorderedListProps>`
     // position
     position: absolute;
     right: 0px;
-    top: 10vh;
+    top: max(${MINIMUMS.NAV_BAR}px, ${VH_RATIO.NAV_BAR}vh);
     height: 90vh;
 
     // size

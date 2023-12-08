@@ -60,3 +60,19 @@ export const PIXEL = {
     IN_UHD: 960, // 3840 <-> 4h
   },
 };
+
+export const VH_RATIO = {
+  NAV_BAR: 10,
+  TIMELINE: 8.5,
+  SESSION: 6,
+  DETAIL_AREA: 5.5,
+};
+
+export const MIN_BASE = 8;
+
+export const MINIMUMS = {
+  NAV_BAR: VH_RATIO.NAV_BAR * MIN_BASE,
+  TIMELINE: VH_RATIO.TIMELINE * MIN_BASE,
+  SESSION: VH_RATIO.SESSION * MIN_BASE,
+  DETAIL_AREA: VH_RATIO.DETAIL_AREA * MIN_BASE,
+};

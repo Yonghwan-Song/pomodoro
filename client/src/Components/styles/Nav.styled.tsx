@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { MINIMUMS, VH_RATIO } from "../../constants";
 
 export const StyledNav = styled.nav`
   position: sticky;
@@ -6,10 +7,8 @@ export const StyledNav = styled.nav`
   justify-content: space-between;
   padding: 0 2rem;
   align-items: center;
-  /* min-height: 10vh; */
-
-  /* 이렇게 해도 별반 behavior에 차이가 없음 이 앱에서는. */
-  height: 10vh;
+  /* height: ${VH_RATIO.NAV_BAR}vh; */
+  height: max(${MINIMUMS.NAV_BAR}px, ${VH_RATIO.NAV_BAR}vh);
   background-color: ${({ theme }) => theme.colors.navBar};
   z-index: 999;
 `;

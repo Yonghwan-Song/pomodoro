@@ -1,4 +1,5 @@
 import styled, { css } from "styled-components";
+import { MINIMUMS, VH_RATIO } from "../../../constants";
 
 type StyledTimelineProps = {
   dynamicLeftAndRight:
@@ -23,7 +24,7 @@ export const StyledTimeline = styled.div<StyledTimelineProps>`
     }
   }}
 
-  top: 10vh;
+  top: max(${MINIMUMS.NAV_BAR}px, ${VH_RATIO.NAV_BAR}vh);
   height: 80px;
   width: ${({ fullWidthOfTimeline }) => fullWidthOfTimeline + "px"};
   background-color: ${({ backgroundColor }) => backgroundColor || "#c6d1e6"};

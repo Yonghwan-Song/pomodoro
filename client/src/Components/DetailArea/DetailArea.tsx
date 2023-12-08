@@ -7,7 +7,7 @@ import {
   qhdRange,
   uhdRange,
 } from "../Timeline/mediaQueryLists";
-import { PIXEL } from "../../constants";
+import { MINIMUMS, PIXEL, VH_RATIO } from "../../constants";
 
 type DetailAreaProps = {
   arrOfSessions: SessionType[];
@@ -215,9 +215,9 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
       onWheel={handleWheel}
       style={{
         position: "absolute",
-        top: "80px",
+        bottom: `min(-${MINIMUMS.DETAIL_AREA}px,-${VH_RATIO.DETAIL_AREA}vh)`,
+        height: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`,
         backgroundColor: "#9ca0bb",
-        height: "50px",
         width: fullWidthOfTimeline.current + "px",
       }}
     >
@@ -230,7 +230,7 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
           left: "0px",
           transform: "translateX(-50%)",
           textAlign: "center",
-          lineHeight: "50px",
+          lineHeight: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`,
         }}
       >
         {message}

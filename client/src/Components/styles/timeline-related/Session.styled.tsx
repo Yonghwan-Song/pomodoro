@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { PIXEL } from "../../../constants/index";
+import { MINIMUMS, PIXEL, VH_RATIO } from "../../../constants/index";
 import { BREAK_POINTS } from "../../../constants/index";
 
 type SessionStyledProps = {
@@ -10,8 +10,9 @@ type SessionStyledProps = {
 export const SessionStyled = styled.div<SessionStyledProps>`
   display: inline-block;
   position: absolute;
-  height: 60px;
-  top: 10px;
+  height: max(${MINIMUMS.SESSION}px, ${VH_RATIO.SESSION}vh);
+  top: 50%;
+  transform: translateY(-50%);
 
   @media (width <= ${BREAK_POINTS.MOBILE}) {
     left: ${({ seconds }) => seconds * PIXEL.PER_SEC.IN_MOBILE + "px"};
