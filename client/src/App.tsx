@@ -27,6 +27,7 @@ const theme = {
 };
 
 function App() {
+  //#region side effects
   useEffect(() => {
     const disableArrowLeftAndRight = (ev: KeyboardEvent) => {
       if (ev.code === "ArrowLeft" || ev.code === "ArrowRight") {
@@ -39,8 +40,8 @@ function App() {
     };
   }, []);
 
+  //#region notification
   useEffect(() => {
-    //#region notification
     if ("Notification" in window) {
       console.log("The Notification property exists in the window namespace");
       if (Notification.permission === "granted") {
@@ -62,20 +63,22 @@ function App() {
         "The Notification property does not exist in the window namespace"
       );
     }
-    //#endregion
   }, []);
+  //#endregion
 
-  useEffect(() => {
-    window.onresize = (ev) => {
-      console.log(
-        `resolution - ${document.documentElement.clientWidth} * ${document.documentElement.clientHeight}`
-      );
-    };
+  // useEffect(() => {
+  //   window.onresize = (ev) => {
+  //     console.log(
+  //       `resolution - ${document.documentElement.clientWidth} * ${document.documentElement.clientHeight}`
+  //     );
+  //   };
 
-    return () => {
-      window.onresize = null;
-    };
-  }, []);
+  //   return () => {
+  //     window.onresize = null;
+  //   };
+  // }, []);
+
+  //#endregion
 
   return (
     <AuthContextProvider>

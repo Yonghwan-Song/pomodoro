@@ -27,7 +27,18 @@ export default function Duration({ data }: DurationProps) {
       backgroundColor={backgroundColor}
       subject={data.subject}
     >
-      {Math.floor(data.duration * converterToMintues)}
+      <p
+        style={{
+          fontSize: "0.8em",
+          fontWeight: "bold",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+        }}
+      >
+        {Math.floor(data.duration * converterToMintues)}
+      </p>
     </DurationStyled>
   );
 }

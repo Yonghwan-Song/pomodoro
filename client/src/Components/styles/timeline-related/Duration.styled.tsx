@@ -16,10 +16,7 @@ export const DurationStyled = styled.div<DurationStyledProps>`
   border: ${({ subject }) =>
     subject === "pause" ? "0.5px solid #e25353" : ""};
   border-radius: 7px;
-  font-size: 0.8em;
-  font-weight: bold;
-  text-align: center;
-  line-height: 60px; //to vertically center text
+  position: relative;
 
   @media (width <= ${BREAK_POINTS.MOBILE}) {
     width: ${({ durationInSeconds }) =>

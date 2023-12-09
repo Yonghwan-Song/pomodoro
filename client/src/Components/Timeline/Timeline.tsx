@@ -331,7 +331,20 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
     }
   }
 
+  // Prevent scrolling document when mouse is on timeline.
+  divRef.current?.addEventListener("wheel", preventScroll, { passive: false });
+  function preventScroll(ev: any) {
+    ev.preventDefault();
+  }
+
   //#region side effects
+  useEffect(() => {
+    let divNode = divRef.current;
+    return () => {
+      divNode && divNode.removeEventListener("wheel", preventScroll);
+    };
+  }, []);
+
   useEffect(() => {
     window.onresize = (ev) => {
       // console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
