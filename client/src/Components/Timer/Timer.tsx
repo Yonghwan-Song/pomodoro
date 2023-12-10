@@ -492,13 +492,7 @@ export function Timer({
   //#endregion
 
   return (
-    <Grid
-      columnGap={"15px"}
-      rowGap={"15px"}
-      justifyItems={"center"}
-      marginTop="148px"
-      marginBottom="40px"
-    >
+    <Grid rowGap={"15px"} justifyItems={"center"} marginBottom="10px">
       <GridItem>
         <CountDownTimer
           repetitionCount={repetitionCount}

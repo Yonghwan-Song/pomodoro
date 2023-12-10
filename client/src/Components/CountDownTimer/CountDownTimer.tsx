@@ -37,7 +37,6 @@ export default function CountDownTimer({
       <div
         style={{
           textAlign: "center",
-          marginTop: "10px",
           marginBottom: "10px",
         }}
       >

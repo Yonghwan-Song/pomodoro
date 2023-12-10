@@ -321,7 +321,7 @@ export default function Statistics() {
       {statData === null ? (
         <StyledLoadingMessage>loading data...</StyledLoadingMessage>
       ) : (
-        <Grid marginTop="100px">
+        <Grid marginTop="100px" rowGap="11px">
           <GridItem>
             <Overview sum={sum} />
           </GridItem>

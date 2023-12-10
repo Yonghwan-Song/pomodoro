@@ -204,7 +204,15 @@ export default function Main() {
   return (
     <main>
       <RecOfToday records={records} />
-      <section>
+      <section
+        style={{
+          position: "absolute",
+          // The vh value below is to place this section block 50% below from the top of the document area that is formed by excluding navBar + timeline + detailArea (24vh) from itself.
+          top: `${24 + (100 - 24) / 2}vh`,
+          left: "50%",
+          transform: "translate(-50%, -52%)",
+        }}
+      >
         {isStatesRelatedToTimerReady &&
           (isPomoSettingReady ? (
             localStorage.getItem("user") === "authenticated" ? (

@@ -15,6 +15,7 @@ type GridProps = {
   marginRight?: string;
   marginBottom?: string;
   marginLeft?: string;
+  padding?: string;
 };
 
 export function Grid({ children, ...props }: GridProps) {

@@ -1,12 +1,12 @@
 //#region Components/CircularProgressBar/circularProgressBar.jsx
 export const SVG = { HEGITH: 300, WIDTH: 300 };
+// export const SVG = { HEGITH: 400, WIDTH: 400 };
 export const MIDDLE_X = SVG.WIDTH / 2;
 export const MIDDLE_Y = SVG.HEGITH / 2;
 export const STROKE_WIDTH = 10;
 
-// radius does not include stroke width.
-// stroke + size = 2 * radius
-// this makes the circle fit perfectly into the svg box.
+// Radius does not include stroke width.
+// This makes the circle fit perfectly into the svg box.
 export const RADIUS = (SVG.WIDTH - STROKE_WIDTH) / 2;
 
 export const BACKGROUND_COLOR = "#e0c2b8"; // lighter

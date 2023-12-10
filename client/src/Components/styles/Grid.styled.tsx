@@ -15,6 +15,7 @@ type GridType = {
   marginRight?: string;
   marginBottom?: string;
   marginLeft?: string;
+  padding?: string;
 };
 
 export const StyledGrid = styled.div<GridType>`
@@ -23,7 +24,7 @@ export const StyledGrid = styled.div<GridType>`
   justify-items: ${({ justifyItems }) => justifyItems};
   align-items: ${({ alignItems }) => alignItems};
   margin: auto;
-  padding: 10px;
+  padding: ${({ padding }) => padding || "10px"};
   display: grid;
 
   ${({ column }) => {

@@ -16,6 +16,7 @@ import {
   TimerStateType,
   TimersStatesType,
 } from "../../types/clientStatesType";
+import { Grid } from "../Layouts/Grid";
 
 type PatternTimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -312,7 +313,7 @@ export function PatternTimer({
   }, []);
 
   return (
-    <>
+    <Grid rowGap={"15px"}>
       <Timer
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
@@ -336,7 +337,7 @@ export function PatternTimer({
             ? repetitionCount / 2
             : (repetitionCount + 1) / 2)}
       </h3>
-    </>
+    </Grid>
   );
 }
 
