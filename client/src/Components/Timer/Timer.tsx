@@ -147,7 +147,7 @@ export function Timer({
   //#region Button Click Handlers
   //문제점: toggle이 나타내는 case들 중 분명 resume이라는게 존재하는데 조건식에서 resume이라는 단어는 코빼기도 보이지 않는다.
   async function toggleTimer(momentTimerIsToggled: number) {
-    if (isStarting()) {
+    if (start()) {
       // initial start
       dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
       if (repetitionCount === 0) {
@@ -157,8 +157,6 @@ export function Timer({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
-            repetitionCount: 0,
-            duration: durationInSeconds / 60,
           });
         postMsgToSW("saveStates", {
           stateArr: [
@@ -178,8 +176,7 @@ export function Timer({
             pause: { totalLength: 0, record: [] },
           });
       }
-    } else if (isResuming()) {
-      // resume
+    } else if (resume()) {
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
       user &&
@@ -203,11 +200,8 @@ export function Timer({
                 timerState.pause!.record[timerState.pause!.record.length - 1]
                   .start),
           },
-          repetitionCount,
-          duration: durationInSeconds / 60,
         });
-    } else {
-      // pause
+    } else if (pause()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
       user &&
@@ -221,34 +215,37 @@ export function Timer({
               { start: momentTimerIsToggled, end: undefined },
             ],
           },
-          repetitionCount,
-          duration: durationInSeconds / 60,
         });
     }
-    function isStarting() {
+    function start() {
       return (
         timerState.running === false && timerState.pause!.record.length === 0
       ); // if this is not the first start of the timer, it means resuming the timer.
     }
-    function isResuming() {
+    function resume() {
       return (
         timerState.running === false && timerState.pause!.record.length !== 0
       );
     }
-    function isPausing() {
+    function pause() {
       return timerState.running;
     }
   }
 
   //TODO: calculate totalLength of the pause and pass it
   async function endTimer(now: number) {
-    postMsgToSW("saveStates", {
-      stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
-    });
-
     const patternTimerStates = determineNextPatternTimerStates({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
+    });
+
+    postMsgToSW("saveStates", {
+      stateArr: [
+        {
+          name: "repetitionCount",
+          value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
+        },
+      ],
     });
 
     const timeCountedDownInMilliSeconds =
@@ -288,20 +285,16 @@ export function Timer({
     );
     setRemainingDuration(0);
 
-    if (patternTimerStates !== null) {
-      //* 6.
-      user &&
-        updateTimersStates(user, {
-          running: false,
-          startTime: 0,
-          pause: { totalLength: 0, record: [] },
-          duration: patternTimerStates.duration!,
-          repetitionCount:
-            patternTimerStates.repetitionCount ?? repetitionCount + 1,
-        });
-    } else {
-      console.warn("patternTimerStates is null");
-    }
+    //* 6.
+    user &&
+      updateTimersStates(user, {
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+        duration: patternTimerStates.duration!,
+        repetitionCount:
+          patternTimerStates.repetitionCount ?? repetitionCount + 1,
+      });
   }
   //#endregion
 
@@ -393,14 +386,19 @@ export function Timer({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
     });
-    // console.log("check if remainingDuratin is less than 0");
+
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
       //#region Things that should be done when a session is finished
       setRepetitionCount(
         patternTimerStates.repetitionCount ?? repetitionCount + 1
       );
       postMsgToSW("saveStates", {
-        stateArr: [{ name: "repetitionCount", value: repetitionCount + 1 }],
+        stateArr: [
+          {
+            name: "repetitionCount",
+            value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
+          },
+        ],
       });
       next({
         howManyCountdown: repetitionCount + 1,
@@ -409,8 +407,7 @@ export function Timer({
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
 
-      patternTimerStates &&
-        user &&
+      user &&
         updateTimersStates(user, {
           running: false,
           startTime: 0,
@@ -419,15 +416,9 @@ export function Timer({
           repetitionCount:
             patternTimerStates.repetitionCount ?? repetitionCount + 1,
         });
-
-      patternTimerStates ?? console.warn("patternTimerStates is null");
       //#endregion
     }
   }
-
-  //! 결국 side-effect를 걸어줘서 auto-start이 되게 해야하는데 dep를 딱 잘 잘아서
-  //! 딱 어떤 session이 끝난 직후의 render이후에 이 함수가 작동할 수 있도록 하는 그런.. dep에 넣을
-  //! variable을 잘 찾아보자.. 아니면 하나 걸고 조건식을 추가로 만들어보던가.
 
   function autoStartNextSession() {
     // Auto start all pomo sessions of a cycle
@@ -474,7 +465,7 @@ export function Timer({
   }: {
     howManyCountdown: number;
     numOfPomo: number;
-  }): Partial<PatternTimerStatesType> {
+  }): { duration: number; repetitionCount?: number } {
     let retVal = null;
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {

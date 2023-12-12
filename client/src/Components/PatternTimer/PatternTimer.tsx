@@ -242,10 +242,7 @@ export function PatternTimer({
         setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
         setIsOnCycle(false);
         postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "duration", value: pomoDuration },
-            { name: "repetitionCount", value: 0 },
-          ],
+          stateArr: [{ name: "duration", value: pomoDuration }],
         });
 
         // for timeline

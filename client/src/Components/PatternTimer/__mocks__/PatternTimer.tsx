@@ -49,7 +49,6 @@ export function PatternTimer() {
       //cycle completion notification
       //setCycleCount((prev) => prev + 1);
       setDuration(pomoDuration!);
-      setRepetitionCount(0);
     }
   }
 
