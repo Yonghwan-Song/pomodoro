@@ -24,8 +24,6 @@ export default function PauseTimer({
   });
 
   useEffect(() => {
-    console.log("running", isPaused);
-    console.log("count", count);
     if (isPaused) {
       let id = setInterval(() => {
         let timePassedInMilliSeconds =

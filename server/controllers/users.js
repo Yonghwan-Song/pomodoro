@@ -121,13 +121,17 @@ export const updatePomoSetting = async (req, res) => {
 export const updateTimersStates = async (req, res) => {
   try {
     let currentUser = await User.findOne({ email: req.userEmail });
-    console.log("req.body in updateRequiredStatesToRunTimer", req.body);
+    console.log("timersState in req", req.body.states);
     if (currentUser) {
-      currentUser.timersStates = {
-        ...currentUser.timersStates,
-        ...req.body.states,
-      };
+      for (const key in req.body.states) {
+        currentUser.timersStates[key] = req.body.states[key];
+      }
+
       const updatedUser = await currentUser.save();
+      console.log(
+        `After timersState is updated at ${Date.now()}`,
+        updatedUser.timersStates
+      );
       res.send(updatedUser);
     } else {
       res.status(404).send("User is not found");

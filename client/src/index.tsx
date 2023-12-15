@@ -237,7 +237,7 @@ export async function updateTimersStates_with_token({
 }
 export async function updateTimersStates(
   user: User,
-  states: Partial<PatternTimerStatesType> & TimerStateType
+  states: Partial<PatternTimerStatesType> & Partial<TimerStateType>
 ) {
   try {
     // caching

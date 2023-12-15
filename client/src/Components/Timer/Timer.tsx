@@ -123,8 +123,19 @@ export function Timer({
         //running === false && startTime === 0 -> timer has not yet started.
         remainingDuration = durationInSeconds;
       } else {
-        //running === false && startTime !== 0 -> timer has not paused.
-        timePassed = pause.record[pause.record.length - 1].start - startTime;
+        //running === false && startTime !== 0 -> timer is paused.
+        //timer가 pause된 상태이니까, 당연히 record는 empty array가 아니고,
+        //최소한 [{start: aNumber}]의 형태는 갖추어야한다.
+        //그런데 지금같은 경우는 running이 true여야 하는데 autoStart하다가
+        //어떤 아직 파악하지 못한 원인으로 인해 running이 false로 되었다.
+        //그런데 사실 pause 한적은 없기 때문에 undefined.start 형태가 error를 발생시킨다.
+
+        if (pause.record.length === 0) {
+          timePassed = Date.now() - startTime;
+        } else {
+          timePassed = pause.record[pause.record.length - 1].start - startTime;
+        }
+
         timeCountedDown = timePassed - pause.totalLength;
         remainingDuration = Math.floor(
           (durationInSeconds * 1000 - timeCountedDown) / 1000
@@ -135,7 +146,11 @@ export function Timer({
   }
   //#endregion
 
-  //#region Tracking Unmount
+  //#region Tracking mounting and states
+  // useEffect(() => {
+  //   console.log("AutoStartSetting", autoStartSetting);
+  // });
+
   useEffect(() => {
     console.log("Timer was mounted");
     return () => {
@@ -174,6 +189,8 @@ export function Timer({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
+            repetitionCount,
+            duration: durationInSeconds / 60,
           });
       }
     } else if (resume()) {
@@ -232,7 +249,15 @@ export function Timer({
     }
   }
 
-  //TODO: calculate totalLength of the pause and pass it
+  /**
+   * What it does:
+   * 1. save states to the idb
+   * 2. persist states to the server
+   * 3. call next()
+   * 4. setStates
+   *
+   * @param now the moment a session is forced to end in the middle.
+   */
   async function endTimer(now: number) {
     const patternTimerStates = determineNextPatternTimerStates({
       howManyCountdown: repetitionCount + 1,
@@ -251,18 +276,13 @@ export function Timer({
     const timeCountedDownInMilliSeconds =
       (durationInSeconds - remainingDuration) * 1000;
 
-    // pause의 totalLength 와 pause.record의 마지막 element의 end값을 여기서 계산해서 PatternTimer의 next함수에 넘겨야, 거기서 recOfToday에 session 완성된 data를 persist한다.
-    if (
-      timerState.pause.record.length !== 0 &&
-      timerState.pause.record[timerState.pause.record.length - 1].end ===
-        undefined
-    ) {
+    // call next()
+    if (isThisSessionPaused()) {
       let stateCloned = { ...timerState };
       stateCloned.pause.totalLength +=
         now -
         stateCloned.pause.record[stateCloned.pause.record.length - 1].start;
       stateCloned.pause.record[stateCloned.pause.record.length - 1].end = now;
-      console.log("stateCloned", stateCloned);
       next({
         howManyCountdown: repetitionCount + 1,
         state: stateCloned,
@@ -277,7 +297,6 @@ export function Timer({
         endForced: now,
       });
     }
-    //#endregion
 
     dispatch({ type: ACTION.RESET });
     setRepetitionCount(
@@ -285,22 +304,77 @@ export function Timer({
     );
     setRemainingDuration(0);
 
-    //* 6.
-    user &&
-      updateTimersStates(user, {
-        running: false,
-        startTime: 0,
-        pause: { totalLength: 0, record: [] },
-        duration: patternTimerStates.duration!,
-        repetitionCount:
-          patternTimerStates.repetitionCount ?? repetitionCount + 1,
-      });
+    let nextRepetitionCount =
+      patternTimerStates.repetitionCount ?? repetitionCount + 1;
+
+    console.log("nextRepetitionCount", nextRepetitionCount);
+    console.log(
+      "doesPomoAutoStart",
+      autoStartSetting.doesPomoStartAutomatically
+    );
+    console.log(
+      "doesBreakAutoStart",
+      autoStartSetting.doesBreakStartAutomatically
+    );
+
+    if (nextSessionIsStartOfCycle()) {
+      user &&
+        updateTimersStates(user, {
+          running: false,
+          startTime: 0,
+          pause: { totalLength: 0, record: [] },
+          duration: patternTimerStates.duration!,
+          repetitionCount: nextRepetitionCount,
+        });
+    } else {
+      handleNonStartOfCycle();
+    }
+
+    function isNextSessionPomo() {
+      return nextRepetitionCount % 2 === 0;
+    }
+    function isNextSessionBreak() {
+      return nextRepetitionCount % 2 !== 0;
+    }
+    function nextSessionIsStartOfCycle() {
+      return nextRepetitionCount === 0;
+    }
+    function handleNonStartOfCycle(): void {
+      if (isNextSessionPomo() && !autoStartSetting.doesPomoStartAutomatically) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      }
+      if (
+        isNextSessionBreak() &&
+        !autoStartSetting.doesBreakStartAutomatically
+      ) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      }
+    }
+    function isThisSessionPaused() {
+      return (
+        timerState.pause.record.length !== 0 &&
+        timerState.pause.record[timerState.pause.record.length - 1].end ===
+          undefined
+      );
+    }
   }
-  //#endregion
 
   //#region UseEffects
-  useEffect(autoStartNextSession, [timerState.startTime]);
-  // useEffect(autoStartNextSession, [timerState.startTime, timerState.running]);
+  useEffect(autoStartNextSession, [repetitionCount]);
 
   useEffect(logPause, [
     remainingDuration,
@@ -375,7 +449,7 @@ export function Timer({
       }, 500);
       return () => {
         clearInterval(id);
-        console.log(`startTime - ${timerState.startTime}`);
+        // console.log(`startTime - ${timerState.startTime}`);
       };
     }
   }
@@ -387,16 +461,20 @@ export function Timer({
       numOfPomo: numOfPomo,
     });
 
+    let nextRepetitionCount =
+      patternTimerStates.repetitionCount ?? repetitionCount + 1;
+
     if (remainingDuration <= 0 && timerState.startTime !== 0) {
-      //#region Things that should be done when a session is finished
       setRepetitionCount(
-        patternTimerStates.repetitionCount ?? repetitionCount + 1
+        // patternTimerStates.repetitionCount ?? repetitionCount + 1
+        nextRepetitionCount
       );
       postMsgToSW("saveStates", {
         stateArr: [
           {
             name: "repetitionCount",
-            value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
+            // value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
+            value: nextRepetitionCount,
           },
         ],
       });
@@ -407,16 +485,55 @@ export function Timer({
       // The changes of the states in this component
       dispatch({ type: ACTION.RESET });
 
-      user &&
-        updateTimersStates(user, {
-          running: false,
-          startTime: 0,
-          pause: { totalLength: 0, record: [] },
-          duration: patternTimerStates.duration!,
-          repetitionCount:
-            patternTimerStates.repetitionCount ?? repetitionCount + 1,
-        });
-      //#endregion
+      // Cases when the next session does not start automatically
+      // 1. The next session is the start of a new cycle.
+      if (nextSessionIsStartOfCycle()) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      } else {
+        // 2.
+        handleNonStartOfCycle();
+      }
+    }
+    function isNextSessionPomo() {
+      return nextRepetitionCount % 2 === 0;
+    }
+    function isNextSessionBreak() {
+      return nextRepetitionCount % 2 !== 0;
+    }
+    function nextSessionIsStartOfCycle() {
+      return nextRepetitionCount === 0;
+    }
+    function handleNonStartOfCycle(): void {
+      if (isNextSessionPomo() && !autoStartSetting.doesPomoStartAutomatically) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      }
+      if (
+        isNextSessionBreak() &&
+        !autoStartSetting.doesBreakStartAutomatically
+      ) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      }
     }
   }
 
@@ -495,7 +612,11 @@ export function Timer({
       <GridItem>
         <PauseTimer
           isOnSession={timerState.running || timerState.startTime !== 0}
-          isPaused={timerState.running === false && timerState.startTime !== 0}
+          isPaused={
+            timerState.running === false &&
+            timerState.startTime !== 0 &&
+            timerState.pause.record.length !== 0
+          }
           pauseData={timerState.pause}
           startTime={timerState.startTime}
         />
