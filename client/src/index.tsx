@@ -119,60 +119,19 @@ root.render(
 //#region event handlers
 BC.addEventListener("message", async (ev) => {
   const { evName, payload } = ev.data;
-  console.log("payload of BC", payload);
+  // console.log("payload of BC", payload);
   if (evName === "pomoAdded") {
     pubsub.publish(evName, payload);
   } else if (evName === "makeSound") {
     makeSound();
   } else if (evName === "autoStartNextSession") {
-    let { timersStates, pomoSetting, kind, endTime } = payload;
+    let { timersStates, pomoSetting, endTime } = payload;
 
-    if (autoStartSetting !== null) {
-      if (timersStates.repetitionCount !== 0) {
-        if (kind === "pomo" && autoStartSetting.doesPomoStartAutomatically) {
-          autoStartNextSession({
-            timersStates,
-            pomoSetting,
-            endTimeOfPrevSession: endTime,
-          });
-        }
-
-        if (kind === "break" && autoStartSetting.doesBreakStartAutomatically) {
-          autoStartNextSession({
-            timersStates,
-            pomoSetting,
-            endTimeOfPrevSession: endTime,
-          });
-        }
-      }
-    } else {
-      let statesFromIDB = await obtainStatesFromIDB("withSettings");
-      if (Object.entries(statesFromIDB).length !== 0) {
-        autoStartSetting = (statesFromIDB as dataCombinedFromIDB)
-          .autoStartSetting;
-
-        if (timersStates.repetitionCount !== 0) {
-          if (kind === "pomo" && autoStartSetting.doesPomoStartAutomatically) {
-            autoStartNextSession({
-              timersStates,
-              pomoSetting,
-              endTimeOfPrevSession: endTime,
-            });
-          }
-
-          if (
-            kind === "break" &&
-            autoStartSetting.doesBreakStartAutomatically
-          ) {
-            autoStartNextSession({
-              timersStates,
-              pomoSetting,
-              endTimeOfPrevSession: endTime,
-            });
-          }
-        }
-      }
-    }
+    autoStartNextSession({
+      timersStates,
+      pomoSetting,
+      endTimeOfPrevSession: endTime,
+    });
   }
 });
 
@@ -738,10 +697,13 @@ async function autoStartNextSession({
         startTime: timersStates.startTime,
         running: timersStates.running,
         pause: timersStates.pause,
+        repetitionCount: timersStates.repetitionCount,
+        duration: timersStates.duration,
       },
     });
   }
 
+  // countdown
   let idOfSetInterval = setInterval(() => {
     let remainingDuration = Math.floor(
       ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
@@ -763,23 +725,6 @@ async function autoStartNextSession({
   }, 500);
 
   localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
-  // let timePassed = Date.now() - timersStates.startTime;
-  // let timeSpentOnSessionExcludingPause =
-  //   timePassed - timersStates.pause.totalLength; // milliseconds
-
-  // let idOfSetInterval = setInterval(() => {
-  //   let remainingDurationInSeconds = Math.floor(
-  //     (timersStates.duration * 60 * 1000 - timeSpentOnSessionExcludingPause) /
-  //       1000
-  //   );
-  //   if (remainingDurationInSeconds <= 0) {
-  //     clearInterval(idOfSetInterval);
-  //     localStorage.removeItem("idOfSetInterval");
-  //     postMsgToSW("endTimer", { pomoSetting, ...timersStates }); // pomoSetting should also be sent
-  //   }
-  // }, 500);
-
-  // localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
 }
 
 function obtainIdToken(): Promise<{ idToken: string } | null> {

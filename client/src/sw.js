@@ -275,6 +275,8 @@ async function wrapUpSession({
   //                      2. duration: 방금 끝난 세션의 종류에 따라 달라지기 때문에 각 case에서 처리.
   timersStatesForNextSession.repetitionCount++;
 
+  const autoStartSetting = await retrieveAutoStartSettingFromIDB();
+
   const arrOfStatesOfTimerReset = [
     {
       name: "running",
@@ -316,19 +318,24 @@ async function wrapUpSession({
 
       await persistSessionToIDB("pomo", sessionData);
 
-      updateTimersStates(timersStatesForNextSession);
+      if (autoStartSetting !== undefined) {
+        if (autoStartSetting.doesBreakStartAutomatically === false) {
+          updateTimersStates(timersStatesForNextSession);
+        } else {
+          BC.postMessage({
+            evName: "autoStartNextSession",
+            payload: {
+              timersStates: timersStatesForNextSession,
+              pomoSetting: pomoSetting,
+              endTime: sessionData.endTime,
+            },
+          });
+        }
+      } else {
+        console.warn("autoStartSetting is undefined");
+      }
 
       persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
-
-      BC.postMessage({
-        evName: "autoStartNextSession",
-        payload: {
-          timersStates: timersStatesForNextSession,
-          pomoSetting: pomoSetting,
-          kind: "break",
-          endTime: sessionData.endTime,
-        },
-      });
 
       break;
 
@@ -354,19 +361,24 @@ async function wrapUpSession({
 
       await persistSessionToIDB("break", sessionData);
 
-      updateTimersStates(timersStatesForNextSession);
+      if (autoStartSetting !== undefined) {
+        if (autoStartSetting.doesPomoStartAutomatically === false) {
+          updateTimersStates(timersStatesForNextSession);
+        } else {
+          BC.postMessage({
+            evName: "autoStartNextSession",
+            payload: {
+              timersStates: timersStatesForNextSession,
+              pomoSetting: pomoSetting,
+              endTime: sessionData.endTime,
+            },
+          });
+        }
+      } else {
+        console.warn("autoStartSetting is undefined");
+      }
 
       persistRecOfTodayToServer({ kind: "break", ...sessionData });
-
-      BC.postMessage({
-        evName: "autoStartNextSession",
-        payload: {
-          timersStates: timersStatesForNextSession,
-          pomoSetting: pomoSetting,
-          kind: "pomo",
-          endTime: sessionData.endTime,
-        },
-      });
 
       break;
 
@@ -394,20 +406,24 @@ async function wrapUpSession({
 
       await persistSessionToIDB("pomo", sessionData);
 
-      updateTimersStates(timersStatesForNextSession);
+      if (autoStartSetting !== undefined) {
+        if (autoStartSetting.doesBreakStartAutomatically === false) {
+          updateTimersStates(timersStatesForNextSession);
+        } else {
+          BC.postMessage({
+            evName: "autoStartNextSession",
+            payload: {
+              timersStates: timersStatesForNextSession,
+              pomoSetting: pomoSetting,
+              endTime: sessionData.endTime,
+            },
+          });
+        }
+      } else {
+        console.warn("autoStartSetting is undefined");
+      }
 
       persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
-
-      // 이거의 위치를 어떻게 놔야할지 잘 모르겠네...
-      BC.postMessage({
-        evName: "autoStartNextSession",
-        payload: {
-          timersStates: timersStatesForNextSession,
-          pomoSetting: pomoSetting,
-          kind: "break",
-          endTime: sessionData.endTime,
-        },
-      });
 
       break;
 
@@ -438,16 +454,6 @@ async function wrapUpSession({
 
       persistRecOfTodayToServer({ kind: "break", ...sessionData });
 
-      BC.postMessage({
-        evName: "autoStartNextSession",
-        payload: {
-          timersStates: timersStatesForNextSession,
-          pomoSetting: pomoSetting,
-          kind: "pomo",
-          endTime: sessionData.endTime,
-        },
-      });
-
       break;
 
     default:
@@ -456,6 +462,21 @@ async function wrapUpSession({
 }
 
 // same as the one in the src/index.tsx
+async function retrieveAutoStartSettingFromIDB() {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("stateStore", "readonly")
+    .objectStore("stateStore");
+  let result = await store.get("autoStartSetting");
+  if (result !== undefined) {
+    return result.value;
+  } else {
+    // By the time the timer is mounted, stateStore in idb is guaranteed to
+    // have at least the default autoStartSetting and pomoSetting.
+    return undefined;
+  }
+}
+
 async function persistSessionToIDB(kind, data) {
   try {
     let db = DB || (await openIndexedDB());
