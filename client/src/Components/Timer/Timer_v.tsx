@@ -183,6 +183,8 @@ export function TimerVVV({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
+            repetitionCount,
+            duration: durationInSeconds / 60,
           });
       }
     } else if (resume()) {

@@ -207,7 +207,12 @@ export async function updateTimersStates(
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json(); // returns a JS object.
-      pomoSettingAndTimersStates.timersStates = states;
+      for (const key in states) {
+        //https://stackoverflow.com/questions/57086672/element-implicitly-has-an-any-type-because-expression-of-type-string-cant-b
+        pomoSettingAndTimersStates.timersStates[key] =
+          states[key as keyof TimersStatesType];
+      }
+
       await cache.put(
         CONSTANTS.URLs.USER,
         new Response(JSON.stringify(pomoSettingAndTimersStates))

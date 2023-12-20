@@ -142,19 +142,23 @@ function Settings() {
     });
     stopCountDownInBackground();
     if (user !== null) {
-      updatePomoSetting(user, pomoSettingInputs);
-      // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
-      updateTimersStates(user, {
-        duration: pomoSettingInputs.pomoDuration,
-        repetitionCount: 0,
-        running: false,
-        startTime: 0,
-        pause: { totalLength: 0, record: [] },
-      });
-      updateAutoStartSetting(user, {
-        doesPomoStartAutomatically,
-        doesBreakStartAutomatically,
-      });
+      updatePomoSetting(user, pomoSettingInputs)
+        .then(() =>
+          // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
+          updateTimersStates(user, {
+            duration: pomoSettingInputs.pomoDuration,
+            repetitionCount: 0,
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+          })
+        )
+        .then(() =>
+          updateAutoStartSetting(user, {
+            doesPomoStartAutomatically,
+            doesBreakStartAutomatically,
+          })
+        );
     }
     setPomoInfo((prev) => {
       return {
