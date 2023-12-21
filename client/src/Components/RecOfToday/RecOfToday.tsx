@@ -5,6 +5,7 @@ import {
   DurationType,
 } from "../../types/clientStatesType";
 import Timeline from "../Timeline/Timeline";
+import { MINIMUMS, VH_RATIO } from "../../constants";
 
 type RecOfTodayProps = {
   records: RecType[];
@@ -69,5 +70,16 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
   //   console.log("arrOfSessions", arrOfSessions);
   // });
 
-  return <Timeline arrOfSessions={arrOfSessions} />;
+  return (
+    <div
+      style={{
+        position: "relative",
+        height: `max(${VH_RATIO.TIMELINE + VH_RATIO.DETAIL_AREA}vh, ${
+          MINIMUMS.TIMELINE + MINIMUMS.DETAIL_AREA
+        }px)`,
+      }}
+    >
+      <Timeline arrOfSessions={arrOfSessions} />
+    </div>
+  );
 }

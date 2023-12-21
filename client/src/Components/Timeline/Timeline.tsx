@@ -383,7 +383,6 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       ref={divRef}
       style={{
         position: "absolute",
-        top: `max(${MINIMUMS.NAV_BAR}px, ${VH_RATIO.NAV_BAR}vh)`,
         height: `max(${MINIMUMS.TIMELINE}px, ${VH_RATIO.TIMELINE}vh)`,
         backgroundColor: "#c6d1e6",
 

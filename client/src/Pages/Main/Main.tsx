@@ -17,6 +17,7 @@ import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.sty
 import { pubsub } from "../../pubsub";
 import TogglingTimer from "./TogglingTimer";
 import { deciderOfWhetherUserDataFetchedCompletely } from "../..";
+import { MINIMUMS, VH_RATIO } from "../../constants";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -201,16 +202,19 @@ export default function Main() {
   const isPomoSettingReady = !!Object.entries(pomoSetting).length;
   const isStatesRelatedToTimerReady = statesRelatedToTimer !== null;
 
+  const sumOfRatio =
+    VH_RATIO.NAV_BAR + VH_RATIO.TIMELINE + VH_RATIO.DETAIL_AREA;
+  const sumOfMin = MINIMUMS.NAV_BAR + MINIMUMS.TIMELINE + MINIMUMS.DETAIL_AREA;
+
   return (
     <main>
       <RecOfToday records={records} />
       <section
         style={{
-          position: "absolute",
-          // The vh value below is to place this section block 50% below from the top of the document area that is formed by excluding navBar + timeline + detailArea (24vh) from itself.
-          top: `${24 + (100 - 24) / 2}vh`,
-          left: "50%",
-          transform: "translate(-50%, -52%)",
+          minHeight: `calc(100vh - max(${sumOfRatio}vh, ${sumOfMin}px))`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         {isStatesRelatedToTimerReady &&
