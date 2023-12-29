@@ -13,7 +13,6 @@ import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
 import { FlexBox } from "../../Components/Layouts/FlexBox";
 import { LoadingMessage } from "../../Components/LoadingMessage/LoadingMessage";
-import axios from "axios";
 import * as CONSTANTS from "../../constants/index";
 import {
   deleteUser,
@@ -35,6 +34,7 @@ import {
 } from "../..";
 import ToggleSwitch from "../../Components/ToggleSwitch/ToggleSwitch";
 import { pubsub } from "../../pubsub";
+import { axiosInstance } from "../../APIs-Related/axios-instances";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -359,12 +359,7 @@ function Settings() {
 async function deleteAccount(user: User) {
   console.log(`--------------------DELETE ACCOUNT-------------------`);
   try {
-    const idToken = await user.getIdToken();
-    const res = await axios.delete(CONSTANTS.URLs.USER, {
-      headers: {
-        Authorization: "Bearer " + idToken,
-      },
-    });
+    const res = await axiosInstance.delete("users");
     console.log("deleteAccount res", res.data);
     //await user.delete();
     let result = await deleteUser(user);
@@ -381,21 +376,12 @@ async function createDemoData(user: User) {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterdayTimestamp = today.getTime() - 24 * 60 * 60 * 1000;
-    const idToken = await user.getIdToken();
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat");
-    const res = await axios.post(
-      CONSTANTS.URLs.POMO + `/generateDemoData`,
-      {
-        timestamp: yesterdayTimestamp,
-        timezoneOffset: now.getTimezoneOffset(),
-      },
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    await cache.delete(CONSTANTS.URLs.POMO + "/stat"); //? this does not work.. ? why?
+    const res = await axiosInstance.post("pomos/generateDemoData", {
+      timestamp: yesterdayTimestamp,
+      timezoneOffset: now.getTimezoneOffset(),
+    });
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);
@@ -405,14 +391,7 @@ async function removeDemoData(user: User) {
   try {
     let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
     await cache.delete(CONSTANTS.URLs.POMO + "/stat");
-
-    const idToken = await user.getIdToken();
-    const res = await axios.delete(CONSTANTS.URLs.POMO + `/demo`, {
-      headers: {
-        Authorization: "Bearer " + idToken,
-      },
-    });
-
+    const res = await axiosInstance.delete("pomos/demo");
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);
@@ -436,18 +415,9 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
       );
     }
 
-    const idToken = await user.getIdToken();
-    const res = await axios.put(
-      CONSTANTS.URLs.USER + `/editPomoSetting`,
-      {
-        pomoSetting,
-      },
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    const res = await axiosInstance.put("users/editPomoSetting", {
+      pomoSetting,
+    });
 
     console.log("res obj.data", res.data);
   } catch (err) {

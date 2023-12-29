@@ -21,6 +21,8 @@ import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "./firebase";
 import axios from "axios";
 import * as CONSTANTS from "./constants";
+import { defineInterceptorsForAxiosInstance } from "./APIs-Related/axios-interceptors";
+import { axiosInstance } from "./APIs-Related/axios-instances";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -138,6 +140,7 @@ BC.addEventListener("message", async (ev) => {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     registerServiceWorker();
+    defineInterceptorsForAxiosInstance();
     DB = await openIndexedDB();
     await deleteRecordsBeforeTodayInIDB();
     DynamicCache = await openCache(CacheName);
@@ -180,15 +183,7 @@ export async function updateTimersStates_with_token({
       );
     }
 
-    const res = await axios.put(
-      CONSTANTS.URLs.USER + `/updateTimersStates`,
-      { states },
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    const res = await axiosInstance.put("users/updateTimersStates", { states });
     console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
   } catch (err) {
     console.warn(err);
@@ -219,16 +214,9 @@ export async function updateTimersStates(
       );
     }
 
-    const idToken = await user.getIdToken();
-    const res = await axios.put(
-      CONSTANTS.URLs.USER + `/updateTimersStates`,
-      { states },
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    const res = await axiosInstance.put("users/updateTimersStates", {
+      states,
+    });
     console.log("res.data in updateTimersStates ===>", res.data);
   } catch (err) {
     console.warn(err);
@@ -258,16 +246,9 @@ export async function updateAutoStartSetting(
       );
     }
 
-    const idToken = await user.getIdToken();
-    const res = await axios.put(
-      CONSTANTS.URLs.USER + "/updateAutoStartSetting",
-      { autoStartSetting: autoStartSetting },
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    const res = await axiosInstance.put("users/updateAutoStartSetting", {
+      autoStartSetting: autoStartSetting,
+    });
     console.log("res.data in updateAutoStartSetting ===>", res.data);
   } catch (error) {
     console.warn(error);

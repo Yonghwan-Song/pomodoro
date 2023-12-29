@@ -1,10 +1,4 @@
-import React, {
-  useContext,
-  useEffect,
-  useState,
-  createContext,
-  useRef,
-} from "react";
+import React, { useContext, useEffect, useState, createContext } from "react";
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -15,8 +9,7 @@ import {
 } from "firebase/auth";
 
 import { auth } from "../firebase";
-import axios from "axios";
-import * as C from "../constants/index";
+import { axiosInstance } from "../APIs-Related/axios-instances";
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;
@@ -72,19 +65,10 @@ export function AuthContextProvider({
    */
   async function registerUser(user: User) {
     try {
-      const idToken = await user.getIdToken();
-      let response = await axios.post(
-        C.URLs.USER,
-        {
-          email: user.email,
-          firebaseUid: user.uid,
-        },
-        {
-          headers: {
-            Authorization: "Bearer " + idToken,
-          },
-        }
-      );
+      let response = await axiosInstance.post("users", {
+        email: user.email,
+        firebaseUid: user.uid,
+      });
       setIsNewUserRegistered(true);
       return response;
     } catch (err) {

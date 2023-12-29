@@ -4,12 +4,11 @@ import {
   Dispatch,
   SetStateAction,
   DependencyList,
-  useRef,
 } from "react";
 import { useAuthContext } from "../Context/AuthContext";
-import axios from "axios";
 import { DynamicCache, openCache } from "..";
-import { CacheName } from "../constants";
+import { CacheName, URLs } from "../constants";
+import { axiosInstance } from "../APIs-Related/axios-instances";
 
 type DataType<T, S> = S extends undefined ? T : S;
 type ArgType<T, S> = {
@@ -82,7 +81,7 @@ export function useFetch<T, S = undefined>({
      * Purpose: to get data from either remote server or cache storage.
      */
     async function getData() {
-      let resData = await caches.match(urlSegment);
+      let resData = await caches.match(URLs.ORIGIN + urlSegment);
       if (resData) {
         console.log(
           "------------------------------- useFetch with cached response -------------------------------"
@@ -108,7 +107,7 @@ export function useFetch<T, S = undefined>({
         if (res !== undefined) {
           let resFetched = new Response(JSON.stringify(res.data));
           let cache = DynamicCache || (await openCache(CacheName));
-          await cache.put(urlSegment, resFetched);
+          await cache.put(URLs.ORIGIN + urlSegment, resFetched);
         }
       }
     }
@@ -116,12 +115,7 @@ export function useFetch<T, S = undefined>({
     // This is going to be used in the getDate() function.
     async function fetchDataFromServer() {
       try {
-        const idToken = await user?.getIdToken();
-        const response = await axios.get(urlSegment, {
-          headers: {
-            Authorization: "Bearer " + idToken,
-          },
-        });
+        const response = await axiosInstance.get(urlSegment);
 
         let data =
           modifier !== undefined ? modifier(response.data as T) : response.data;

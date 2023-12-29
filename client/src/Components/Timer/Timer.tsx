@@ -9,7 +9,6 @@ import {
 import { reducerTimer as reducer, ACTION, TimerAction } from "../reducers";
 import {
   AutoStartSettingType,
-  PatternTimerStatesType,
   TimerStateType,
   TimersStatesType,
 } from "../../types/clientStatesType";

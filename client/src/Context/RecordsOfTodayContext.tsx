@@ -1,11 +1,10 @@
 import { useContext, createContext, useEffect } from "react";
 import { useFetch } from "../Custom-Hooks/useFetch";
 import { RecType } from "../types/clientStatesType";
-import * as C from "../constants/index";
 import { persistManyTodaySessionsToIDB } from "..";
 import { pubsub } from "../pubsub";
 import { useAuthContext } from "./AuthContext";
-import axios from "axios";
+import { axiosInstance } from "../APIs-Related/axios-instances";
 
 export const RecordsOfTodayContext = createContext<RecType[] | null>(null);
 
@@ -15,7 +14,7 @@ export function RecordsOfTodayContextProvider({
   children: React.ReactNode;
 }) {
   const [recordsOfToday, setRecordsOfToday] = useFetch<RecType[]>({
-    urlSegment: C.URLs.RECORD_OF_TODAY,
+    urlSegment: "recordOfToday",
     modifier: removeRecordsBeforeToday,
     callbacks: [persistRecordsOfTodayToIDB],
   });
@@ -33,18 +32,10 @@ export function RecordsOfTodayContextProvider({
       ).getTime();
 
       async function sendRequest() {
-        axios.put(
-          C.URLs.RECORD_OF_TODAY,
-          {
-            userEmail: user!.email,
-            startOfTodayTimestamp,
-          },
-          {
-            headers: {
-              Authorization: "Bearer " + (await user!.getIdToken()),
-            },
-          }
-        );
+        axiosInstance.put("recordOfToday", {
+          userEmail: user!.email,
+          startOfTodayTimestamp,
+        });
       }
 
       sendRequest();

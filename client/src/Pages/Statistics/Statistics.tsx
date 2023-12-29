@@ -39,7 +39,7 @@ export default function Statistics() {
   const [weekRange, setWeekRange] = useState("");
   const _24h = 24 * 60 * 60 * 1000;
   const [statData, setStatData] = useFetch<DataArray, DailyPomo[]>({
-    urlSegment: CONSTANTS.URLs.POMO + "/stat",
+    urlSegment: "pomos/stat",
     modifier: getStat,
     callbacks: [calculateOverview, calculateThisWeekData],
   });

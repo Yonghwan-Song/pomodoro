@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Timer } from "../Timer/Timer";
-import axios from "axios";
+import { AxiosError } from "axios";
 import * as CONSTANTS from "../../constants/index";
 import { useAuthContext } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
@@ -17,6 +17,7 @@ import {
   TimersStatesType,
 } from "../../types/clientStatesType";
 import { Grid } from "../Layouts/Grid";
+import { axiosInstance } from "../../APIs-Related/axios-instances";
 
 type PatternTimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -355,20 +356,10 @@ async function persistRecOfTodayToServer(user: User, record: RecType) {
     }
 
     // http requeset
-    const idToken = await user.getIdToken();
-    const response = await axios.post(
-      CONSTANTS.URLs.RECORD_OF_TODAY,
-      {
-        userEmail: user.email,
-        ...record,
-      },
-
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    const response = await axiosInstance.post("recordOfToday", {
+      userEmail: user.email,
+      ...record,
+    });
     console.log("res of persistRecOfTodayToSever", response);
   } catch (error) {
     console.warn(error);
@@ -404,24 +395,25 @@ async function recordPomo(
       );
     }
 
-    const idToken = await user.getIdToken();
-    const response = await axios.post(
-      CONSTANTS.URLs.POMO,
-      {
-        userEmail: user.email,
-        duration: durationInMinutes,
-        startTime,
-        LocaleDateString,
-      },
-      {
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      }
-    );
+    const response = await axiosInstance.post("pomos", {
+      userEmail: user.email,
+      duration: durationInMinutes,
+      startTime,
+      LocaleDateString,
+    });
     console.log("res obj of recordPomo", response);
   } catch (err) {
-    console.warn(err);
+    if (
+      // ignore the code below for now
+      !window.navigator.onLine &&
+      // !(err as AxiosError).response && // https://stackoverflow.com/questions/62061642/how-to-check-if-axios-call-fails-due-to-no-internet-connection/72198060#72198060
+      (err as AxiosError).code === "ERR_NETWORK"
+    ) {
+      console.log("network is not connected");
+      console.warn(err);
+    } else {
+      console.warn(err);
+    }
   }
 }
 

@@ -16,9 +16,11 @@ export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
 
 //#region URLs
 export const URLs = {
+  // ORIGIN: "http://localhost:4444/",
   // USER: "http://localhost:4444/users",
   // POMO: "http://localhost:4444/pomos",
   // RECORD_OF_TODAY: "http://localhost:4444/recordOfToday",
+  ORIGIN: "https://pomodoro-apis.onrender.com/",
   USER: "https://pomodoro-apis.onrender.com/users",
   POMO: "https://pomodoro-apis.onrender.com/pomos",
   RECORD_OF_TODAY: "https://pomodoro-apis.onrender.com/recordOfToday",

@@ -36,7 +36,7 @@ export function UserInfoContextProvider({
   );
   const { user, isNewUser, isNewUserRegistered } = useAuthContext()!;
   const [pomoInfo, setPomoInfo] = useFetch<RequiredStatesToRunTimerType>({
-    urlSegment: C.URLs.USER,
+    urlSegment: "users",
 
     /**
      * 다시 생각해보니,
