@@ -3,6 +3,7 @@ import GoogleButton from "react-google-button";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { emptyRecOfToday } from "../..";
+import { errController } from "../../APIs-Related/errorController";
 
 function Signin() {
   const { googleSignIn, user } = useAuthContext()!;
@@ -13,6 +14,7 @@ function Signin() {
     try {
       await googleSignIn();
       await emptyRecOfToday();
+      await errController.getFailedReqsFromIDB();
     } catch (error) {
       console.log(error);
     }

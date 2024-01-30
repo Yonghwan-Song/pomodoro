@@ -16,7 +16,7 @@ import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
-import { postMsgToSW, updateTimersStates } from "../..";
+import { DB, openIndexedDB, postMsgToSW, updateTimersStates } from "../..";
 import CountDownTimer from "../CountDownTimer/CountDownTimer";
 import PauseTimer from "../PauseTimer/PauseTimer";
 import { useAuthContext } from "../../Context/AuthContext";
@@ -463,48 +463,27 @@ export function Timer({
     let nextRepetitionCount =
       patternTimerStates.repetitionCount ?? repetitionCount + 1;
 
-    if (remainingDuration <= 0 && timerState.startTime !== 0) {
-      setRepetitionCount(
-        // patternTimerStates.repetitionCount ?? repetitionCount + 1
-        nextRepetitionCount
-      );
-      postMsgToSW("saveStates", {
-        stateArr: [
-          {
-            name: "repetitionCount",
-            // value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
-            value: nextRepetitionCount,
-          },
-        ],
-      });
-      next({
-        howManyCountdown: repetitionCount + 1,
-        state: timerState,
-      });
-      // The changes of the states in this component
-      dispatch({ type: ACTION.RESET });
+    checkWhetherSessionShouldBeFinished(timerState.startTime);
 
-      // Cases when the next session does not start automatically
-      // 1. The next session is the start of a new cycle.
-      if (nextSessionIsStartOfCycle()) {
-        user &&
-          updateTimersStates(user, {
-            running: false,
-            startTime: 0,
-            pause: { totalLength: 0, record: [] },
-            duration: patternTimerStates.duration!,
-            repetitionCount: nextRepetitionCount,
-          });
-      } else {
-        // 2.
-        handleNonStartOfCycle();
-      }
-    }
     function isNextSessionPomo() {
       return nextRepetitionCount % 2 === 0;
     }
     function isNextSessionBreak() {
       return nextRepetitionCount % 2 !== 0;
+    }
+    async function doesFailedReqInfoExistInIDB() {
+      let userEmail = user?.email;
+      if (userEmail) {
+        let db = DB || (await openIndexedDB());
+        const store = db
+          .transaction("failedReqInfo", "readonly")
+          .objectStore("failedReqInfo");
+        const info = await store.get(userEmail);
+        return !!info;
+      } else {
+        // it should be always true for unlogged-in user.
+        return true;
+      }
     }
     function nextSessionIsStartOfCycle() {
       return nextRepetitionCount === 0;
@@ -532,6 +511,52 @@ export function Timer({
             duration: patternTimerStates.duration!,
             repetitionCount: nextRepetitionCount,
           });
+      }
+    }
+    async function checkWhetherSessionShouldBeFinished(startTime: number) {
+      // if (timerState.startTime !== 0) {
+      if (startTime !== 0) {
+        if (
+          remainingDuration === 0 ||
+          (remainingDuration < 0 &&
+            (await doesFailedReqInfoExistInIDB()) === false)
+        ) {
+          setRepetitionCount(
+            // patternTimerStates.repetitionCount ?? repetitionCount + 1
+            nextRepetitionCount
+          );
+          postMsgToSW("saveStates", {
+            stateArr: [
+              {
+                name: "repetitionCount",
+                // value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
+                value: nextRepetitionCount,
+              },
+            ],
+          });
+          next({
+            howManyCountdown: repetitionCount + 1,
+            state: timerState,
+          });
+          // The changes of the states in this component
+          dispatch({ type: ACTION.RESET });
+
+          // Cases when the next session does not start automatically
+          // 1. The next session is the start of a new cycle.
+          if (nextSessionIsStartOfCycle()) {
+            user &&
+              updateTimersStates(user, {
+                running: false,
+                startTime: 0,
+                pause: { totalLength: 0, record: [] },
+                duration: patternTimerStates.duration!,
+                repetitionCount: nextRepetitionCount,
+              });
+          } else {
+            // 2.
+            handleNonStartOfCycle();
+          }
+        }
       }
     }
   }

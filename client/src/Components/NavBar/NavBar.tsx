@@ -14,6 +14,7 @@ import {
   updateTimersStates,
 } from "../..";
 import { TimersStatesType } from "../../types/clientStatesType";
+import { errController } from "../../APIs-Related/errorController";
 
 function Navbar() {
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
@@ -35,6 +36,7 @@ function Navbar() {
       localStorage.setItem("user", "unAuthenticated");
 
       await logOut();
+      errController.emptyFailedReqInfo();
     } catch (error) {
       console.log(error);
     }

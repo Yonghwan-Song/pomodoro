@@ -19,7 +19,7 @@ dotenv.config();
 mongoose
   .connect(`${process.env.DATABASE_URL}`)
   .then((arg) => console.log(`db is connected`))
-  .catch((err) => console.log(`db connection error: %{err}`));
+  .catch((err) => console.log(`db connection error: ${err}`));
 
 //createUser();
 //console.log(process.env.DATABASE_URL);

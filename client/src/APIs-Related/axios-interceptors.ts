@@ -1,14 +1,10 @@
-import { AxiosRequestConfig } from "axios";
+import { AxiosError, AxiosRequestConfig } from "axios";
 import { axiosInstance } from "./axios-instances";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../firebase";
-import { DynamicCache, openCache } from "..";
-import { CacheName } from "../constants";
+import { errController } from "./errorController";
 
 function obtainIdToken(): Promise<{ idToken: string } | null> {
-  // console.log(
-  //   "obtainIdToken() is called <-------------------------------------------------------"
-  // );
   return new Promise((res, rej) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
@@ -37,6 +33,48 @@ async function setBearerToken(config: AxiosRequestConfig) {
   }
 }
 
+export function defineInterceptorsForAxiosInstance() {
+  axiosInstance.interceptors.request.use(
+    async function (config) {
+      await setBearerToken(config);
+      // console.log("full url", config.baseURL! + config.url);
+      // console.log(
+      //   `${config.method} REQ TO ${
+      //     config.baseURL! + (config.url !== undefined ? config.url : "")
+      //   } WITH ${config.headers!.Authorization}`,
+      //   config.data
+      // );
+      return config;
+    },
+    function (error) {
+      console.log("error message from the interceptor", error);
+      return Promise.reject(error);
+    }
+  );
+
+  axiosInstance.interceptors.response.use(
+    function (response) {
+      return response;
+    },
+    function (error: AxiosError) {
+      console.log("error message from the interceptor", error);
+      if (error.code === "ERR_NETWORK") {
+        errController.registerFailedReqInfo(error.config);
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  // console.log(
+  //   "axios instance now has two interceptors",
+  //   axiosInstance.getUri()
+  // );
+}
+
+//#region error msg
+
+//#endregion
+
 //#region 보류
 // async function cacheData(config: AxiosRequestConfig) {
 //   let cache = DynamicCache || (await openCache(CacheName)); //! does this work?
@@ -52,39 +90,3 @@ async function setBearerToken(config: AxiosRequestConfig) {
 //   }
 // }
 //#endregion
-
-export function defineInterceptorsForAxiosInstance() {
-  axiosInstance.interceptors.request.use(
-    async function (config) {
-      await setBearerToken(config);
-      console.log("full url", config.baseURL! + config.url);
-      return config;
-    },
-    function (error) {
-      // Do something with request error
-      console.log("error message from the interceptor", error);
-      return Promise.reject(error);
-    }
-  );
-
-  // Add a response interceptor
-  axiosInstance.interceptors.response.use(
-    function (response) {
-      // Any status code that lie within the range of 2xx cause this function to trigger
-      // Do something with response data
-      console.log("response object from the interceptor", response);
-      return response;
-    },
-    function (error) {
-      // Any status codes that falls outside the range of 2xx cause this function to trigger
-      // Do something with response error
-      console.log("error message from the interceptor", error);
-      return Promise.reject(error);
-    }
-  );
-
-  console.log(
-    "axios instance now has two interceptors",
-    axiosInstance.getUri()
-  );
-}

@@ -16,7 +16,7 @@ import { Button } from "../Buttons/Button";
 import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
-import { postMsgToSW, updateTimersStates } from "../..";
+import { DB, openIndexedDB, postMsgToSW, updateTimersStates } from "../..";
 import CountDownTimer from "../CountDownTimer/CountDownTimer";
 import PauseTimer from "../PauseTimer/PauseTimer";
 import { useAuthContext } from "../../Context/AuthContext";
@@ -456,35 +456,104 @@ export function TimerVVV({
       numOfPomo: numOfPomo,
     });
 
-    if (remainingDuration <= 0 && timerState.startTime !== 0) {
-      setRepetitionCount(
-        patternTimerStates.repetitionCount ?? repetitionCount + 1
-      );
-      postMsgToSW("saveStates", {
-        stateArr: [
-          {
-            name: "repetitionCount",
-            value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
-          },
-        ],
-      });
-      next({
-        howManyCountdown: repetitionCount + 1,
-        state: timerState,
-      });
-      // The changes of the states in this component
-      dispatch({ type: ACTION.RESET });
+    let nextRepetitionCount =
+      patternTimerStates.repetitionCount ?? repetitionCount + 1;
 
-      user &&
-        //이거 auto-start일 때는 call되면 안되는거 아니냐? 씨발 제발좀.
-        updateTimersStates(user, {
-          running: false,
-          startTime: 0,
-          pause: { totalLength: 0, record: [] },
-          duration: patternTimerStates.duration!,
-          repetitionCount:
-            patternTimerStates.repetitionCount ?? repetitionCount + 1,
-        });
+    checkWhetherSessionShouldBeFinished(timerState.startTime);
+
+    function isNextSessionPomo() {
+      return nextRepetitionCount % 2 === 0;
+    }
+    function isNextSessionBreak() {
+      return nextRepetitionCount % 2 !== 0;
+    }
+    async function doesFailedReqInfoExistInIDB() {
+      let userEmail = user?.email;
+      console.log("userEmail from doesFailedReqInfoExistInIDB", userEmail);
+      if (userEmail) {
+        let db = DB || (await openIndexedDB());
+        const store = db
+          .transaction("failedReqInfo", "readonly")
+          .objectStore("failedReqInfo");
+        const info = await store.get(userEmail);
+        return !!info;
+      } else {
+        // it should be always true for unlogged-in user.
+        return true;
+      }
+    }
+    function nextSessionIsStartOfCycle() {
+      return nextRepetitionCount === 0;
+    }
+    function handleNonStartOfCycle(): void {
+      if (isNextSessionPomo() && !autoStartSetting.doesPomoStartAutomatically) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      }
+      if (
+        isNextSessionBreak() &&
+        !autoStartSetting.doesBreakStartAutomatically
+      ) {
+        user &&
+          updateTimersStates(user, {
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: patternTimerStates.duration!,
+            repetitionCount: nextRepetitionCount,
+          });
+      }
+    }
+    async function checkWhetherSessionShouldBeFinished(startTime: number) {
+      if (startTime !== 0) {
+        if (
+          remainingDuration === 0 ||
+          (remainingDuration < 0 &&
+            (await doesFailedReqInfoExistInIDB()) === false)
+        ) {
+          setRepetitionCount(
+            // patternTimerStates.repetitionCount ?? repetitionCount + 1
+            nextRepetitionCount
+          );
+          postMsgToSW("saveStates", {
+            stateArr: [
+              {
+                name: "repetitionCount",
+                // value: patternTimerStates.repetitionCount ?? repetitionCount + 1,
+                value: nextRepetitionCount,
+              },
+            ],
+          });
+          next({
+            howManyCountdown: repetitionCount + 1,
+            state: timerState,
+          });
+          // The changes of the states in this component
+          dispatch({ type: ACTION.RESET });
+
+          // Cases when the next session does not start automatically
+          // 1. The next session is the start of a new cycle.
+          if (nextSessionIsStartOfCycle()) {
+            user &&
+              updateTimersStates(user, {
+                running: false,
+                startTime: 0,
+                pause: { totalLength: 0, record: [] },
+                duration: patternTimerStates.duration!,
+                repetitionCount: nextRepetitionCount,
+              });
+          } else {
+            // 2.
+            handleNonStartOfCycle();
+          }
+        }
+      }
     }
   }
 

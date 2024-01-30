@@ -5,6 +5,7 @@ import { UserInfoContextProvider } from "./Context/UserContext";
 import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
 import Navbar from "./Components/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
+import { pubsub } from "./pubsub";
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
     navBar: string;
@@ -28,6 +29,27 @@ const theme = {
 
 function App() {
   //#region side effects
+  useEffect(() => {
+    function networkIsDown() {
+      console.log("network is down");
+      pubsub.publish("connectionIsDown", Date.now());
+    }
+    function networkIsUp() {
+      console.log("network is up");
+      setTimeout(() => {
+        pubsub.publish("connectionIsUp", Date.now());
+      }, 2500);
+    }
+
+    window.addEventListener("offline", networkIsDown);
+    window.addEventListener("online", networkIsUp);
+
+    return () => {
+      window.removeEventListener("offline", networkIsDown);
+      window.removeEventListener("online", networkIsUp);
+    };
+  }, []);
+
   useEffect(() => {
     const disableArrowLeftAndRight = (ev: KeyboardEvent) => {
       if (ev.code === "ArrowLeft" || ev.code === "ArrowRight") {

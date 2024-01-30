@@ -53,11 +53,13 @@ export default function Main() {
 
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
 
-  useEffect(setRecordsUsingDataFromIDB, []);
-
   useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
 
+  useEffect(setRecordsUsingDataFromIDB, []);
+
   useEffect(subscribeToSuccessOfPersistingRecordsOfTodayToIDB, []);
+
+  useEffect(subscribeToRePersistingFailedRecOfToday, []);
 
   useEffect(subscribeToClearObjectStores, []);
 
@@ -84,6 +86,7 @@ export default function Main() {
     getStatesFromIDB();
   }
 
+  // This is needed for unlogged-in user. recOfToday objectstore is not cleared when an unlogged-in user closes the app as opposed to the case a logged in user closes the app.
   function setRecordsUsingDataFromIDB() {
     async function getTodaySession() {
       let data = await retrieveTodaySessionsFromIDB();
@@ -98,6 +101,22 @@ export default function Main() {
       });
     }
     getTodaySession();
+  }
+
+  function subscribeToRePersistingFailedRecOfToday() {
+    console.log(
+      "subscribeToRePersistingFailedRecOfToday is getting fucking called"
+    );
+    const unsub = pubsub.subscribe(
+      "addFailedRecOfTodayToIDB",
+      (newlyAddedRecArr) => {
+        setRecords((prev) => [...prev, ...newlyAddedRecArr]);
+      }
+    );
+
+    return () => {
+      unsub();
+    };
   }
 
   //! This event is published in the `persistTimersStatesToIDB()` defined in UserContext.tsx
@@ -128,6 +147,7 @@ export default function Main() {
     };
   }
 
+  //* This is called later than the setRecordsUsingDataFromIDB()
   function subscribeToSuccessOfPersistingRecordsOfTodayToIDB() {
     const unsub = pubsub.subscribe(
       "successOfPersistingRecordsOfTodayToIDB",

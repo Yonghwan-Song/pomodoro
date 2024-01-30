@@ -13776,7 +13776,7 @@
     POMO: "https://pomodoro-apis.onrender.com/pomos",
     RECORD_OF_TODAY: "https://pomodoro-apis.onrender.com/recordOfToday"
   };
-  var IDB_VERSION = 7;
+  var IDB_VERSION = 8;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
 
@@ -13804,11 +13804,10 @@
       }
     },
     publish: function publish(evName, data) {
-      console.log("publish is called with data", data);
-      console.log("this.events[evName]", this.events[evName]); // console.log("this is", this);
+      console.log("".concat(evName, " is published with data"), data);
+      console.log("Set of subscribers's callbacks", this.events[evName]); // console.log("this is", this);
 
       if (this.events[evName]) {
-        console.log("inside if statement ".concat(evName, " with ").concat(data));
         this.events[evName].forEach(function (f) {
           f(data);
         });

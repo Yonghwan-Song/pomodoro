@@ -19,10 +19,10 @@ import { CacheName, IDB_VERSION } from "./constants";
 import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "./firebase";
-import axios from "axios";
 import * as CONSTANTS from "./constants";
 import { defineInterceptorsForAxiosInstance } from "./APIs-Related/axios-interceptors";
 import { axiosInstance } from "./APIs-Related/axios-instances";
+import { ERR_CONTROLLER, errController } from "./APIs-Related/errorController";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -53,6 +53,13 @@ interface TimerRelatedDB extends DBSchema {
       };
     };
     key: [number];
+  };
+  failedReqInfo: {
+    value: {
+      userEmail: string;
+      value: ERR_CONTROLLER["failedReqInfo"]; //https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
+    };
+    key: string;
   };
 }
 //#endregion
@@ -144,6 +151,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     DB = await openIndexedDB();
     await deleteRecordsBeforeTodayInIDB();
     DynamicCache = await openCache(CacheName);
+    pubsub.subscribe("connectionIsUp", async () => {
+      // I did not call unsub function of this subscription.
+      let userEmail = await getUserEmail(); //TODO: 그런데 이거 중복이네 hanldeFailedReqs에서 userEmail을 arg로 받아서 사용할 수 있는 방법을 찾아보든가
+      // console.log("userEmail from subscribe to connectionIsUp", userEmail);
+      if (
+        userEmail &&
+        (errController.failedReqInfo.POST.length !== 0 ||
+          errController.failedReqInfo.PUT.size !== 0 ||
+          errController.failedReqInfo.DELETE.length !== 0)
+      ) {
+        errController.handleFailedReqs();
+      }
+    });
+    await errController.getFailedReqsFromIDB();
   } catch (error) {
     console.error(error);
   }
@@ -330,7 +351,7 @@ export async function openCache(name: string) {
   return cache;
 }
 
-async function openIndexedDB() {
+export async function openIndexedDB() {
   let db = await openDB<TimerRelatedDB>("timerRelatedDB", IDB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction, event) {
       console.log("DB updated from version", oldVersion, "to", newVersion);
@@ -345,7 +366,13 @@ async function openIndexedDB() {
         db.deleteObjectStore("recOfToday");
       }
       db.createObjectStore("recOfToday", {
-        keyPath: ["startTime"],
+        keyPath: ["startTime"], //TODO: 이거는 왜 array야?
+      });
+      if (db.objectStoreNames.contains("failedReqInfo")) {
+        db.deleteObjectStore("failedReqInfo");
+      }
+      db.createObjectStore("failedReqInfo", {
+        keyPath: "userEmail",
       });
     },
     blocking(currentVersion, blockedVersion, event) {
@@ -415,11 +442,28 @@ export async function deleteRecordsBeforeTodayInIDB() {
 export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   let db = DB || (await openIndexedDB());
   const store = db
-    .transaction("recOfToday", "readwrite")
+    .transaction("recOfToday", "readonly")
     .objectStore("recOfToday");
   const allSessions = await store.getAll();
   console.log("allSessions", allSessions);
   return allSessions;
+}
+
+export async function persistFailedReqInfoToIDB(
+  data: TimerRelatedDB["failedReqInfo"]["value"]
+) {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("failedReqInfo", "readwrite")
+      .objectStore("failedReqInfo");
+
+    await store.put(data);
+
+    console.log(data);
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 export async function persistSingleTodaySessionToIDB({
@@ -504,6 +548,19 @@ export async function emptyRecOfToday() {
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
     await store.clear();
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function emptyFailedReqInfo(userEmail: string) {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("failedReqInfo", "readwrite")
+      .objectStore("failedReqInfo");
+    console.log(`about to delete ${userEmail}`);
+    await store.delete(userEmail);
   } catch (error) {
     console.warn(error);
   }
@@ -713,21 +770,36 @@ async function autoStartNextSession({
   localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
 }
 
-function obtainIdToken(): Promise<{ idToken: string } | null> {
-  return new Promise((res, rej) => {
+export function obtainIdToken(): Promise<{ idToken: string } | null> {
+  return new Promise((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
       if (user) {
         getIdToken(user).then(
           (idToken) => {
-            res({ idToken });
+            resolve({ idToken });
           },
           (error) => {
-            res(null);
+            resolve(null);
           }
         );
       } else {
-        res(null);
+        reject(null);
+      }
+    });
+  });
+}
+
+export function getUserEmail(): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("user from getUserEmail", user);
+      unsubscribe();
+      if (user) {
+        resolve(user.email!); //TODO: 이게 왜 null이 될수가 았는거지? 이 앱의 경우에는 user가 email이 없는 경우는 없는 것 같으니 우선 non-null assertion하겠음.
+      } else {
+        // reject(null);
+        resolve(null);
       }
     });
   });

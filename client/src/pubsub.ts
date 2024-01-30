@@ -31,11 +31,10 @@ export const pubsub: PubsubType = {
   },
 
   publish: function (evName, data: any) {
-    console.log("publish is called with data", data);
-    console.log("this.events[evName]", this.events[evName]);
+    // console.log(`${evName} is published with data`, data);
+    // console.log("Set of subscribers's callbacks", this.events[evName]);
     // console.log("this is", this);
     if (this.events[evName]) {
-      console.log(`inside if statement ${evName} with ${data}`);
       this.events[evName].forEach((f) => {
         f(data);
       });
