@@ -3,7 +3,7 @@
 ## 목차
 
 - [주요 기능들](#주요-기능들)
-- [Tech Stack](#Tech-stack)
+- [Tech Stack](#tech-stack)
 - [How to run locally](#how-to-run-locally)
 
 ## 주요 기능들
@@ -13,8 +13,6 @@
 #### Google Sign-in 과 Delete Account
 
 [deleteAndRe-sign-in.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/b6d4618c-f074-4a6a-af72-0809a8725166)
-
-
 
 ### Settings
 
@@ -39,16 +37,13 @@ pomodoro
 
 [pomo.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/b90f5f98-65bb-4b39-88bc-2776263e7f78)
 
-
 break
 
 [break.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c5628fbb-c2d2-43d3-9e28-a5c4cdb61e2e)
 
-
 #### 자동시작
 
 [auto-start.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/3f7b7d6d-30c6-4539-ad41-8f20006d64ce)
-
 
 #### Notification and click to focus
 
@@ -67,13 +62,11 @@ break
 
 [timeline-main-feature.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/87fa3130-5baf-4e1b-b5c8-3a2a0b09321d)
 
-
 #### 반응형 디자인
 
 탭의 넓이에 따라 3단계로 눈금의 크기가 달라져서 앱을 작은 화면으로 띄웠을 때 충분히 많은 시간대를 볼 수 있습니다.
 
 [responsive-timeline.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/5d8482f9-8e1e-4393-a766-14ca06c9ce4c)
-
 
 ---
 
@@ -108,7 +101,6 @@ pomodoro session에 대한 통계를 제공합니다.
 
 [pomoEnd-in-other-pages.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/21c1765e-e469-4c8c-ac84-fcd89d902ba1)
 
-
 ## Tech stack
 
 - **React** v18.2.0
@@ -137,5 +129,6 @@ npm start
 ```
 
 [^1]: Currently the app does not have the statistics feature any more.
-[^2]: [cache an
-d idb utilization](https://github.com/Yonghwan-Song/pomodoro/wiki/Design#cache-storage%EC%99%80-indexeddb%EB%A5%BC-%EC%95%B1%EC%97%90%EC%84%9C-%EC%96%B4%EB%96%BB%EA%B2%8C-%ED%99%9C%EC%9A%A9%ED%95%98%EA%B3%A0-%EC%9E%88%EB%8A%94%EC%A7%80%EC%97%90-%EB%8C%80%ED%95%B4)
+[^2]:
+    [cache an
+    d idb utilization](https://github.com/Yonghwan-Song/pomodoro/wiki/Design#cache-storage%EC%99%80-indexeddb%EB%A5%BC-%EC%95%B1%EC%97%90%EC%84%9C-%EC%96%B4%EB%96%BB%EA%B2%8C-%ED%99%9C%EC%9A%A9%ED%95%98%EA%B3%A0-%EC%9E%88%EB%8A%94%EC%A7%80%EC%97%90-%EB%8C%80%ED%95%B4)
