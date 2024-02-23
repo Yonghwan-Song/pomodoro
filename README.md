@@ -8,6 +8,13 @@
 
 ## 주요 기능들
 
+- [Firebase Authentication](#firebase-authentication)
+- [Settings](#settings)
+- [Timer](#timer)
+- [타임라인뷰](#타임라인뷰)
+- [통계](#통계)
+- [특이한 상황에 대비](#특이한-상황에-대비)
+
 ### Firebase Authentication
 
 #### Google Sign-in 과 Delete Account
@@ -24,7 +31,6 @@
 그리고 한 사이클 내에 한해 pomodoro나 break은 자동 시작될 수 있습니다. 다시 말해 다음 사이클은 자동으로 시작될 수는 없습니다.
 
 ![settings](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/30b5dc11-8b6a-44f8-9593-c448f200bc81)
-
 
 ### Timer
 
@@ -48,7 +54,6 @@ break
 
 ![noti](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/e3e670c3-cf39-4d76-a558-eb8aafba42df)
 
-
 ### 타임라인뷰
 
 #### 시각적 피드백
@@ -65,7 +70,6 @@ break
 탭의 넓이에 따라 3단계로 눈금의 크기가 달라져서 앱을 작은 화면으로 띄웠을 때 충분히 많은 시간대를 볼 수 있습니다.
 
 [responsive-timeline.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/5d8482f9-8e1e-4393-a766-14ca06c9ce4c)
-
 
 ### 통계
 
@@ -84,7 +88,6 @@ pomodoro session에 대한 통계를 제공합니다.
 데모 데이터를 만들어서 통계 그래프가 어떻게 그려지는지 즉각 확인할 수 있습니다.
 
 [demo-data.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/83c3f296-7a43-4cee-9d65-97e2d7612b70)
-
 
 ### 특이한 상황에 대비
 
