@@ -25,7 +25,6 @@
 
 ![settings](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/30b5dc11-8b6a-44f8-9593-c448f200bc81)
 
----
 
 ### Timer
 
@@ -49,7 +48,6 @@ break
 
 ![noti](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/e3e670c3-cf39-4d76-a558-eb8aafba42df)
 
----
 
 ### 타임라인뷰
 
@@ -68,7 +66,6 @@ break
 
 [responsive-timeline.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/5d8482f9-8e1e-4393-a766-14ca06c9ce4c)
 
----
 
 ### 통계
 
@@ -88,7 +85,6 @@ pomodoro session에 대한 통계를 제공합니다.
 
 [demo-data.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/83c3f296-7a43-4cee-9d65-97e2d7612b70)
 
----
 
 ### 특이한 상황에 대비
 
