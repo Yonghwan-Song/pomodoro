@@ -129,16 +129,16 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 ## Tech stack
 
 - **React** v18.2.0
-- **React router dom** v6.3.0
-- **Axios** v0.27.2
-- **Firebase** v9.8.4
-- **Date-fns** v2.29.3
-- **Styled components** v5.3.5
-- **Recharts** v2.1.14
+- **[React router dom](https://www.npmjs.com/package/react-router-dom?activeTab=readme)** v6.3.0
+- **[Axios](https://www.npmjs.com/package/axios)** v0.27.2
+- **[Firebase](https://www.npmjs.com/package/firebase)** v9.8.4
+- **[Date-fns](https://www.npmjs.com/package/date-fns)** v2.29.3
+- **[Styled components](https://www.npmjs.com/package/styled-components)** v5.3.5
+- **[Recharts](https://www.npmjs.com/package/recharts)** v2.1.14
 
-- **Mongoose** v6.4.3
-- **Express** v4.18.1
-- **Firebase admin** v11.0.0
+- **[Mongoose](https://www.npmjs.com/package/mongoose)** v6.4.3
+- **[Express](https://www.npmjs.com/package/express)** v4.18.1
+- **[Firebase admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
 
 - **Node js** v20.10.0
 
