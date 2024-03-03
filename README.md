@@ -26,7 +26,7 @@
 - [통계](#통계)
 - [예외적인 상황에 대비](#예외적인-상황에-대비)
 
-### Firebase Authentication
+### [Firebase Authentication](https://firebase.google.com/docs/auth)
 
 #### Google Sign-in 과 Delete Account
 
