@@ -115,11 +115,11 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ### 예외적인 상황에 대비
 
-**실수로 브라우저를 종료하거나 컴퓨터가 종료되어도**, 다시 앱을 열면 데이터 누락 없이 세션을 이어서 진행할 수 있습니다. [^2]
+**실수로 브라우저를 종료하거나 컴퓨터가 종료되어도**, 다시 앱을 열면 데이터 누락 없이 세션을 이어서 진행할 수 있습니다.
 
 [authUser-close-app.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/82860477-2ba0-4a40-8f1e-b9ec272ef0e6)
 
-**인터넷이 불안정하여 끊기는 경우** 데이터 누락 없이 계속 이어서 타이머를 진행시킬 수 있습니다. [^3]
+**인터넷이 불안정하여 끊기는 경우** 데이터 누락 없이 계속 이어서 타이머를 진행시킬 수 있습니다. [^2]
 
 [disconnection-while-timer-is-running.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c53516ab-1a16-4a25-9922-e4ea758bec4d)
 
@@ -177,8 +177,7 @@ npm start
 
 
 [^1]: Currently the app does not have the statistics feature anymore.
-[^2]: [cache and idb utilization](https://github.com/Yonghwan-Song/pomodoro/wiki/Design#cache-storage%EC%99%80-indexeddb%EB%A5%BC-%EC%95%B1%EC%97%90%EC%84%9C-%EC%96%B4%EB%96%BB%EA%B2%8C-%ED%99%9C%EC%9A%A9%ED%95%98%EA%B3%A0-%EC%9E%88%EB%8A%94%EC%A7%80%EC%97%90-%EB%8C%80%ED%95%B4)
-[^3]: [관련 issue](https://github.com/Yonghwan-Song/pomodoro/issues/37)
+[^2]: [관련 issue](https://github.com/Yonghwan-Song/pomodoro/issues/37)
 
 
 
