@@ -7,15 +7,13 @@
 - [Tech Stack](#tech-stack)
 - [How to run locally](#how-to-run-locally)
 
-
 ## Intro
 
-[pomodoro technique](https://en.wikipedia.org/wiki/Pomodoro_Technique)을 기반으로하는 공부&작업 시간 측정 App입니다. 인터벌 트레이닝과 비슷한 개념으로, 한 사이클의 작업시간을 여러개의 작업시간들과 그에 뒤따르는 짧은 휴식 그리고 다음 사이클 시작전의 마지막 긴 휴식으로 나누어 높은 집중력을 유지하는데 도움을 줍니다.
+[pomodoro technique](https://en.wikipedia.org/wiki/Pomodoro_Technique)을 기반으로 하는 공부 & 작업 시간 측정 App입니다. 인터벌 트레이닝과 비슷한 개념으로, 한 사이클의 작업 시간을 여러 개의 작업 세션들과 그에 뒤따르는 짧은 휴식 그리고 다음 사이클 시작 전의 마지막 긴 휴식으로 나누어 높은 집중력을 유지하는 데 도움을 줍니다.
 
 (작업시간을 보통 pomodoro or pomo라고 부릅니다).
 
 `One cycle == (pomo + short break) * number of pomos + long break`
-
 
 ## 주요 기능들
 
@@ -129,17 +127,17 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 ## Tech stack
 
 - **React** v18.2.0
-- **[React router dom](https://www.npmjs.com/package/react-router-dom?activeTab=readme)** v6.3.0
+- **[React Router Dom](https://www.npmjs.com/package/react-router-dom?activeTab=readme)** v6.3.0
 - **[Axios](https://www.npmjs.com/package/axios)** v0.27.2
 - **[Firebase](https://www.npmjs.com/package/firebase)** v9.8.4
 - **[Date-fns](https://www.npmjs.com/package/date-fns)** v2.29.3
-- **[Styled components](https://www.npmjs.com/package/styled-components)** v5.3.5
+- **[Styled Components](https://www.npmjs.com/package/styled-components)** v5.3.5
 - **[Recharts](https://www.npmjs.com/package/recharts)** v2.1.14
 
-- **[Mongoose](https://www.npmjs.com/package/mongoose)** v6.4.3
+- **[Firebase Admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
 - **[Express](https://www.npmjs.com/package/express)** v4.18.1
-- **[Firebase admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
-
+- **[Mongoose](https://www.npmjs.com/package/mongoose)** v6.4.3
+- **[MongoDB Atlas](https://www.mongodb.com/atlas/database)**
 - **Node js** v20.10.0
 
 ---
