@@ -10,24 +10,32 @@ import { DynamicCache, openCache } from "..";
 import { CacheName, URLs } from "../constants";
 import { axiosInstance } from "../APIs-Related/axios-instances";
 
+//#region Type Definition
 type DataType<T, S> = S extends undefined ? T : S;
+
 type ArgType<T, S> = {
   urlSegment: string;
   modifier?: (arg: T) => DataType<T, S>;
-  // callbacks?: ((arg: DataType<T, S>) => void)[]; //TODO: what if S is provided bu callbacks need T?
-  callbacks?: ((arg: DataType<T, S>) => void | Promise<void>)[]; //TODO: what if S is provided bu callbacks need T?
+  callbacks?: ((arg: DataType<T, S>) => void | Promise<void>)[]; // What if S is provided but callbacks need T?
   additionalDeps?: DependencyList;
   additionalCondition?: boolean;
 };
+
 type CustomReturnType<T, S> = [
   DataType<T, S> | null,
   Dispatch<SetStateAction<DataType<T, S> | null>>
 ];
+//#endregion
 
 /**
- * Purpose and what it does.
- * @param param0
- * @returns
+ * useFetch<T, S = undefined>에 대해, S가 어떻게 쓰이는지?
+ *
+ * useFetch에 의해 fetch되는 데이터를 약간 수정해서 이용해야 하는 경우가 존재한다.
+ * 이때 그 수정된 데이터가 기존의 타입 T와 다른 경우, S를 이용해 그 수정된 데이터의 타입을 명시한다.
+ * e.g) the useFetch call in the client/src/Pages/Statistics/Statistics.tsx
+ *
+ * callbacks: fetch된 데이터 혹은 추후 수정된 데이터를 argument로 하여 call되는 callback함수들의 array.
+ *
  */
 export function useFetch<T, S = undefined>({
   urlSegment,
@@ -40,37 +48,6 @@ export function useFetch<T, S = undefined>({
   const { user } = useAuthContext()!;
 
   let moreDeps: DependencyList = additionalDeps ?? [];
-
-  //#region To Observe LifeCycle
-  // const mountCount = useRef(0);
-  // const updateCount = useRef(0);
-  //#endregion
-
-  //#region To Observe Lifecycle
-  // useEffect(() => {
-  //   console.log(
-  //     "----------------------------useFetch Mounted----------------------------"
-  //   );
-  //   console.log("user", user);
-  //   console.log("data", data);
-  //   console.log("mount count", ++mountCount.current);
-
-  //   return () => {
-  //     console.log(
-  //       "----------------------------useFetch unMounted----------------------------"
-  //     );
-  //   };
-  // });
-
-  // useEffect(() => {
-  //   console.log(
-  //     "----------------------------useFetch Updated----------------------------"
-  //   );
-  //   console.log("user", user);
-  //   console.log("data", data);
-  //   console.log("render count", ++updateCount.current);
-  // });
-  //#endregion
 
   useEffect(() => {
     if (isUserSignedIn() && isAdditionalConditionSatisfiedWhenProvided()) {
