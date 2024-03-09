@@ -1,12 +1,17 @@
 # [Pomodoro Timer](https://pomodoro-yhs.vercel.app) - web application
 
+
+
 ## 목차
 
 - [Intro](#intro)
-- [주요 기능들](#주요-기능들)
 - [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [주요 기능들](#주요-기능들)
 - [How to run locally](#how-to-run-locally)
 - [어려웠던 점들](#어려웠던-점들)
+
+
 
 ## Intro
 
@@ -15,6 +20,38 @@
 (작업시간을 보통 pomodoro or pomo라고 부릅니다).
 
 `One cycle == (pomo + short break) * number of pomos + long break`
+
+---
+
+
+
+## Tech stack
+
+- **React** v18.2.0
+- **[React Router Dom](https://www.npmjs.com/package/react-router-dom?activeTab=readme)** v6.3.0
+- **[Axios](https://www.npmjs.com/package/axios)** v0.27.2
+- **[Firebase](https://www.npmjs.com/package/firebase)** v9.8.4
+- **[Date-fns](https://www.npmjs.com/package/date-fns)** v2.29.3
+- **[Styled Components](https://www.npmjs.com/package/styled-components)** v5.3.5
+- **[Recharts](https://www.npmjs.com/package/recharts)** v2.1.14
+
+- **[Firebase Admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
+- **[Express](https://www.npmjs.com/package/express)** v4.18.1
+- **[Mongoose](https://www.npmjs.com/package/mongoose)** v6.4.3
+- **[MongoDB Atlas](https://www.mongodb.com/atlas/database)**
+- **Node js** v20.10.0
+
+---
+
+
+
+## Architecture
+
+![architecture](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/fc6c8cdf-9dc0-47a4-9b18-9d2ab1bd819a)
+
+---
+
+
 
 ## 주요 기능들
 
@@ -25,6 +62,8 @@
 - [통계](#통계)
 - [예외적인 상황에 대비](#예외적인-상황에-대비)
 
+
+
 ### [Firebase Authentication](https://firebase.google.com/docs/auth)
 
 #### Google Sign-in 과 Delete Account
@@ -32,6 +71,8 @@
 [deleteAndRe-sign-in.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/b6d4618c-f074-4a6a-af72-0809a8725166)
 
 ---
+
+
 
 ### Settings
 
@@ -42,6 +83,8 @@ Demo 데이터를 생성 그리고 지울 수 있고, 계정 삭제도 이 페�
 ![settings](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/30b5dc11-8b6a-44f8-9593-c448f200bc81)
 
 ---
+
+
 
 ### Timer
 
@@ -69,6 +112,8 @@ break
 
 ---
 
+
+
 ### 타임라인뷰
 
 #### 시각적 피드백
@@ -87,6 +132,8 @@ break
 [responsive-timeline.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/5d8482f9-8e1e-4393-a766-14ca06c9ce4c)
 
 ---
+
+
 
 ### 통계
 
@@ -113,6 +160,8 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ---
 
+
+
 ### 예외적인 상황에 대비
 
 **실수로 브라우저를 종료하거나 컴퓨터가 종료되어도**, 다시 앱을 열면 데이터 누락 없이 세션을 이어서 진행할 수 있습니다.
@@ -125,21 +174,24 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ---
 
-## Tech stack
 
-- **React** v18.2.0
-- **[React Router Dom](https://www.npmjs.com/package/react-router-dom?activeTab=readme)** v6.3.0
-- **[Axios](https://www.npmjs.com/package/axios)** v0.27.2
-- **[Firebase](https://www.npmjs.com/package/firebase)** v9.8.4
-- **[Date-fns](https://www.npmjs.com/package/date-fns)** v2.29.3
-- **[Styled Components](https://www.npmjs.com/package/styled-components)** v5.3.5
-- **[Recharts](https://www.npmjs.com/package/recharts)** v2.1.14
 
-- **[Firebase Admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
-- **[Express](https://www.npmjs.com/package/express)** v4.18.1
-- **[Mongoose](https://www.npmjs.com/package/mongoose)** v6.4.3
-- **[MongoDB Atlas](https://www.mongodb.com/atlas/database)**
-- **Node js** v20.10.0
+## 어려웠던 점들
+
+**Session이 `/timer` 이외의 다른 페이지들 즉, `/stat`과 `/settings`에서도 진행 그리고 종료될 수 있도록 하는 것**:
+
+**A**. Timer를 돌리는 데 관여하는 states들을 indexed DB에 저장하고, 다른 페이지로 넘어가면 index.tsx파일에서 그 값들을 받아와서 count down 합니다.
+다시 `/timer`로 돌아올 때, indexed DB에 있는 값들을 Timer와 PatternTimer의 states들의 초깃값으로 설정하여, 남아 있는 시간이 즉각 UI에 반영되게 하였습니다.
+
+**B**. `/statistics`에서 pomo session이 종료될 때, 그 값을 통계 그래프에 곧바로 반영하기 위해 pusub pattern을 사용했습니다.
+
+**A**.
+![스탯으로 이동후 다시 타이머로 무브백](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/435773c7-a742-4c71-b6c6-fcedcac5544e)
+
+**B**.
+![스탯으로 이동후 세션 종료](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c146532e-f4c5-45c5-a16f-c74333aeb3f3)
+
+
 
 ---
 
@@ -154,30 +206,7 @@ npm install
 npm start
 ```
 
----
-
-
-
-## 어려웠던 점들
-
-**Session이 `/timer` 이외의 다른 페이지들 즉, `/stat`과 `/settings`에서도 진행 그리고 종료될 수 있도록 하는 것**:
-
-ㄱ. Timer를 돌리는 데 관여하는 states들을 indexed DB에 저장하고, 다른 페이지로 넘어가면 index.tsx파일에서 그 값들을 받아와서 count down 합니다.
-다시 `/timer`로 돌아올 때, indexed DB에 있는 값들을 Timer와 PatternTimer의 states들의 초깃값으로 설정하여, 남아 있는 시간이 즉각 UI에 반영되게 하였습니다.
-
-ㄴ. `/statistics`에서 pomo session이 종료될 때, 그 값을 통계 그래프에 곧바로 반영하기 위해 pusub pattern을 사용했습니다.
-
-
-ㄱ.
-![스탯으로 이동후 다시 타이머로 무브백](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/653e4a23-2daa-4acc-a2ba-fd66a0408dd6)
-
-ㄴ.
-![스탯으로 이동후 세션 종료](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c146532e-f4c5-45c5-a16f-c74333aeb3f3)
-
 
 
 [^1]: Currently the app does not have the statistics feature anymore.
 [^2]: [관련 issue](https://github.com/Yonghwan-Song/pomodoro/issues/37)
-
-
-
