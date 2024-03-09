@@ -1,17 +1,15 @@
 # [Pomodoro Timer](https://pomodoro-yhs.vercel.app) - web application
 
-
-
 ## 목차
 
 - [Intro](#intro)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [주요 기능들](#주요-기능들)
-- [How to run locally](#how-to-run-locally)
 - [어려웠던 점들](#어려웠던-점들)
+- [How to run locally](#how-to-run-locally)
 
-
+<br>
 
 ## Intro
 
@@ -21,9 +19,7 @@
 
 `One cycle == (pomo + short break) * number of pomos + long break`
 
----
-
-
+<br>
 
 ## Tech stack
 
@@ -41,30 +37,27 @@
 - **[MongoDB Atlas](https://www.mongodb.com/atlas/database)**
 - **Node js** v20.10.0
 
----
-
-
+<br>
 
 ## Architecture
 
 ![architecture](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/fc6c8cdf-9dc0-47a4-9b18-9d2ab1bd819a)
 
----
 
-
+<br>
 
 ## 주요 기능들
 
-- [Firebase Authentication](#firebase-authentication)
-- [Settings](#settings)
-- [Timer](#timer)
-- [타임라인뷰](#타임라인뷰)
-- [통계](#통계)
-- [예외적인 상황에 대비](#예외적인-상황에-대비)
+- [Firebase Authentication](#1.-firebase-authentication)
+- [Settings](#2.-settings)
+- [Timer](#3.-timer)
+- [타임라인뷰](#4.-타임라인뷰)
+- [통계](#5.-통계)
+- [예외적인 상황에 대비](#6.-예외적인-상황에-대비)
 
+<br>
 
-
-### [Firebase Authentication](https://firebase.google.com/docs/auth)
+### 1. [Firebase Authentication](https://firebase.google.com/docs/auth)
 
 #### Google Sign-in 과 Delete Account
 
@@ -72,9 +65,10 @@
 
 ---
 
+<br>
 
 
-### Settings
+### 2. Settings
 
 다음과 같은 (반복되는) 한 사이클을 구성하는 값들을 설정할 수 있습니다 - pomo(doro) duration, short break and long break duration, number of pomos.
 Pomodoro와 break 각각에 대해 자동 시작 설정을 할 수 있습니다.
@@ -84,11 +78,11 @@ Demo 데이터를 생성 그리고 지울 수 있고, 계정 삭제도 이 페�
 
 ---
 
+<br>
 
+### 3. Timer
 
-### Timer
-
-#### 시간 카운트 다운과 일시 정지
+#### 1. 시간 카운트 다운과 일시 정지
 
 Pomodoro와 Break 세션 모두 중간에 일시 정지할 수 있습니다.
 
@@ -100,23 +94,27 @@ break
 
 [break.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c5628fbb-c2d2-43d3-9e28-a5c4cdb61e2e)
 
-#### 자동시작
+<br>
+
+#### 2. 자동시작
 
 한 사이클 내의 첫 pomodoro session을 제외한 모든 세션들은 자동 시작될 수 있습니다. 즉, 한 사이클이 끝났을 때, 다음 사이클이 자동 시작되지는 않습니다.
 
 [auto-start-re.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/efd245af-0eb5-4d8c-bea4-652064b44800)
 
-#### Notification and click to focus
+<br>
+
+#### 3. Notification and click to focus
 
 ![noti](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/e3e670c3-cf39-4d76-a558-eb8aafba42df)
 
 ---
 
+<br>
 
+### 4. 타임라인뷰
 
-### 타임라인뷰
-
-#### 시각적 피드백
+#### 1. 시각적 피드백
 
 - 기존에 나와있는 [포모도로 웹앱](https://pomofocus.io)을 사용할 때, 현실적으로 중간에 일시 정지하는 경우가 있는데, **얼마나 오랫동안 일시 정지하였는지** 보여 주는 기능이 없었습니다. 그래서 당일 데이터에 한해서 얼마나 세션을 효율적으로 보냈는지를 시각적으로 피드백해주는 기능을 만들었습니다.
 - **선홍색, 녹색, 노란색** 박스들이 각각 pomodoro, break, pause를 나타냅니다.
@@ -125,7 +123,9 @@ break
 
 [timeline-main-feature.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/87fa3130-5baf-4e1b-b5c8-3a2a0b09321d)
 
-#### 반응형 디자인
+<br>
+
+#### 2. 반응형 디자인
 
 탭의 너비 변화에 따라 3단계로 시간 눈금의 크기가 조정됩니다. 그 효과로, 앱을 작은 화면으로 띄웠을 때 충분히 많은 시간대를 timeline에서 눈으로 확인할 수 있습니다.
 
@@ -133,15 +133,15 @@ break
 
 ---
 
+<br>
 
-
-### 통계
+### 5. 통계
 
 pomodoro session에 대한 통계를 제공합니다.
 
 ![show-stat-page](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/eb8e1818-d9f3-4ceb-8a47-839473674a94)
 
-#### Modal대신 한 페이지에 배치
+#### 1. Modal대신 한 페이지에 배치
 
 답답한 느낌이 덜 들도록 modal보다는 한 페이지 자체에서 통계를 확인할 수 있도록 했습니다.
 
@@ -152,7 +152,9 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 [pomoEnd-in-other-pages.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/21c1765e-e469-4c8c-ac84-fcd89d902ba1)
 
-#### 데모 데이터
+<br>
+
+#### 2. 데모 데이터
 
 이 앱을 처음 사용하는 유저는 데모 데이터를 만들어서 통계 그래프가 어떻게 그려지는지 즉각 확인할 수 있습니다.
 
@@ -160,9 +162,9 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ---
 
+<br>
 
-
-### 예외적인 상황에 대비
+### 6. 예외적인 상황에 대비
 
 **실수로 브라우저를 종료하거나 컴퓨터가 종료되어도**, 다시 앱을 열면 데이터 누락 없이 세션을 이어서 진행할 수 있습니다.
 
@@ -174,7 +176,7 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ---
 
-
+<br>
 
 ## 어려웠던 점들
 
@@ -191,9 +193,7 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 **B**.
 ![스탯으로 이동후 세션 종료](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c146532e-f4c5-45c5-a16f-c74333aeb3f3)
 
-
-
----
+<br>
 
 ## How to run locally
 
