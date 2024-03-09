@@ -2,12 +2,13 @@
 
 ## 목차
 
-- [Intro](#intro)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [주요 기능들](#주요-기능들)
-- [어려웠던 점들](#어려웠던-점들)
-- [How to run locally](#how-to-run-locally)
+- [**Intro**](#intro)
+
+- [**Tech Stack**](#tech-stack)
+- [**Architecture**](#architecture)
+- [**주요 기능들**](#주요-기능들)
+- [**어려웠던 점들**](#어려웠던-점들)
+- [**How to run locally**](#how-to-run-locally)
 
 <br>
 
@@ -48,13 +49,13 @@
 
 ## 주요 기능들
 
-- **[Firebase Authentication](#firebase-authentication)**
+- [Firebase Authentication](#firebase-authentication)
 
-- **[Settings](#settings)**
-- **[Timer](#timer)**
-- **[타임라인뷰](#타임라인뷰)**
-- **[통계](#통계)**
-- **[예외적인 상황에 대비](#예외적인-상황에-대비)**
+- [Settings](#settings)
+- [Timer](#timer)
+- [타임라인뷰](#타임라인뷰)
+- [통계](#통계)
+- [예외적인 상황에 대비](#예외적인-상황에-대비)
 
 <br>
 
