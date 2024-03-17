@@ -478,8 +478,8 @@ export function TimerVVV({
         const info = await store.get(userEmail);
         return !!info;
       } else {
-        // it should be always true for unlogged-in user.
-        return true;
+        // it should be always false for unlogged-in user.
+        return false;
       }
     }
     function nextSessionIsStartOfCycle() {
@@ -596,6 +596,11 @@ export function TimerVVV({
 
   //#region Etc functions
   //이 함수의 논리는 next함수에서 사용하는 것과 동일하다.
+  /**
+   * @param numOfPomo pomo세션 몇개를 한 사이클이 포함하고 있는지(완료시켜야 하는지)
+   * @param howManyCountdown numOfPomo중에 실제로 몇번 pomo세션을 완료했는지를 나타낸다. 이 두개를 비교해서 한사이클이 다 끝났는지 그리고 다음 세션은 어떤 것이어야 하는지 파악 할 수 있다.
+   * @returns 이제 한사이클 다 돌아서 새로 시작해야 하는 경우에만 repetitionCount를 0값으로 return value에 포함시킨다.
+   */
   function determineNextPatternTimerStates({
     howManyCountdown,
     numOfPomo,
