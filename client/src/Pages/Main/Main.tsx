@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  postMsgToSW,
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
@@ -25,44 +24,43 @@ export default function Main() {
     TimersStatesType | {} | null
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
+  // When to use setToggle:
+  // 1. log-in - subscribeToSuccessOfPersistingTimerStatesToIDB, subscribeToSuccessOfPersistingRecordsOfTodayToIDB
+  // 2. log-out - subscribeToPrepareTimerRelatedDBForUnloggedInUser
   const [toggle, setToggle] = useState(false);
-  const areUserDataFetchedCompletely = useRef<[boolean, boolean]>(
+  const areUserDataFetchedCompletely = useRef<[boolean, boolean]>( //[0] for the `statesRelatedToTimer` state.
+    //[1] for the `` state.
     deciderOfWhetherUserDataFetchedCompletely
   );
   const toggleCounter = useRef(0);
   const userInfoContext = useUserContext()!;
-  const { pomoInfo } = userInfoContext;
-
-  let pomoSetting = {} as PomoSettingType;
-  if (pomoInfo !== null && pomoInfo.pomoSetting !== undefined) {
-    pomoSetting = pomoInfo.pomoSetting;
-  }
+  const pomoSetting = useMemo(() => {
+    console.log("useMemo at Main");
+    console.log(userInfoContext.pomoInfo);
+    if (
+      userInfoContext.pomoInfo !== null &&
+      userInfoContext.pomoInfo.pomoSetting !== undefined
+    ) {
+      return userInfoContext.pomoInfo.pomoSetting;
+    } else {
+      return {} as PomoSettingType;
+    }
+  }, [userInfoContext.pomoInfo]); //<-- 이렇게 하면 pomoSetting값중에 하나가 변해도 pomoSetting이 변하나?...
 
   //#region UseEffects
-  // useEffect(showToggleCount);
-  // useEffect(() => {
-  //   console.log("Main was mounted");
-  //   return () => {
-  //     console.log("Main was unmounted");
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   console.log("Main was rendered with records", records);
-  // });
-
+  /**
+   * Where the setStatesRelatedToTimer is called among side effect functions below
+   * 1. setStatesRelatedToTimerUsingDataFromIDB <-- e.g) navigating back to `/timer` after checking stat in `/statistics`.
+   * 2. subscribeToClearObjectStores <-- (1)As soon as a user logs out. (2)By a callback to the "clearObjectStores" event.
+   * 3. subscribeToSuccessOfPersistingTimerStatesToIDB <-- (1)As soon as a user logs in. (2)By a callback to the "successOfPersistingTimersStatesToIDB" event.
+   */
+  // useEffect(logStates);
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
-
-  useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
-
   useEffect(setRecordsUsingDataFromIDB, []);
-
+  useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
+  useEffect(subscribeToPrepareTimerRelatedDBForUnloggedInUser, []);
   useEffect(subscribeToSuccessOfPersistingRecordsOfTodayToIDB, []);
-
   useEffect(subscribeToRePersistingFailedRecOfToday, []);
-
-  useEffect(subscribeToClearObjectStores, []);
-
   useEffect(endTimerInBackground, [statesRelatedToTimer]);
 
   //TODO: pomoInfo가 변하면, 결국 pomoSetting이 변하든 autoStartSetting이 변하든, 즉각 즉각 idb statesStore에 반영을 해 줘야 하는데, 그거를 왜 이제와서 여기에서 했는지 잘 모르겠네.
@@ -71,6 +69,23 @@ export default function Main() {
   //#endregion
 
   //#region Side Effect Callbacks
+  // function logStates() {
+  //   console.log("---------------------logStates---------------------");
+  //   console.log(`toggle count - ${toggleCounter.current}`);
+  //   toggleCounter.current += 1;
+  //   console.log("<statesRelatedToTimer>");
+  //   console.log(statesRelatedToTimer);
+  //   console.log("<pomoSetting>");
+  //   console.log(pomoSetting);
+  //   console.log("user item in the localStorage");
+  //   console.log(localStorage.getItem("user"));
+  //   console.log(`toggle`);
+  //   console.log(toggle);
+  //   console.log(`records`);
+  //   console.log(records);
+  //   console.log("---------------------------------------------------");
+  // }
+
   function endTimerInBackground() {
     statesRelatedToTimer !== null &&
       Object.keys(statesRelatedToTimer).length !== 0 &&
@@ -104,9 +119,6 @@ export default function Main() {
   }
 
   function subscribeToRePersistingFailedRecOfToday() {
-    console.log(
-      "subscribeToRePersistingFailedRecOfToday is getting fucking called"
-    );
     const unsub = pubsub.subscribe(
       "addFailedRecOfTodayToIDB",
       (newlyAddedRecArr) => {
@@ -179,31 +191,25 @@ export default function Main() {
    *                                            not using the previous user's pomoSetting and timersStates.
    *   User logs out -> recOfToday and stateStore are cleared.
    */
-  function subscribeToClearObjectStores() {
+  function subscribeToPrepareTimerRelatedDBForUnloggedInUser() {
     const getDataFromIDB = async () => {
       const states = await obtainStatesFromIDB("withoutSettings");
       const sessionsOfToday = await retrieveTodaySessionsFromIDB();
-
       setStatesRelatedToTimer(states);
-      setRecords(sessionsOfToday); //!<-----
-      setToggle((prev) => !prev); // this makes it the mounting with appropriate data unlike the commented one below.
+      setRecords(sessionsOfToday);
+      setToggle((prev) => !prev);
     };
 
-    const unsub = pubsub.subscribe("clearObjectStores", (data) => {
-      getDataFromIDB();
-    });
+    const unsub = pubsub.subscribe(
+      "prepareTimerRelatedDBForUnloggedInUser",
+      (data) => {
+        getDataFromIDB();
+      }
+    );
 
     return () => {
       unsub();
     };
-  }
-
-  function postSaveStatesMessageToServiceWorker() {
-    if (Object.entries(pomoSetting).length !== 0) {
-      postMsgToSW("saveStates", {
-        stateArr: [{ name: "pomoSetting", value: pomoSetting }],
-      });
-    }
   }
 
   function showToggleCount() {
@@ -260,6 +266,7 @@ export default function Main() {
                 </StyledLoadingMessage>
               )
             ) : (
+              // when users log out,
               <TogglingTimer
                 toggle={toggle}
                 statesRelatedToTimer={statesRelatedToTimer}

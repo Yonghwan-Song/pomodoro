@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import GoogleButton from "react-google-button";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { emptyRecOfToday } from "../..";
+import { clearRecOfToday } from "../..";
 import { errController } from "../../APIs-Related/errorController";
 
 function Signin() {
@@ -13,7 +13,7 @@ function Signin() {
   const handleGoogleSignIn = async () => {
     try {
       await googleSignIn();
-      await emptyRecOfToday();
+      await clearRecOfToday();
       await errController.getFailedReqsFromIDB();
     } catch (error) {
       console.log(error);

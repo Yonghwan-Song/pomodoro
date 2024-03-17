@@ -33,7 +33,6 @@ import {
   updateTimersStates,
 } from "../..";
 import ToggleSwitch from "../../Components/ToggleSwitch/ToggleSwitch";
-import { pubsub } from "../../pubsub";
 import { axiosInstance } from "../../APIs-Related/axios-instances";
 
 function Settings() {
@@ -169,10 +168,6 @@ function Settings() {
           doesBreakStartAutomatically,
         },
       };
-    });
-    pubsub.publish("updateAutoStartSetting", {
-      doesPomoStartAutomatically,
-      doesBreakStartAutomatically,
     });
   }
   //#endregion

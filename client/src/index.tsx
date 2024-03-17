@@ -84,12 +84,8 @@ export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let DynamicCache: Cache | null = null;
 export let TimerRelatedStates: TimersStatesType | null = null;
 
-let autoStartSetting: AutoStartSettingType | null = null;
-pubsub.subscribe("updateAutoStartSetting", (data) => {
-  autoStartSetting = data;
-});
-
-//
+// Main에서 사용하더라도 Main함수 내에 정의하지 않은 이유: `/timer`이외에 다른 url에 있더라도
+// 아래 두 event들은 발생할 수 있기 때문에.
 export let deciderOfWhetherUserDataFetchedCompletely: [boolean, boolean] = [
   false, // for persisting timersStates to idb
   false, // for persisting recordsOfToday to idb
@@ -344,6 +340,40 @@ export async function clearStateStoreAndRecOfToday() {
   }
 }
 
+export async function setStateStoreToDefault() {
+  console.log("setStateStoreToDefault");
+  let db = DB || (await openIndexedDB());
+  try {
+    let tx = db.transaction("stateStore", "readwrite");
+    await Promise.all([
+      tx.store.put({ name: "duration", value: 25 }),
+      tx.store.put({ name: "repetitionCount", value: 0 }),
+      tx.store.put({ name: "running", value: false }),
+      tx.store.put({ name: "startTime", value: 0 }),
+      tx.store.put({ name: "pause", value: { totalLength: 0, record: [] } }),
+      tx.store.put({
+        name: "pomoSetting",
+        value: {
+          pomoDuration: 25,
+          shortBreakDuration: 5,
+          longBreakDuration: 15,
+          numOfPomo: 4,
+        },
+      }),
+      tx.store.put({
+        name: "autoStartSetting",
+        value: {
+          doesPomoStartAutomatically: false,
+          doesBreakStartAutomatically: false,
+        },
+      }),
+      tx.done,
+    ]);
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
 export async function openCache(name: string) {
   let cache: Cache | null = null;
 
@@ -541,7 +571,7 @@ export async function emptyStateStore() {
   }
 }
 
-export async function emptyRecOfToday() {
+export async function clearRecOfToday() {
   try {
     let db = DB || (await openIndexedDB());
     const store = db

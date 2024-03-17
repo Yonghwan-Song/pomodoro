@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useRef } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
@@ -9,12 +9,16 @@ import { useTheme } from "styled-components";
 import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
 import {
+  clearRecOfToday,
   obtainStatesFromIDB,
+  setStateStoreToDefault,
   stopCountDownInBackground,
   updateTimersStates,
 } from "../..";
 import { TimersStatesType } from "../../types/clientStatesType";
 import { errController } from "../../APIs-Related/errorController";
+import { pubsub } from "../../pubsub";
+import * as CONSTANTS from "../../constants/index";
 
 function Navbar() {
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
@@ -24,17 +28,18 @@ function Navbar() {
 
   async function handleSignOut() {
     try {
-      // 로그아웃 시도하는 당시의 데이터를 서버에 persist해 놓기 는다.
-      // 이유: 다음에 다시 로그인 했을 때, 이어서 사용할 수 있도록 하기 위해.
+      // 로그아웃 시도하는 당시의 데이터를 서버에 persist 해놓는다. 이유: 다음에 다시 로그인 했을 때, 이어서 사용할 수 있도록 하기 위해.
       const statesFromIDB = await obtainStatesFromIDB("withoutSettings");
       if (Object.entries(statesFromIDB).length !== 0) {
         if (user !== null) {
           await updateTimersStates(user, statesFromIDB as TimersStatesType);
         }
       }
-
+      await setStateStoreToDefault();
+      await clearRecOfToday();
+      pubsub.publish("prepareTimerRelatedDBForUnloggedInUser", 1); //어차피 recOfToday도 이 시점에서는 clear되었기 때문에 따로 event를 만들어서 publish하지 않겠다.
+      caches.delete(CONSTANTS.CacheName);
       localStorage.setItem("user", "unAuthenticated");
-
       await logOut();
       errController.emptyFailedReqInfo();
     } catch (error) {

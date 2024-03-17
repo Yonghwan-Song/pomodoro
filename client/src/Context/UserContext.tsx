@@ -16,8 +16,6 @@ import {
 } from "..";
 import { RequiredStatesToRunTimerType } from "../types/clientStatesType";
 import { pubsub } from "../pubsub";
-import { emptyStateStore, emptyRecOfToday } from "..";
-import * as CONSTANTS from "../constants/index";
 
 type UserInfoContextType = {
   pomoInfo: RequiredStatesToRunTimerType | null;
@@ -70,31 +68,33 @@ export function UserInfoContextProvider({
   // const updateCount = useRef(0);
   //#endregion
 
-  //#region UseEffects
-  //* pomoInfo ends up receiving null from useFetch hook when a user is an unlogged-in user.
-  useEffect(setPomoSettingToDefault, [user]);
-  useEffect(setPomoInfoOfUnLoggedInUser, [user, pomoInfo]);
+  //#region UseEffect Calls
+  useEffect(setPomoInfoToDefaultAfterLogOut, [user]); //1.
+  useEffect(setPomoInfoOfUnLoggedInUser, [user, pomoInfo]); //2.
+  // 1. The code in this callback actually runs only right after a user logs out. (`isRightAfterLogOut() returns true`)
+  // 2. The code in this callback actually runs
+  //    only when (1)`pomoInfo` is/is changed to null. AND (2)localStorage.getItem("user") !== "authenticated".
+  //!   Further use cases are described inside the function definition.
+  //*참고  pomoInfo ends up receiving null from useFetch hook when a user is an unlogged-in user.
   //#endregion
 
   //#region Side Effects
 
   //! Purpose: to allow _unauthenticated(un-logged-in) users_ to continue to run timer from where they left when refreshing the app.
-
   function setPomoInfoOfUnLoggedInUser() {
-    //? isn't this called when a user logs in but not yet gets its data from server?... //씨발 몰라..
+    //? isn't this called when a user logs in but not yet gets its data from server?...
     /**
      * What this condition mean? - unauthenticated user is using the app.
      * When
-     * 1. reopening the app
-     * 2. refreshing the app
-     * 3. deleting all history including indexed DB <-- 이렇게 했을 때. when this happens, pomoInfo is not null.
+     ** 1. reopening the app
+     ** 2. refreshing the app
+     ** 3. deleting all history including indexed DB <-- 이렇게 했을 때. when this happens, pomoInfo is not null.
      * Previously, I want this to also run when logging out, but it didn't
      * I guess, the reason was the same, pomoInfo is not null, but is the one that have been used right before logging out.
      */
     //! 주의: pomoInfo는 로그인을 해서 쓰든 아니든 처음에는 무조건 null값을 갖는다.
     //!        왜냐하면, useFetch에서 처음에 data가 null을 init값으로 설정했기 때문.
     if (pomoInfo === null && localStorage.getItem("user") !== "authenticated") {
-      // if (pomoInfo === null) {
       console.log(
         "------------------inside pomoInfo===null && localStorage.getItem(user) !== authenticated------------------"
       );
@@ -125,10 +125,6 @@ export function UserInfoContextProvider({
             pomoSetting: pomoSetting,
             autoStartSetting: autoStartSetting,
           };
-        });
-
-        pubsub.publish("updateAutoStartSetting", {
-          autoStartSetting,
         });
 
         postMsgToSW("saveStates", {
@@ -165,9 +161,30 @@ export function UserInfoContextProvider({
 
   // I am going to comment the `useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);` in the Main.tsx
   // Instead, I will post a message to the service worker to save pomoSetting and autoStartSetting here.
-  function setPomoSettingToDefault() {
+  function setPomoInfoToDefaultAfterLogOut() {
+    console.log("setPomoSettingToDefault is called");
     if (isRightAfterLogOut()) {
-      console.log("setting pomoSetting to default");
+      console.log("inside if condition: setting pomoSetting to default");
+      // setPomoInfo({
+      //   timersStates: {
+      //     duration: 25,
+      //     repetitionCount: 0,
+      //     running: false,
+      //     startTime: 0,
+      //     pause: { totalLength: 0, record: [] },
+      //   },
+      //   pomoSetting: {
+      //     pomoDuration: 25,
+      //     shortBreakDuration: 5,
+      //     longBreakDuration: 15,
+      //     numOfPomo: 4,
+      //   },
+      //   autoStartSetting: {
+      //     doesPomoStartAutomatically: false,
+      //     doesBreakStartAutomatically: false,
+      //   },
+      // });
+
       setPomoInfo((prev) => {
         return {
           ...(prev as RequiredStatesToRunTimerType),
@@ -184,71 +201,21 @@ export function UserInfoContextProvider({
         };
       });
 
-      pubsub.publish("updateAutoStartSetting", {
-        autoStartSetting: {
-          doesPomoStartAutomatically: false,
-          doesBreakStartAutomatically: false,
-        },
-      });
-
-      postMsgToSW("saveStates", {
-        stateArr: [
-          {
-            name: "pomoSetting",
-            value: {
-              pomoDuration: 25,
-              shortBreakDuration: 5,
-              longBreakDuration: 15,
-              numOfPomo: 4,
-            },
-          },
-          {
-            name: "autoStartSetting",
-            value: {
-              doesPomoStartAutomatically: false,
-              doesBreakStartAutomatically: false,
-            },
-          },
-          { name: "duration", value: 25 },
-          { name: "repetitionCount", value: 0 },
-          { name: "running", value: false },
-          { name: "startTime", value: 0 },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-        ],
-      });
-
-      //
       if (localStorage.getItem("user") === null) {
         console.log("setting L_user to unAuthenticated");
         localStorage.setItem("user", "unAuthenticated");
       }
-
-      //#region New
-      emptyRecOfToday().then(() => {
-        pubsub.publish("clearObjectStores", 1);
-      });
-      caches.delete(CONSTANTS.CacheName);
-      //#endregion
-
-      //#region Original
-      // emptyStateStore()
-      //   .then(() => {
-      //     return emptyRecOfToday();
-      //   })
-      //   .then(() => {
-      //     pubsub.publish("clearObjectStores", 1);
-      //   });
-      // caches.delete(CONSTANTS.CacheName);
-      //#endregion
     }
 
     function isRightAfterLogOut() {
       return (
-        user === null &&
-        pomoInfo !== null &&
-        // localStorage.getItem("user") === "authenticated"// 로그아웃만 처리 가능
+        user === null && //1.
+        pomoInfo !== null && //2.
+        localStorage.getItem("user") !== "authenticated" //3.
 
-        localStorage.getItem("user") !== "authenticated" //
+        //1. This means that this function actually runs its code only when a user changes from a meaningful user to null
+        //2. PomoInfo is not null but it is the pomoInfo of a user who just logged out. I never call setPomoInfo(null).
+        //3. localStorage.setItem("user", "unAuthenticated") in the `Components/NavBar/NavBar.tsx/NavBar/handleSignOut`.
       );
     }
   }
