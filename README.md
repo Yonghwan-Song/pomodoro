@@ -181,7 +181,7 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ## 어려웠던 점들
 
-**Session이 `/timer` 이외의 다른 페이지들 즉, `/stat`과 `/settings`에서도 진행 그리고 종료될 수 있도록 하는 것**:
+### 1. **Session이 `/timer` 이외의 다른 페이지들 즉, `/stat`과 `/settings`에서도 진행 그리고 종료될 수 있도록 하는 것**
 
 **A**. Timer를 돌리는 데 관여하는 states들을 indexed DB에 저장하고, 다른 페이지로 넘어가면 index.tsx파일에서 그 값들을 받아와서 count down 합니다.
 다시 `/timer`로 돌아올 때, indexed DB에 있는 값들을 Timer와 PatternTimer의 states들의 초깃값으로 설정하여, 남아 있는 시간이 즉각 UI에 반영되게 하였습니다.
@@ -193,6 +193,62 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 **B**.
 ![스탯으로 이동후 세션 종료](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c146532e-f4c5-45c5-a16f-c74333aeb3f3)
+
+<br>
+
+### 2. **로그아웃할 때, 새로고침 하지 않기**
+
+사용자가 로그아웃하면, 타이머를 리셋하여 로그인하지 않은 사용자가 default setting[^3]에서부터 시작할 수 있게 해야 합니다. 이전에 제가 자주 사용하던 앱에서는 [다음처럼](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/8e2d60ff-7b92-4645-a6b4-9a87d67fa812) 로그아웃 시 app이 reload 되면서 HTTP Request를 발생시켰습니다. 제 앱에서는 reload 하지 않고 타이머를 reset 하는 방법을 시도해 봤습니다. 
+
+[PatternTimer](https://github.com/Yonghwan-Song/pomodoro/blob/37af9673594052b7960bfbaf23c4d54f2463953a/client/src/Components/PatternTimer/PatternTimer.tsx#L39-L54)와 [Timer](https://github.com/Yonghwan-Song/pomodoro/blob/37af9673594052b7960bfbaf23c4d54f2463953a/client/src/Components/Timer/Timer.tsx#L75-L82)의 state들이 Timer UI에 어떤 값들을 보여줄지를 결정합니다. 그래서 로그아웃 시 이 component들의 side effect를 이용해 state들을 default 값으로 재설정하려 했습니다. 그런데 기존에 이 component들에 존재하던 useEffect()들이 많았다는 점과 테스트 자동화가 이루어지지 않았던 점 때문에 useEffect를 이용해서 기능 구현하는 데에는 한계가 있었습니다.
+
+그래서 PatternTimer와 Timer는 그대로 두고, 이름은 다르지만, 내용은 같은 [PatternTimerVVV](https://github.com/Yonghwan-Song/pomodoro/blob/37af9673594052b7960bfbaf23c4d54f2463953a/client/src/Components/PatternTimer/PatternTimer_v.tsx#L39-L54)와 [TimerVVV](https://github.com/Yonghwan-Song/pomodoro/blob/37af9673594052b7960bfbaf23c4d54f2463953a/client/src/Components/Timer/Timer_v.tsx#L75-L82)를 만들어서 로그아웃 했을 때, [toggle state](https://github.com/Yonghwan-Song/pomodoro/blob/37af9673594052b7960bfbaf23c4d54f2463953a/client/src/Pages/Main/Main.tsx#L30) 을 이용해서 아예 타이머를 돌리는 데 필요한 데이터 자체를 완전히 교체할 수 있도록 했습니다. Toggle을 하면 현재 올라와 있는 타이머 component들은 unmount되고 새 데이터를 prop을 받는 타이머 component들을 마운트됩니다. 아래의 코드는 `toggle` state를 prop으로 받는 `TogglingTimer` component의 정의입니다.
+```tsx
+type TogglingTimerProps = {
+  toggle: boolean; //<--------------
+  statesRelatedToTimer: TimersStatesType | {};
+  pomoDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  numOfPomo: number;
+  setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
+};
+export default function TogglingTimer({
+  toggle, //<--------------
+  statesRelatedToTimer,
+  pomoDuration,
+  shortBreakDuration,
+  longBreakDuration,
+  numOfPomo,
+  setRecords,
+}: TogglingTimerProps) {
+  return (
+    <>
+      {toggle ? (  //<-----------------
+        <PatternTimer
+          statesRelatedToTimer={statesRelatedToTimer}
+          pomoDuration={pomoDuration}
+          shortBreakDuration={shortBreakDuration}
+          longBreakDuration={longBreakDuration}
+          numOfPomo={numOfPomo}
+          setRecords={setRecords}
+        />
+      ) : (
+        <PatternTimerVVV
+          statesRelatedToTimer={statesRelatedToTimer}
+          pomoDuration={pomoDuration}
+          shortBreakDuration={shortBreakDuration}
+          longBreakDuration={longBreakDuration}
+          numOfPomo={numOfPomo}
+          setRecords={setRecords}
+        />
+      )}
+    </>
+  );
+}
+```
+
+결과적으로, 로그아웃 후 HTTP request를 발생시키지 않고 로그인하지 않은 사용자가 앱을 사용할 수 있도록 [default setting을 이용한 타이머 UI를 render할 수 있었습니다](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/b6f5b4b9-698c-4ed6-8bd4-58af13ae9712).
 
 <br>
 
@@ -211,3 +267,4 @@ npm start
 
 [^1]: Currently the app does not have the statistics feature anymore.
 [^2]: [관련 issue](https://github.com/Yonghwan-Song/pomodoro/issues/37)
+[^3]: `(25min + 5min) * 4 + 15min <= (pomo + shortBreak) * numberOfPomos + longBreak`
