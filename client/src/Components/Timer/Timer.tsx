@@ -485,7 +485,7 @@ export function Timer({
         return false;
       }
     }
-    function nextSessionIsStartOfCycle() {
+    function isNextSessionStartOfCycle() {
       return nextRepetitionCount === 0;
     }
     function handleNonStartOfCycle(): void {
@@ -543,7 +543,7 @@ export function Timer({
 
           // Cases when the next session does not start automatically
           // 1. The next session is the start of a new cycle.
-          if (nextSessionIsStartOfCycle()) {
+          if (isNextSessionStartOfCycle()) {
             user &&
               updateTimersStates(user, {
                 running: false,

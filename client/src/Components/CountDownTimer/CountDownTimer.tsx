@@ -16,7 +16,7 @@ export default function CountDownTimer({
 }: CountDownTimerPropType) {
   let durationRemaining =
     remainingDuration < 0 ? (
-      <h2>0:00</h2>
+      <h2>ending session...</h2>
     ) : (
       <h2>
         <Time seconds={remainingDuration} />
@@ -25,7 +25,7 @@ export default function CountDownTimer({
   let durationBeforeStart = (
     <h2>
       {!!(durationInSeconds / 60) === false ? (
-        "Loading data"
+        "loading data..."
       ) : (
         <Time seconds={durationInSeconds} />
       )}

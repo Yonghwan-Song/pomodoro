@@ -86,15 +86,15 @@ export let TimerRelatedStates: TimersStatesType | null = null;
 
 // Main에서 사용하더라도 Main함수 내에 정의하지 않은 이유: `/timer`이외에 다른 url에 있더라도
 // 아래 두 event들은 발생할 수 있기 때문에.
-export let deciderOfWhetherUserDataFetchedCompletely: [boolean, boolean] = [
+export let deciderOfWhetherDataForRunningTimerFetched: [boolean, boolean] = [
   false, // for persisting timersStates to idb
   false, // for persisting recordsOfToday to idb
 ];
 pubsub.subscribe("successOfPersistingTimersStatesToIDB", (data) => {
-  deciderOfWhetherUserDataFetchedCompletely[0] = true;
+  deciderOfWhetherDataForRunningTimerFetched[0] = true;
 });
 pubsub.subscribe("successOfPersistingRecordsOfTodayToIDB", (data) => {
-  deciderOfWhetherUserDataFetchedCompletely[1] = true;
+  deciderOfWhetherDataForRunningTimerFetched[1] = true;
 });
 
 const BC = new BroadcastChannel("pomodoro");

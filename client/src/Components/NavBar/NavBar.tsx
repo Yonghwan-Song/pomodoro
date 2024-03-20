@@ -10,6 +10,7 @@ import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
 import {
   clearRecOfToday,
+  deciderOfWhetherDataForRunningTimerFetched,
   obtainStatesFromIDB,
   setStateStoreToDefault,
   stopCountDownInBackground,
@@ -40,6 +41,8 @@ function Navbar() {
       pubsub.publish("prepareTimerRelatedDBForUnloggedInUser", 1); //어차피 recOfToday도 이 시점에서는 clear되었기 때문에 따로 event를 만들어서 publish하지 않겠다.
       caches.delete(CONSTANTS.CacheName);
       localStorage.setItem("user", "unAuthenticated");
+      deciderOfWhetherDataForRunningTimerFetched[0] = false;
+      deciderOfWhetherDataForRunningTimerFetched[1] = false;
       await logOut();
       errController.emptyFailedReqInfo();
     } catch (error) {

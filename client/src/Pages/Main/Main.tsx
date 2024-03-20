@@ -15,7 +15,7 @@ import { RecType } from "../../types/clientStatesType";
 import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
 import { pubsub } from "../../pubsub";
 import TogglingTimer from "./TogglingTimer";
-import { deciderOfWhetherUserDataFetchedCompletely } from "../..";
+import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
 import { MINIMUMS, VH_RATIO } from "../../constants";
 
 export default function Main() {
@@ -28,9 +28,10 @@ export default function Main() {
   // 1. log-in - subscribeToSuccessOfPersistingTimerStatesToIDB, subscribeToSuccessOfPersistingRecordsOfTodayToIDB
   // 2. log-out - subscribeToPrepareTimerRelatedDBForUnloggedInUser
   const [toggle, setToggle] = useState(false);
-  const areUserDataFetchedCompletely = useRef<[boolean, boolean]>( //[0] for the `statesRelatedToTimer` state.
-    //[1] for the `` state.
-    deciderOfWhetherUserDataFetchedCompletely
+  const areDataForRunningTimerFetched = useRef<[boolean, boolean]>(
+    //[0] for the state `statesRelatedToTimer`.
+    //[1] for the state `records`.
+    deciderOfWhetherDataForRunningTimerFetched
   );
   const toggleCounter = useRef(0);
   const userInfoContext = useUserContext()!;
@@ -140,12 +141,12 @@ export default function Main() {
         setStatesRelatedToTimer(data);
 
         //#region restriction on calling setToggle using a ref.
-        areUserDataFetchedCompletely.current[0] = true;
+        areDataForRunningTimerFetched.current[0] = true;
 
         // toggle timer only when both data are fetched
         if (
-          areUserDataFetchedCompletely.current[0] &&
-          areUserDataFetchedCompletely.current[1]
+          areDataForRunningTimerFetched.current[0] &&
+          areDataForRunningTimerFetched.current[1]
         ) {
           setToggle((prev) => !prev);
           toggleCounter.current += 1;
@@ -167,12 +168,12 @@ export default function Main() {
         setRecords(data);
 
         //#region restriction on calling setToggle using a ref.
-        areUserDataFetchedCompletely.current[1] = true;
+        areDataForRunningTimerFetched.current[1] = true;
 
         // toggle timer only when both data are fetched
         if (
-          areUserDataFetchedCompletely.current[0] &&
-          areUserDataFetchedCompletely.current[1]
+          areDataForRunningTimerFetched.current[0] &&
+          areDataForRunningTimerFetched.current[1]
         ) {
           setToggle((prev) => !prev);
           toggleCounter.current += 1;
@@ -227,6 +228,10 @@ export default function Main() {
   // statesRelatedToTimer는 user가 사용하는 브라우저에 저장되기 때문에 준비하는 데 걸리는 시간은 유의미한 영향을 주지 않는다.
   const isPomoSettingReady = !!Object.entries(pomoSetting).length;
   const isStatesRelatedToTimerReady = statesRelatedToTimer !== null;
+  const isUserAuthReady = user !== null;
+  const areDataForRunningTimerFetchedCompletely =
+    areDataForRunningTimerFetched.current[0] &&
+    areDataForRunningTimerFetched.current[1];
 
   const sumOfRatio =
     VH_RATIO.NAV_BAR + VH_RATIO.TIMELINE + VH_RATIO.DETAIL_AREA;
@@ -245,10 +250,10 @@ export default function Main() {
       >
         {isStatesRelatedToTimerReady &&
           (isPomoSettingReady ? (
-            localStorage.getItem("user") === "authenticated" ? (
-              user !== null ? (
-                areUserDataFetchedCompletely.current[0] &&
-                areUserDataFetchedCompletely.current[1] && (
+            localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
+              isUserAuthReady ? (
+                // Though the user auth is ready, user's data needed to run a timer might not be ready.
+                areDataForRunningTimerFetchedCompletely ? (
                   <TogglingTimer
                     toggle={toggle}
                     statesRelatedToTimer={statesRelatedToTimer}
@@ -258,15 +263,19 @@ export default function Main() {
                     numOfPomo={pomoSetting.numOfPomo}
                     setRecords={setRecords}
                   />
+                ) : (
+                  <StyledLoadingMessage top="51%">
+                    fetching data...
+                  </StyledLoadingMessage>
                 )
               ) : (
+                // User auth: NOT READY, user's data required to run timer: NOT READY
                 <StyledLoadingMessage top="51%">
-                  {/* loading timer... */}
-                  fetching data...
+                  loading timer...
                 </StyledLoadingMessage>
               )
             ) : (
-              // when users log out,
+              // When a user logs out,
               <TogglingTimer
                 toggle={toggle}
                 statesRelatedToTimer={statesRelatedToTimer}
