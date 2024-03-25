@@ -20,6 +20,16 @@
 
 `One cycle == (pomo + short break) * number of pomos + long break`
 
+### Pages
+**`/timer`**
+![image](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/d3d27254-f413-46aa-9bca-8f9b2e7bd0d9)  
+
+**`/statistics`**
+![image](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/5cd50e83-e2ac-456d-97b6-9f907775f599)  
+
+**`/settings`**
+![image](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/7cac16cc-805c-407a-9044-530c268bc6d9)
+
 <br>
 
 ## Tech stack
