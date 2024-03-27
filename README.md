@@ -42,6 +42,7 @@
 - **[Date-fns](https://www.npmjs.com/package/date-fns)** v2.29.3
 - **[Styled Components](https://www.npmjs.com/package/styled-components)** v5.3.5
 - **[Recharts](https://www.npmjs.com/package/recharts)** v2.1.14
+- **[idb](https://www.npmjs.com/package/idb)** v7.1.1
 
 - **[Firebase Admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
 - **[Express](https://www.npmjs.com/package/express)** v4.18.1
@@ -198,7 +199,7 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ##### 문제 상황
 
-우선 기본적으로 `/timer`에 render되어 있는 countdown timer UI는 [PatternTimer](https://github.com/Yonghwan-Song/pomodoro/blob/bb5c1d3b0623ff6d507d14494f7d678837d16581/client/src/Components/PatternTimer/PatternTimer.tsx#L31-L38)와 [Timer](https://github.com/Yonghwan-Song/pomodoro/blob/bb5c1d3b0623ff6d507d14494f7d678837d16581/client/src/Components/Timer/Timer.tsx#L59-L71)에 의해 만들어집니다. 다시 말하면, 이 component들의 `timersStates`[^3]에 의해 타이머 UI가 적절한 값을 표현하게 됩니다 (몇 분 남았는지, 이번 세션이 pomo인지 break인지 등). 다른 페이지로 이동한다는 것은 이 component들이 unmount되어 state값들에 대한 접근을 잠시 잃어버리는 것을 의미합니다. ==하지만 이 값들을 결국 `/timer`로 돌아올 때 사용해야 하므로 어디엔가 저장을 해야 합니다.==
+우선 기본적으로 `/timer`에 render되어 있는 countdown timer UI는 [PatternTimer](https://github.com/Yonghwan-Song/pomodoro/blob/bb5c1d3b0623ff6d507d14494f7d678837d16581/client/src/Components/PatternTimer/PatternTimer.tsx#L31-L38)와 [Timer](https://github.com/Yonghwan-Song/pomodoro/blob/bb5c1d3b0623ff6d507d14494f7d678837d16581/client/src/Components/Timer/Timer.tsx#L59-L71)에 의해 만들어집니다. 다시 말하면, 이 component들의 `timersStates`[^3]에 의해 타이머 UI가 적절한 값을 표현하게 됩니다 (몇 분 남았는지, 이번 세션이 pomo인지 break인지 등). 다른 페이지로 이동한다는 것은 이 component들이 unmount되어 state값들에 대한 접근을 잠시 잃어버리는 것을 의미합니다. **하지만 이 값들을 결국 `/timer`로 돌아올 때 사용해야 하므로 어디엔가 저장을 해야 합니다**.
 
 ##### 해결 방식
 
@@ -216,13 +217,13 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ##### 문제 상황
 
-pomodoro인지 break인지 그것의 duration은 어느 정도인지 등 타이머 UI에 표현되는 정보들은 `timerStates`에 의해 결정됩니다. 그러므로 다른 페이지 방문 중에 어떤 한 세션이 종료되면, 1)`timerStates`를 적절히 update해야 합니다. 그렇게 하면, `/timer`로 돌아왔을 때 다음 타이머 UI에 다음 세션을 곧바로 나타낼 수 있습니다. 그리고 만약 pomodoro 세션이 `/statistics`에서 종료된다면, 2)통계 그래프에 종료된 세션만큼의 시간 추가해야 합니다.
+pomodoro인지 break인지 그것의 duration은 어느 정도인지 등 타이머 UI에 표현되는 정보들은 `timerStates`에 의해 결정됩니다. 그러므로 다른 페이지 방문 중에 어떤 한 세션이 종료되면, **1)** `timerStates`를 적절히 update해야 합니다. 그렇게 하면, `/timer`로 돌아왔을 때 다음 타이머 UI에 다음 세션을 곧바로 나타낼 수 있습니다. 그리고 만약 pomodoro 세션이 `/statistics`에서 종료된다면, **2)** 통계 그래프에 종료된 세션만큼의 시간 추가해야 합니다.
 
 ##### 해결 방식
 
 우선 종료 시점을 계산하기 위해서는 `/timer`를 벗어난 순간부터 누군가는 계속 이어서 그 세션을 count down해야 하므로, index.tsx파일에 다음처럼 [countDown 함수](https://github.com/Yonghwan-Song/pomodoro/blob/bb5c1d3b0623ff6d507d14494f7d678837d16581/client/src/index.tsx#L647)를 정의하여 export했습니다. 이것들은 다른 페이지의 component가 mount되면 side effect으로 호출됩니다.
 
-1) service worker script를 이용해서, indexed db에 저장된 상태들을 update합니다. 이렇게 되면 다시 `/timer`로 돌아왔을 때 update된 값을 이용해서 바로 다음 세션을 진행할 수 있는 UI를 render할 수 있습니다.
+1) service worker script를 이용해서, indexed db에 저장된 상태들을 update합니다. 이렇게 되면 다시 `/timer`로 돌아왔을 때 update된 값을 이용해서 바로 다음 세션을 진행할 수 있는 UI를 render할 수 있습니다.  
 2) `/statistics`에서 pomo session이 종료될 때, 그 값을 통계 그래프에 곧바로 반영하기 위해 pusub pattern을 사용 했습니다[^4]. 
 
 ##### 어려웠던 점
