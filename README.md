@@ -43,6 +43,8 @@
 - **[Styled Components](https://www.npmjs.com/package/styled-components)** v5.3.5
 - **[Recharts](https://www.npmjs.com/package/recharts)** v2.1.14
 - **[idb](https://www.npmjs.com/package/idb)** v7.1.1
+- **[Jest](https://www.npmjs.com/package/jest)** v29.5.0
+- **[React Testing Library](https://www.npmjs.com/package/@testing-library/react)** v13.3.0
 
 - **[Firebase Admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
 - **[Express](https://www.npmjs.com/package/express)** v4.18.1
