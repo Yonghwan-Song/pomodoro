@@ -3,7 +3,7 @@ import GoogleButton from "react-google-button";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { clearRecOfToday } from "../..";
-import { errController } from "../../APIs-Related/errorController";
+import { errController } from "../../axios-and-error-handling/errorController";
 
 function Signin() {
   const { googleSignIn, user } = useAuthContext()!;

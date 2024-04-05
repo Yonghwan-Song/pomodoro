@@ -512,6 +512,7 @@ async function persistStatesToIDB(stateArr) {
 }
 
 async function recordPomo(duration, startTime) {
+  let body = null;
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
@@ -526,8 +527,7 @@ async function recordPomo(duration, startTime) {
         startTime,
         LocaleDateString,
       };
-      let body = JSON.stringify(record);
-      console.log("body", body);
+      body = JSON.stringify(record);
 
       // update
       let cache = CACHE || (await openCache(CacheName));
@@ -557,12 +557,23 @@ async function recordPomo(duration, startTime) {
       });
       console.log("res of recordPomo in sw: ", res);
     }
-  } catch (err) {
-    console.warn(err);
+  } catch (error) {
+    if (
+      error instanceof TypeError &&
+      error.message.toLowerCase() === "failed to fetch"
+    ) {
+      BC.postMessage({
+        evName: "fetchCallFailed_Network_Error",
+        payload: { url: "pomos", method: "POST", data: body },
+      });
+    } else {
+      console.warn(error);
+    }
   }
 }
 
 async function updateTimersStates(states) {
+  let body = null;
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
@@ -580,9 +591,11 @@ async function updateTimersStates(states) {
         );
       }
 
+      body = JSON.stringify({ states });
+
       const res = await fetch(URLs.USER + `/updateTimersStates`, {
         method: "PUT",
-        body: JSON.stringify({ states }),
+        body,
         headers: {
           Authorization: "Bearer " + idToken,
           "Content-Type": "application/json",
@@ -591,11 +604,26 @@ async function updateTimersStates(states) {
       console.log("res of updateTimersStates in sw: ", res);
     }
   } catch (error) {
-    console.warn(error);
+    if (
+      error instanceof TypeError &&
+      error.message.toLowerCase() === "failed to fetch"
+    ) {
+      BC.postMessage({
+        evName: "fetchCallFailed_Network_Error",
+        payload: {
+          url: "users/updateTimersStates",
+          method: "PUT",
+          data: body,
+        },
+      });
+    } else {
+      console.warn(error);
+    }
   }
 }
 
 async function persistRecOfTodayToServer(record) {
+  let body = null;
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
@@ -615,13 +643,15 @@ async function persistRecOfTodayToServer(record) {
         );
       }
 
+      body = JSON.stringify({
+        userEmail: email,
+        ...record,
+      });
+
       // http requeset
       const res = await fetch(URLs.RECORD_OF_TODAY, {
         method: "POST",
-        body: JSON.stringify({
-          userEmail: email,
-          ...record,
-        }),
+        body,
         headers: {
           Authorization: "Bearer " + idToken,
           "Content-Type": "application/json",
@@ -630,7 +660,17 @@ async function persistRecOfTodayToServer(record) {
       console.log("res of persistRecOfTodayToSever", res);
     }
   } catch (error) {
-    console.warn(error);
+    if (
+      error instanceof TypeError &&
+      error.message.toLowerCase() === "failed to fetch"
+    ) {
+      BC.postMessage({
+        evName: "fetchCallFailed_Network_Error",
+        payload: { url: "recordOfToday", method: "POST", data: body },
+      });
+    } else {
+      console.warn(error);
+    }
   }
 }
 

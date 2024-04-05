@@ -17,7 +17,7 @@ import {
   TimersStatesType,
 } from "../../types/clientStatesType";
 import { Grid } from "../Layouts/Grid";
-import { axiosInstance } from "../../APIs-Related/axios-instances";
+import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 
 type PatternTimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -175,7 +175,7 @@ export function PatternTimerVVV({
             state.startTime
           ); // Non null assertion is correct because a user is already signed in at this point.
         } else {
-          console.log("user is not ready", user);
+          // console.log("user is not ready", user);
         }
         notify("shortBreak");
         setDurationInMinutes(shortBreakDuration!);
@@ -219,7 +219,7 @@ export function PatternTimerVVV({
             state.startTime
           );
         } else {
-          console.log("user is not ready", user);
+          // console.log("user is not ready", user);
         }
         notify("longBreak");
         setDurationInMinutes(longBreakDuration!);

@@ -13804,9 +13804,9 @@
       }
     },
     publish: function publish(evName, data) {
-      console.log("".concat(evName, " is published with data"), data);
-      console.log("Set of subscribers's callbacks", this.events[evName]); // console.log("this is", this);
-
+      // console.log(`${evName} is published with data`, data);
+      // console.log("Set of subscribers's callbacks", this.events[evName]);
+      // console.log("this is", this);
       if (this.events[evName]) {
         this.events[evName].forEach(function (f) {
           f(data);
@@ -14763,16 +14763,17 @@
 
   function _recordPomo() {
     _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(duration, startTime) {
-      var idTokenAndEmail, idToken, email, today, LocaleDateString, record, body, cache, statResponse, statData, res;
+      var body, idTokenAndEmail, idToken, email, today, LocaleDateString, record, cache, statResponse, statData, res;
       return _regeneratorRuntime().wrap(function _callee19$(_context19) {
         while (1) {
           switch (_context19.prev = _context19.next) {
             case 0:
-              _context19.prev = 0;
-              _context19.next = 3;
+              body = null;
+              _context19.prev = 1;
+              _context19.next = 4;
               return getIdTokenAndEmail();
 
-            case 3:
+            case 4:
               idTokenAndEmail = _context19.sent;
 
               if (!idTokenAndEmail) {
@@ -14789,8 +14790,7 @@
                 startTime: startTime,
                 LocaleDateString: LocaleDateString
               };
-              body = JSON.stringify(record);
-              console.log("body", body); // update
+              body = JSON.stringify(record); // update
 
               _context19.t0 = CACHE;
 
@@ -14856,15 +14856,27 @@
 
             case 35:
               _context19.prev = 35;
-              _context19.t1 = _context19["catch"](0);
-              console.warn(_context19.t1);
+              _context19.t1 = _context19["catch"](1);
+
+              if (_context19.t1 instanceof TypeError && _context19.t1.message.toLowerCase() === "failed to fetch") {
+                BC.postMessage({
+                  evName: "fetchCallFailed_Network_Error",
+                  payload: {
+                    url: "pomos",
+                    method: "POST",
+                    data: body
+                  }
+                });
+              } else {
+                console.warn(_context19.t1);
+              }
 
             case 38:
             case "end":
               return _context19.stop();
           }
         }
-      }, _callee19, null, [[0, 35]]);
+      }, _callee19, null, [[1, 35]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
@@ -14875,20 +14887,21 @@
 
   function _updateTimersStates() {
     _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee20(states) {
-      var idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates, res;
+      var body, idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates, res;
       return _regeneratorRuntime().wrap(function _callee20$(_context20) {
         while (1) {
           switch (_context20.prev = _context20.next) {
             case 0:
-              _context20.prev = 0;
-              _context20.next = 3;
+              body = null;
+              _context20.prev = 1;
+              _context20.next = 4;
               return getIdTokenAndEmail();
 
-            case 3:
+            case 4:
               idTokenAndEmail = _context20.sent;
 
               if (!idTokenAndEmail) {
-                _context20.next = 26;
+                _context20.next = 28;
                 break;
               }
 
@@ -14897,70 +14910,83 @@
               _context20.t0 = CACHE;
 
               if (_context20.t0) {
-                _context20.next = 11;
+                _context20.next = 12;
                 break;
               }
 
-              _context20.next = 10;
+              _context20.next = 11;
               return openCache(CacheName);
 
-            case 10:
+            case 11:
               _context20.t0 = _context20.sent;
 
-            case 11:
+            case 12:
               cache = _context20.t0;
-              _context20.next = 14;
+              _context20.next = 15;
               return cache.match(URLs.USER);
 
-            case 14:
+            case 15:
               pomoSettingAndTimerStatesResponse = _context20.sent;
 
               if (!(pomoSettingAndTimerStatesResponse !== undefined)) {
-                _context20.next = 22;
+                _context20.next = 23;
                 break;
               }
 
-              _context20.next = 18;
+              _context20.next = 19;
               return pomoSettingAndTimerStatesResponse.json();
 
-            case 18:
+            case 19:
               pomoSettingAndTimersStates = _context20.sent;
               pomoSettingAndTimersStates.timersStates = states;
-              _context20.next = 22;
+              _context20.next = 23;
               return cache.put(URLs.USER, new Response(JSON.stringify(pomoSettingAndTimersStates)));
 
-            case 22:
-              _context20.next = 24;
+            case 23:
+              body = JSON.stringify({
+                states: states
+              });
+              _context20.next = 26;
               return fetch(URLs.USER + "/updateTimersStates", {
                 method: "PUT",
-                body: JSON.stringify({
-                  states: states
-                }),
+                body: body,
                 headers: {
                   Authorization: "Bearer " + idToken,
                   "Content-Type": "application/json"
                 }
               });
 
-            case 24:
+            case 26:
               res = _context20.sent;
               console.log("res of updateTimersStates in sw: ", res);
 
-            case 26:
-              _context20.next = 31;
+            case 28:
+              _context20.next = 33;
               break;
 
-            case 28:
-              _context20.prev = 28;
-              _context20.t1 = _context20["catch"](0);
-              console.warn(_context20.t1);
+            case 30:
+              _context20.prev = 30;
+              _context20.t1 = _context20["catch"](1);
 
-            case 31:
+              if (_context20.t1 instanceof TypeError && _context20.t1.message.toLowerCase() === "failed to fetch") {
+                BC.postMessage({
+                  evName: "fetchCallFailed_Network_Error",
+                  payload: {
+                    url: "users/updateTimersStates",
+                    method: "PUT",
+                    data: body
+                  }
+                });
+              } else {
+                console.warn(_context20.t1);
+              }
+
+            case 33:
             case "end":
               return _context20.stop();
           }
         }
-      }, _callee20, null, [[0, 28]]);
+      }, _callee20, null, [[1, 30]]);
     }));
     return _updateTimersStates.apply(this, arguments);
   }
@@ -14971,20 +14997,21 @@
 
   function _persistRecOfTodayToServer() {
     _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee21(record) {
-      var idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday, res;
+      var body, idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday, res;
       return _regeneratorRuntime().wrap(function _callee21$(_context21) {
         while (1) {
           switch (_context21.prev = _context21.next) {
             case 0:
-              _context21.prev = 0;
-              _context21.next = 3;
+              body = null;
+              _context21.prev = 1;
+              _context21.next = 4;
               return getIdTokenAndEmail();
 
-            case 3:
+            case 4:
               idTokenAndEmail = _context21.sent;
 
               if (!idTokenAndEmail) {
-                _context21.next = 27;
+                _context21.next = 29;
                 break;
               }
 
@@ -14994,72 +15021,86 @@
               _context21.t0 = CACHE;
 
               if (_context21.t0) {
-                _context21.next = 12;
+                _context21.next = 13;
                 break;
               }
 
-              _context21.next = 11;
+              _context21.next = 12;
               return openCache(CacheName);
 
-            case 11:
+            case 12:
               _context21.t0 = _context21.sent;
 
-            case 12:
+            case 13:
               cache = _context21.t0;
-              _context21.next = 15;
+              _context21.next = 16;
               return cache.match(URLs.RECORD_OF_TODAY);
 
-            case 15:
+            case 16:
               resOfRecordOfToday = _context21.sent;
 
               if (!(resOfRecordOfToday !== undefined)) {
-                _context21.next = 23;
+                _context21.next = 24;
                 break;
               }
 
-              _context21.next = 19;
+              _context21.next = 20;
               return resOfRecordOfToday.json();
 
-            case 19:
+            case 20:
               recordsOfToday = _context21.sent;
               recordsOfToday.push({
                 record: record
               });
-              _context21.next = 23;
+              _context21.next = 24;
               return cache.put(URLs.RECORD_OF_TODAY, new Response(JSON.stringify(recordsOfToday)));
 
-            case 23:
-              _context21.next = 25;
+            case 24:
+              body = JSON.stringify(_objectSpread2({
+                userEmail: email
+              }, record)); // http requeset
+
+              _context21.next = 27;
               return fetch(URLs.RECORD_OF_TODAY, {
                 method: "POST",
-                body: JSON.stringify(_objectSpread2({
-                  userEmail: email
-                }, record)),
+                body: body,
                 headers: {
                   Authorization: "Bearer " + idToken,
                   "Content-Type": "application/json"
                 }
               });
 
-            case 25:
+            case 27:
               res = _context21.sent;
               console.log("res of persistRecOfTodayToSever", res);
 
-            case 27:
-              _context21.next = 32;
+            case 29:
+              _context21.next = 34;
               break;
 
-            case 29:
-              _context21.prev = 29;
-              _context21.t1 = _context21["catch"](0);
-              console.warn(_context21.t1);
+            case 31:
+              _context21.prev = 31;
+              _context21.t1 = _context21["catch"](1);
 
-            case 32:
+              if (_context21.t1 instanceof TypeError && _context21.t1.message.toLowerCase() === "failed to fetch") {
+                BC.postMessage({
+                  evName: "fetchCallFailed_Network_Error",
+                  payload: {
+                    url: "recordOfToday",
+                    method: "POST",
+                    data: body
+                  }
+                });
+              } else {
+                console.warn(_context21.t1);
+              }
+
+            case 34:
             case "end":
               return _context21.stop();
           }
         }
-      }, _callee21, null, [[0, 29]]);
+      }, _callee21, null, [[1, 31]]);
     }));
     return _persistRecOfTodayToServer.apply(this, arguments);
   }

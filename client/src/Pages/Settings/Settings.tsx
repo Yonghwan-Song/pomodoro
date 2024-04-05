@@ -33,7 +33,7 @@ import {
   updateTimersStates,
 } from "../..";
 import ToggleSwitch from "../../Components/ToggleSwitch/ToggleSwitch";
-import { axiosInstance } from "../../APIs-Related/axios-instances";
+import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -361,7 +361,7 @@ async function deleteAccount(user: User) {
     await clearStateStoreAndRecOfToday();
     await caches.delete(CONSTANTS.CacheName);
     window.location.reload();
-    console.log(result);
+    // console.log(result);
   } catch (error) {
     console.log(error);
   }

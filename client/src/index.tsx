@@ -20,9 +20,12 @@ import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "./firebase";
 import * as CONSTANTS from "./constants";
-import { defineInterceptorsForAxiosInstance } from "./APIs-Related/axios-interceptors";
-import { axiosInstance } from "./APIs-Related/axios-instances";
-import { ERR_CONTROLLER, errController } from "./APIs-Related/errorController";
+import { defineInterceptorsForAxiosInstance } from "./axios-and-error-handling/axios-interceptors";
+import { axiosInstance } from "./axios-and-error-handling/axios-instances";
+import {
+  ERR_CONTROLLER,
+  errController,
+} from "./axios-and-error-handling/errorController";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -137,6 +140,10 @@ BC.addEventListener("message", async (ev) => {
       pomoSetting,
       endTimeOfPrevSession: endTime,
     });
+  } else if (evName === "fetchCallFailed_Network_Error") {
+    // console.log("A Payload of FetchCallFailed_Network_Error");
+    // console.log(payload);
+    errController.registerFailedReqInfo(payload);
   }
 });
 
@@ -201,7 +208,7 @@ export async function updateTimersStates_with_token({
     }
 
     const res = await axiosInstance.put("users/updateTimersStates", { states });
-    console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
+    // console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
   } catch (err) {
     console.warn(err);
   }
@@ -234,7 +241,7 @@ export async function updateTimersStates(
     const res = await axiosInstance.put("users/updateTimersStates", {
       states,
     });
-    console.log("res.data in updateTimersStates ===>", res.data);
+    // console.log("res.data in updateTimersStates ===>", res.data);
   } catch (err) {
     console.warn(err);
   }
@@ -266,7 +273,7 @@ export async function updateAutoStartSetting(
     const res = await axiosInstance.put("users/updateAutoStartSetting", {
       autoStartSetting: autoStartSetting,
     });
-    console.log("res.data in updateAutoStartSetting ===>", res.data);
+    // console.log("res.data in updateAutoStartSetting ===>", res.data);
   } catch (error) {
     console.warn(error);
   }
@@ -823,7 +830,7 @@ export function obtainIdToken(): Promise<{ idToken: string } | null> {
 export function getUserEmail(): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("user from getUserEmail", user);
+      // console.log("user from getUserEmail", user);
       unsubscribe();
       if (user) {
         resolve(user.email!); //TODO: 이게 왜 null이 될수가 았는거지? 이 앱의 경우에는 user가 email이 없는 경우는 없는 것 같으니 우선 non-null assertion하겠음.

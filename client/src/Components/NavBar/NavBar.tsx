@@ -17,7 +17,7 @@ import {
   updateTimersStates,
 } from "../..";
 import { TimersStatesType } from "../../types/clientStatesType";
-import { errController } from "../../APIs-Related/errorController";
+import { errController } from "../../axios-and-error-handling/errorController";
 import { pubsub } from "../../pubsub";
 import * as CONSTANTS from "../../constants/index";
 

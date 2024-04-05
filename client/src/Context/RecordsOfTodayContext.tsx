@@ -4,7 +4,7 @@ import { RecType } from "../types/clientStatesType";
 import { persistManyTodaySessionsToIDB } from "..";
 import { pubsub } from "../pubsub";
 import { useAuthContext } from "./AuthContext";
-import { axiosInstance } from "../APIs-Related/axios-instances";
+import { axiosInstance } from "../axios-and-error-handling/axios-instances";
 
 export const RecordsOfTodayContext = createContext<RecType[] | null>(null);
 

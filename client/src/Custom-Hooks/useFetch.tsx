@@ -8,7 +8,7 @@ import {
 import { useAuthContext } from "../Context/AuthContext";
 import { DynamicCache, openCache } from "..";
 import { CacheName, URLs } from "../constants";
-import { axiosInstance } from "../APIs-Related/axios-instances";
+import { axiosInstance } from "../axios-and-error-handling/axios-instances";
 
 //#region Type Definition
 type DataType<T, S> = S extends undefined ? T : S;

@@ -9,7 +9,7 @@ import {
 } from "firebase/auth";
 
 import { auth } from "../firebase";
-import { axiosInstance } from "../APIs-Related/axios-instances";
+import { axiosInstance } from "../axios-and-error-handling/axios-instances";
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;

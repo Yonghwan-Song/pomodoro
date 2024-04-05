@@ -17,7 +17,7 @@ import {
   TimersStatesType,
 } from "../../types/clientStatesType";
 import { Grid } from "../Layouts/Grid";
-import { axiosInstance } from "../../APIs-Related/axios-instances";
+import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 
 type PatternTimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -175,7 +175,7 @@ export function PatternTimer({
             state.startTime
           ); // Non null assertion is correct because a user is already signed in at this point.
         } else {
-          console.log("user is not ready", user);
+          // console.log("user is not ready", user);
         }
         notify("shortBreak");
         setDurationInMinutes(shortBreakDuration!);
@@ -219,7 +219,7 @@ export function PatternTimer({
             state.startTime
           );
         } else {
-          console.log("user is not ready", user);
+          // console.log("user is not ready", user);
         }
         notify("longBreak");
         setDurationInMinutes(longBreakDuration!);
@@ -261,45 +261,45 @@ export function PatternTimer({
     }
   }
 
-  async function doTasks({
-    dataToBeArguments,
-  }: {
-    dataToBeArguments: {
-      whatToNotify: string; //TODO: 이거 union of literals로 바꿔야 할 듯.
-      durationToSet: number;
-      dataToPersistToIndexedDB: { stateArr: any[] }; //TODO: 이것도  type 정해야 하는거 아닌가?
-      recordToAdd: RecType;
-      user: User | null; //TODO: | null 이거 뭔가 찝집하다
-      durationInMinutes?: number;
-      startTime?: number;
-    };
-  }) {
-    const {
-      whatToNotify,
-      durationToSet,
-      dataToPersistToIndexedDB,
-      recordToAdd,
-      user,
-      durationInMinutes,
-      startTime,
-    } = dataToBeArguments;
+  // async function doTasks({
+  //   dataToBeArguments,
+  // }: {
+  //   dataToBeArguments: {
+  //     whatToNotify: string; //TODO: 이거 union of literals로 바꿔야 할 듯.
+  //     durationToSet: number;
+  //     dataToPersistToIndexedDB: { stateArr: any[] }; //TODO: 이것도  type 정해야 하는거 아닌가?
+  //     recordToAdd: RecType;
+  //     user: User | null; //TODO: | null 이거 뭔가 찝집하다
+  //     durationInMinutes?: number;
+  //     startTime?: number;
+  //   };
+  // }) {
+  //   const {
+  //     whatToNotify,
+  //     durationToSet,
+  //     dataToPersistToIndexedDB,
+  //     recordToAdd,
+  //     user,
+  //     durationInMinutes,
+  //     startTime,
+  //   } = dataToBeArguments;
 
-    notify(whatToNotify);
+  //   notify(whatToNotify);
 
-    setDurationInMinutes(durationToSet);
-    setRecords((prev) => [...prev, recordToAdd]);
+  //   setDurationInMinutes(durationToSet);
+  //   setRecords((prev) => [...prev, recordToAdd]);
 
-    postMsgToSW("saveStates", dataToPersistToIndexedDB);
-    const { kind, ...data } = recordToAdd;
-    await persistSingleTodaySessionToIDB({ kind, data }); //TODO: 사실 이 함수의 arg type을 바꾸면 좀더 깔끔하게 쓸 수 있음..
+  //   postMsgToSW("saveStates", dataToPersistToIndexedDB);
+  //   const { kind, ...data } = recordToAdd;
+  //   await persistSingleTodaySessionToIDB({ kind, data }); //TODO: 사실 이 함수의 arg type을 바꾸면 좀더 깔끔하게 쓸 수 있음..
 
-    // HTTP Requests
-    user && persistRecOfTodayToServer(user, recordToAdd);
-    user &&
-      durationInMinutes &&
-      startTime &&
-      recordPomo(user, durationInMinutes, startTime);
-  }
+  //   // HTTP Requests
+  //   user && persistRecOfTodayToServer(user, recordToAdd);
+  //   user &&
+  //     durationInMinutes &&
+  //     startTime &&
+  //     recordPomo(user, durationInMinutes, startTime);
+  // }
 
   //#endregion
 
