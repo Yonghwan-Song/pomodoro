@@ -26,6 +26,7 @@ import {
   ERR_CONTROLLER,
   errController,
 } from "./axios-and-error-handling/errorController";
+import { AxiosRequestConfig } from "axios";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -143,7 +144,8 @@ BC.addEventListener("message", async (ev) => {
   } else if (evName === "fetchCallFailed_Network_Error") {
     // console.log("A Payload of FetchCallFailed_Network_Error");
     // console.log(payload);
-    errController.registerFailedReqInfo(payload);
+    errController.registerFailedReqInfo(payload as AxiosRequestConfig);
+    // errController.registerFailedReqInfo(payload);
   }
 });
 

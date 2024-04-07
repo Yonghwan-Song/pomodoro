@@ -40,6 +40,8 @@ export interface ERR_CONTROLLER {
 
   registerFailedReqInfo: (reqConfig: AxiosRequestConfig) => void;
 
+  mergeData: (existingData: any, newReqConfig: AxiosRequestConfig) => any;
+
   handleFailedReqs: () => Promise<{
     postResults: PromiseSettledResult<AxiosResponse<any, any>>[];
     putResults: PromiseSettledResult<AxiosResponse<any, any>>[];
@@ -91,7 +93,7 @@ export const errController: ERR_CONTROLLER = {
             );
             console.log("data before merge", existingUrlAndData?.data);
             if (existingUrlAndData) {
-              existingUrlAndData.data = mergeData(
+              existingUrlAndData.data = this.mergeData(
                 existingUrlAndData.data,
                 reqConfig
               );
@@ -120,17 +122,17 @@ export const errController: ERR_CONTROLLER = {
 
         console.log("PUT", [...this.failedReqInfo.PUT.entries()]);
 
-        function mergeData(
-          existingData: any,
-          newReqConfig: AxiosRequestConfig
-        ) {
-          let newData = JSON.parse(newReqConfig.data);
-          for (const key in newData) {
-            existingData[key] = newData[key];
-          }
+        // function mergeData(
+        //   existingData: any,
+        //   newReqConfig: AxiosRequestConfig
+        // ) {
+        //   let newData = JSON.parse(newReqConfig.data);
+        //   for (const key in newData) {
+        //     existingData[key] = newData[key];
+        //   }
 
-          return existingData;
-        }
+        //   return existingData;
+        // }
 
         break;
       case "DELETE":
@@ -150,6 +152,15 @@ export const errController: ERR_CONTROLLER = {
     console.log("failedReqInfo", this.failedReqInfo);
 
     this.storeFailedReqsToIDB();
+  },
+
+  mergeData(existingData: any, newReqConfig: AxiosRequestConfig) {
+    let newData = JSON.parse(newReqConfig.data);
+    for (const key in newData) {
+      existingData[key] = newData[key];
+    }
+
+    return existingData;
   },
 
   //* Why GET Requests Should Be Sent Last:
