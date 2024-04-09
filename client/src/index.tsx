@@ -178,7 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
   if (localStorage.getItem("user") === "authenticated") {
-    await caches.delete(CacheName);
+    await deleteCache(CacheName);
     await clearStateStoreAndRecOfToday();
   }
 });
@@ -388,6 +388,20 @@ export async function openCache(name: string) {
 
   cache = await caches.open(name);
   return cache;
+}
+
+export async function deleteCache(name: string) {
+  try {
+    let result = await caches.delete(name);
+    if (result) {
+      console.log(`deleting was successful - ${result}`);
+      DynamicCache = null;
+    } else {
+      console.warn(`deleting  the cache ${name} has failed`);
+    }
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 export async function openIndexedDB() {

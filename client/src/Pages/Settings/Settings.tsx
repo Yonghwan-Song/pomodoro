@@ -25,6 +25,7 @@ import {
   DynamicCache,
   clearStateStoreAndRecOfToday,
   countDown,
+  deleteCache,
   emptyStateStore,
   openCache,
   postMsgToSW,
@@ -359,7 +360,7 @@ async function deleteAccount(user: User) {
     //await user.delete();
     let result = await deleteUser(user);
     await clearStateStoreAndRecOfToday();
-    await caches.delete(CONSTANTS.CacheName);
+    await deleteCache(CONSTANTS.CacheName);
     window.location.reload();
     // console.log(result);
   } catch (error) {
