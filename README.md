@@ -122,7 +122,7 @@ break
 
 #### Notification and click to focus
 
-![noti](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/e3e670c3-cf39-4d76-a558-eb8aafba42df)
+[noti-focus.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/0b311e4c-51e6-433a-b3de-a2568bf4a2fd)
 
 ---
 
