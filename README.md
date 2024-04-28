@@ -130,7 +130,7 @@ break
 
 ### 타임라인뷰
 
-#### 시각적 피드백
+#### 시각적 피드백 ([#19](https://github.com/Yonghwan-Song/pomodoro/issues/19#issue-1889540231), [#17](https://github.com/Yonghwan-Song/pomodoro/issues/17#issue-1880056222), [#16](https://github.com/Yonghwan-Song/pomodoro/issues/16#issue-1842505127))
 
 - 기존에 나와있는 [포모도로 웹앱](https://pomofocus.io)을 사용할 때, 현실적으로 중간에 일시 정지하는 경우가 있는데, **얼마나 오랫동안 일시 정지하였는지** 보여 주는 기능이 없었습니다. 그래서 당일 데이터에 한해서 얼마나 세션을 효율적으로 보냈는지를 시각적으로 피드백해주는 기능을 만들었습니다.
 - **선홍색, 녹색, 노란색** 박스들이 각각 pomodoro, break, pause를 나타냅니다.
@@ -141,7 +141,7 @@ break
 
 <br>
 
-#### 반응형 디자인
+#### 반응형 디자인 ([#29](https://github.com/Yonghwan-Song/pomodoro/issues/29#issue-1994595288), [#34](https://github.com/Yonghwan-Song/pomodoro/issues/34#issue-2027875141))
 
 탭의 너비 변화에 따라 3단계로 시간 눈금의 크기가 조정됩니다. 그 효과로, 앱을 작은 화면으로 띄웠을 때 충분히 많은 시간대를 timeline에서 눈으로 확인할 수 있습니다.
 
