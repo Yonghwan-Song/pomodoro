@@ -182,13 +182,31 @@ e.g) Statistics page에서 pomodoro session의 완료가 그래프에 즉각 반
 
 ### 예외적인 상황에 대비
 
-**실수로 브라우저를 종료하거나 컴퓨터가 종료되어도**, 다시 앱을 열면 데이터 누락 없이 세션을 이어서 진행할 수 있습니다.
+#### 실수로 브라우저를 종료하거나 컴퓨터가 종료되어도, 다시 앱을 열면 데이터 누락 없이 세션을 이어서 진행할 수 있습니다.
 
-[authUser-close-app.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/82860477-2ba0-4a40-8f1e-b9ec272ef0e6)
+로그인 후 사용할 때
 
-**인터넷이 불안정하여 끊기는 경우** 데이터 누락 없이 계속 이어서 타이머를 진행시킬 수 있습니다. [^2]
+[authUser-close-app.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/82860477-2ba0-4a40-8f1e-b9ec272ef0e6)  
 
-[disconnection-while-timer-is-running.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c53516ab-1a16-4a25-9922-e4ea758bec4d)
+<br>
+
+로그인 없이 사용할 때  
+
+[unlogged-in-user-closeAndReOpen.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/83763fd3-9a9a-4c2a-9af5-242abc1777d5)
+
+<br>
+
+#### 인터넷이 불안정하여 끊기는 경우 데이터 누락 없이 계속 이어서 타이머를 진행시킬 수 있습니다. [^2]
+
+로그인 후 사용할 때
+
+[disconnection-while-timer-is-running.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/c53516ab-1a16-4a25-9922-e4ea758bec4d)  
+
+<br>
+
+로그인 없이 사용할 때
+
+[unlogged-in-user-network-disconnection.webm](https://github.com/Yonghwan-Song/pomodoro/assets/72689705/3780cacd-50ce-4829-aca9-2e683368ab14)
 
 
 <br>
