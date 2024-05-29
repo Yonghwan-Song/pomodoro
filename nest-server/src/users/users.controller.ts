@@ -64,7 +64,6 @@ export class UsersController {
     @Body(new ValidationPipe()) updateTimersStatesDto: UpdateTimersStatesDto,
     @Req() request: CustomRequest,
   ) {
-    console.log(updateTimersStatesDto);
     return await this.usersService.updateTimersStates(
       updateTimersStatesDto,
       request.userEmail,

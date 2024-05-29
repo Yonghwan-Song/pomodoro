@@ -741,7 +741,7 @@
     var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
 
     if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike  ) {
         if (it) o = it;
         var i = 0;
 
@@ -13139,7 +13139,7 @@
       } // TODO set additionalParams from the provider as well?
 
 
-      for (var _i6 = 0, _Object$entries = Object.entries(additionalParams || {}); _i6 < _Object$entries.length; _i6++) {
+      for (var _i6 = 0, _Object$entries = Object.entries({}); _i6 < _Object$entries.length; _i6++) {
         var _Object$entries$_i = _slicedToArray(_Object$entries[_i6], 2),
             key = _Object$entries$_i[0],
             value = _Object$entries$_i[1];
@@ -13766,16 +13766,26 @@
   //#endregion
   //#region URLs
 
-  var URLs = {
-    // ORIGIN: "http://localhost:4444/",
-    // USER: "http://localhost:4444/users",
-    // POMO: "http://localhost:4444/pomos",
-    // RECORD_OF_TODAY: "http://localhost:4444/recordOfToday",
-    ORIGIN: "https://pomodoro-apis.onrender.com/",
-    USER: "https://pomodoro-apis.onrender.com/users",
-    POMO: "https://pomodoro-apis.onrender.com/pomos",
-    RECORD_OF_TODAY: "https://pomodoro-apis.onrender.com/recordOfToday"
+  var ENV = "production"; // Change this to 'production' when deploying
+  // const ENV = "development"; // Change this to 'production' when deploying
+
+  var BASE_URLS = {
+    development: "http://localhost:3000",
+    production: "https://pomodoro-nest-apis.onrender.com"
   };
+  var BASE_URL = BASE_URLS[ENV];
+  var RESOURCE = {
+    USERS: "/users",
+    POMODOROS: "/pomodoros",
+    TODAY_RECORDS: "/today-records"
+  };
+  var SUB_SET = {
+    POMODORO_SETTING: "/pomodoro-setting",
+    AUTO_START_SETTING: "/auto-start-setting",
+    TIMERS_STATES: "/timers-states",
+    DEMO_DATA: "/demo-data"
+  }; //#endregion
+
   var IDB_VERSION = 8;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
@@ -14777,7 +14787,7 @@
               idTokenAndEmail = _context19.sent;
 
               if (!idTokenAndEmail) {
-                _context19.next = 33;
+                _context19.next = 34;
                 break;
               }
 
@@ -14785,10 +14795,9 @@
               today = new Date(startTime);
               LocaleDateString = "".concat(today.getMonth() + 1, "/").concat(today.getDate(), "/").concat(today.getFullYear());
               record = {
-                userEmail: email,
                 duration: duration,
                 startTime: startTime,
-                LocaleDateString: LocaleDateString
+                date: LocaleDateString
               };
               body = JSON.stringify(record); // update
 
@@ -14809,13 +14818,13 @@
               cache = _context19.t0;
               console.log("cache in recordPomo", cache);
               _context19.next = 20;
-              return cache.match(URLs.POMO + "/stat");
+              return cache.match(BASE_URL + RESOURCE.POMODOROS);
 
             case 20:
               statResponse = _context19.sent;
 
               if (!(statResponse !== undefined)) {
-                _context19.next = 29;
+                _context19.next = 30;
                 break;
               }
 
@@ -14833,11 +14842,12 @@
                 isDummy: false
               });
               console.log("statData after push", statData);
-              cache.put(URLs.POMO + "/stat", new Response(JSON.stringify(statData)));
+              _context19.next = 30;
+              return cache.put(BASE_URL + RESOURCE.POMODOROS, new Response(JSON.stringify(statData)));
 
-            case 29:
-              _context19.next = 31;
-              return fetch(URLs.POMO, {
+            case 30:
+              _context19.next = 32;
+              return fetch(BASE_URL + RESOURCE.POMODOROS, {
                 method: "POST",
                 body: body,
                 headers: {
@@ -14846,23 +14856,23 @@
                 }
               });
 
-            case 31:
+            case 32:
               res = _context19.sent;
               console.log("res of recordPomo in sw: ", res);
 
-            case 33:
-              _context19.next = 38;
+            case 34:
+              _context19.next = 39;
               break;
 
-            case 35:
-              _context19.prev = 35;
+            case 36:
+              _context19.prev = 36;
               _context19.t1 = _context19["catch"](1);
 
               if (_context19.t1 instanceof TypeError && _context19.t1.message.toLowerCase() === "failed to fetch") {
                 BC.postMessage({
                   evName: "fetchCallFailed_Network_Error",
                   payload: {
-                    url: "pomos",
+                    url: "pomodoros",
                     method: "POST",
                     data: body
                   }
@@ -14871,12 +14881,12 @@
                 console.warn(_context19.t1);
               }
 
-            case 38:
+            case 39:
             case "end":
               return _context19.stop();
           }
         }
-      }, _callee19, null, [[1, 35]]);
+      }, _callee19, null, [[1, 36]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
@@ -14923,7 +14933,7 @@
             case 12:
               cache = _context20.t0;
               _context20.next = 15;
-              return cache.match(URLs.USER);
+              return cache.match(BASE_URL + RESOURCE.USERS);
 
             case 15:
               pomoSettingAndTimerStatesResponse = _context20.sent;
@@ -14940,15 +14950,13 @@
               pomoSettingAndTimersStates = _context20.sent;
               pomoSettingAndTimersStates.timersStates = states;
               _context20.next = 23;
-              return cache.put(URLs.USER, new Response(JSON.stringify(pomoSettingAndTimersStates)));
+              return cache.put(BASE_URL + RESOURCE.USERS, new Response(JSON.stringify(pomoSettingAndTimersStates)));
 
             case 23:
-              body = JSON.stringify({
-                states: states
-              });
+              body = JSON.stringify(_objectSpread2({}, states));
               _context20.next = 26;
-              return fetch(URLs.USER + "/updateTimersStates", {
-                method: "PUT",
+              return fetch(BASE_URL + RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
+                method: "PATCH",
                 body: body,
                 headers: {
                   Authorization: "Bearer " + idToken,
@@ -14973,7 +14981,7 @@
                   evName: "fetchCallFailed_Network_Error",
                   payload: {
                     url: "users/updateTimersStates",
-                    method: "PUT",
+                    method: "PATCH",
                     data: body
                   }
                 });
@@ -15034,7 +15042,7 @@
             case 13:
               cache = _context21.t0;
               _context21.next = 16;
-              return cache.match(URLs.RECORD_OF_TODAY);
+              return cache.match(BASE_URL + RESOURCE.TODAY_RECORDS);
 
             case 16:
               resOfRecordOfToday = _context21.sent;
@@ -15053,7 +15061,7 @@
                 record: record
               });
               _context21.next = 24;
-              return cache.put(URLs.RECORD_OF_TODAY, new Response(JSON.stringify(recordsOfToday)));
+              return cache.put(BASE_URL + RESOURCE.TODAY_RECORDS, new Response(JSON.stringify(recordsOfToday)));
 
             case 24:
               body = JSON.stringify(_objectSpread2({
@@ -15061,7 +15069,7 @@
               }, record)); // http requeset
 
               _context21.next = 27;
-              return fetch(URLs.RECORD_OF_TODAY, {
+              return fetch(BASE_URL + RESOURCE.TODAY_RECORDS, {
                 method: "POST",
                 body: body,
                 headers: {
@@ -15086,7 +15094,7 @@
                 BC.postMessage({
                   evName: "fetchCallFailed_Network_Error",
                   payload: {
-                    url: "recordOfToday",
+                    url: "today-records",
                     method: "POST",
                     data: body
                   }

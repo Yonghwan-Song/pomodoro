@@ -10,6 +10,7 @@ import {
 
 import { auth } from "../firebase";
 import { axiosInstance } from "../axios-and-error-handling/axios-instances";
+import { RESOURCE } from "../constants";
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;
@@ -65,8 +66,7 @@ export function AuthContextProvider({
    */
   async function registerUser(user: User) {
     try {
-      let response = await axiosInstance.post("users", {
-        email: user.email,
+      let response = await axiosInstance.post(RESOURCE.USERS, {
         firebaseUid: user.uid,
       });
       setIsNewUserRegistered(true);

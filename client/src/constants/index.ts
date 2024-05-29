@@ -15,16 +15,29 @@ export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
 //#endregion
 
 //#region URLs
-export const URLs = {
-  // ORIGIN: "http://localhost:4444/",
-  // USER: "http://localhost:4444/users",
-  // POMO: "http://localhost:4444/pomos",
-  // RECORD_OF_TODAY: "http://localhost:4444/recordOfToday",
-  ORIGIN: "https://pomodoro-apis.onrender.com/",
-  USER: "https://pomodoro-apis.onrender.com/users",
-  POMO: "https://pomodoro-apis.onrender.com/pomos",
-  RECORD_OF_TODAY: "https://pomodoro-apis.onrender.com/recordOfToday",
+const ENV = "production"; // Change this to 'production' when deploying
+// const ENV = "development"; // Change this to 'production' when deploying
+
+const BASE_URLS = {
+  development: "http://localhost:3000",
+  production: "https://pomodoro-nest-apis.onrender.com",
 };
+
+export const BASE_URL = BASE_URLS[ENV];
+
+export const RESOURCE = {
+  USERS: "/users",
+  POMODOROS: "/pomodoros",
+  TODAY_RECORDS: "/today-records",
+};
+export const SUB_SET = {
+  POMODORO_SETTING: "/pomodoro-setting",
+  AUTO_START_SETTING: "/auto-start-setting",
+  TIMERS_STATES: "/timers-states",
+  DEMO_DATA: "/demo-data",
+};
+
+//#endregion
 
 export const IDB_VERSION = 8;
 const cacheVersion = 1;

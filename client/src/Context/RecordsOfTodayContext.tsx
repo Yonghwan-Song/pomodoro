@@ -5,6 +5,7 @@ import { persistManyTodaySessionsToIDB } from "..";
 import { pubsub } from "../pubsub";
 import { useAuthContext } from "./AuthContext";
 import { axiosInstance } from "../axios-and-error-handling/axios-instances";
+import { RESOURCE } from "../constants";
 
 export const RecordsOfTodayContext = createContext<RecType[] | null>(null);
 
@@ -14,7 +15,7 @@ export function RecordsOfTodayContextProvider({
   children: React.ReactNode;
 }) {
   const [recordsOfToday, setRecordsOfToday] = useFetch<RecType[]>({
-    urlSegment: "recordOfToday",
+    urlSegment: RESOURCE.TODAY_RECORDS,
     modifier: removeRecordsBeforeToday,
     callbacks: [persistRecordsOfTodayToIDB],
   });
@@ -32,10 +33,9 @@ export function RecordsOfTodayContextProvider({
       ).getTime();
 
       async function sendRequest() {
-        axiosInstance.put("recordOfToday", {
-          userEmail: user!.email,
-          startOfTodayTimestamp,
-        });
+        axiosInstance.delete(
+          RESOURCE.TODAY_RECORDS + `?timestamp=${startOfTodayTimestamp}`
+        );
       }
 
       sendRequest();

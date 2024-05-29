@@ -17,11 +17,11 @@ import { RecType } from "../types/clientStatesType";
  *
  * In case a connection is not restored until a user closes this app,
  * the failed requests due to the disconnection should be kept in the browser so that this app can later send them again.
- * At this point, I think I will need to keep POST and PUT requests. But I am not sure if I should keep GET and DELETE requests.
+ * At this point, I think I will need to keep POST and PATCH requests. But I am not sure if I should keep GET and DELETE requests.
  * Additionally, regarding the updates, only the last put request should be kept.
  * 
 //   //! Failed Request들 중에, 만약 같은 URL에 대해
-//   //! GET Request와 PUT, POST, DELETE와 같은 자료에 변형을 가하는 Request들이 동시에 존재한다면?
+//   //! GET Request와 PATCH, POST, DELETE와 같은 자료에 변형을 가하는 Request들이 동시에 존재한다면?
 //   //! 후자를 먼저 실행하고 그 다음에 GET을 해야하나?
  */
 type UrlAndData = {
@@ -34,7 +34,7 @@ export interface ERR_CONTROLLER {
   failedReqInfo: {
     GET: UrlAndData[];
     POST: UrlAndData[];
-    PUT: Map<string, UrlAndData>;
+    PATCH: Map<string, UrlAndData>;
     DELETE: UrlAndData[];
   };
 
@@ -62,7 +62,7 @@ export const errController: ERR_CONTROLLER = {
   failedReqInfo: {
     GET: [],
     POST: [],
-    PUT: new Map<string, UrlAndData>(),
+    PATCH: new Map<string, UrlAndData>(),
     DELETE: [],
   },
 
@@ -80,7 +80,7 @@ export const errController: ERR_CONTROLLER = {
         });
         console.log("POST", this.failedReqInfo.POST);
         break;
-      case "PUT":
+      case "PATCH":
         // users/updateTimersStates
         // users/updateAutoStartSetting
         // users/editPomoSetting
@@ -88,7 +88,7 @@ export const errController: ERR_CONTROLLER = {
 
         if (reqConfig.url) {
           if (reqConfig.url === "users/updateTimersStates") {
-            const existingUrlAndData = this.failedReqInfo.PUT.get(
+            const existingUrlAndData = this.failedReqInfo.PATCH.get(
               reqConfig.url
             );
             console.log("data before merge", existingUrlAndData?.data);
@@ -98,9 +98,9 @@ export const errController: ERR_CONTROLLER = {
                 reqConfig
               );
               console.log("data after merge", existingUrlAndData?.data);
-              this.failedReqInfo.PUT.set(reqConfig.url, existingUrlAndData!);
+              this.failedReqInfo.PATCH.set(reqConfig.url, existingUrlAndData!);
             } else {
-              this.failedReqInfo.PUT.set(reqConfig.url, {
+              this.failedReqInfo.PATCH.set(reqConfig.url, {
                 url: reqConfig.url,
                 data: JSON.parse(reqConfig.data),
               });
@@ -109,18 +109,18 @@ export const errController: ERR_CONTROLLER = {
             reqConfig.url === "users/updateAutoStartSetting" ||
             reqConfig.url === "users/editPomoSetting"
           ) {
-            this.failedReqInfo.PUT.set(reqConfig.url, {
+            this.failedReqInfo.PATCH.set(reqConfig.url, {
               url: reqConfig.url,
               data: JSON.parse(reqConfig.data),
             });
-          } else if (reqConfig.url !== "recordOfToday") {
+          } else if (reqConfig.url !== "today-records") {
             // do nothing
-            // because the PUT request to this url is sent first at RecordsOfTodayContext.tsx
+            // because the PATCH request to this url is sent first at RecordsOfTodayContext.tsx
             // on opening this app
           }
         }
 
-        console.log("PUT", [...this.failedReqInfo.PUT.entries()]);
+        console.log("PATCH", [...this.failedReqInfo.PATCH.entries()]);
 
         // function mergeData(
         //   existingData: any,
@@ -189,18 +189,18 @@ export const errController: ERR_CONTROLLER = {
     console.log("POST");
 
     const putResults = await Promise.allSettled(
-      [...this.failedReqInfo.PUT.values()].map(async (urlAndData) => {
+      [...this.failedReqInfo.PATCH.values()].map(async (urlAndData) => {
         console.log("urlAndData from Put", urlAndData);
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "PUT",
+          method: "PATCH",
         });
       })
     );
 
-    this.failedReqInfo.PUT.clear();
-    console.log("PUT");
+    this.failedReqInfo.PATCH.clear();
+    console.log("PATCH");
 
     const deleteResults = await Promise.allSettled(
       this.failedReqInfo.DELETE.map(async (urlAndData) => {
@@ -247,7 +247,7 @@ export const errController: ERR_CONTROLLER = {
             .map((statusAndValue): RecType | null => {
               if (
                 statusAndValue.status === "fulfilled" &&
-                statusAndValue.value.config.url === "recordOfToday"
+                statusAndValue.value.config.url === "today-records"
               ) {
                 let { kind, startTime, endTime, timeCountedDown, pause } =
                   statusAndValue.value.data;
@@ -313,7 +313,7 @@ export const errController: ERR_CONTROLLER = {
   emptyFailedReqInfo() {
     this.failedReqInfo.GET = [];
     this.failedReqInfo.POST = [];
-    this.failedReqInfo.PUT.clear();
+    this.failedReqInfo.PATCH.clear();
     this.failedReqInfo.DELETE = [];
   },
 };

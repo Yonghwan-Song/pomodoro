@@ -2,7 +2,7 @@
 import { openDB } from "idb";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../src/firebase";
-import { URLs, CacheName } from "./constants/index";
+import { CacheName, BASE_URL, RESOURCE, SUB_SET } from "./constants/index";
 import { IDB_VERSION } from "./constants/index";
 import { pubsub } from "./pubsub";
 
@@ -522,17 +522,16 @@ async function recordPomo(duration, startTime) {
         today.getMonth() + 1
       }/${today.getDate()}/${today.getFullYear()}`;
       const record = {
-        userEmail: email,
         duration,
         startTime,
-        LocaleDateString,
+        date: LocaleDateString,
       };
       body = JSON.stringify(record);
 
       // update
       let cache = CACHE || (await openCache(CacheName));
       console.log("cache in recordPomo", cache);
-      let statResponse = await cache.match(URLs.POMO + `/stat`);
+      let statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
       if (statResponse !== undefined) {
         let statData = await statResponse.json();
         console.log("statData before push", statData);
@@ -544,10 +543,14 @@ async function recordPomo(duration, startTime) {
           isDummy: false,
         });
         console.log("statData after push", statData);
-        cache.put(URLs.POMO + `/stat`, new Response(JSON.stringify(statData)));
+
+        await cache.put(
+          BASE_URL + RESOURCE.POMODOROS,
+          new Response(JSON.stringify(statData))
+        );
       }
 
-      const res = await fetch(URLs.POMO, {
+      const res = await fetch(BASE_URL + RESOURCE.POMODOROS, {
         method: "POST",
         body,
         headers: {
@@ -564,7 +567,7 @@ async function recordPomo(duration, startTime) {
     ) {
       BC.postMessage({
         evName: "fetchCallFailed_Network_Error",
-        payload: { url: "pomos", method: "POST", data: body },
+        payload: { url: "pomodoros", method: "POST", data: body },
       });
     } else {
       console.warn(error);
@@ -580,27 +583,32 @@ async function updateTimersStates(states) {
       const { idToken, email } = idTokenAndEmail;
       // caching
       let cache = CACHE || (await openCache(CacheName));
-      let pomoSettingAndTimerStatesResponse = await cache.match(URLs.USER);
+      let pomoSettingAndTimerStatesResponse = await cache.match(
+        BASE_URL + RESOURCE.USERS
+      );
       if (pomoSettingAndTimerStatesResponse !== undefined) {
         let pomoSettingAndTimersStates =
           await pomoSettingAndTimerStatesResponse.json();
         pomoSettingAndTimersStates.timersStates = states;
         await cache.put(
-          URLs.USER,
+          BASE_URL + RESOURCE.USERS,
           new Response(JSON.stringify(pomoSettingAndTimersStates))
         );
       }
 
-      body = JSON.stringify({ states });
+      body = JSON.stringify({ ...states });
 
-      const res = await fetch(URLs.USER + `/updateTimersStates`, {
-        method: "PUT",
-        body,
-        headers: {
-          Authorization: "Bearer " + idToken,
-          "Content-Type": "application/json",
-        },
-      });
+      const res = await fetch(
+        BASE_URL + RESOURCE.USERS + SUB_SET.TIMERS_STATES,
+        {
+          method: "PATCH",
+          body,
+          headers: {
+            Authorization: "Bearer " + idToken,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       console.log("res of updateTimersStates in sw: ", res);
     }
   } catch (error) {
@@ -612,7 +620,7 @@ async function updateTimersStates(states) {
         evName: "fetchCallFailed_Network_Error",
         payload: {
           url: "users/updateTimersStates",
-          method: "PUT",
+          method: "PATCH",
           data: body,
         },
       });
@@ -631,14 +639,16 @@ async function persistRecOfTodayToServer(record) {
       const { idToken, email } = idTokenAndEmail;
       // caching
       let cache = CACHE || (await openCache(CacheName));
-      let resOfRecordOfToday = await cache.match(URLs.RECORD_OF_TODAY);
+      let resOfRecordOfToday = await cache.match(
+        BASE_URL + RESOURCE.TODAY_RECORDS
+      );
       if (resOfRecordOfToday !== undefined) {
         let recordsOfToday = await resOfRecordOfToday.json();
         recordsOfToday.push({
           record,
         });
         await cache.put(
-          URLs.RECORD_OF_TODAY,
+          BASE_URL + RESOURCE.TODAY_RECORDS,
           new Response(JSON.stringify(recordsOfToday))
         );
       }
@@ -649,7 +659,7 @@ async function persistRecOfTodayToServer(record) {
       });
 
       // http requeset
-      const res = await fetch(URLs.RECORD_OF_TODAY, {
+      const res = await fetch(BASE_URL + RESOURCE.TODAY_RECORDS, {
         method: "POST",
         body,
         headers: {
@@ -666,7 +676,7 @@ async function persistRecOfTodayToServer(record) {
     ) {
       BC.postMessage({
         evName: "fetchCallFailed_Network_Error",
-        payload: { url: "recordOfToday", method: "POST", data: body },
+        payload: { url: "today-records", method: "POST", data: body },
       });
     } else {
       console.warn(error);

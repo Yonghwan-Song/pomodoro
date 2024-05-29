@@ -13,7 +13,7 @@ import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
 import { FlexBox } from "../../Components/Layouts/FlexBox";
 import { LoadingMessage } from "../../Components/LoadingMessage/LoadingMessage";
-import * as CONSTANTS from "../../constants/index";
+import { CacheName, RESOURCE, SUB_SET, BASE_URL } from "../../constants/index";
 import {
   deleteUser,
   GoogleAuthProvider,
@@ -355,12 +355,12 @@ function Settings() {
 async function deleteAccount(user: User) {
   console.log(`--------------------DELETE ACCOUNT-------------------`);
   try {
-    const res = await axiosInstance.delete("users");
+    const res = await axiosInstance.delete(RESOURCE.USERS);
     console.log("deleteAccount res", res.data);
     //await user.delete();
     let result = await deleteUser(user);
     await clearStateStoreAndRecOfToday();
-    await deleteCache(CONSTANTS.CacheName);
+    await deleteCache(CacheName);
     window.location.reload();
     // console.log(result);
   } catch (error) {
@@ -371,13 +371,17 @@ async function createDemoData(user: User) {
   try {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterdayTimestamp = today.getTime() - 24 * 60 * 60 * 1000;
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat"); //? this does not work.. ? why?
-    const res = await axiosInstance.post("pomos/generateDemoData", {
-      timestamp: yesterdayTimestamp,
-      timezoneOffset: now.getTimezoneOffset(),
-    });
+    const timestampForBeginningOfYesterday =
+      today.getTime() - 24 * 60 * 60 * 1000;
+    let cache = DynamicCache || (await openCache(CacheName));
+    await cache.delete(BASE_URL + RESOURCE.POMODOROS);
+    const res = await axiosInstance.post(
+      RESOURCE.POMODOROS + SUB_SET.DEMO_DATA,
+      {
+        timestampForBeginningOfYesterday,
+        timezoneOffset: now.getTimezoneOffset(),
+      }
+    );
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);
@@ -385,9 +389,11 @@ async function createDemoData(user: User) {
 }
 async function removeDemoData(user: User) {
   try {
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    await cache.delete(CONSTANTS.URLs.POMO + "/stat");
-    const res = await axiosInstance.delete("pomos/demo");
+    let cache = DynamicCache || (await openCache(CacheName));
+    await cache.delete(BASE_URL + RESOURCE.POMODOROS);
+    const res = await axiosInstance.delete(
+      RESOURCE.POMODOROS + SUB_SET.DEMO_DATA
+    );
     console.log("res obj.data", res.data);
   } catch (err) {
     console.log(err);
@@ -397,23 +403,26 @@ async function removeDemoData(user: User) {
 //TODO: 1.변수명 바꾸기 pomoInfo나 뭐... requiredStatesToRunTimer로 2.
 async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
   try {
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let cache = DynamicCache || (await openCache(CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(
-      CONSTANTS.URLs.USER
+      BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json();
       pomoSettingAndTimersStates.pomoSetting = pomoSetting;
       await cache.put(
-        CONSTANTS.URLs.USER,
+        BASE_URL + RESOURCE.USERS,
         new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
 
-    const res = await axiosInstance.put("users/editPomoSetting", {
-      pomoSetting,
-    });
+    const res = await axiosInstance.patch(
+      RESOURCE.USERS + SUB_SET.POMODORO_SETTING,
+      {
+        ...pomoSetting,
+      }
+    );
 
     console.log("res obj.data", res.data);
   } catch (err) {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useEffect } from "react";
-import * as CONSTANTS from "../../constants/index";
+import { RESOURCE } from "../../constants";
 import { Grid } from "../../Components/Layouts/Grid";
 import { GridItem } from "../../Components/Layouts/GridItem";
 import {
@@ -39,7 +39,7 @@ export default function Statistics() {
   const [weekRange, setWeekRange] = useState("");
   const _24h = 24 * 60 * 60 * 1000;
   const [statData, setStatData] = useFetch<DataArray, DailyPomo[]>({
-    urlSegment: "pomos/stat",
+    urlSegment: RESOURCE.POMODOROS,
     modifier: getStat,
     callbacks: [calculateOverview, calculateThisWeekData],
   });

@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useAuthContext } from "../Context/AuthContext";
 import { DynamicCache, openCache } from "..";
-import { CacheName, URLs } from "../constants";
+import { BASE_URL, CacheName } from "../constants";
 import { axiosInstance } from "../axios-and-error-handling/axios-instances";
 
 //#region Type Definition
@@ -58,7 +58,7 @@ export function useFetch<T, S = undefined>({
      * Purpose: to get data from either remote server or cache storage.
      */
     async function getData() {
-      let resData = await caches.match(URLs.ORIGIN + urlSegment);
+      let resData = await caches.match(BASE_URL + urlSegment);
       if (resData) {
         console.log(
           "------------------------------- useFetch with cached response -------------------------------"
@@ -84,7 +84,7 @@ export function useFetch<T, S = undefined>({
         if (res !== undefined) {
           let resFetched = new Response(JSON.stringify(res.data));
           let cache = DynamicCache || (await openCache(CacheName));
-          await cache.put(URLs.ORIGIN + urlSegment, resFetched);
+          await cache.put(BASE_URL + urlSegment, resFetched);
         }
       }
     }

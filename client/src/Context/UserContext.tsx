@@ -6,7 +6,7 @@ import {
   useEffect,
 } from "react";
 import { useAuthContext } from "./AuthContext";
-import * as C from "../constants/index";
+import { RESOURCE } from "../constants/index";
 import { useFetch } from "../Custom-Hooks/useFetch";
 import {
   dataCombinedFromIDB,
@@ -34,7 +34,7 @@ export function UserInfoContextProvider({
   );
   const { user, isNewUser, isNewUserRegistered } = useAuthContext()!;
   const [pomoInfo, setPomoInfo] = useFetch<RequiredStatesToRunTimerType>({
-    urlSegment: "users",
+    urlSegment: RESOURCE.USERS,
 
     /**
      * 다시 생각해보니,

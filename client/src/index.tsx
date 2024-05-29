@@ -15,11 +15,16 @@ import {
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
-import { CacheName, IDB_VERSION } from "./constants";
+import {
+  CacheName,
+  IDB_VERSION,
+  RESOURCE,
+  SUB_SET,
+  BASE_URL,
+} from "./constants";
 import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "./firebase";
-import * as CONSTANTS from "./constants";
 import { defineInterceptorsForAxiosInstance } from "./axios-and-error-handling/axios-interceptors";
 import { axiosInstance } from "./axios-and-error-handling/axios-instances";
 import {
@@ -145,7 +150,6 @@ BC.addEventListener("message", async (ev) => {
     // console.log("A Payload of FetchCallFailed_Network_Error");
     // console.log(payload);
     errController.registerFailedReqInfo(payload as AxiosRequestConfig);
-    // errController.registerFailedReqInfo(payload);
   }
 });
 
@@ -163,7 +167,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (
         userEmail &&
         (errController.failedReqInfo.POST.length !== 0 ||
-          errController.failedReqInfo.PUT.size !== 0 ||
+          errController.failedReqInfo.PATCH.size !== 0 ||
           errController.failedReqInfo.DELETE.length !== 0)
       ) {
         errController.handleFailedReqs();
@@ -186,6 +190,10 @@ window.addEventListener("beforeunload", async (event) => {
 
 //#region utility functions
 // This accepts idToken as its first unlike `updateTimersStates()`'s first arg is User.
+/**
+ * This function is only used when a session is started automatically in either "/statistics" or "/settings".
+ *
+ */
 export async function updateTimersStates_with_token({
   idToken,
   states,
@@ -195,35 +203,44 @@ export async function updateTimersStates_with_token({
 }) {
   try {
     // caching
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let cache = DynamicCache || (await openCache(CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(
-      CONSTANTS.URLs.USER
+      BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json();
       pomoSettingAndTimersStates.timersStates = states;
       await cache.put(
-        CONSTANTS.URLs.USER,
+        BASE_URL + RESOURCE.USERS,
         new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
 
-    const res = await axiosInstance.put("users/updateTimersStates", { states });
+    const res = await axiosInstance.patch(
+      RESOURCE.USERS + SUB_SET.TIMERS_STATES,
+      { ...states }
+    );
     // console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
   } catch (err) {
     console.warn(err);
   }
 }
+
+/**
+ * This function is utilized by components rendered in the "/timer"
+ * whenever there is a change to the timersStates,
+ * such as the start of a break session, or the pause of a pomodoro session.
+ */
 export async function updateTimersStates(
   user: User,
   states: Partial<PatternTimerStatesType> & Partial<TimerStateType>
 ) {
   try {
     // caching
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
+    let cache = DynamicCache || (await openCache(CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(
-      CONSTANTS.URLs.USER
+      BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       let pomoSettingAndTimersStates =
@@ -235,15 +252,16 @@ export async function updateTimersStates(
       }
 
       await cache.put(
-        CONSTANTS.URLs.USER,
+        BASE_URL + RESOURCE.USERS,
         new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
 
-    const res = await axiosInstance.put("users/updateTimersStates", {
-      states,
-    });
-    // console.log("res.data in updateTimersStates ===>", res.data);
+    const res = await axiosInstance.patch(
+      RESOURCE.USERS + SUB_SET.TIMERS_STATES,
+      { ...states }
+    );
+    console.log("res.data in updateTimersStates ===>", res.data);
   } catch (err) {
     console.warn(err);
   }
@@ -261,20 +279,24 @@ export async function updateAutoStartSetting(
     //?     삑 날것 같아서 그랬어. e.g 시작 버튼 누르고 곧바로 뭐 다른 페이지로 이동한다거나
     //!     그러니까 이거다. update을 하고(e.g. start pomo)존나 빨리
     //!     cache를 사용하게 되는 경우가 있을지 찾아봐
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    let pomoInfoResponse = await cache.match(CONSTANTS.URLs.USER);
+    let cache = DynamicCache || (await openCache(CacheName));
+    let pomoInfoResponse = await cache.match(BASE_URL + RESOURCE.USERS);
     if (pomoInfoResponse !== undefined) {
       let pomoInfo = await pomoInfoResponse.json();
       pomoInfo.autoStartSetting = autoStartSetting;
       await cache.put(
-        CONSTANTS.URLs.USER,
+        BASE_URL + RESOURCE.USERS,
         new Response(JSON.stringify(pomoInfo))
       );
     }
 
-    const res = await axiosInstance.put("users/updateAutoStartSetting", {
-      autoStartSetting: autoStartSetting,
-    });
+    const res = await axiosInstance.patch(
+      RESOURCE.USERS + SUB_SET.AUTO_START_SETTING,
+      {
+        // autoStartSetting: autoStartSetting,
+        ...autoStartSetting,
+      }
+    );
     // console.log("res.data in updateAutoStartSetting ===>", res.data);
   } catch (error) {
     console.warn(error);
@@ -573,9 +595,12 @@ export async function persistStatesToIDB(
     .transaction("stateStore", "readwrite")
     .objectStore("stateStore");
   try {
+    console.log("INSIDE PERSIST-STATES-TO-IDB");
     for (const [key, value] of Object.entries(states)) {
       let obj = { name: key, value: value };
-      await store.put(obj);
+      // await store.put(obj);
+
+      console.log(await store.put(obj));
     }
   } catch (error) {
     console.warn(error);

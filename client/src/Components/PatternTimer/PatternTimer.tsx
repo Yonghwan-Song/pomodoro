@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Timer } from "../Timer/Timer";
 import { AxiosError } from "axios";
-import * as CONSTANTS from "../../constants/index";
+import { CacheName, RESOURCE, BASE_URL } from "../../constants/index";
 import { useAuthContext } from "../../Context/AuthContext";
 import { User } from "firebase/auth";
 import {
@@ -342,22 +342,23 @@ export function PatternTimer({
 async function persistRecOfTodayToServer(user: User, record: RecType) {
   try {
     // caching
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    let resOfRecordOfToday = await cache.match(CONSTANTS.URLs.RECORD_OF_TODAY);
+    let cache = DynamicCache || (await openCache(CacheName));
+    let resOfRecordOfToday = await cache.match(
+      BASE_URL + RESOURCE.TODAY_RECORDS
+    );
     if (resOfRecordOfToday !== undefined) {
       let recordsOfToday = await resOfRecordOfToday.json();
       recordsOfToday.push({
         record,
       });
       await cache.put(
-        CONSTANTS.URLs.RECORD_OF_TODAY,
+        BASE_URL + RESOURCE.TODAY_RECORDS,
         new Response(JSON.stringify(recordsOfToday))
       );
     }
 
     // http requeset
-    const response = await axiosInstance.post("recordOfToday", {
-      userEmail: user.email,
+    const response = await axiosInstance.post(RESOURCE.TODAY_RECORDS, {
       ...record,
     });
     console.log("res of persistRecOfTodayToSever", response);
@@ -378,8 +379,8 @@ async function recordPomo(
     }/${today.getDate()}/${today.getFullYear()}`;
 
     // update
-    let cache = DynamicCache || (await openCache(CONSTANTS.CacheName));
-    let statResponse = await cache.match(CONSTANTS.URLs.POMO + "/stat");
+    let cache = DynamicCache || (await openCache(CacheName));
+    let statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
     if (statResponse !== undefined) {
       let statData = await statResponse.json();
       statData.push({
@@ -390,16 +391,15 @@ async function recordPomo(
         isDummy: false,
       });
       await cache.put(
-        CONSTANTS.URLs.POMO + "/stat",
+        BASE_URL + RESOURCE.POMODOROS,
         new Response(JSON.stringify(statData))
       );
     }
 
-    const response = await axiosInstance.post("pomos", {
-      userEmail: user.email,
+    const response = await axiosInstance.post(RESOURCE.POMODOROS, {
       duration: durationInMinutes,
       startTime,
-      LocaleDateString,
+      date: LocaleDateString,
     });
     console.log("res obj of recordPomo", response);
   } catch (err) {
