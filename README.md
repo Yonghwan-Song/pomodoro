@@ -48,6 +48,7 @@
 
 - **[Firebase Admin](https://www.npmjs.com/package/firebase-admin)** v11.0.0
 - **[Express](https://www.npmjs.com/package/express)** v4.18.1
+- **[NestJS](https://github.com/nestjs/nest)** v10.0.0
 - **[Mongoose](https://www.npmjs.com/package/mongoose)** v6.4.3
 - **[MongoDB Atlas](https://www.mongodb.com/atlas/database)**
 - **Node js** v20.10.0
