@@ -28,7 +28,7 @@ type PatternTimerProps = {
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
 
-export function PatternTimerVVV({
+export function TimerControllerVVV({
   statesRelatedToTimer,
   pomoDuration,
   shortBreakDuration,
@@ -312,6 +312,7 @@ export function PatternTimerVVV({
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
         durationInSeconds={durationInMinutes * 60}
+        setDurationInMinutes={setDurationInMinutes}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}
         next={next}

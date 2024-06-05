@@ -28,7 +28,7 @@ type PatternTimerProps = {
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
 
-export function PatternTimer({
+export function TimerController({
   statesRelatedToTimer,
   pomoDuration,
   shortBreakDuration,
@@ -260,47 +260,6 @@ export function PatternTimer({
         break;
     }
   }
-
-  // async function doTasks({
-  //   dataToBeArguments,
-  // }: {
-  //   dataToBeArguments: {
-  //     whatToNotify: string; //TODO: 이거 union of literals로 바꿔야 할 듯.
-  //     durationToSet: number;
-  //     dataToPersistToIndexedDB: { stateArr: any[] }; //TODO: 이것도  type 정해야 하는거 아닌가?
-  //     recordToAdd: RecType;
-  //     user: User | null; //TODO: | null 이거 뭔가 찝집하다
-  //     durationInMinutes?: number;
-  //     startTime?: number;
-  //   };
-  // }) {
-  //   const {
-  //     whatToNotify,
-  //     durationToSet,
-  //     dataToPersistToIndexedDB,
-  //     recordToAdd,
-  //     user,
-  //     durationInMinutes,
-  //     startTime,
-  //   } = dataToBeArguments;
-
-  //   notify(whatToNotify);
-
-  //   setDurationInMinutes(durationToSet);
-  //   setRecords((prev) => [...prev, recordToAdd]);
-
-  //   postMsgToSW("saveStates", dataToPersistToIndexedDB);
-  //   const { kind, ...data } = recordToAdd;
-  //   await persistSingleTodaySessionToIDB({ kind, data }); //TODO: 사실 이 함수의 arg type을 바꾸면 좀더 깔끔하게 쓸 수 있음..
-
-  //   // HTTP Requests
-  //   user && persistRecOfTodayToServer(user, recordToAdd);
-  //   user &&
-  //     durationInMinutes &&
-  //     startTime &&
-  //     recordPomo(user, durationInMinutes, startTime);
-  // }
-
   //#endregion
 
   useEffect(() => {
@@ -316,6 +275,7 @@ export function PatternTimer({
         //min to seconds
         statesRelatedToTimer={statesRelatedToTimer}
         durationInSeconds={durationInMinutes * 60}
+        setDurationInMinutes={setDurationInMinutes}
         repetitionCount={repetitionCount}
         setRepetitionCount={setRepetitionCount}
         next={next}

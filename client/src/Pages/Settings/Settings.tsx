@@ -145,7 +145,7 @@ function Settings() {
       updatePomoSetting(user, pomoSettingInputs)
         .then(() =>
           // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
-          updateTimersStates(user, {
+          updateTimersStates({
             duration: pomoSettingInputs.pomoDuration,
             repetitionCount: 0,
             running: false,

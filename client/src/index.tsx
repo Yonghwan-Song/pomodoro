@@ -233,8 +233,7 @@ export async function updateTimersStates_with_token({
  * such as the start of a break session, or the pause of a pomodoro session.
  */
 export async function updateTimersStates(
-  user: User,
-  states: Partial<PatternTimerStatesType> & Partial<TimerStateType>
+  states: Partial<PatternTimerStatesType & TimerStateType>
 ) {
   try {
     // caching
@@ -588,7 +587,7 @@ export async function persistManyTodaySessionsToIDB(records: RecType[]) {
 }
 
 export async function persistStatesToIDB(
-  states: TimerStateType & PatternTimerStatesType
+  states: Partial<TimerStateType & PatternTimerStatesType>
 ) {
   let db = DB || (await openIndexedDB());
   const store = db
@@ -598,9 +597,7 @@ export async function persistStatesToIDB(
     console.log("INSIDE PERSIST-STATES-TO-IDB");
     for (const [key, value] of Object.entries(states)) {
       let obj = { name: key, value: value };
-      // await store.put(obj);
-
-      console.log(await store.put(obj));
+      await store.put(obj);
     }
   } catch (error) {
     console.warn(error);

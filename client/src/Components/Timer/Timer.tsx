@@ -25,6 +25,7 @@ import { useUserContext } from "../../Context/UserContext";
 type TimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
   durationInSeconds: number;
+  setDurationInMinutes: React.Dispatch<React.SetStateAction<number>>;
   next: ({
     howManyCountdown,
     state,
@@ -59,6 +60,7 @@ let argumentOfInitializer = {
 export function Timer({
   statesRelatedToTimer,
   durationInSeconds,
+  setDurationInMinutes,
   next,
   repetitionCount,
   setRepetitionCount,
@@ -167,7 +169,7 @@ export function Timer({
       if (repetitionCount === 0) {
         //new cycle
         user !== null &&
-          updateTimersStates(user, {
+          updateTimersStates({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
@@ -184,7 +186,7 @@ export function Timer({
       if (repetitionCount !== 0) {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
         user !== null &&
-          updateTimersStates(user, {
+          updateTimersStates({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
@@ -196,7 +198,7 @@ export function Timer({
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
       user &&
-        updateTimersStates(user, {
+        updateTimersStates({
           startTime: timerState.startTime,
           running: true,
           pause: {
@@ -221,7 +223,7 @@ export function Timer({
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
       user &&
-        updateTimersStates(user, {
+        updateTimersStates({
           startTime: timerState.startTime,
           running: false,
           pause: {
@@ -318,7 +320,7 @@ export function Timer({
 
     if (nextSessionIsStartOfCycle()) {
       user &&
-        updateTimersStates(user, {
+        updateTimersStates({
           running: false,
           startTime: 0,
           pause: { totalLength: 0, record: [] },
@@ -341,7 +343,7 @@ export function Timer({
     function handleNonStartOfCycle(): void {
       if (isNextSessionPomo() && !autoStartSetting.doesPomoStartAutomatically) {
         user &&
-          updateTimersStates(user, {
+          updateTimersStates({
             running: false,
             startTime: 0,
             pause: { totalLength: 0, record: [] },
@@ -354,7 +356,7 @@ export function Timer({
         !autoStartSetting.doesBreakStartAutomatically
       ) {
         user &&
-          updateTimersStates(user, {
+          updateTimersStates({
             running: false,
             startTime: 0,
             pause: { totalLength: 0, record: [] },
@@ -491,7 +493,7 @@ export function Timer({
     function handleNonStartOfCycle(): void {
       if (isNextSessionPomo() && !autoStartSetting.doesPomoStartAutomatically) {
         user &&
-          updateTimersStates(user, {
+          updateTimersStates({
             running: false,
             startTime: 0,
             pause: { totalLength: 0, record: [] },
@@ -504,7 +506,7 @@ export function Timer({
         !autoStartSetting.doesBreakStartAutomatically
       ) {
         user &&
-          updateTimersStates(user, {
+          updateTimersStates({
             running: false,
             startTime: 0,
             pause: { totalLength: 0, record: [] },
@@ -545,7 +547,7 @@ export function Timer({
           // 1. The next session is the start of a new cycle.
           if (isNextSessionStartOfCycle()) {
             user &&
-              updateTimersStates(user, {
+              updateTimersStates({
                 running: false,
                 startTime: 0,
                 pause: { totalLength: 0, record: [] },
@@ -636,6 +638,8 @@ export function Timer({
           startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
           remainingDuration={remainingDuration}
+          setRemainingDuration={setRemainingDuration}
+          setDurationInMinutes={setDurationInMinutes}
         />
       </GridItem>
       <GridItem>

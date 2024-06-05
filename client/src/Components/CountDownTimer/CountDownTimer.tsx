@@ -6,6 +6,8 @@ type CountDownTimerPropType = {
   startTime: number;
   durationInSeconds: number;
   remainingDuration: number;
+  setRemainingDuration: React.Dispatch<React.SetStateAction<number>>;
+  setDurationInMinutes: React.Dispatch<React.SetStateAction<number>>;
 };
 
 export default function CountDownTimer({
@@ -13,6 +15,8 @@ export default function CountDownTimer({
   startTime,
   durationInSeconds,
   remainingDuration,
+  setRemainingDuration,
+  setDurationInMinutes,
 }: CountDownTimerPropType) {
   let durationRemaining =
     remainingDuration < 0 ? (
@@ -52,6 +56,10 @@ export default function CountDownTimer({
             ? 1
             : 1 - remainingDuration / durationInSeconds
         }
+        durationInSeconds={durationInSeconds}
+        remainingDuration={remainingDuration}
+        setRemainingDuration={setRemainingDuration}
+        setDurationInMinutes={setDurationInMinutes}
       />
     </>
   );

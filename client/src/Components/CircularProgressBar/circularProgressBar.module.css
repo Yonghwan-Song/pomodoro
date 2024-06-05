@@ -22,3 +22,7 @@
   transform: rotate(-0.25turn);
   transform-origin: center;
 }
+
+.svgBorder {
+  border: 2px solid rgb(115, 187, 255);
+}

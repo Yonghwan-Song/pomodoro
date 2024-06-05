@@ -34,7 +34,7 @@ function Navbar() {
       const statesFromIDB = await obtainStatesFromIDB("withoutSettings");
       if (Object.entries(statesFromIDB).length !== 0) {
         if (user !== null) {
-          await updateTimersStates(user, statesFromIDB as TimersStatesType);
+          await updateTimersStates(statesFromIDB as TimersStatesType);
         }
       }
       await setStateStoreToDefault();

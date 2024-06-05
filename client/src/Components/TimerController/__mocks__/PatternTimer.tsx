@@ -3,7 +3,7 @@ import { Timer } from "../../Timer/Timer";
 import { useUserContext } from "../../../Context/UserContext";
 import { TimerStateType } from "../../../types/clientStatesType";
 
-export function PatternTimer() {
+export function TimerController() {
   const [duration, setDuration] = useState(0);
   const [repetitionCount, setRepetitionCount] = useState(0); // How many times the timer used by this Pattern timer.
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false);
@@ -73,6 +73,7 @@ export function PatternTimer() {
           running: true,
           startTime: 1686971557618,
         }}
+        setDurationInMinutes={setDuration}
         //min to seconds
         durationInSeconds={duration * 60}
         next={next}

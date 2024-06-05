@@ -1,5 +1,5 @@
-import { PatternTimer } from "../../Components/PatternTimer/PatternTimer";
-import { PatternTimerVVV } from "../../Components/PatternTimer/PatternTimer_v";
+import { TimerController } from "../../Components/TimerController/TimerController";
+import { TimerControllerVVV } from "../../Components/TimerController/TimerController_v";
 import { RecType, TimersStatesType } from "../../types/clientStatesType";
 
 type TogglingTimerProps = {
@@ -23,7 +23,7 @@ export default function TogglingTimer({
   return (
     <>
       {toggle ? (
-        <PatternTimer
+        <TimerController
           statesRelatedToTimer={statesRelatedToTimer}
           pomoDuration={pomoDuration}
           shortBreakDuration={shortBreakDuration}
@@ -32,7 +32,7 @@ export default function TogglingTimer({
           setRecords={setRecords}
         />
       ) : (
-        <PatternTimerVVV
+        <TimerControllerVVV
           statesRelatedToTimer={statesRelatedToTimer}
           pomoDuration={pomoDuration}
           shortBreakDuration={shortBreakDuration}
