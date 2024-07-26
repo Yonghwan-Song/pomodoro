@@ -2,30 +2,63 @@ import styled, { css } from "styled-components";
 
 type FlexBoxType = {
   gap?: string;
+  columnGap?: string;
+  rowGap?: string;
   flexDirection?: string;
+  justifyContent?: string;
+  alignItems?: string;
+  flexWrap?: string;
+  flexBasis?: string;
+  cursor?: string;
 };
 
 export const StyledFlexBox = styled.div<FlexBoxType>`
   display: flex;
-  align-items: stretch;
-  gap: 2rem;
-  /* ${({ gap }) =>
+
+  ${({ cursor }) =>
+    cursor &&
+    css`
+      cursor: ${cursor};
+    `}
+
+  ${({ gap }) =>
     gap &&
     css`
       gap: ${gap};
-    `} */
-  /*TODO: 이렇게 해도 되는거냐? */
-  /* gap: ${({ gap }) => gap || "2rem"}; */
-
+    `}
+  ${({ columnGap }) =>
+    columnGap &&
+    css`
+      column-gap: ${columnGap};
+    `}
+  ${({ rowGap }) =>
+    rowGap &&
+    css`
+      row-gap: ${rowGap};
+    `}
+  align-items: stretch;
+  ${({ alignItems }) =>
+    alignItems &&
+    css`
+      align-items: ${alignItems};
+    `}
   ${({ flexDirection }) =>
     flexDirection &&
     css`
       flex-direction: ${flexDirection};
     `}
-
+  ${({ justifyContent }) =>
+    justifyContent &&
+    css`
+      justify-content: ${justifyContent};
+    `}
+  ${({ flexWrap }) =>
+    flexWrap &&
+    css`
+      flex-wrap: ${flexWrap};
+    `}
   & > * {
-    /* flex: 1; */
-    flex-basis: 100%;
+    flex-basis: ${({ flexBasis }) => flexBasis || "auto"};
     text-align: center;
   }
 `;

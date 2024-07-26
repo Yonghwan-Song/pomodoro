@@ -1,4 +1,6 @@
 import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
+import mongoose, { ObjectId } from 'mongoose';
+// import { Category } from 'src/schemas/category.schema';
 
 interface PomoSetting {
   pomoDuration: number;
@@ -23,12 +25,19 @@ interface TimersStates {
   startTime: number;
 }
 
+// interface Category {
+//   name: string;
+//   color: string;
+//   // _id?: ObjectId; //이거 너무 가라 아니냐
+//   _id?: string; //이거 너무 가라 아니냐
+// }
+
 @Schema()
 export class User {
-  @Prop()
+  @Prop({ unique: true })
   firebaseUid: string; // TODO: 이거 password처럼 생각해야하는거 아닌가 싶은데 흠..
 
-  @Prop()
+  @Prop({ unique: true })
   userEmail: string;
 
   @Prop(
@@ -65,6 +74,13 @@ export class User {
     }),
   )
   timersStates: TimersStates;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }] })
+  categories: ObjectId[];
+  // categories: Category[];
+
+  @Prop({ default: true })
+  isUnCategorizedOnStat: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

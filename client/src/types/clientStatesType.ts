@@ -26,10 +26,38 @@ export type AutoStartSettingType = {
   doesBreakStartAutomatically: boolean;
 };
 
+export interface Category {
+  name: string;
+  color: string;
+  _id?: string;
+  isCurrent: boolean;
+  isOnStat: boolean;
+  _uuid?: string;
+}
+export interface Category_new_candidate_for_stat_showing_purpose {
+  _id?: string;
+  isCurrent: boolean;
+
+  // these three are the main (properties)
+  name: string;
+  color: string;
+  isOnStat?: boolean;
+}
+
+export type CategoryInfoTweakeFroStatPurpose = {
+  name: string;
+  color: string;
+  isOnStat: boolean; //<-----
+};
+
+export type NewCategory = Omit<Category, "_id">; // _id is not generated yet by the mongodb since it is a new one to be added later by server.
+
 export type RequiredStatesToRunTimerType = {
   pomoSetting: PomoSettingType;
   timersStates: TimersStatesType;
   autoStartSetting: AutoStartSettingType;
+  categories: Category[];
+  isUnCategorizedOnStat: boolean;
 };
 
 export type RecType = Omit<TimerStateType, "running"> & {

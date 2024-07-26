@@ -162,7 +162,7 @@ export default function TimelineUsingStyledComponent({
   }
   //#endregion
 
-  // 이거는 초기값인데, 씨발 그냥 아예 고정값처럼 Styled component에 주고
+  // 이거는 초기값인데, 그냥 아예 고정값처럼 Styled component에 주고
   // 나중에 style object이용해서 left값 다시 설정해주는 거는 아예 styled component에
   // 연결도 안해놓았으니까. 거기서 나오는 한계 아니냐?
   function getCSSLeftAndRight() {

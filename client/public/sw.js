@@ -13777,13 +13777,16 @@
   var RESOURCE = {
     USERS: "/users",
     POMODOROS: "/pomodoros",
-    TODAY_RECORDS: "/today-records"
+    TODAY_RECORDS: "/today-records",
+    CATEGORIES: "/categories"
   };
   var SUB_SET = {
     POMODORO_SETTING: "/pomodoro-setting",
     AUTO_START_SETTING: "/auto-start-setting",
     TIMERS_STATES: "/timers-states",
-    DEMO_DATA: "/demo-data"
+    DEMO_DATA: "/demo-data",
+    CATEGORIES: "/categories",
+    IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat"
   }; //#endregion
 
   var IDB_VERSION = 8;
@@ -13825,7 +13828,7 @@
     }
   };
 
-  var _excluded = ["pomoSetting"];
+  var _excluded = ["currentCategoryName", "pomoSetting"];
   var DB = null;
   var CACHE = null;
   var BC = new BroadcastChannel("pomodoro");
@@ -14126,7 +14129,7 @@
                   }, _callee8);
                 }));
 
-                return function (_x16) {
+                return function (_x18) {
                   return _ref9.apply(this, arguments);
                 };
               }();
@@ -14228,7 +14231,7 @@
                   }, _callee10);
                 }));
 
-                return function (_x17) {
+                return function (_x19) {
                   return _ref10.apply(this, arguments);
                 };
               }());
@@ -14321,13 +14324,13 @@
 
   function _goNext() {
     _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee13(payload) {
-      var pomoSetting, timersStates, duration, repetitionCount, pause, startTime, sessionData;
+      var currentCategoryName, pomoSetting, timersStates, duration, repetitionCount, pause, startTime, sessionData;
       return _regeneratorRuntime().wrap(function _callee13$(_context13) {
         while (1) {
           switch (_context13.prev = _context13.next) {
             case 0:
-              console.log("payload", payload);
-              pomoSetting = payload.pomoSetting, timersStates = _objectWithoutProperties(payload, _excluded);
+              currentCategoryName = payload.currentCategoryName, pomoSetting = payload.pomoSetting, timersStates = _objectWithoutProperties(payload, _excluded); // currentCategoryName: string | null
+
               console.log("pomoSetting", pomoSetting);
               console.log("timersStates", timersStates);
               duration = timersStates.duration, repetitionCount = timersStates.repetitionCount, pause = timersStates.pause, startTime = timersStates.startTime;
@@ -14344,10 +14347,11 @@
                 }),
                 timersStates: timersStates,
                 pomoSetting: pomoSetting,
-                sessionData: sessionData
+                sessionData: sessionData,
+                currentCategoryName: currentCategoryName
               });
 
-            case 7:
+            case 6:
             case "end":
               return _context13.stop();
           }
@@ -14364,12 +14368,13 @@
 
   function _wrapUpSession() {
     _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee14(_ref7) {
-      var session, timersStates, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset;
+      var session, timersStates, pomoSetting, sessionData, currentCategoryName, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, payload, _payload, _payload2;
+
       return _regeneratorRuntime().wrap(function _callee14$(_context14) {
         while (1) {
           switch (_context14.prev = _context14.next) {
             case 0:
-              session = _ref7.session, timersStates = _ref7.timersStates, pomoSetting = _ref7.pomoSetting, sessionData = _ref7.sessionData;
+              session = _ref7.session, timersStates = _ref7.timersStates, pomoSetting = _ref7.pomoSetting, sessionData = _ref7.sessionData, currentCategoryName = _ref7.currentCategoryName;
               timersStatesForNextSession = _objectSpread2({}, timersStates); // reset TimerState
 
               timersStatesForNextSession.running = false;
@@ -14414,7 +14419,7 @@
               });
               timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
               _context14.next = 18;
-              return recordPomo(timersStates.duration, timersStates.startTime);
+              return recordPomo(timersStates.duration, timersStates.startTime, currentCategoryName);
 
             case 18:
               _context14.next = 20;
@@ -14428,20 +14433,26 @@
 
             case 20:
               _context14.next = 22;
-              return persistSessionToIDB("pomo", sessionData);
+              return persistSessionToIDB("pomo", sessionData, currentCategoryName);
 
             case 22:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
                   updateTimersStates(timersStatesForNextSession);
                 } else {
+                  payload = currentCategoryName !== null ? {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime,
+                    currentCategoryName: currentCategoryName
+                  } : {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime
+                  };
                   BC.postMessage({
                     evName: "autoStartNextSession",
-                    payload: {
-                      timersStates: timersStatesForNextSession,
-                      pomoSetting: pomoSetting,
-                      endTime: sessionData.endTime
-                    }
+                    payload: payload
                   });
                 }
               } else {
@@ -14470,20 +14481,26 @@
 
             case 29:
               _context14.next = 31;
-              return persistSessionToIDB("break", sessionData);
+              return persistSessionToIDB("break", sessionData, currentCategoryName);
 
             case 31:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesPomoStartAutomatically === false) {
                   updateTimersStates(timersStatesForNextSession);
                 } else {
+                  _payload = currentCategoryName !== null ? {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime,
+                    currentCategoryName: currentCategoryName
+                  } : {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime
+                  };
                   BC.postMessage({
                     evName: "autoStartNextSession",
-                    payload: {
-                      timersStates: timersStatesForNextSession,
-                      pomoSetting: pomoSetting,
-                      endTime: sessionData.endTime
-                    }
+                    payload: _payload
                   });
                 }
               } else {
@@ -14502,7 +14519,7 @@
               });
               timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
               _context14.next = 38;
-              return recordPomo(timersStates.duration, timersStates.startTime);
+              return recordPomo(timersStates.duration, timersStates.startTime, currentCategoryName);
 
             case 38:
               _context14.next = 40;
@@ -14516,20 +14533,26 @@
 
             case 40:
               _context14.next = 42;
-              return persistSessionToIDB("pomo", sessionData);
+              return persistSessionToIDB("pomo", sessionData, currentCategoryName);
 
             case 42:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
                   updateTimersStates(timersStatesForNextSession);
                 } else {
+                  _payload2 = currentCategoryName !== null ? {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime,
+                    currentCategoryName: currentCategoryName
+                  } : {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime
+                  };
                   BC.postMessage({
                     evName: "autoStartNextSession",
-                    payload: {
-                      timersStates: timersStatesForNextSession,
-                      pomoSetting: pomoSetting,
-                      endTime: sessionData.endTime
-                    }
+                    payload: _payload2
                   });
                 }
               } else {
@@ -14559,7 +14582,7 @@
 
             case 50:
               _context14.next = 52;
-              return persistSessionToIDB("break", sessionData);
+              return persistSessionToIDB("break", sessionData, currentCategoryName);
 
             case 52:
               updateTimersStates(timersStatesForNextSession);
@@ -14584,6 +14607,13 @@
   function retrieveAutoStartSettingFromIDB() {
     return _retrieveAutoStartSettingFromIDB.apply(this, arguments);
   }
+  /**
+   *
+   * @param {*} kind "pomo" | "break"
+   * @param {*} sessionData {pause: {totalLength: number; record: {start: number; end: number | undefined;}[]}, startTime: number; endTime: number; timeCountedDown: number}
+   * @param {*} currentCategoryName string | null
+   */
+
 
   function _retrieveAutoStartSettingFromIDB() {
     _retrieveAutoStartSettingFromIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15() {
@@ -14634,12 +14664,12 @@
     return _retrieveAutoStartSettingFromIDB.apply(this, arguments);
   }
 
-  function persistSessionToIDB(_x9, _x10) {
+  function persistSessionToIDB(_x9, _x10, _x11) {
     return _persistSessionToIDB.apply(this, arguments);
   }
 
   function _persistSessionToIDB() {
-    _persistSessionToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee16(kind, data) {
+    _persistSessionToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee16(kind, sessionData, currentCategoryName) {
       var db, store;
       return _regeneratorRuntime().wrap(function _callee16$(_context16) {
         while (1) {
@@ -14662,45 +14692,41 @@
             case 6:
               db = _context16.t0;
               store = db.transaction("recOfToday", "readwrite").objectStore("recOfToday");
-              console.log("sessionData", _objectSpread2({
-                kind: kind
-              }, data));
-              _context16.next = 11;
+              _context16.next = 10;
               return store.add(_objectSpread2({
                 kind: kind
-              }, data));
+              }, sessionData));
 
-            case 11:
+            case 10:
               if (kind === "pomo") {
-                console.log("trying to add pomo", _objectSpread2({
-                  kind: kind
-                }, data));
                 BC.postMessage({
                   evName: "pomoAdded",
-                  payload: data
+                  payload: _objectSpread2(_objectSpread2({}, sessionData), {}, {
+                    currentCategoryName: currentCategoryName
+                  })
                 });
                 console.log("pubsub event from sw", pubsub.events);
               }
 
-              _context16.next = 17;
+              _context16.next = 16;
               break;
 
-            case 14:
-              _context16.prev = 14;
+            case 13:
+              _context16.prev = 13;
               _context16.t1 = _context16["catch"](0);
               console.warn(_context16.t1);
 
-            case 17:
+            case 16:
             case "end":
               return _context16.stop();
           }
         }
-      }, _callee16, null, [[0, 14]]);
+      }, _callee16, null, [[0, 13]]);
     }));
     return _persistSessionToIDB.apply(this, arguments);
   }
 
-  function persistStatesToIDB(_x11) {
+  function persistStatesToIDB(_x12) {
     return _persistStatesToIDB.apply(this, arguments);
   }
 
@@ -14745,7 +14771,7 @@
                   }, _callee17);
                 }));
 
-                return function (_x18) {
+                return function (_x20) {
                   return _ref11.apply(this, arguments);
                 };
               }());
@@ -14767,13 +14793,13 @@
     return _persistStatesToIDB.apply(this, arguments);
   }
 
-  function recordPomo(_x12, _x13) {
+  function recordPomo(_x13, _x14, _x15) {
     return _recordPomo.apply(this, arguments);
   }
 
   function _recordPomo() {
-    _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(duration, startTime) {
-      var body, idTokenAndEmail, idToken, email, today, LocaleDateString, record, cache, statResponse, statData, res;
+    _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(duration, startTime, currentCategoryName) {
+      var body, idTokenAndEmail, idToken, email, today, LocaleDateString, record, cache, statResponse, statData, dataToPush, res;
       return _regeneratorRuntime().wrap(function _callee19$(_context19) {
         while (1) {
           switch (_context19.prev = _context19.next) {
@@ -14787,14 +14813,19 @@
               idTokenAndEmail = _context19.sent;
 
               if (!idTokenAndEmail) {
-                _context19.next = 34;
+                _context19.next = 36;
                 break;
               }
 
               idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email;
               today = new Date(startTime);
               LocaleDateString = "".concat(today.getMonth() + 1, "/").concat(today.getDate(), "/").concat(today.getFullYear());
-              record = {
+              record = currentCategoryName !== null ? {
+                duration: duration,
+                startTime: startTime,
+                date: LocaleDateString,
+                currentCategoryName: currentCategoryName
+              } : {
                 duration: duration,
                 startTime: startTime,
                 date: LocaleDateString
@@ -14824,7 +14855,7 @@
               statResponse = _context19.sent;
 
               if (!(statResponse !== undefined)) {
-                _context19.next = 30;
+                _context19.next = 32;
                 break;
               }
 
@@ -14834,19 +14865,27 @@
             case 24:
               statData = _context19.sent;
               console.log("statData before push", statData);
-              statData.push({
+              dataToPush = {
                 userEmail: email,
                 duration: duration,
                 startTime: startTime,
                 date: LocaleDateString,
                 isDummy: false
-              });
+              };
+
+              if (currentCategoryName) {
+                dataToPush.category = {
+                  name: currentCategoryName
+                };
+              }
+
+              statData.push(dataToPush);
               console.log("statData after push", statData);
-              _context19.next = 30;
+              _context19.next = 32;
               return cache.put(BASE_URL + RESOURCE.POMODOROS, new Response(JSON.stringify(statData)));
 
-            case 30:
-              _context19.next = 32;
+            case 32:
+              _context19.next = 34;
               return fetch(BASE_URL + RESOURCE.POMODOROS, {
                 method: "POST",
                 body: body,
@@ -14856,16 +14895,16 @@
                 }
               });
 
-            case 32:
+            case 34:
               res = _context19.sent;
               console.log("res of recordPomo in sw: ", res);
 
-            case 34:
-              _context19.next = 39;
+            case 36:
+              _context19.next = 41;
               break;
 
-            case 36:
-              _context19.prev = 36;
+            case 38:
+              _context19.prev = 38;
               _context19.t1 = _context19["catch"](1);
 
               if (_context19.t1 instanceof TypeError && _context19.t1.message.toLowerCase() === "failed to fetch") {
@@ -14881,17 +14920,17 @@
                 console.warn(_context19.t1);
               }
 
-            case 39:
+            case 41:
             case "end":
               return _context19.stop();
           }
         }
-      }, _callee19, null, [[1, 36]]);
+      }, _callee19, null, [[1, 38]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
 
-  function updateTimersStates(_x14) {
+  function updateTimersStates(_x16) {
     return _updateTimersStates.apply(this, arguments);
   }
 
@@ -14999,7 +15038,7 @@
     return _updateTimersStates.apply(this, arguments);
   }
 
-  function persistRecOfTodayToServer(_x15) {
+  function persistRecOfTodayToServer(_x17) {
     return _persistRecOfTodayToServer.apply(this, arguments);
   }
 

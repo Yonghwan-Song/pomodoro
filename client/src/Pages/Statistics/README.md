@@ -13,13 +13,13 @@ interface originalData = {
   date: string;
   isDummy: boolean;
 }
-type DataArray = {
-  userEmail: string;
-  duration: number;
-  startTime: number;
-  date: string;
-  isDummy: boolean;
-}[];
+// type DataArray = {
+//   userEmail: string;
+//   duration: number;
+//   startTime: number;
+//   date: string;
+//   isDummy: boolean;
+// }[];
 ```
 
 ## Statistics function component

@@ -1,27 +1,71 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePomodoroDto } from './dto/create-pomodoro.dto';
 import { CreateDemoDataDto } from './dto/create-demo-data.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Pomodoro } from 'src/schemas/pomodoro.schema';
 import { Model } from 'mongoose';
+import { Category } from 'src/schemas/category.schema';
 
 @Injectable()
 export class PomodorosService {
   constructor(
     @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
   ) {}
 
-  addPomodoroRecord(createPomodoroDto: CreatePomodoroDto, userEmail: string) {
-    const newPomodoroRecord = new this.pomodoroModel({
-      userEmail,
-      ...createPomodoroDto,
-    });
-    return newPomodoroRecord.save();
+  async addPomodoroRecord(
+    createPomodoroDto: CreatePomodoroDto,
+    userEmail: string,
+  ) {
+    const { currentCategoryName, ...restDTO } = createPomodoroDto;
+
+    console.log(`currentCategoryName === ${currentCategoryName}`);
+
+    if (currentCategoryName) {
+      const currentCategory = await this.categoryModel
+        .findOne({
+          userEmail,
+          name: currentCategoryName,
+        })
+        .exec();
+
+      if (currentCategory) {
+        const newPomodoroRecord = new this.pomodoroModel({
+          userEmail,
+          ...restDTO,
+          category: currentCategory._id,
+        });
+        return await newPomodoroRecord.save();
+      } else {
+        throw new NotFoundException('Category not found');
+      }
+    } else {
+      // currentCategoryName could be undefined since it is an optional field in the CreatePomodoroDto class.
+      const newPomodoroRecord = new this.pomodoroModel({
+        userEmail,
+        ...restDTO,
+      });
+      return await newPomodoroRecord.save();
+    }
   }
 
-  getAllPomodoroRecordsByUserEmail(userEmail: string) {
-    console.log(`getAllPomodoroRecords - ${userEmail}`);
-    return this.pomodoroModel.find({ userEmail: userEmail }).exec();
+  async getAllPomodoroRecordsByUserEmail(userEmail: string) {
+    const categories = await this.categoryModel.find({ userEmail }).exec();
+
+    const cateInfoForStat = categories.reduce<
+      { name: string; color: string; isOnStat: boolean }[]
+    >((previousValue, currentValue) => {
+      const { name, color, isOnStat } = currentValue;
+      previousValue.push({ name, color, isOnStat });
+      return previousValue;
+    }, []);
+    const pomodoroDocs = await this.pomodoroModel
+      .find({ userEmail })
+      .populate('category')
+      .exec();
+
+    return pomodoroDocs;
+    return { pomodoroDocs, cateInfoForStat };
   }
 
   createDemoData(createDemoDataDto: CreateDemoDataDto, userEmail: string) {

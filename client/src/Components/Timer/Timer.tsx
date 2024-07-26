@@ -17,10 +17,11 @@ import { Grid } from "../Layouts/Grid";
 import { GridItem } from "../Layouts/GridItem";
 import { FlexBox } from "../Layouts/FlexBox";
 import { DB, openIndexedDB, postMsgToSW, updateTimersStates } from "../..";
-import CountDownTimer from "../CountDownTimer/CountDownTimer";
 import PauseTimer from "../PauseTimer/PauseTimer";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
+import Time from "../Time/Time";
+import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
 
 type TimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -630,12 +631,47 @@ export function Timer({
   }
   //#endregion
 
+  //#region from CountDownTimer
+  let durationRemaining =
+    remainingDuration < 0 ? (
+      <h2>ending session...</h2>
+    ) : (
+      <h2>
+        <Time seconds={remainingDuration} />
+      </h2>
+    );
+  let durationBeforeStart = (
+    <h2>
+      {!!(durationInSeconds / 60) === false ? (
+        "loading data..."
+      ) : (
+        <Time seconds={durationInSeconds} />
+      )}
+    </h2>
+  );
+  //#endregion
+
   return (
-    <Grid rowGap={"15px"} justifyItems={"center"} marginBottom="10px">
+    <Grid
+      column={2}
+      alignItems={"center"}
+      // rowGap={"15px"}
+    >
       <GridItem>
-        <CountDownTimer
-          repetitionCount={repetitionCount}
-          startTime={timerState.startTime}
+        <FlexBox justifyContent="space-evenly">
+          <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
+          {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
+        </FlexBox>
+      </GridItem>
+      <GridItem rowStart={1} rowEnd={5} columnStart={2}>
+        <CircularProgressBar
+          progress={
+            durationInSeconds === 0
+              ? 0
+              : remainingDuration < 0
+              ? 1
+              : 1 - remainingDuration / durationInSeconds
+          }
           durationInSeconds={durationInSeconds}
           remainingDuration={remainingDuration}
           setRemainingDuration={setRemainingDuration}
@@ -655,7 +691,7 @@ export function Timer({
         />
       </GridItem>
       <GridItem>
-        <FlexBox>
+        <FlexBox justifyContent="space-evenly">
           <Button
             type={"submit"}
             color={"primary"}
@@ -677,6 +713,17 @@ export function Timer({
             End
           </Button>
         </FlexBox>
+      </GridItem>
+      <GridItem>
+        <h3 style={{ textAlign: "center" }}>
+          Remaining Pomo Sessions -{" "}
+          {numOfPomo -
+            (repetitionCount === 0
+              ? 0
+              : repetitionCount % 2 === 0
+              ? repetitionCount / 2
+              : (repetitionCount + 1) / 2)}
+        </h3>
       </GridItem>
     </Grid>
   );

@@ -235,8 +235,7 @@ async function emptyStateStore(clientId) {
  * @param {*} payload timersStates and pomoSetting of the session that was just finished.
  */
 async function goNext(payload) {
-  console.log("payload", payload);
-  let { pomoSetting, ...timersStates } = payload;
+  let { currentCategoryName, pomoSetting, ...timersStates } = payload; // currentCategoryName: string | null
   console.log("pomoSetting", pomoSetting);
   console.log("timersStates", timersStates);
   let { duration, repetitionCount, pause, startTime } = timersStates;
@@ -256,6 +255,7 @@ async function goNext(payload) {
     timersStates,
     pomoSetting,
     sessionData,
+    currentCategoryName,
   });
 }
 
@@ -265,6 +265,7 @@ async function wrapUpSession({
   timersStates,
   pomoSetting,
   sessionData,
+  currentCategoryName,
 }) {
   let timersStatesForNextSession = { ...timersStates };
   // reset TimerState
@@ -302,7 +303,11 @@ async function wrapUpSession({
 
       timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
 
-      await recordPomo(timersStates.duration, timersStates.startTime);
+      await recordPomo(
+        timersStates.duration,
+        timersStates.startTime,
+        currentCategoryName
+      );
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -316,19 +321,28 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("pomo", sessionData);
+      await persistSessionToIDB("pomo", sessionData, currentCategoryName);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
           updateTimersStates(timersStatesForNextSession);
         } else {
+          const payload =
+            currentCategoryName !== null
+              ? {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  endTime: sessionData.endTime,
+                  currentCategoryName,
+                }
+              : {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  endTime: sessionData.endTime,
+                };
           BC.postMessage({
             evName: "autoStartNextSession",
-            payload: {
-              timersStates: timersStatesForNextSession,
-              pomoSetting: pomoSetting,
-              endTime: sessionData.endTime,
-            },
+            payload,
           });
         }
       } else {
@@ -359,19 +373,28 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("break", sessionData);
+      await persistSessionToIDB("break", sessionData, currentCategoryName);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesPomoStartAutomatically === false) {
           updateTimersStates(timersStatesForNextSession);
         } else {
+          const payload =
+            currentCategoryName !== null
+              ? {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  endTime: sessionData.endTime,
+                  currentCategoryName,
+                }
+              : {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  endTime: sessionData.endTime,
+                };
           BC.postMessage({
             evName: "autoStartNextSession",
-            payload: {
-              timersStates: timersStatesForNextSession,
-              pomoSetting: pomoSetting,
-              endTime: sessionData.endTime,
-            },
+            payload,
           });
         }
       } else {
@@ -390,7 +413,11 @@ async function wrapUpSession({
 
       timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
 
-      await recordPomo(timersStates.duration, timersStates.startTime);
+      await recordPomo(
+        timersStates.duration,
+        timersStates.startTime,
+        currentCategoryName
+      );
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -404,19 +431,28 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("pomo", sessionData);
+      await persistSessionToIDB("pomo", sessionData, currentCategoryName);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
           updateTimersStates(timersStatesForNextSession);
         } else {
+          const payload =
+            currentCategoryName !== null
+              ? {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  endTime: sessionData.endTime,
+                  currentCategoryName,
+                }
+              : {
+                  timersStates: timersStatesForNextSession,
+                  pomoSetting: pomoSetting,
+                  endTime: sessionData.endTime,
+                };
           BC.postMessage({
             evName: "autoStartNextSession",
-            payload: {
-              timersStates: timersStatesForNextSession,
-              pomoSetting: pomoSetting,
-              endTime: sessionData.endTime,
-            },
+            payload,
           });
         }
       } else {
@@ -448,7 +484,7 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("break", sessionData);
+      await persistSessionToIDB("break", sessionData, currentCategoryName);
 
       updateTimersStates(timersStatesForNextSession);
 
@@ -477,18 +513,25 @@ async function retrieveAutoStartSettingFromIDB() {
   }
 }
 
-async function persistSessionToIDB(kind, data) {
+/**
+ *
+ * @param {*} kind "pomo" | "break"
+ * @param {*} sessionData {pause: {totalLength: number; record: {start: number; end: number | undefined;}[]}, startTime: number; endTime: number; timeCountedDown: number}
+ * @param {*} currentCategoryName string | null
+ */
+async function persistSessionToIDB(kind, sessionData, currentCategoryName) {
   try {
     let db = DB || (await openIndexedDB());
     const store = db
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
 
-    console.log("sessionData", { kind, ...data });
-    await store.add({ kind, ...data });
+    await store.add({ kind, ...sessionData });
     if (kind === "pomo") {
-      console.log("trying to add pomo", { kind, ...data });
-      BC.postMessage({ evName: "pomoAdded", payload: data });
+      BC.postMessage({
+        evName: "pomoAdded",
+        payload: { ...sessionData, currentCategoryName },
+      });
       console.log("pubsub event from sw", pubsub.events);
     }
   } catch (error) {
@@ -511,7 +554,7 @@ async function persistStatesToIDB(stateArr) {
   }
 }
 
-async function recordPomo(duration, startTime) {
+async function recordPomo(duration, startTime, currentCategoryName) {
   let body = null;
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
@@ -521,11 +564,19 @@ async function recordPomo(duration, startTime) {
       let LocaleDateString = `${
         today.getMonth() + 1
       }/${today.getDate()}/${today.getFullYear()}`;
-      const record = {
-        duration,
-        startTime,
-        date: LocaleDateString,
-      };
+      const record =
+        currentCategoryName !== null
+          ? {
+              duration,
+              startTime,
+              date: LocaleDateString,
+              currentCategoryName,
+            }
+          : {
+              duration,
+              startTime,
+              date: LocaleDateString,
+            };
       body = JSON.stringify(record);
 
       // update
@@ -535,13 +586,18 @@ async function recordPomo(duration, startTime) {
       if (statResponse !== undefined) {
         let statData = await statResponse.json();
         console.log("statData before push", statData);
-        statData.push({
+
+        const dataToPush = {
           userEmail: email,
           duration,
           startTime,
           date: LocaleDateString,
           isDummy: false,
-        });
+        };
+        if (currentCategoryName) {
+          dataToPush.category = { name: currentCategoryName };
+        }
+        statData.push(dataToPush);
         console.log("statData after push", statData);
 
         await cache.put(

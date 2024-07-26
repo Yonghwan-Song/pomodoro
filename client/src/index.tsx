@@ -139,12 +139,13 @@ BC.addEventListener("message", async (ev) => {
   } else if (evName === "makeSound") {
     makeSound();
   } else if (evName === "autoStartNextSession") {
-    let { timersStates, pomoSetting, endTime } = payload;
+    let { timersStates, pomoSetting, endTime, currentCategoryName } = payload;
 
     autoStartNextSession({
       timersStates,
       pomoSetting,
       endTimeOfPrevSession: endTime,
+      currentCategoryName,
     });
   } else if (evName === "fetchCallFailed_Network_Error") {
     // console.log("A Payload of FetchCallFailed_Network_Error");
@@ -182,6 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
   if (localStorage.getItem("user") === "authenticated") {
+    sessionStorage.removeItem("currentCategoryName");
     await deleteCache(CacheName);
     await clearStateStoreAndRecOfToday();
   }
@@ -256,11 +258,9 @@ export async function updateTimersStates(
       );
     }
 
-    const res = await axiosInstance.patch(
-      RESOURCE.USERS + SUB_SET.TIMERS_STATES,
-      { ...states }
-    );
-    console.log("res.data in updateTimersStates ===>", res.data);
+    await axiosInstance.patch(RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
+      ...states,
+    });
   } catch (err) {
     console.warn(err);
   }
@@ -344,8 +344,6 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
       } else if ("timerHasEnded" in data) {
         localStorage.removeItem("idOfSetInterval");
       } else {
-        console.log(`TimerRelatedStates are received`);
-        console.log(data);
         TimerRelatedStates = data;
       }
     });
@@ -420,6 +418,19 @@ export async function deleteCache(name: string) {
     } else {
       console.warn(`deleting  the cache ${name} has failed`);
     }
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function delete_entry_of_cache(
+  cacheName: string,
+  entryName: string
+) {
+  try {
+    const cache = await caches.open(cacheName);
+    const result = await cache.delete(entryName);
+    console.log(`delete cache entry result - ${result}`);
   } catch (error) {
     console.warn(error);
   }
@@ -519,7 +530,7 @@ export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
     .transaction("recOfToday", "readonly")
     .objectStore("recOfToday");
   const allSessions = await store.getAll();
-  console.log("allSessions", allSessions);
+  // console.log("allSessions", allSessions);
   return allSessions;
 }
 
@@ -534,7 +545,7 @@ export async function persistFailedReqInfoToIDB(
 
     await store.put(data);
 
-    console.log(data);
+    // console.log(data);
   } catch (error) {
     console.warn(error);
   }
@@ -555,7 +566,7 @@ export async function persistSingleTodaySessionToIDB({
     .transaction("recOfToday", "readwrite")
     .objectStore("recOfToday");
 
-  console.log("sessionData", { kind, ...data });
+  // console.log("sessionData", { kind, ...data });
   try {
     if (data.startTime !== 0) {
       // if it is 0, it means user just clicks end button without having not started the session.
@@ -634,7 +645,7 @@ export async function emptyFailedReqInfo(userEmail: string) {
     const store = db
       .transaction("failedReqInfo", "readwrite")
       .objectStore("failedReqInfo");
-    console.log(`about to delete ${userEmail}`);
+    // console.log(`about to delete ${userEmail}`);
     await store.delete(userEmail);
   } catch (error) {
     console.warn(error);
@@ -720,7 +731,11 @@ export async function countDown(setIntervalId: number | string | null) {
           console.log(
             "-------------------------------------About To Call EndTimer()-------------------------------------"
           );
-          postMsgToSW("endTimer", { pomoSetting, ...timersStates });
+          postMsgToSW("endTimer", {
+            currentCategoryName: sessionStorage.getItem("currentCategoryName"),
+            pomoSetting,
+            ...timersStates,
+          });
         }
       }, 500);
 
@@ -765,19 +780,18 @@ export async function makeSound() {
 // 이거를
 // 1. persist locally
 // 2. persist remotely
-// async function autoStartNextSession(
-//   timersStates: TimerStateType & PatternTimerStatesType
-
-// )
 async function autoStartNextSession({
   timersStates,
   pomoSetting,
   endTimeOfPrevSession,
+  currentCategoryName,
 }: {
   timersStates: TimerStateType & PatternTimerStatesType;
   pomoSetting: PomoSettingType;
   endTimeOfPrevSession: number;
+  currentCategoryName: string | undefined | null;
 }) {
+  if (currentCategoryName === undefined) currentCategoryName = null;
   console.log("moment when autoStartNextSession starts", new Date());
   timersStates.startTime = endTimeOfPrevSession;
   timersStates.running = true;
@@ -838,7 +852,20 @@ async function autoStartNextSession({
       console.log(
         "-------------------------------------About To Call EndTimer()-------------------------------------"
       );
-      postMsgToSW("endTimer", { pomoSetting, ...timersStates });
+
+      postMsgToSW("endTimer", {
+        // currentCategoryName,
+        //* 그러니까 만약에 한 세션이 `/timer`이외의 다른 페이지에서 "자동시작"되었다고 가정하자.
+        //* 이때, 그 current session의 category에 대한 변동을 위의 `currentCategoryName`은 반영할 수 없다.
+        //* 왜냐하면, 딱 이 세션이 시작했을 때라는 과거의 데이터이기 때문.
+        //* category를 지우거나 이름을 변경할 때 만약에 그게 current session의 category이면, 즉각 session storage에 반영하고 있다.
+        //* 그러면 endTimer는 항상 거기에서 직접 가져와서 써야 하는 것임.
+        currentCategoryName: sessionStorage.getItem("currentCategoryName"),
+        //? 만약에 user가 currentCategory를 지우는 버튼을 클릭하는 시각이 이 object argument를 만들기 시작하는 시각과 같거나 그 언저리면 어떻게 되는거야?
+        // 눌러서 remove item하기 전에 sessionStorage에서 null값이 아닌 유의미한 값을 가져왔으면... 걍 네가 더 빨리 remove 버튼을 눌렀어야하는거임... 걍 신경 끄면 될 듯...:::
+        pomoSetting,
+        ...timersStates,
+      });
     }
   }, 500);
 

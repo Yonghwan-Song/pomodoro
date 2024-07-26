@@ -8,6 +8,7 @@ type GridItemProps = {
   columnEnd?: number;
   rowStart?: number;
   rowEnd?: number;
+  width?: string;
   minWidth?: number;
   minHeight?: number;
 };

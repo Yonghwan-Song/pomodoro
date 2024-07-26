@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import * as C from "../../constants/index";
 import styles from "./circularProgressBar.module.css";
 import { persistStatesToIDB, updateTimersStates } from "../..";
 import { useAuthContext } from "../../Context/AuthContext";
+import { useUserContext } from "../../Context/UserContext";
+import { Category } from "../../types/clientStatesType";
 
 type CircularProgressBarProps = {
   progress: number;
@@ -21,6 +23,19 @@ const CircularProgressBar = ({
 }: CircularProgressBarProps) => {
   const { user } = useAuthContext()!;
   const circleRef = useRef<SVGCircleElement>(null);
+  const userInfoContext = useUserContext()!;
+  const currentCategory: Category | null = useMemo(() => {
+    if (
+      userInfoContext.pomoInfo !== null &&
+      userInfoContext.pomoInfo.categories !== undefined
+    ) {
+      return (
+        userInfoContext.pomoInfo.categories.find((c) => c.isCurrent) ?? null
+      );
+    } else {
+      return null;
+    }
+  }, [userInfoContext.pomoInfo?.categories]);
 
   async function addFiveMinutes() {
     await persistStatesToIDB({
@@ -50,16 +65,8 @@ const CircularProgressBar = ({
     }
   }
 
-  useEffect(() => {
-    console.log(`user is ${user}`);
-  });
-
   //? 사실 이거 왜 여기다가 해야하는지 설명 못하겠어.
   useEffect(() => {
-    // console.log(
-    //   `BAR IS RENDERED --------------------> progress is ${progress}`
-    // );
-
     // https://stackoverflow.com/questions/64243292/ts-2540-cannot-assign-to-style-because-it-is-a-read-only-property
     // circleRef.current!.style = "transition: stroke-dashoffset 0ms linear";
     circleRef.current!.setAttribute(
@@ -87,7 +94,7 @@ const CircularProgressBar = ({
         r={C.RADIUS}
         cx={C.MIDDLE_X}
         cy={C.MIDDLE_Y}
-        stroke={C.FOREGROUND_COLOR}
+        stroke={!!currentCategory ? currentCategory.color : C.FOREGROUND_COLOR}
         strokeWidth={C.STROKE_WIDTH}
         strokeDasharray={C.CIRCUMFERENCE}
         // when we click the start/pause button, we need to pass the progress untill then.
@@ -158,7 +165,7 @@ const CircularProgressBar = ({
             x2="30"
             y2="20"
             stroke="black"
-            stroke-width="2"
+            strokeWidth="2"
           />
         </g>
       </svg>

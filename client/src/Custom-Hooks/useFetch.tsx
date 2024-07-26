@@ -60,9 +60,9 @@ export function useFetch<T, S = undefined>({
     async function getData() {
       let resData = await caches.match(BASE_URL + urlSegment);
       if (resData) {
-        console.log(
-          "------------------------------- useFetch with cached response -------------------------------"
-        );
+        // console.log(
+        //   "------------------------------- from Cache -------------------------------"
+        // );
         let data =
           modifier !== undefined
             ? modifier((await resData.json()) as T)
@@ -76,9 +76,9 @@ export function useFetch<T, S = undefined>({
           });
         }
       } else {
-        console.log(
-          "------------------------------- useFetch with HTTP response -------------------------------"
-        );
+        // console.log(
+        //   "------------------------------- useFetch with HTTP response -------------------------------"
+        // );
         let res = await fetchDataFromServer();
 
         if (res !== undefined) {
@@ -97,7 +97,7 @@ export function useFetch<T, S = undefined>({
         let data =
           modifier !== undefined ? modifier(response.data as T) : response.data;
 
-        console.log("data from remote server", data);
+        // console.log("data from remote server", data);
         setData(data);
         if (callbacks !== undefined) {
           callbacks.forEach((fn) => {

@@ -29,12 +29,15 @@ export const RESOURCE = {
   USERS: "/users",
   POMODOROS: "/pomodoros",
   TODAY_RECORDS: "/today-records",
+  CATEGORIES: "/categories",
 };
 export const SUB_SET = {
   POMODORO_SETTING: "/pomodoro-setting",
   AUTO_START_SETTING: "/auto-start-setting",
   TIMERS_STATES: "/timers-states",
   DEMO_DATA: "/demo-data",
+  CATEGORIES: "/categories",
+  IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
 };
 
 //#endregion

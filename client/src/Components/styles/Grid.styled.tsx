@@ -3,8 +3,13 @@ import { BREAK_POINTS } from "../../constants";
 
 type GridType = {
   maxWidth?: string;
+  minWidth?: string;
   justifyItems?: string;
+  justifyContent?: string;
+  alignContent?: string;
   alignItems?: string;
+  placeItems?: string;
+  placeContent?: string;
   column?: number;
   row?: number;
   autoColumn?: number;
@@ -21,8 +26,43 @@ type GridType = {
 export const StyledGrid = styled.div<GridType>`
   max-width: ${({ maxWidth }) => maxWidth || "960px"};
 
-  justify-items: ${({ justifyItems }) => justifyItems};
-  align-items: ${({ alignItems }) => alignItems};
+  ${({ minWidth }) =>
+    minWidth &&
+    css`
+      min-width: ${minWidth};
+    `}
+  ${({ justifyItems }) =>
+    justifyItems &&
+    css`
+      justify-items: ${justifyItems};
+    `}
+  ${({ alignItems }) =>
+    alignItems &&
+    css`
+      align-items: ${alignItems};
+    `}
+  ${({ justifyContent }) =>
+    justifyContent &&
+    css`
+      justify-content: ${justifyContent};
+    `}
+  ${({ alignContent }) =>
+    alignContent &&
+    css`
+      align-content: ${alignContent};
+    `}
+
+  ${({ placeItems }) =>
+    placeItems &&
+    css`
+      place-items: ${placeItems};
+    `}
+  ${({ placeContent }) =>
+    placeContent &&
+    css`
+      place-content: ${placeContent};
+    `}
+
   margin: auto;
   padding: ${({ padding }) => padding || "10px"};
   display: grid;

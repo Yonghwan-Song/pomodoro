@@ -20,8 +20,11 @@ export function Overview(props: OverviewProps) {
   } = props;
 
   return (
-    <BoxShadowWrapper fontSize={"1em"}>
-      <FlexBox>
+    <BoxShadowWrapper
+      fontSize={"1em"}
+      // inset={true}
+    >
+      <FlexBox justifyContent="space-around">
         <TotalComparison thisTotal={today} lastTotal={lastDay} target="day" />
 
         <TotalComparison

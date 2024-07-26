@@ -44,7 +44,7 @@ export function TotalComparison({ thisTotal, lastTotal, target }: TotalProps) {
       <h3 style={styles.opt1}>
         {Math.floor(thisTotal / 60)}h {thisTotal % 60}m
       </h3>
-      <p style={styles.opt2}>{"="}</p>
+      {/* <p style={styles.opt2}>{"="}</p> */}
       last {target} <span style={styles.opt3}>{sign} </span>
       <span style={styles.opt4}>{ABSOLUTE_DIFF}</span>
     </div>

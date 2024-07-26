@@ -1,4 +1,3 @@
-import React, { useEffect } from "react";
 import { useRef } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
@@ -42,6 +41,7 @@ function Navbar() {
       pubsub.publish("prepareTimerRelatedDBForUnloggedInUser", 1); //어차피 recOfToday도 이 시점에서는 clear되었기 때문에 따로 event를 만들어서 publish하지 않겠다.
       await deleteCache(CONSTANTS.CacheName);
       localStorage.setItem("user", "unAuthenticated");
+      sessionStorage.removeItem("currentCategoryName");
       deciderOfWhetherDataForRunningTimerFetched[0] = false;
       deciderOfWhetherDataForRunningTimerFetched[1] = false;
       await logOut();

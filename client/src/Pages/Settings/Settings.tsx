@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
@@ -35,6 +35,7 @@ import {
 } from "../..";
 import ToggleSwitch from "../../Components/ToggleSwitch/ToggleSwitch";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
+import Categories from "../../Components/Categories/Categories";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -44,7 +45,8 @@ function Settings() {
   // to prevent infinite loop after clearing history from a browser including cache.
   const pomoSetting = useMemo(
     () =>
-      userInfoContext.pomoInfo !== null
+      userInfoContext.pomoInfo !== null &&
+      userInfoContext.pomoInfo.pomoSetting !== undefined //TODO: Category에서 error났던거 때문에 이렇게 하긴 했는데 괜찮은건지 모르겠네..
         ? userInfoContext.pomoInfo.pomoSetting
         : ({} as PomoSettingType),
     [userInfoContext.pomoInfo]
@@ -77,15 +79,13 @@ function Settings() {
     );
 
   //#region To Observe LifeCycle
-  const mountCount = useRef(0);
-  const updateCount = useRef(0);
+  // const mountCount = useRef(0);
+  // const updateCount = useRef(0);
   //#endregion
 
   //#region Event Handlers
   //TODO: 결국 여기에서 case "userOptionForAutoStart" 해서 한번에 보내는 형식으로 하면 걍 되기는 될 듯.
-  function handlePomoSettingChange(event: {
-    target: { value: string | number; name: any };
-  }) {
+  function handlePomoSettingChange(event: React.ChangeEvent<HTMLInputElement>) {
     let targetValue = +event.target.value;
     if (targetValue >= 0) {
       switch (event.target.name) {
@@ -119,7 +119,7 @@ function Settings() {
     }
   }
 
-  function handleSubmit(event: { preventDefault: () => void }) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     // postMsgToSW("emptyStateStore", {}); // 여기서 그냥 다른식으로 해보겠음.//! Original
@@ -173,7 +173,7 @@ function Settings() {
   }
   //#endregion
 
-  //#region UseEffects
+  //#region Side Effects
 
   useEffect(() => {
     if (user !== null && Object.entries(user).length !== 0) {
@@ -187,6 +187,7 @@ function Settings() {
     console.log("POMO SETTING INPUTS", pomoSettingInputs);
   }, [user, pomoSetting, pomoSettingInputs]);
 
+  // To set pomoSettingInputs to default when a user logs out.
   useEffect(() => {
     setPomoSettingInputs(pomoSetting);
   }, [pomoSetting]);
@@ -319,7 +320,7 @@ function Settings() {
           {user !== null && (
             <>
               <GridItem>
-                <FlexBox>
+                <FlexBox justifyContent="space-between">
                   <Button
                     color={"primary"}
                     handleClick={() => createDemoData(user!)}
@@ -329,21 +330,25 @@ function Settings() {
                   <Button handleClick={() => removeDemoData(user!)}>
                     Remove Demo data
                   </Button>
+                  <Button
+                    handleClick={async () => {
+                      const provider = new GoogleAuthProvider();
+                      let result = await reauthenticateWithPopup(
+                        user!,
+                        provider
+                      );
+                      await emptyStateStore();
+                      localStorage.removeItem("user");
+                      deleteAccount(result.user);
+                    }}
+                  >
+                    Delete account
+                  </Button>
                 </FlexBox>
               </GridItem>
               <GridItem>
-                <Button
-                  handleClick={async () => {
-                    const provider = new GoogleAuthProvider();
-                    let result = await reauthenticateWithPopup(user!, provider);
-                    await emptyStateStore();
-                    localStorage.removeItem("user");
-                    deleteAccount(result.user);
-                  }}
-                >
-                  Delete account
-                </Button>
-              </GridItem>{" "}
+                <Categories />
+              </GridItem>
             </>
           )}
         </Grid>

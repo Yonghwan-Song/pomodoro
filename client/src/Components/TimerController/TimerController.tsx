@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Timer } from "../Timer/Timer";
 import { AxiosError } from "axios";
 import { CacheName, RESOURCE, BASE_URL } from "../../constants/index";
@@ -12,12 +12,14 @@ import {
   makeSound,
 } from "../..";
 import {
+  Category,
   RecType,
   TimerStateType,
   TimersStatesType,
 } from "../../types/clientStatesType";
-import { Grid } from "../Layouts/Grid";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
+import { useUserContext } from "../../Context/UserContext";
+import { PomodoroSessionDocument } from "../../Pages/Statistics/statRelatedTypes";
 
 type PatternTimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -56,16 +58,31 @@ export function TimerController({
   const { user } = useAuthContext()!;
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
 
-  function checkRendering() {
-    console.log("user", user === null ? null : "non-null");
-    console.log("isOnCycle", isOnCycle);
-    console.log("PatternTimer");
-    console.log("duration", durationInMinutes);
-    console.log("repetitionCount", repetitionCount);
-    console.log(
-      "------------------------------------------------------------------"
-    );
-  }
+  const userInfoContext = useUserContext()!;
+  const currentCategory: Category | null = useMemo(() => {
+    if (
+      userInfoContext.pomoInfo !== null &&
+      userInfoContext.pomoInfo.categories !== undefined
+    ) {
+      return (
+        userInfoContext.pomoInfo.categories.find((c) => c.isCurrent) ?? null
+      );
+    } else {
+      return null;
+    }
+  }, [userInfoContext.pomoInfo?.categories]);
+
+  // function checkRendering() {
+  //   // console.log("user", user === null ? null : "non-null");
+  //   // console.log("isOnCycle", isOnCycle);
+  //   // console.log("PatternTimer");
+  //   // console.log("duration", durationInMinutes);
+  //   // console.log("repetitionCount", repetitionCount);
+  //   // console.log(
+  //   //   "------------------------------------------------------------------"
+  //   // );
+  //   console.log(`currentCategory is ${JSON.stringify(currentCategory)}`);
+  // }
   // useEffect(checkRendering);
 
   /**
@@ -172,7 +189,8 @@ export function TimerController({
           recordPomo(
             user,
             Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
-            state.startTime
+            state.startTime,
+            currentCategory
           ); // Non null assertion is correct because a user is already signed in at this point.
         } else {
           // console.log("user is not ready", user);
@@ -216,7 +234,8 @@ export function TimerController({
           recordPomo(
             user,
             Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
-            state.startTime
+            state.startTime,
+            currentCategory
           );
         } else {
           // console.log("user is not ready", user);
@@ -262,40 +281,29 @@ export function TimerController({
   }
   //#endregion
 
-  useEffect(() => {
-    console.log("Pattern Timer was mounted");
-    return () => {
-      console.log("Pattern Timer was unmounted");
-    };
-  }, []);
+  // useEffect(() => {
+  //   console.log("Pattern Timer was mounted");
+  //   return () => {
+  //     console.log("Pattern Timer was unmounted");
+  //   };
+  // }, []);
 
   return (
-    <Grid rowGap={"15px"}>
-      <Timer
-        //min to seconds
-        statesRelatedToTimer={statesRelatedToTimer}
-        durationInSeconds={durationInMinutes * 60}
-        setDurationInMinutes={setDurationInMinutes}
-        repetitionCount={repetitionCount}
-        setRepetitionCount={setRepetitionCount}
-        next={next}
-        isOnCycle={isOnCycle}
-        setIsOnCycle={setIsOnCycle}
-        pomoDuration={pomoDuration}
-        shortBreakDuration={shortBreakDuration}
-        longBreakDuration={longBreakDuration}
-        numOfPomo={numOfPomo}
-      />
-      <h3 style={{ textAlign: "center" }}>
-        Remaining Pomo Sessions -{" "}
-        {numOfPomo -
-          (repetitionCount === 0
-            ? 0
-            : repetitionCount % 2 === 0
-            ? repetitionCount / 2
-            : (repetitionCount + 1) / 2)}
-      </h3>
-    </Grid>
+    <Timer
+      //min to seconds
+      statesRelatedToTimer={statesRelatedToTimer}
+      durationInSeconds={durationInMinutes * 60}
+      setDurationInMinutes={setDurationInMinutes}
+      repetitionCount={repetitionCount}
+      setRepetitionCount={setRepetitionCount}
+      next={next}
+      isOnCycle={isOnCycle}
+      setIsOnCycle={setIsOnCycle}
+      pomoDuration={pomoDuration}
+      shortBreakDuration={shortBreakDuration}
+      longBreakDuration={longBreakDuration}
+      numOfPomo={numOfPomo}
+    />
   );
 }
 
@@ -330,7 +338,8 @@ async function persistRecOfTodayToServer(user: User, record: RecType) {
 async function recordPomo(
   user: User,
   durationInMinutes: number,
-  startTime: number
+  startTime: number,
+  currentCategory: Category | null
 ) {
   try {
     const today = new Date(startTime);
@@ -343,25 +352,39 @@ async function recordPomo(
     let statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
     if (statResponse !== undefined) {
       let statData = await statResponse.json();
-      statData.push({
-        userEmail: user.email,
+      const dataToPush: PomodoroSessionDocument = {
+        userEmail: user.email!, //TODO  <---- 걍 non null assertion 갈겼음
         duration: durationInMinutes,
         startTime,
         date: LocaleDateString,
         isDummy: false,
-      });
+      };
+      if (currentCategory !== null) {
+        dataToPush.category = { name: currentCategory.name };
+      }
+
+      statData.push(dataToPush);
       await cache.put(
         BASE_URL + RESOURCE.POMODOROS,
         new Response(JSON.stringify(statData))
       );
     }
 
-    const response = await axiosInstance.post(RESOURCE.POMODOROS, {
-      duration: durationInMinutes,
-      startTime,
-      date: LocaleDateString,
-    });
-    console.log("res obj of recordPomo", response);
+    const data =
+      currentCategory !== null
+        ? {
+            duration: durationInMinutes,
+            startTime,
+            date: LocaleDateString,
+            currentCategoryName: currentCategory.name,
+          }
+        : {
+            duration: durationInMinutes,
+            startTime,
+            date: LocaleDateString,
+          };
+
+    axiosInstance.post(RESOURCE.POMODOROS, data);
   } catch (err) {
     if (
       // ignore the code below for now

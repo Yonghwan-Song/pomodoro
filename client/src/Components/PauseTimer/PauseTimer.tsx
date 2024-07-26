@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { PauseType } from "../reducers";
 import Time from "../Time/Time";
+import { FlexBox } from "../Layouts/FlexBox";
 
 type PauseTimerProps = {
   isPaused: boolean;
@@ -47,13 +48,13 @@ export default function PauseTimer({
   }, [isOnSession]);
 
   return (
-    <>
+    <FlexBox alignItems="center" justifyContent="space-evenly">
       <h2>
         <Time seconds={Math.floor(pauseData.totalLength / 1000)} />
       </h2>
       <h3 style={{ textAlign: "center" }}>
         <Time seconds={count} />
       </h3>
-    </>
+    </FlexBox>
   );
 }

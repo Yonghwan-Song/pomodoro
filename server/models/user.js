@@ -14,8 +14,6 @@ const userSchema = new Schema(
       longBreakDuration: { type: Number, default: 15 },
       numOfPomo: { type: Number, default: 4 },
     },
-    //TODO: 여기서 이거 이지랄 하면 mongodb는 바뀔텐데, 그러면 api에 약간 이상 생겨서 main 앱 맛 가는거 아니야?
-    // 응 좆까, 나말고 아무도 안써.
     autoStartSetting: {
       doesPomoStartAutomatically: { type: Boolean, default: false },
       doesBreakStartAutomatically: { type: Boolean, default: false },

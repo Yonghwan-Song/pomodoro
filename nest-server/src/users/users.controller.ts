@@ -14,6 +14,7 @@ import { UpdatePomoSettingDto } from './dto/update-pomo-setting.dto';
 import { UpdateAutoStartSettingDto } from './dto/update-auto-start-setting.dto';
 import { UpdateTimersStatesDto } from './dto/update-timers-states.dto';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
+import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
 
 @Controller('users')
 export class UsersController {
@@ -66,6 +67,18 @@ export class UsersController {
   ) {
     return await this.usersService.updateTimersStates(
       updateTimersStatesDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('is-uncategorized-on-stat')
+  async updateIsUnCategorizedOnStat(
+    @Body(new ValidationPipe())
+    updateIsUnCategorizedOnStatDto: UpdateIsUnCategorizedOnStatDto,
+    @Req() request: CustomRequest,
+  ) {
+    return await this.usersService.updateIsUnCategorizedOnStat(
+      updateIsUnCategorizedOnStatDto,
       request.userEmail,
     );
   }

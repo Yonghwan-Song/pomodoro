@@ -7,13 +7,18 @@ type GridItemType = {
   columnEnd?: number;
   rowStart?: number;
   rowEnd?: number;
+  width?: string;
   minWidth?: number;
   minHeight?: number;
 };
 
 export const StyledGridItem = styled.div<GridItemType>`
-  /* align-self: center;
-  justify-self: center; */
+  ${({ width }) =>
+    width &&
+    css`
+      width: ${width};
+    `}
+
   min-width: ${({ minWidth }) => {
     if (minWidth !== undefined) {
       if (minWidth >= 0) {

@@ -57,8 +57,7 @@ export function UserInfoContextProvider({
      *      그 앱에서 서버쪽으로 persist한 데이터들을 받아와서 싱크를 맞추어 줘야 하기 때문.
      *
      */
-    // callbacks: [persistTimersStatesToIDB],
-    callbacks: [persistRequiredStatesToRunTimer],
+    callbacks: [persistRequiredStatesToRunTimer, addUUIDToCategory],
     additionalDeps: [isNewUser, isNewUserRegistered],
     additionalCondition: isNewUser === false || isNewUserRegistered,
   });
@@ -262,5 +261,23 @@ async function persistRequiredStatesToRunTimer(
       { name: "pomoSetting", value: states.pomoSetting },
       { name: "autoStartSetting", value: states.autoStartSetting },
     ],
+  });
+
+  const currentCategory = states.categories.find(
+    (category) => category.isCurrent
+  );
+
+  if (currentCategory) {
+    sessionStorage.setItem("currentCategoryName", currentCategory.name);
+  } else {
+    sessionStorage.removeItem("currentCategoryName");
+  }
+}
+
+async function addUUIDToCategory(states: RequiredStatesToRunTimerType) {
+  states.categories.forEach((category) => {
+    // In a tabbed browser, each tab is represented by its own Window object; the global window seen by JavaScript code running within a given tab always represents the tab in which the code is running.
+    // (https://developer.mozilla.org/en-US/docs/Web/API/Window)
+    category._uuid = window.crypto.randomUUID();
   });
 }

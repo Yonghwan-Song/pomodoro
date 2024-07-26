@@ -17,6 +17,10 @@ import { pubsub } from "../../pubsub";
 import TogglingTimer from "./TogglingTimer";
 import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
 import { MINIMUMS, VH_RATIO } from "../../constants";
+import CategoryList from "./CategoryList";
+import { BoxShadowWrapper } from "../../Components/Wrapper";
+import { Grid } from "../../Components/Layouts/Grid";
+import { GridItem } from "../../Components/Layouts/GridItem";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -69,7 +73,7 @@ export default function Main() {
   // useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);
   //#endregion
 
-  //#region Side Effect Callbacks
+  //#region Callbacks for useEffects
   // function logStates() {
   //   console.log("---------------------logStates---------------------");
   //   console.log(`toggle count - ${toggleCounter.current}`);
@@ -233,64 +237,100 @@ export default function Main() {
     areDataForRunningTimerFetched.current[0] &&
     areDataForRunningTimerFetched.current[1];
 
-  const sumOfRatio =
+  const SUM_OF_RATIO =
     VH_RATIO.NAV_BAR + VH_RATIO.TIMELINE + VH_RATIO.DETAIL_AREA;
-  const sumOfMin = MINIMUMS.NAV_BAR + MINIMUMS.TIMELINE + MINIMUMS.DETAIL_AREA;
+  const SUM_OF_MIN =
+    MINIMUMS.NAV_BAR + MINIMUMS.TIMELINE + MINIMUMS.DETAIL_AREA;
 
   return (
     <main>
       <RecOfToday records={records} />
+
       <section
         style={{
-          minHeight: `calc(100vh - max(${sumOfRatio}vh, ${sumOfMin}px))`,
+          minHeight: `calc(100vh - max(${SUM_OF_RATIO}vh, ${SUM_OF_MIN}px))`, // This CSS rule is intended to make this section extend to the bottom of the viewport.
+          // marginBottom: "100px", //! it does not make any changes. I think this is because of the minHeight. There is no remaining space left outside of this block. I need to adjust paddings to move this section.
+          paddingBottom: "16px", //*<---------------------------- This works.
           display: "flex",
-          alignItems: "center",
           justifyContent: "center",
         }}
       >
-        {isStatesRelatedToTimerReady &&
-          (isPomoSettingReady ? (
-            localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
-              isUserAuthReady ? (
-                // Though the user auth is ready, user's data needed to run a timer might not be ready.
-                areDataForRunningTimerFetchedCompletely ? (
-                  <TogglingTimer
-                    toggle={toggle}
-                    statesRelatedToTimer={statesRelatedToTimer}
-                    pomoDuration={pomoSetting.pomoDuration}
-                    shortBreakDuration={pomoSetting.shortBreakDuration}
-                    longBreakDuration={pomoSetting.longBreakDuration}
-                    numOfPomo={pomoSetting.numOfPomo}
-                    setRecords={setRecords}
-                  />
+        <Grid placeContent="center" placeItems="center" rowGap="14px">
+          {/* <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "636px",
+            placeContent: "center",
+            //! alignItems: "center", // There is no enough space given to grid items in terms of height because of placeContent: "center". Thus, this "center" has no effect.
+            justifyItems: "stretch",
+            rowGap: "14px",
+          }}
+        > */}
+          <GridItem width={"100%"}>
+            {isStatesRelatedToTimerReady &&
+              (isPomoSettingReady ? (
+                localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
+                  isUserAuthReady ? (
+                    // Though the user auth is ready, user's data needed to run a timer might not be ready.
+                    areDataForRunningTimerFetchedCompletely ? (
+                      <BoxShadowWrapper
+                      // inset={true}
+                      >
+                        <TogglingTimer
+                          toggle={toggle}
+                          statesRelatedToTimer={statesRelatedToTimer}
+                          pomoDuration={pomoSetting.pomoDuration}
+                          shortBreakDuration={pomoSetting.shortBreakDuration}
+                          longBreakDuration={pomoSetting.longBreakDuration}
+                          numOfPomo={pomoSetting.numOfPomo}
+                          setRecords={setRecords}
+                        />
+                      </BoxShadowWrapper>
+                    ) : (
+                      <StyledLoadingMessage top="51%">
+                        fetching data...
+                      </StyledLoadingMessage>
+                    )
+                  ) : (
+                    // User auth: NOT READY, user's data required to run timer: NOT READY
+                    <StyledLoadingMessage top="51%">
+                      loading timer...
+                    </StyledLoadingMessage>
+                  )
                 ) : (
-                  <StyledLoadingMessage top="51%">
-                    fetching data...
-                  </StyledLoadingMessage>
+                  // When a user logs out,
+                  <BoxShadowWrapper
+                  // inset={true}
+                  >
+                    <TogglingTimer
+                      toggle={toggle}
+                      statesRelatedToTimer={statesRelatedToTimer}
+                      pomoDuration={pomoSetting.pomoDuration}
+                      shortBreakDuration={pomoSetting.shortBreakDuration}
+                      longBreakDuration={pomoSetting.longBreakDuration}
+                      numOfPomo={pomoSetting.numOfPomo}
+                      setRecords={setRecords}
+                    />
+                  </BoxShadowWrapper>
                 )
               ) : (
-                // User auth: NOT READY, user's data required to run timer: NOT READY
                 <StyledLoadingMessage top="51%">
                   loading timer...
                 </StyledLoadingMessage>
-              )
-            ) : (
-              // When a user logs out,
-              <TogglingTimer
-                toggle={toggle}
-                statesRelatedToTimer={statesRelatedToTimer}
-                pomoDuration={pomoSetting.pomoDuration}
-                shortBreakDuration={pomoSetting.shortBreakDuration}
-                longBreakDuration={pomoSetting.longBreakDuration}
-                numOfPomo={pomoSetting.numOfPomo}
-                setRecords={setRecords}
-              />
-            )
-          ) : (
-            <StyledLoadingMessage top="51%">
-              loading timer...
-            </StyledLoadingMessage>
-          ))}
+              ))}
+          </GridItem>
+          <GridItem width={"100%"}>
+            {user !== null && (
+              <BoxShadowWrapper
+              // inset={true}
+              //  paddingLeft="9px" paddingRight="9px"
+              >
+                <CategoryList />
+              </BoxShadowWrapper>
+            )}
+          </GridItem>
+          {/* </div> */}
+        </Grid>
       </section>
     </main>
   );

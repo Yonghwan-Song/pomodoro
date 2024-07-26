@@ -8,6 +8,8 @@ import { UpdateAutoStartSettingDto } from './dto/update-auto-start-setting.dto';
 import { UpdateTimersStatesDto } from './dto/update-timers-states.dto';
 import { Pomodoro } from 'src/schemas/pomodoro.schema';
 import { TodayRecord } from 'src/schemas/todayRecord.schema';
+import { Category } from 'src/schemas/category.schema';
+import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
 
 @Injectable()
 export class UsersService {
@@ -15,6 +17,7 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
     @InjectModel(TodayRecord.name) private todayRecordModel: Model<TodayRecord>,
+    @InjectModel(Category.name) private categoryModel: Model<Category>,
   ) {}
 
   create(createUserDto: CreateUserDto, userEmail: string) {
@@ -22,8 +25,14 @@ export class UsersService {
     return newUser.save();
   }
 
-  getUserInfo(userEmail: string) {
-    return this.userModel.findOne({ userEmail });
+  async getUserInfo(userEmail: string) {
+    const doc = await this.userModel
+      .findOne({ userEmail })
+      .populate(['categories'])
+      .exec();
+
+    console.log(doc);
+    return doc;
   }
 
   updatePomoSetting(
@@ -78,6 +87,22 @@ export class UsersService {
     return updatedUser;
   }
 
+  updateIsUnCategorizedOnStat(
+    updateIsUnCategorizedOnStatDto: UpdateIsUnCategorizedOnStatDto,
+    userEmail: string,
+  ) {
+    return this.userModel.findOneAndUpdate(
+      { userEmail },
+      {
+        $set: {
+          isUnCategorizedOnStat:
+            updateIsUnCategorizedOnStatDto.isUnCategorizedOnStat,
+        },
+      },
+      { new: true },
+    );
+  }
+
   async deleteUser(userEmail: string) {
     const deletedPomodoroRecords = await this.pomodoroModel
       .deleteMany({ userEmail })
@@ -91,6 +116,15 @@ export class UsersService {
       .findOneAndDelete({ userEmail })
       .exec();
 
-    return { deletedUser, deletedPomodoroRecords, deletedTodayRecords };
+    const deletedCategories = await this.categoryModel
+      .deleteMany({ userEmail })
+      .exec();
+
+    return {
+      deletedUser,
+      deletedPomodoroRecords,
+      deletedTodayRecords,
+      deletedCategories,
+    };
   }
 }
