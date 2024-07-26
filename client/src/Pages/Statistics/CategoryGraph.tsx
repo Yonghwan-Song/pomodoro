@@ -306,7 +306,6 @@ export function CategoryGraph({
       };
     });
 
-    console.log("tweaked", tweaked);
     return tweaked;
   }
 
@@ -415,7 +414,6 @@ function CustomTooltip({
   label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
 }: TooltipProps<number, string>) {
   if (active && payload && payload.length) {
-    console.log(payload);
     return (
       <div
         style={{

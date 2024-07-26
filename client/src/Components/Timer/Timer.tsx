@@ -663,7 +663,7 @@ export function Timer({
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
       </GridItem>
-      <GridItem rowStart={1} rowEnd={5} columnStart={2}>
+      <GridItem rowStart={1} rowEnd={5} columnStart={2} columnEnd={3}>
         <CircularProgressBar
           progress={
             durationInSeconds === 0

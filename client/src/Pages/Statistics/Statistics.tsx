@@ -707,116 +707,122 @@ export default function Statistics() {
         justifyContent: "center",
       }}
     >
-      {/* Grid의 넓이가 최종적으로 rechart의 responsiveContainer때문에 너무 유동적인 것 같고...
+      {statData === null ? (
+        <h2>loading data...</h2>
+      ) : (
+        <div style={{ flexBasis: "100%" }}>
+          {/* Grid의 넓이가 최종적으로 rechart의 responsiveContainer때문에 너무 유동적인 것 같고...
       뭔가 최소한의 넓이로 결정되는 것 같음. flex item일 경우..
       그래서 basis로 강제로 80% 때려 넣어서 대충 해결했는데 원리는 잘 모르겠어 */}
-      {/* intrinsic (width) size가 너무 작네?..  */}
-      {/* flex-basis로 전체 다 먹게 하면 grid.styled.tsx에서 정한 max-width default값을 가져감. */}
-      <div style={{ flexBasis: "100%" }}>
-        <Grid rowGap="12px">
-          <GridItem>
-            <Overview sum={sum} />
-          </GridItem>
-          <GridItem>
-            {weekRange && (
-              <StackedGraph
-                statData={statData}
-                weekStatForThisWeek={weekStat}
-                c_info_list={c_info_list}
-                weekRangeForThisWeek={weekRange}
-                averageForThisWeek={average}
-              />
-            )}
-          </GridItem>
-          <GridItem>
-            {weekRange && (
-              <CategoryGraph
-                statData={statData}
-                weekStatForThisWeek={weekStat}
-                c_info_list={c_info_list}
-                weekRangeForThisWeek={weekRange}
-                isUnCategorizedOnStat={isUnCategorizedOnStat}
-              />
-            )}
-          </GridItem>
-          <GridItem>
-            <BoxShadowWrapper
-            // inset={true}
-            // paddingLeft="9px" paddingRight="9px"
-            >
-              <FlexBox justifyContent="space-around" flexWrap="wrap" gap="8px">
-                {categoriesFromServer.map((category, index) => {
-                  return (
-                    <div
-                      data-name={category.name}
-                      key={index}
-                      style={{
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                      onClick={changeIsOnStat}
-                    >
-                      <div
-                        style={{
-                          width: "30px",
-                          height: "30px",
-                          backgroundColor: `${category.color}`,
-                          borderRadius: "50%",
-                          // marginBottom: "10px",
-                        }}
-                      ></div>
-                      <div
-                        style={{
-                          color: category.isCurrent ? "#ff8522" : "black",
-                          fontWeight: category.isCurrent ? "bold" : "normal",
-                          textDecorationLine: category.isOnStat
-                            ? "underline"
-                            : "none",
-                        }}
-                      >
-                        {category.name}
-                      </div>
-                    </div>
-                  );
-                })}
-                <div
-                  style={{
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                  onClick={changeIsUnCategorizedOnStat}
+          {/* intrinsic (width) size가 너무 작네?..  */}
+          {/* flex-basis로 전체 다 먹게 하면 grid.styled.tsx에서 정한 max-width default값을 가져감. */}
+          <Grid rowGap="12px">
+            <GridItem>
+              <Overview sum={sum} />
+            </GridItem>
+            <GridItem>
+              {weekRange && (
+                <StackedGraph
+                  statData={statData}
+                  weekStatForThisWeek={weekStat}
+                  c_info_list={c_info_list}
+                  weekRangeForThisWeek={weekRange}
+                  averageForThisWeek={average}
+                />
+              )}
+            </GridItem>
+            <GridItem>
+              {weekRange && (
+                <CategoryGraph
+                  statData={statData}
+                  weekStatForThisWeek={weekStat}
+                  c_info_list={c_info_list}
+                  weekRangeForThisWeek={weekRange}
+                  isUnCategorizedOnStat={isUnCategorizedOnStat}
+                />
+              )}
+            </GridItem>
+            <GridItem>
+              <BoxShadowWrapper>
+                <FlexBox
+                  justifyContent="space-around"
+                  flexWrap="wrap"
+                  gap="8px"
                 >
+                  {categoriesFromServer.map((category, index) => {
+                    return (
+                      <div
+                        data-name={category.name}
+                        key={index}
+                        style={{
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          columnGap: "6px",
+                        }}
+                        onClick={changeIsOnStat}
+                      >
+                        <div
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            backgroundColor: `${category.color}`,
+                            borderRadius: "50%",
+                          }}
+                        ></div>
+                        <div
+                          style={{
+                            color: category.isCurrent ? "#ff8522" : "black",
+                            fontWeight: category.isCurrent ? "bold" : "normal",
+                            textDecorationLine: category.isOnStat
+                              ? "underline"
+                              : "none",
+                          }}
+                        >
+                          {category.name}
+                        </div>
+                      </div>
+                    );
+                  })}
                   <div
                     style={{
-                      width: "30px",
-                      height: "30px",
-                      backgroundColor: FOREGROUND_COLOR,
-                      borderRadius: "50%",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      columnGap: "6px",
                     }}
-                  ></div>
-                  <div
-                    style={{
-                      color: isThisSessionWithoutCategory ? "#ff8522" : "black",
-                      fontWeight: isThisSessionWithoutCategory
-                        ? "bold"
-                        : "normal",
-                      textDecorationLine: isUnCategorizedOnStat
-                        ? "underline"
-                        : "none",
-                    }}
+                    onClick={changeIsUnCategorizedOnStat}
                   >
-                    Uncategorized
+                    <div
+                      style={{
+                        width: "30px",
+                        height: "30px",
+                        backgroundColor: FOREGROUND_COLOR,
+                        borderRadius: "50%",
+                      }}
+                    ></div>
+                    <div
+                      style={{
+                        color: isThisSessionWithoutCategory
+                          ? "#ff8522"
+                          : "black",
+                        fontWeight: isThisSessionWithoutCategory
+                          ? "bold"
+                          : "normal",
+                        textDecorationLine: isUnCategorizedOnStat
+                          ? "underline"
+                          : "none",
+                      }}
+                    >
+                      Uncategorized
+                    </div>
                   </div>
-                </div>
-              </FlexBox>
-            </BoxShadowWrapper>
-          </GridItem>
-        </Grid>
-      </div>
+                </FlexBox>
+              </BoxShadowWrapper>
+            </GridItem>
+          </Grid>
+        </div>
+      )}
     </main>
   );
 }

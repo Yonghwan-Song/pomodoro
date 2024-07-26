@@ -92,6 +92,7 @@ export default function Main() {
   // }
 
   function endTimerInBackground() {
+    console.log("statesRelatedToTimer", statesRelatedToTimer);
     statesRelatedToTimer !== null &&
       Object.keys(statesRelatedToTimer).length !== 0 &&
       (statesRelatedToTimer as TimersStatesType).running &&
@@ -253,29 +254,18 @@ export default function Main() {
           paddingBottom: "16px", //*<---------------------------- This works.
           display: "flex",
           justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        <Grid placeContent="center" placeItems="center" rowGap="14px">
-          {/* <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "636px",
-            placeContent: "center",
-            //! alignItems: "center", // There is no enough space given to grid items in terms of height because of placeContent: "center". Thus, this "center" has no effect.
-            justifyItems: "stretch",
-            rowGap: "14px",
-          }}
-        > */}
-          <GridItem width={"100%"}>
-            {isStatesRelatedToTimerReady &&
-              (isPomoSettingReady ? (
-                localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
-                  isUserAuthReady ? (
-                    // Though the user auth is ready, user's data needed to run a timer might not be ready.
-                    areDataForRunningTimerFetchedCompletely ? (
-                      <BoxShadowWrapper
-                      // inset={true}
-                      >
+        {isStatesRelatedToTimerReady &&
+          (isPomoSettingReady ? (
+            localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
+              isUserAuthReady ? (
+                // Though the user auth is ready, user's data needed to run a timer might not be ready.
+                areDataForRunningTimerFetchedCompletely ? (
+                  <Grid placeContent="center" placeItems="center" rowGap="14px">
+                    <GridItem width="100%">
+                      <BoxShadowWrapper>
                         <TogglingTimer
                           toggle={toggle}
                           statesRelatedToTimer={statesRelatedToTimer}
@@ -286,22 +276,27 @@ export default function Main() {
                           setRecords={setRecords}
                         />
                       </BoxShadowWrapper>
-                    ) : (
-                      <StyledLoadingMessage top="51%">
-                        fetching data...
-                      </StyledLoadingMessage>
-                    )
-                  ) : (
-                    // User auth: NOT READY, user's data required to run timer: NOT READY
-                    <StyledLoadingMessage top="51%">
-                      loading timer...
-                    </StyledLoadingMessage>
-                  )
+                    </GridItem>
+                    <GridItem width={"100%"}>
+                      {user !== null && (
+                        <BoxShadowWrapper>
+                          <CategoryList />
+                        </BoxShadowWrapper>
+                      )}
+                    </GridItem>
+                  </Grid>
                 ) : (
-                  // When a user logs out,
-                  <BoxShadowWrapper
-                  // inset={true}
-                  >
+                  <h2>fetching data...</h2>
+                )
+              ) : (
+                // User auth: NOT READY, user's data required to run timer: NOT READY
+                <h2>loading timer...</h2>
+              )
+            ) : (
+              // When a user logs out,
+              <Grid placeContent="center" placeItems="center" rowGap="14px">
+                <GridItem width={"100%"}>
+                  <BoxShadowWrapper>
                     <TogglingTimer
                       toggle={toggle}
                       statesRelatedToTimer={statesRelatedToTimer}
@@ -312,25 +307,12 @@ export default function Main() {
                       setRecords={setRecords}
                     />
                   </BoxShadowWrapper>
-                )
-              ) : (
-                <StyledLoadingMessage top="51%">
-                  loading timer...
-                </StyledLoadingMessage>
-              ))}
-          </GridItem>
-          <GridItem width={"100%"}>
-            {user !== null && (
-              <BoxShadowWrapper
-              // inset={true}
-              //  paddingLeft="9px" paddingRight="9px"
-              >
-                <CategoryList />
-              </BoxShadowWrapper>
-            )}
-          </GridItem>
-          {/* </div> */}
-        </Grid>
+                </GridItem>
+              </Grid>
+            )
+          ) : (
+            <h2>loading timer...</h2>
+          ))}
       </section>
     </main>
   );

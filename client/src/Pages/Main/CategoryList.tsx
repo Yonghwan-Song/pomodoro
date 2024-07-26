@@ -86,7 +86,7 @@ export default function CategoryList() {
   }
 
   return (
-    <FlexBox justifyContent="space-around" flexWrap="wrap" rowGap="1rem">
+    <FlexBox justifyContent="space-around" flexWrap="wrap" gap="10px">
       {categoriesFromServer.map((category, index) => {
         return (
           <div
@@ -96,7 +96,7 @@ export default function CategoryList() {
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "1rem",
+              columnGap: "8px",
             }}
             onClick={selectCurrent}
           >
@@ -107,12 +107,11 @@ export default function CategoryList() {
                 backgroundColor: `${category.color}`,
                 borderRadius: "50%",
               }}
-            />
+            ></div>
             <div
               style={{
                 color: category.isCurrent ? "#ff8522" : "black",
                 fontWeight: category.isCurrent ? "bold" : "normal",
-                maxWidth: "100px",
               }}
             >
               {category.name}
@@ -126,7 +125,7 @@ export default function CategoryList() {
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          gap: "1rem",
+          columnGap: "8px",
         }}
         onClick={useSessionWithoutCategory}
       >
@@ -137,7 +136,7 @@ export default function CategoryList() {
             backgroundColor: FOREGROUND_COLOR,
             borderRadius: "50%",
           }}
-        />
+        ></div>
         <div
           style={{
             color: isThisSessionWithoutCategory ? "#ff8522" : "black",
