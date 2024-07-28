@@ -3,9 +3,9 @@ import "./index.css";
 import App from "./App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Main, Signin, Settings, Statistics } from "./Pages/index";
-import Protected from "./Components/Protected";
+import Protected from "./ReusableComponents/Protected";
 import { IDBPDatabase, DBSchema, openDB } from "idb";
-import { PauseType } from "./Components/reducers";
+import { PauseType } from "./Pages/Main/Timer-Related/reducers";
 import {
   TimerStateType,
   PatternTimerStatesType,

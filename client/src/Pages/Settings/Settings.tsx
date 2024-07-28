@@ -7,12 +7,12 @@ import {
   PomoSettingType,
   RequiredStatesToRunTimerType,
 } from "../../types/clientStatesType";
-import { Button } from "../../Components/Buttons/Button";
-import { BoxShadowWrapper } from "../../Components/Wrapper";
-import { Grid } from "../../Components/Layouts/Grid";
-import { GridItem } from "../../Components/Layouts/GridItem";
-import { FlexBox } from "../../Components/Layouts/FlexBox";
-import { LoadingMessage } from "../../Components/LoadingMessage/LoadingMessage";
+import { Button } from "../../ReusableComponents/Buttons/Button";
+import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+import { Grid } from "../../ReusableComponents/Layouts/Grid";
+import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
+import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
+import { LoadingMessage } from "../../ReusableComponents/LoadingMessage/LoadingMessage";
 import { CacheName, RESOURCE, SUB_SET, BASE_URL } from "../../constants/index";
 import {
   deleteUser,
@@ -33,9 +33,9 @@ import {
   updateAutoStartSetting,
   updateTimersStates,
 } from "../..";
-import ToggleSwitch from "../../Components/ToggleSwitch/ToggleSwitch";
+import ToggleSwitch from "../../ReusableComponents/ToggleSwitch/ToggleSwitch";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
-import Categories from "../../Components/Categories/Categories";
+import Categories from "./Categories/Categories";
 
 function Settings() {
   const { user } = useAuthContext()!;

@@ -7,8 +7,8 @@ import {
   SUB_SET,
   VH_RATIO,
 } from "../../constants";
-import { Grid } from "../../Components/Layouts/Grid";
-import { GridItem } from "../../Components/Layouts/GridItem";
+import { Grid } from "../../ReusableComponents/Layouts/Grid";
+import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import {
   DayStat,
   DayStatForGraph,
@@ -20,16 +20,16 @@ import {
 import { countDown } from "../..";
 import { pubsub } from "../../pubsub";
 import { startOfWeek, endOfWeek } from "date-fns";
-import { Overview } from "./Overview";
-import { CategoryGraph } from "./CategoryGraph";
+import { Overview } from "./Graph-Related/Overview";
+import { CategoryGraph } from "./Graph-Related/CategoryGraph";
 import { useFetch } from "../../Custom-Hooks/useFetch";
 import { PomodoroSessionDocument } from "./statRelatedTypes";
-import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
+import { StyledLoadingMessage } from "../../ReusableComponents/styles/LoadingMessage.styled";
 import { useUserContext } from "../../Context/UserContext";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
-import { BoxShadowWrapper } from "../../Components/Wrapper";
-import { FlexBox } from "../../Components/Layouts/FlexBox";
-import { StackedGraph } from "./StackedGraph";
+import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
+import { StackedGraph } from "./Graph-Related/StackedGraph";
 
 export default function Statistics() {
   const [sum, setSum] = useState({

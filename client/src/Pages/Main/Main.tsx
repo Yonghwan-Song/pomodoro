@@ -10,17 +10,16 @@ import {
   TimersStatesType,
 } from "../../types/clientStatesType";
 import { useAuthContext } from "../../Context/AuthContext";
-import RecOfToday from "../../Components/RecOfToday/RecOfToday";
+import RecOfToday from "./Timeline-Related/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
-import { StyledLoadingMessage } from "../../Components/styles/LoadingMessage.styled";
 import { pubsub } from "../../pubsub";
-import TogglingTimer from "./TogglingTimer";
+import TogglingTimer from "./Timer-Related/TogglingTimer";
 import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
 import { MINIMUMS, VH_RATIO } from "../../constants";
-import CategoryList from "./CategoryList";
-import { BoxShadowWrapper } from "../../Components/Wrapper";
-import { Grid } from "../../Components/Layouts/Grid";
-import { GridItem } from "../../Components/Layouts/GridItem";
+import CategoryList from "./Category-Related/CategoryList";
+import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+import { Grid } from "../../ReusableComponents/Layouts/Grid";
+import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 
 export default function Main() {
   const { user } = useAuthContext()!;
