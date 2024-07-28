@@ -262,7 +262,12 @@ export default function Main() {
               isUserAuthReady ? (
                 // Though the user auth is ready, user's data needed to run a timer might not be ready.
                 areDataForRunningTimerFetchedCompletely ? (
-                  <Grid placeContent="center" placeItems="center" rowGap="14px">
+                  <Grid
+                    placeContent="center"
+                    placeItems="center"
+                    rowGap="14px"
+                    maxWidth="687px"
+                  >
                     <GridItem width="100%">
                       <BoxShadowWrapper>
                         <TogglingTimer
@@ -293,21 +298,17 @@ export default function Main() {
               )
             ) : (
               // When a user logs out,
-              <Grid placeContent="center" placeItems="center" rowGap="14px">
-                <GridItem width={"100%"}>
-                  <BoxShadowWrapper>
-                    <TogglingTimer
-                      toggle={toggle}
-                      statesRelatedToTimer={statesRelatedToTimer}
-                      pomoDuration={pomoSetting.pomoDuration}
-                      shortBreakDuration={pomoSetting.shortBreakDuration}
-                      longBreakDuration={pomoSetting.longBreakDuration}
-                      numOfPomo={pomoSetting.numOfPomo}
-                      setRecords={setRecords}
-                    />
-                  </BoxShadowWrapper>
-                </GridItem>
-              </Grid>
+              <BoxShadowWrapper>
+                <TogglingTimer
+                  toggle={toggle}
+                  statesRelatedToTimer={statesRelatedToTimer}
+                  pomoDuration={pomoSetting.pomoDuration}
+                  shortBreakDuration={pomoSetting.shortBreakDuration}
+                  longBreakDuration={pomoSetting.longBreakDuration}
+                  numOfPomo={pomoSetting.numOfPomo}
+                  setRecords={setRecords}
+                />
+              </BoxShadowWrapper>
             )
           ) : (
             <h2>loading timer...</h2>

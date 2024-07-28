@@ -10,6 +10,7 @@ import { Pomodoro } from 'src/schemas/pomodoro.schema';
 import { TodayRecord } from 'src/schemas/todayRecord.schema';
 import { Category } from 'src/schemas/category.schema';
 import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
+import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
 
 @Injectable()
 export class UsersService {
@@ -97,6 +98,22 @@ export class UsersService {
         $set: {
           isUnCategorizedOnStat:
             updateIsUnCategorizedOnStatDto.isUnCategorizedOnStat,
+        },
+      },
+      { new: true },
+    );
+  }
+
+  updateColorForUnCategorized(
+    updateColorForUnCategorizedDto: UpdateColorForUnCategorizedDto,
+    userEmail: string,
+  ) {
+    return this.userModel.findOneAndUpdate(
+      { userEmail },
+      {
+        $set: {
+          colorForUnCategorized:
+            updateColorForUnCategorizedDto.colorForUnCategorized,
         },
       },
       { new: true },

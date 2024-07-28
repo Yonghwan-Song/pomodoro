@@ -13786,7 +13786,8 @@
     TIMERS_STATES: "/timers-states",
     DEMO_DATA: "/demo-data",
     CATEGORIES: "/categories",
-    IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat"
+    IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
+    COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized"
   }; //#endregion
 
   var IDB_VERSION = 8;

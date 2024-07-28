@@ -21,8 +21,7 @@ import {
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
 } from "../statRelatedTypes";
-import { FOREGROUND_COLOR } from "../../../constants";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { endOfWeek, startOfWeek } from "date-fns";
 
 type GraphProps = {
@@ -31,6 +30,7 @@ type GraphProps = {
   weekRangeForThisWeek: string;
   c_info_list: CategoryInfoForStat[];
   averageForThisWeek: number;
+  colorForUnCategorized: string;
 };
 
 export function StackedGraph({
@@ -39,6 +39,7 @@ export function StackedGraph({
   c_info_list,
   weekRangeForThisWeek,
   averageForThisWeek,
+  colorForUnCategorized,
 }: GraphProps) {
   const [localWeekStat, setLocalWeekStat] = useState<DayStatForGraph[]>(
     JSON.parse(JSON.stringify(weekStatForThisWeek))
@@ -364,10 +365,10 @@ export function StackedGraph({
               r: 3,
               fill: "#ffffff",
             }}
-            stroke={FOREGROUND_COLOR}
+            stroke={colorForUnCategorized}
             strokeWidth={1.5}
             fillOpacity={1}
-            fill={FOREGROUND_COLOR}
+            fill={colorForUnCategorized}
             name="Uncategorized"
           />
           <ReferenceLine

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
@@ -12,8 +12,14 @@ import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
-import { LoadingMessage } from "../../ReusableComponents/LoadingMessage/LoadingMessage";
-import { CacheName, RESOURCE, SUB_SET, BASE_URL } from "../../constants/index";
+import {
+  CacheName,
+  RESOURCE,
+  SUB_SET,
+  BASE_URL,
+  VH_RATIO,
+  MINIMUMS,
+} from "../../constants/index";
 import {
   deleteUser,
   GoogleAuthProvider,
@@ -208,11 +214,18 @@ function Settings() {
   //#endregion
 
   return (
-    <main>
+    <main
+      style={{
+        minHeight: `calc(100vh - max(${VH_RATIO.NAV_BAR}vh, ${MINIMUMS.NAV_BAR}px))`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
       {userInfoContext.pomoInfo === null ? (
-        <LoadingMessage>"Loading Data"</LoadingMessage>
+        <h2>loading data...</h2>
       ) : (
-        <Grid maxWidth="634px" columnGap="25px" rowGap="25px" marginTop="100px">
+        <Grid maxWidth="634px" columnGap="25px" rowGap="25px">
           <GridItem>
             <BoxShadowWrapper>
               <form onSubmit={handleSubmit}>

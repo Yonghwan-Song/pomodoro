@@ -16,6 +16,7 @@ type GridType = {
   autoRow?: number;
   columnGap?: string;
   rowGap?: string;
+  margin?: string;
   marginTop?: string;
   marginRight?: string;
   marginBottom?: string;
@@ -63,7 +64,6 @@ export const StyledGrid = styled.div<GridType>`
       place-content: ${placeContent};
     `}
 
-  margin: auto;
   padding: ${({ padding }) => padding || "10px"};
   display: grid;
 
@@ -106,6 +106,10 @@ export const StyledGrid = styled.div<GridType>`
       grid-row-gap: ${rowGap};
     `};
 
+  ${({ margin }) =>
+    css`
+      margin: ${margin};
+    `}
   ${({ marginTop }) =>
     css`
       margin-top: ${marginTop};

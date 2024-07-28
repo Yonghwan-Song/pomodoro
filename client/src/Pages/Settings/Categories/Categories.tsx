@@ -3,7 +3,7 @@ import { ReactComponent as TrashBinIcon } from "../../../Icons/trash-bin-trash-s
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { BASE_URL, CacheName, RESOURCE } from "../../../constants";
+import { BASE_URL, CacheName, RESOURCE, SUB_SET } from "../../../constants";
 import { useUserContext } from "../../../Context/UserContext";
 import { Category, NewCategory } from "../../../types/clientStatesType";
 import { delete_entry_of_cache } from "../../..";
@@ -42,6 +42,22 @@ export default function Categories() {
       return [];
     }
   }, [userInfoContext.pomoInfo?.categories]);
+
+  //
+  const colorForUnCategorized = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.colorForUnCategorized;
+    } else {
+      return "#f04005";
+    }
+  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+  const [colorInputForUnCategorized, setColorInputForUnCategorized] =
+    useState<string>(colorForUnCategorized);
+  const [
+    debouncedColorInputForUnCategorized,
+    setDebouncedColorInputForUnCategorized,
+  ] = useState<string | null>(null);
+
   const [categoriesInputs, setCategoriesInputs] = useState<Category[]>(() => {
     if (userInfoContext.pomoInfo !== null)
       return userInfoContext.pomoInfo.categories;
@@ -81,6 +97,12 @@ export default function Categories() {
       });
     });
     setColorInput({ index: ev.target.id, color: ev.target.value });
+  }
+
+  function handleColorInputChangeForUnCategorized(
+    ev: React.ChangeEvent<HTMLInputElement>
+  ) {
+    setColorInputForUnCategorized(ev.target.value);
   }
 
   function handleNameInputChange(ev: React.ChangeEvent<HTMLInputElement>) {
@@ -268,10 +290,45 @@ export default function Categories() {
       });
     }
   }, [debouncedNameInput]); //TODO: indexOfDuplication를 넣어야해 말아야해? - 안 넣어도 딱히 눈에 보이는 문제가 발생하지는 않고 있음.
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedColorInputForUnCategorized(colorInputForUnCategorized);
+    }, 500);
+    return () => {
+      clearTimeout(id);
+    };
+  }, [colorInputForUnCategorized]);
+
+  useEffect(() => {
+    console.log(
+      "debouncedColorInputForUnCategorized",
+      debouncedColorInputForUnCategorized
+    );
+    if (debouncedColorInputForUnCategorized !== null) {
+      console.log(
+        "debouncedColorInputForUnCategorized",
+        debouncedColorInputForUnCategorized
+      );
+      setPomoInfo((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          colorForUnCategorized: debouncedColorInputForUnCategorized,
+        };
+      });
+
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.COLOR_FOR_UNCATEGORIZED, {
+        colorForUnCategorized: debouncedColorInputForUnCategorized,
+      });
+
+      setDebouncedColorInputForUnCategorized(null); // re-initialize
+    }
+  }, [debouncedColorInputForUnCategorized]);
   //#endregion
 
   return (
-    <FlexBox justifyContent="space-between" alignItems="center">
+    <FlexBox justifyContent="space-between" alignItems="flex-start">
       <form name="existing">
         {categoriesInputs.map((item, index) => {
           return (
@@ -304,7 +361,6 @@ export default function Categories() {
               </label>
               <TrashBinIcon
                 data-name={item.name}
-                data-isCurrent={item.isCurrent}
                 style={{
                   cursor: "pointer",
                   width: "1em",
@@ -316,52 +372,72 @@ export default function Categories() {
           );
         })}
       </form>
-      <form name="new" onSubmit={saveNewCategory}>
-        <label htmlFor="color">
-          <input
-            id="color"
-            type="color"
-            name="newCategoryColor"
-            onChange={handleNewColorInputChange}
-            value={newCategoryInput.color}
-          />
-        </label>
-        <label htmlFor="name">
-          <input
-            id="name"
-            type="text"
-            name="newCategoryName"
-            onChange={handleNewNameInputChange}
-            value={newCategoryInput.name}
-            onFocus={(ev: React.FocusEvent<HTMLInputElement>) => {
-              ev.target.select();
-            }}
-          />
-        </label>
+
+      <div>
         <div
           style={{
             display: "flex",
-            gap: "1rem",
+            columnGap: "6px",
             justifyContent: "space-between",
-            marginTop: "4px",
           }}
         >
-          <Button color={"primary"}>SAVE</Button>
-          <Button
-            type="button"
-            onClick={() => {
-              setNewCategoryInput({
-                name: "",
-                color: "",
-                isCurrent: false,
-                isOnStat: true,
-              });
+          <label htmlFor="colorForUnCategorized">
+            <input
+              type="color"
+              name="colorForUnCategorized"
+              value={colorInputForUnCategorized}
+              onChange={handleColorInputChangeForUnCategorized}
+            />
+          </label>
+          <p>Uncategorized</p>
+        </div>
+        <form name="new" onSubmit={saveNewCategory}>
+          <label htmlFor="color">
+            <input
+              id="color"
+              type="color"
+              name="newCategoryColor"
+              onChange={handleNewColorInputChange}
+              value={newCategoryInput.color}
+            />
+          </label>
+          <label htmlFor="name">
+            <input
+              id="name"
+              type="text"
+              name="newCategoryName"
+              onChange={handleNewNameInputChange}
+              value={newCategoryInput.name}
+              onFocus={(ev: React.FocusEvent<HTMLInputElement>) => {
+                ev.target.select();
+              }}
+            />
+          </label>
+          <div
+            style={{
+              display: "flex",
+              gap: "1rem",
+              justifyContent: "space-between",
+              marginTop: "4px",
             }}
           >
-            Cancel
-          </Button>
-        </div>
-      </form>
+            <Button color={"primary"}>SAVE</Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setNewCategoryInput({
+                  name: "",
+                  color: "",
+                  isCurrent: false,
+                  isOnStat: true,
+                });
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </div>
 
       <ReactModal
         isOpen={isModalOpen}

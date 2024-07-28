@@ -88,6 +88,15 @@ export default function Statistics() {
   const isUnCategorizedOnStat = useMemo(() => {
     return userInfoContext.pomoInfo?.isUnCategorizedOnStat ?? false;
   }, [userInfoContext.pomoInfo?.isUnCategorizedOnStat]);
+
+  const colorForUnCategorized = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.colorForUnCategorized;
+    } else {
+      return "#f04005";
+    }
+  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+
   const [c_info_list, isThisSessionWithoutCategory] = useMemo(() => {
     if (
       userInfoContext.pomoInfo !== null &&
@@ -711,12 +720,7 @@ export default function Statistics() {
         <h2>loading data...</h2>
       ) : (
         <div style={{ flexBasis: "100%" }}>
-          {/* Grid의 넓이가 최종적으로 rechart의 responsiveContainer때문에 너무 유동적인 것 같고...
-      뭔가 최소한의 넓이로 결정되는 것 같음. flex item일 경우..
-      그래서 basis로 강제로 80% 때려 넣어서 대충 해결했는데 원리는 잘 모르겠어 */}
-          {/* intrinsic (width) size가 너무 작네?..  */}
-          {/* flex-basis로 전체 다 먹게 하면 grid.styled.tsx에서 정한 max-width default값을 가져감. */}
-          <Grid rowGap="12px">
+          <Grid rowGap="12px" margin="auto">
             <GridItem>
               <Overview sum={sum} />
             </GridItem>
@@ -728,6 +732,7 @@ export default function Statistics() {
                   c_info_list={c_info_list}
                   weekRangeForThisWeek={weekRange}
                   averageForThisWeek={average}
+                  colorForUnCategorized={colorForUnCategorized}
                 />
               )}
             </GridItem>
@@ -739,6 +744,7 @@ export default function Statistics() {
                   c_info_list={c_info_list}
                   weekRangeForThisWeek={weekRange}
                   isUnCategorizedOnStat={isUnCategorizedOnStat}
+                  colorForUnCategorized={colorForUnCategorized}
                 />
               )}
             </GridItem>
@@ -797,7 +803,7 @@ export default function Statistics() {
                       style={{
                         width: "30px",
                         height: "30px",
-                        backgroundColor: FOREGROUND_COLOR,
+                        backgroundColor: colorForUnCategorized,
                         borderRadius: "50%",
                       }}
                     ></div>

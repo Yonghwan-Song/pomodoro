@@ -22,8 +22,13 @@ export default function CategoryList() {
       return [[], false];
     }
   }, [userInfoContext.pomoInfo?.categories]);
-
-  console.log(categoriesFromServer);
+  const colorForUnCategorized = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.colorForUnCategorized;
+    } else {
+      return "#f04005";
+    }
+  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
 
   function selectCurrent(ev: React.MouseEvent<HTMLDivElement>) {
     const name = ev.currentTarget.getAttribute("data-name");
@@ -133,7 +138,7 @@ export default function CategoryList() {
           style={{
             width: "50px",
             height: "50px",
-            backgroundColor: FOREGROUND_COLOR,
+            backgroundColor: colorForUnCategorized,
             borderRadius: "50%",
           }}
         ></div>
@@ -144,7 +149,7 @@ export default function CategoryList() {
             maxWidth: "100px",
           }}
         >
-          No Category
+          Uncategorized
         </div>
       </div>
     </FlexBox>

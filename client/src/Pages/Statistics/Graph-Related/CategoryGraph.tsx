@@ -22,7 +22,6 @@ import {
 } from "../statRelatedTypes";
 import { useState, useEffect } from "react";
 import { startOfWeek, endOfWeek } from "date-fns";
-import { FOREGROUND_COLOR } from "../../../constants";
 
 type GraphProps = {
   statData: DayStat[] | null;
@@ -30,6 +29,7 @@ type GraphProps = {
   c_info_list: CategoryInfoForStat[];
   weekRangeForThisWeek: string;
   isUnCategorizedOnStat: boolean;
+  colorForUnCategorized: string;
 };
 
 export function CategoryGraph({
@@ -38,6 +38,7 @@ export function CategoryGraph({
   c_info_list,
   weekRangeForThisWeek,
   isUnCategorizedOnStat,
+  colorForUnCategorized,
 }: GraphProps) {
   const [localWeekStat, setLocalWeekStat] = useState<DayStatForGraph[]>(
     JSON.parse(JSON.stringify(weekStatForThisWeek))
@@ -373,7 +374,7 @@ export function CategoryGraph({
                 r: 3,
                 fill: "#ffffff",
               }}
-              stroke={FOREGROUND_COLOR}
+              stroke={colorForUnCategorized}
               strokeWidth={1.5}
               fillOpacity={0}
               fill="url(#color)"

@@ -36,6 +36,13 @@ const CircularProgressBar = ({
       return null;
     }
   }, [userInfoContext.pomoInfo?.categories]);
+  const colorForUnCategorized = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.colorForUnCategorized;
+    } else {
+      return "#f04005";
+    }
+  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
 
   async function addFiveMinutes() {
     await persistStatesToIDB({
@@ -94,7 +101,9 @@ const CircularProgressBar = ({
         r={C.RADIUS}
         cx={C.MIDDLE_X}
         cy={C.MIDDLE_Y}
-        stroke={!!currentCategory ? currentCategory.color : C.FOREGROUND_COLOR}
+        stroke={
+          !!currentCategory ? currentCategory.color : colorForUnCategorized
+        }
         strokeWidth={C.STROKE_WIDTH}
         strokeDasharray={C.CIRCUMFERENCE}
         // when we click the start/pause button, we need to pass the progress untill then.

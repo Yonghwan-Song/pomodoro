@@ -58,6 +58,7 @@ export type RequiredStatesToRunTimerType = {
   autoStartSetting: AutoStartSettingType;
   categories: Category[];
   isUnCategorizedOnStat: boolean;
+  colorForUnCategorized: string;
 };
 
 export type RecType = Omit<TimerStateType, "running"> & {

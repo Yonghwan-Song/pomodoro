@@ -16,6 +16,7 @@ type GridProps = {
   autoRow?: number;
   columnGap?: string;
   rowGap?: string;
+  margin?: string;
   marginTop?: string;
   marginRight?: string;
   marginBottom?: string;

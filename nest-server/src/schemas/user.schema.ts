@@ -81,6 +81,9 @@ export class User {
 
   @Prop({ default: true })
   isUnCategorizedOnStat: boolean;
+
+  @Prop({ default: '#f04005' })
+  colorForUnCategorized: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

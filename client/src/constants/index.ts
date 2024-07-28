@@ -38,6 +38,7 @@ export const SUB_SET = {
   DEMO_DATA: "/demo-data",
   CATEGORIES: "/categories",
   IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
+  COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
 };
 
 //#endregion

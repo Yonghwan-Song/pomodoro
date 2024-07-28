@@ -653,11 +653,7 @@ export function TimerVVV({
   //#endregion
 
   return (
-    <Grid
-      column={2}
-      alignItems={"center"}
-      // rowGap={"15px"}
-    >
+    <Grid column={2} alignItems={"center"} columnGap="23px" padding="0px">
       <GridItem>
         <FlexBox justifyContent="space-evenly">
           <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
