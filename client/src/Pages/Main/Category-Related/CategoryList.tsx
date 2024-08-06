@@ -145,8 +145,7 @@ export default function CategoryList() {
         <div
           style={{
             color: isThisSessionWithoutCategory ? "#ff8522" : "black",
-            fontWeight: isThisSessionWithoutCategory ? "bold" : "normal",
-            maxWidth: "100px",
+            fontWeight: isThisSessionWithoutCategory ? "bold" : "normal",            
           }}
         >
           Uncategorized
