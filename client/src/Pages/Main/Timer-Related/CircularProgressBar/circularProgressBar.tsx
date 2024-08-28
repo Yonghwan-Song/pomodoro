@@ -37,7 +37,10 @@ const CircularProgressBar = ({
     }
   }, [userInfoContext.pomoInfo?.categories]);
   const colorForUnCategorized = useMemo(() => {
-    if (userInfoContext.pomoInfo !== null) {
+    if (
+      userInfoContext.pomoInfo !== null &&
+      userInfoContext.pomoInfo.colorForUnCategorized !== undefined
+    ) {
       return userInfoContext.pomoInfo.colorForUnCategorized;
     } else {
       return "#f04005";
