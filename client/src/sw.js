@@ -56,6 +56,7 @@ self.addEventListener("activate", (ev) => {
 });
 
 self.addEventListener("message", async (ev) => {
+  CACHE = await openCache(CacheName);
   if (typeof ev.data === "object" && ev.data !== null) {
     const { action, payload } = ev.data;
 
@@ -105,6 +106,7 @@ self.addEventListener("notificationclick", async (ev) => {
 });
 
 async function openCache(name) {
+  // console.log("openCache is called with", name);
   let cache = null;
   try {
     cache = await caches.open(name);
@@ -113,6 +115,16 @@ async function openCache(name) {
   }
   // console.log("cache opened - ", cache);
   return cache;
+}
+
+async function getCacheNames() {
+  try {
+    const cacheNames = await caches.keys();
+    console.log("Cache Names:", cacheNames);
+    return cacheNames;
+  } catch (error) {
+    console.error("Error fetching cache names:", error);
+  }
 }
 
 async function openIndexedDB() {
@@ -128,6 +140,11 @@ async function openIndexedDB() {
       if (!db.objectStoreNames.contains("recOfToday")) {
         db.createObjectStore("recOfToday", {
           keyPath: ["kind", "startTime"],
+        });
+      }
+      if (!db.objectStoreNames.contains("categoryStore")) {
+        db.createObjectStore("categoryStore", {
+          keyPath: "name",
         });
       }
     },
@@ -235,9 +252,7 @@ async function emptyStateStore(clientId) {
  * @param {*} payload timersStates and pomoSetting of the session that was just finished.
  */
 async function goNext(payload) {
-  let { currentCategoryName, pomoSetting, ...timersStates } = payload; // currentCategoryName: string | null
-  console.log("pomoSetting", pomoSetting);
-  console.log("timersStates", timersStates);
+  let { pomoSetting, ...timersStates } = payload;
   let { duration, repetitionCount, pause, startTime } = timersStates;
 
   const sessionData = {
@@ -255,7 +270,6 @@ async function goNext(payload) {
     timersStates,
     pomoSetting,
     sessionData,
-    currentCategoryName,
   });
 }
 
@@ -265,7 +279,6 @@ async function wrapUpSession({
   timersStates,
   pomoSetting,
   sessionData,
-  currentCategoryName,
 }) {
   let timersStatesForNextSession = { ...timersStates };
   // reset TimerState
@@ -294,6 +307,81 @@ async function wrapUpSession({
   ];
   BC.postMessage({ evName: "makeSound", payload: null });
 
+  //? getIdTokenAndEmail -> error -> res(null) is not what I considered here...
+  let idTokenAndEmail = await getIdTokenAndEmail();
+  let infoArrayBeforeReset = null;
+  if (idTokenAndEmail) {
+    infoArrayBeforeReset = (await getCategoryChangeInfoArrayFromIDB()).value;
+
+    // console.log("infoArrayBeforeReset", infoArrayBeforeReset);
+    // [
+    //     {
+    //         "categoryName": "Netflix",
+    //         "categoryChangeTimestamp": 1724909137377,
+    //         "color": "#be37a5",
+    //         "progress": 0,
+    //         "_id": "66d0064f7387aa24ba4f22ef",
+    //         "_uuid": "055e186a-44b1-4b3d-a54b-8545fa3f78d9"
+    //     },
+    //     {
+    //         "categoryName": "ENG",
+    //         "categoryChangeTimestamp": 1724909227140,
+    //         "_uuid": "73315058-5726-4158-a781-5d60d80af94c",
+    //         "color": "#6e95bf",
+    //         "progress": 0.5
+    //     }
+    // ]
+
+    const infoArrAfterReset = [
+      {
+        ...infoArrayBeforeReset[infoArrayBeforeReset.length - 1],
+        categoryChangeTimestamp: 0,
+        progress: 0,
+      },
+    ];
+
+    // console.log("infoArrAfterReset", infoArrAfterReset);
+    // [
+    //     {
+    //         "categoryName": "ENG",
+    //         "categoryChangeTimestamp": 0,
+    //         "_uuid": "73315058-5726-4158-a781-5d60d80af94c",
+    //         "color": "#6e95bf",
+    //         "progress": 0
+    //     }
+    // ]
+
+    infoArrayBeforeReset[0].categoryChangeTimestamp = sessionData.startTime; // It is 0 before this assignment.
+
+    // const infoArr = [
+    //   {
+    //     categoryName:
+    //       currentCategoryName === null ? "uncategorized" : currentCategoryName,
+    //     categoryChangeTimestamp: 0,
+    //   },
+    // ];
+
+    BC.postMessage({
+      evName: "sessionEndBySW",
+      payload: infoArrAfterReset,
+    });
+    persistCategoryChangeInfoArrayToIDB(infoArrAfterReset);
+    fetchWrapper(
+      BASE_URL + RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+      "PATCH",
+      {
+        categoryChangeInfoArray: infoArrAfterReset.map((info) => {
+          return {
+            categoryName: info.categoryName,
+            categoryChangeTimestamp: info.categoryChangeTimestamp,
+            color: info.color,
+            progress: info.progress,
+          };
+        }),
+      },
+      idTokenAndEmail.idToken
+    );
+  }
   switch (session) {
     case SESSION.POMO:
       self.registration.showNotification("shortBreak", {
@@ -303,11 +391,13 @@ async function wrapUpSession({
 
       timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
 
-      await recordPomo(
-        timersStates.duration,
-        timersStates.startTime,
-        currentCategoryName
-      );
+      idTokenAndEmail &&
+        (await recordPomo(
+          timersStates.startTime,
+          idTokenAndEmail,
+          infoArrayBeforeReset,
+          sessionData
+        ));
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -321,25 +411,17 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("pomo", sessionData, currentCategoryName);
+      await persistSessionToIDB("pomo", sessionData);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
           updateTimersStates(timersStatesForNextSession);
         } else {
-          const payload =
-            currentCategoryName !== null
-              ? {
-                  timersStates: timersStatesForNextSession,
-                  pomoSetting: pomoSetting,
-                  endTime: sessionData.endTime,
-                  currentCategoryName,
-                }
-              : {
-                  timersStates: timersStatesForNextSession,
-                  pomoSetting: pomoSetting,
-                  endTime: sessionData.endTime,
-                };
+          const payload = {
+            timersStates: timersStatesForNextSession,
+            pomoSetting: pomoSetting,
+            endTime: sessionData.endTime,
+          };
           BC.postMessage({
             evName: "autoStartNextSession",
             payload,
@@ -373,25 +455,17 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("break", sessionData, currentCategoryName);
+      await persistSessionToIDB("break", sessionData);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesPomoStartAutomatically === false) {
           updateTimersStates(timersStatesForNextSession);
         } else {
-          const payload =
-            currentCategoryName !== null
-              ? {
-                  timersStates: timersStatesForNextSession,
-                  pomoSetting: pomoSetting,
-                  endTime: sessionData.endTime,
-                  currentCategoryName,
-                }
-              : {
-                  timersStates: timersStatesForNextSession,
-                  pomoSetting: pomoSetting,
-                  endTime: sessionData.endTime,
-                };
+          const payload = {
+            timersStates: timersStatesForNextSession,
+            pomoSetting: pomoSetting,
+            endTime: sessionData.endTime,
+          };
           BC.postMessage({
             evName: "autoStartNextSession",
             payload,
@@ -412,12 +486,13 @@ async function wrapUpSession({
       });
 
       timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
-
-      await recordPomo(
-        timersStates.duration,
-        timersStates.startTime,
-        currentCategoryName
-      );
+      idTokenAndEmail &&
+        (await recordPomo(
+          timersStates.startTime,
+          idTokenAndEmail,
+          infoArrayBeforeReset,
+          sessionData
+        ));
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -431,25 +506,17 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("pomo", sessionData, currentCategoryName);
+      await persistSessionToIDB("pomo", sessionData);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
           updateTimersStates(timersStatesForNextSession);
         } else {
-          const payload =
-            currentCategoryName !== null
-              ? {
-                  timersStates: timersStatesForNextSession,
-                  pomoSetting: pomoSetting,
-                  endTime: sessionData.endTime,
-                  currentCategoryName,
-                }
-              : {
-                  timersStates: timersStatesForNextSession,
-                  pomoSetting: pomoSetting,
-                  endTime: sessionData.endTime,
-                };
+          const payload = {
+            timersStates: timersStatesForNextSession,
+            pomoSetting: pomoSetting,
+            endTime: sessionData.endTime,
+          };
           BC.postMessage({
             evName: "autoStartNextSession",
             payload,
@@ -484,7 +551,7 @@ async function wrapUpSession({
         },
       ]);
 
-      await persistSessionToIDB("break", sessionData, currentCategoryName);
+      await persistSessionToIDB("break", sessionData);
 
       updateTimersStates(timersStatesForNextSession);
 
@@ -517,9 +584,8 @@ async function retrieveAutoStartSettingFromIDB() {
  *
  * @param {*} kind "pomo" | "break"
  * @param {*} sessionData {pause: {totalLength: number; record: {start: number; end: number | undefined;}[]}, startTime: number; endTime: number; timeCountedDown: number}
- * @param {*} currentCategoryName string | null
  */
-async function persistSessionToIDB(kind, sessionData, currentCategoryName) {
+async function persistSessionToIDB(kind, sessionData) {
   try {
     let db = DB || (await openIndexedDB());
     const store = db
@@ -527,13 +593,6 @@ async function persistSessionToIDB(kind, sessionData, currentCategoryName) {
       .objectStore("recOfToday");
 
     await store.add({ kind, ...sessionData });
-    if (kind === "pomo") {
-      BC.postMessage({
-        evName: "pomoAdded",
-        payload: { ...sessionData, currentCategoryName },
-      });
-      console.log("pubsub event from sw", pubsub.events);
-    }
   } catch (error) {
     console.warn(error);
   }
@@ -554,68 +613,151 @@ async function persistStatesToIDB(stateArr) {
   }
 }
 
-async function recordPomo(duration, startTime, currentCategoryName) {
-  let body = null;
+async function persistCategoryChangeInfoArrayToIDB(infoArr) {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("categoryStore", "readwrite")
+    .objectStore("categoryStore");
+
   try {
-    let idTokenAndEmail = await getIdTokenAndEmail();
-    if (idTokenAndEmail) {
-      const { idToken, email } = idTokenAndEmail;
-      const today = new Date(startTime);
-      let LocaleDateString = `${
-        today.getMonth() + 1
-      }/${today.getDate()}/${today.getFullYear()}`;
-      const record =
-        currentCategoryName !== null
-          ? {
-              duration,
-              startTime,
-              date: LocaleDateString,
-              currentCategoryName,
-            }
-          : {
-              duration,
-              startTime,
-              date: LocaleDateString,
-            };
-      body = JSON.stringify(record);
+    await store.put({ name: "changeInfoArray", value: infoArr });
+  } catch (error) {
+    console.warn(error);
+  }
+}
 
-      // update
-      let cache = CACHE || (await openCache(CacheName));
-      console.log("cache in recordPomo", cache);
-      let statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
-      if (statResponse !== undefined) {
-        let statData = await statResponse.json();
-        console.log("statData before push", statData);
+async function getCategoryChangeInfoArrayFromIDB() {
+  let db = DB || (await openIndexedDB());
 
-        const dataToPush = {
+  const store = db
+    .transaction("categoryStore", "readwrite")
+    .objectStore("categoryStore");
+
+  try {
+    return store.get("changeInfoArray");
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
+  let body = null;
+  console.log("info arr in recordPomo", infoArray);
+
+  try {
+    const { idToken, email } = idTokenAndEmail;
+    const today = new Date(startTime);
+    let LocaleDateString = `${
+      today.getMonth() + 1
+    }/${today.getDate()}/${today.getFullYear()}`;
+
+    //#region PLZ
+    //!  Type of the final below.
+    // {
+    //   userEmail: string;
+    //   duration: number;
+    //   startTime: number;
+    //   date: string;
+    //   isDummy: boolean;
+    //   category?: {
+    //     name: string;
+    //   };
+    // }[]
+
+    const final = convertMilliSecToMin(
+      createDataSortedByTimestamp(
+        infoArray,
+        sessionData.pause.record,
+        sessionData.endTime
+      )
+        .reduce(calculateDurationForEveryCategory, {
+          durationArr: [],
+          currentType: "focus",
+          currentOwner: "",
+          currentStartTime: 0,
+        })
+        .durationArr.reduce(aggregateFocusDurationOfTheSameCategory, {
+          c_duration_array: [],
+          currentCategoryName: "",
+        }).c_duration_array
+    ).map((val) => {
+      if (val.categoryName !== "uncategorized") {
+        return {
           userEmail: email,
-          duration,
-          startTime,
+          duration: val.duration,
+          startTime: val.startTime,
+          date: LocaleDateString,
+          isDummy: false,
+          category: {
+            name: val.categoryName,
+          },
+        };
+      } else {
+        return {
+          userEmail: email,
+          duration: val.duration,
+          startTime: val.startTime,
           date: LocaleDateString,
           isDummy: false,
         };
-        if (currentCategoryName) {
-          dataToPush.category = { name: currentCategoryName };
-        }
-        statData.push(dataToPush);
-        console.log("statData after push", statData);
-
-        await cache.put(
-          BASE_URL + RESOURCE.POMODOROS,
-          new Response(JSON.stringify(statData))
-        );
       }
+    });
+    console.log("final in sw.js<----------------------------------", final);
+    //#endregion
 
-      const res = await fetch(BASE_URL + RESOURCE.POMODOROS, {
-        method: "POST",
-        body,
-        headers: {
-          Authorization: "Bearer " + idToken,
-          "Content-Type": "application/json",
-        },
-      });
-      console.log("res of recordPomo in sw: ", res);
+    //#region
+    BC.postMessage({
+      evName: "pomoAdded",
+      payload: final,
+    });
+    console.log("pubsub event from sw", pubsub.events);
+
+    //#endregion
+
+    //#region Update cache
+
+    let cache = CACHE || (await openCache(CacheName));
+    // console.log("CACHE", CACHE);
+    // console.log("cache in recordPomo", cache);
+
+    const cacheUrl = BASE_URL + RESOURCE.POMODOROS;
+    // console.log("cache address", cacheUrl);
+
+    let statResponse = await cache.match(cacheUrl); //<------ was a problem. statResponse was undefined. Sol: open cache in the message event handler above.
+    console.log("statResponse", statResponse);
+
+    if (statResponse !== undefined) {
+      let statData = await statResponse.json();
+
+      try {
+        // Put the updated data back into the cache
+        await cache.put(
+          cacheUrl,
+          new Response(JSON.stringify([...statData, ...final]), {
+            headers: { "Content-Type": "application/json" },
+          })
+        );
+        console.log("Data successfully cached.");
+      } catch (error) {
+        console.error("Failed to put data in cache", error);
+      }
+    } else {
+      console.warn(`No existing cache entry found for ${CacheName}.`); // name I defined.
+      // console.log(await getCacheNames()); // real ones.
     }
+    //#endregion
+
+    body = JSON.stringify({
+      pomodoroRecordArr: final,
+    });
+    fetchWrapper(
+      BASE_URL + RESOURCE.POMODOROS,
+      "POST",
+      {
+        pomodoroRecordArr: final,
+      },
+      idToken
+    );
   } catch (error) {
     if (
       error instanceof TypeError &&
@@ -623,7 +765,11 @@ async function recordPomo(duration, startTime, currentCategoryName) {
     ) {
       BC.postMessage({
         evName: "fetchCallFailed_Network_Error",
-        payload: { url: "pomodoros", method: "POST", data: body },
+        payload: {
+          url: "pomodoros",
+          method: "POST",
+          data: body,
+        },
       });
     } else {
       console.warn(error);
@@ -754,3 +900,165 @@ function identifySession({ howManyCountdown, numOfPomo }) {
     return SESSION.LONG_BREAK;
   }
 }
+
+/**
+ *
+ * @param {*} URL string
+ * @param {*} METHOD "POST" | "GET" | "PATCH" | "DELETE"
+ * @param {*} data this is going to be stringified
+ * @param {*} idToken string
+ * @returns
+ */
+async function fetchWrapper(URL, METHOD, data, idToken) {
+  try {
+    const response = await fetch(URL, {
+      method: METHOD,
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: "Bearer " + idToken,
+        "Content-Type": "application/json",
+      },
+    });
+    return response;
+  } catch (error) {
+    console.error("Fetch failed:", error);
+    throw error; // Rethrow to allow further handling
+  }
+}
+
+//#region utilities for category change
+//#region transform 1 - to get data sorted by timestamp.
+function createDataSortedByTimestamp(
+  categoryChangeInfoArray,
+  pauseRecord,
+  endTime
+) {
+  const categoryChanges = transformCategoryChanges(categoryChangeInfoArray);
+  const pauseRecords = transformPauseRecords(pauseRecord);
+  const data = [...categoryChanges, ...pauseRecords];
+  data.sort((a, b) => a.timestamp - b.timestamp);
+  data.push({ kind: "endOfSession", timestamp: endTime });
+  return data;
+
+  function transformCategoryChanges(categoryChangeInfoArray) {
+    return categoryChangeInfoArray.map((val) => ({
+      kind: "category",
+      name: val.categoryName,
+      timestamp: val.categoryChangeTimestamp,
+    }));
+  }
+
+  function transformPauseRecords(pauseRecords) {
+    return pauseRecords.flatMap((val) => [
+      { kind: "pause", name: "start", timestamp: val.start },
+      { kind: "pause", name: "end", timestamp: val.end },
+    ]);
+  }
+}
+//#endregion
+
+//#region transform 2: duration for each category
+function calculateDurationForEveryCategory(acc, val, idx, _array) {
+  if (idx === 0) {
+    acc.currentOwner = val.name;
+    acc.currentStartTime = val.timestamp;
+    return acc;
+  }
+
+  const duration_in_ms = val.timestamp - _array[idx - 1].timestamp;
+
+  switch (val.kind) {
+    case "pause":
+      if (val.name === "start") {
+        acc.durationArr.push({
+          owner: acc.currentOwner,
+          duration: duration_in_ms,
+          type: acc.currentType,
+          startTime: acc.currentStartTime,
+        });
+        acc.currentType = "pause";
+        acc.currentStartTime = val.timestamp;
+      }
+      if (val.name === "end") {
+        acc.durationArr.push({
+          owner: acc.currentOwner,
+          duration: duration_in_ms,
+          type: acc.currentType,
+          startTime: acc.currentStartTime,
+        });
+        acc.currentType = "focus";
+        acc.currentStartTime = val.timestamp;
+      }
+      break;
+    case "category":
+      acc.durationArr.push({
+        owner: acc.currentOwner,
+        duration: duration_in_ms,
+        type: acc.currentType,
+        startTime: acc.currentStartTime,
+      });
+      acc.currentOwner = val.name;
+      acc.currentStartTime = val.timestamp;
+      break;
+    case "endOfSession":
+      if (duration_in_ms !== 0) {
+        acc.durationArr.push({
+          owner: acc.currentOwner,
+          duration: duration_in_ms,
+          type: acc.currentType,
+          startTime: acc.currentStartTime,
+        });
+      }
+      break;
+    default:
+      break;
+  }
+
+  return acc;
+}
+//#endregion
+
+//#region transform 3: sum up focus durations of the same category.
+function aggregateFocusDurationOfTheSameCategory(prev, val, idx) {
+  if (idx === 0) {
+    prev.c_duration_array.push({
+      categoryName: val.owner,
+      duration: val.duration,
+      startTime: val.startTime,
+    });
+    prev.currentCategoryName = val.owner;
+
+    return prev;
+  }
+
+  if (val.owner === prev.currentCategoryName) {
+    if (val.type === "focus") {
+      prev.c_duration_array[prev.c_duration_array.length - 1].duration +=
+        val.duration;
+    }
+  }
+
+  if (val.owner !== prev.currentCategoryName) {
+    const newDuration = {
+      categoryName: val.owner,
+      duration: val.type === "focus" ? val.duration : 0,
+      startTime: val.startTime,
+    };
+    prev.c_duration_array.push(newDuration);
+    prev.currentCategoryName = val.owner;
+  }
+
+  return prev;
+}
+
+function convertMilliSecToMin(durationByCategoryArr) {
+  return durationByCategoryArr.map((val) => {
+    // console.log(
+    //   "<-------------------------------convertMilliSecToMin---------------------------------->"
+    // );
+    // console.log(val);
+    return { ...val, duration: Math.floor(val.duration / (60 * 1000)) };
+  });
+}
+//#endregion
+//#endregion

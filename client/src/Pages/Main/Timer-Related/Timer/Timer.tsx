@@ -169,7 +169,7 @@ export function Timer({
   //#region Button Click Handlers
   //문제점: toggle이 나타내는 case들 중 분명 resume이라는게 존재하는데 조건식에서 resume이라는 단어는 코빼기도 보이지 않는다.
   async function toggleTimer(momentTimerIsToggled: number) {
-    if (start()) {
+    if (doWeStartTimer()) {
       // initial start
       dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
       if (repetitionCount === 0) {
@@ -200,7 +200,7 @@ export function Timer({
             duration: durationInSeconds / 60,
           });
       }
-    } else if (resume()) {
+    } else if (doWeResumeTimer()) {
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
       user &&
@@ -225,7 +225,7 @@ export function Timer({
                   .start),
           },
         });
-    } else if (pause()) {
+    } else if (doWePauseTimer()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
       user &&
@@ -241,17 +241,17 @@ export function Timer({
           },
         });
     }
-    function start() {
+    function doWeStartTimer() {
       return (
         timerState.running === false && timerState.pause!.record.length === 0
       ); // if this is not the first start of the timer, it means resuming the timer.
     }
-    function resume() {
+    function doWeResumeTimer() {
       return (
         timerState.running === false && timerState.pause!.record.length !== 0
       );
     }
-    function pause() {
+    function doWePauseTimer() {
       return timerState.running;
     }
   }
@@ -381,7 +381,7 @@ export function Timer({
   }
 
   //#region UseEffects
-  useEffect(autoStartNextSession, [repetitionCount]);
+  useEffect(autoStartNextSession, [repetitionCount, durationInSeconds]);
 
   useEffect(logPause, [
     remainingDuration,
@@ -577,7 +577,7 @@ export function Timer({
       isNextSessionPomo() &&
       !isNextSessionStartOfCycle()
     ) {
-      toggleTimer(Date.now());
+      startNext(pomoDuration, Date.now());
     }
 
     // Auto start all break sessions of a cycle
@@ -587,7 +587,9 @@ export function Timer({
       isNextSessionBreak() &&
       !isNextSessionStartOfCycle()
     ) {
-      toggleTimer(Date.now());
+      if (repetitionCount === numOfPomo * 2 - 1)
+        startNext(longBreakDuration, Date.now());
+      else startNext(shortBreakDuration, Date.now());
     }
 
     // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
@@ -602,6 +604,33 @@ export function Timer({
     }
     function isNextSessionBreak() {
       return repetitionCount % 2 !== 0;
+    }
+    function startNext(duration: number, startTime: number) {
+      if (repetitionCount === 0) {
+        user !== null &&
+          updateTimersStates({
+            startTime,
+            running: true,
+            pause: { totalLength: 0, record: [] },
+          });
+        postMsgToSW("saveStates", {
+          stateArr: [
+            { name: "repetitionCount", value: 0 },
+            { name: "duration", value: duration },
+          ],
+        });
+        setIsOnCycle(true);
+      } else {
+        dispatch({ type: ACTION.START, payload: startTime });
+        user !== null &&
+          updateTimersStates({
+            startTime,
+            running: true,
+            pause: { totalLength: 0, record: [] },
+            repetitionCount,
+            duration,
+          });
+      }
     }
   }
   //#endregion
@@ -620,7 +649,19 @@ export function Timer({
     howManyCountdown: number;
     numOfPomo: number;
   }): { duration: number; repetitionCount?: number } {
-    let retVal = null;
+    let retVal: { duration: number; repetitionCount?: number } | null = null;
+    // console.log(
+    //   "<-------------------determineNextPatternTimerStates------------------->"
+    // );
+    // console.log("durations", {
+    //   pomoDuration,
+    //   shortBreakDuration,
+    //   longBreakDuration,
+    // });
+    // console.log("args", { howManyCountdown, numOfPomo });
+    // console.log(
+    //   "<--------------------------------------------------------------------->"
+    // );
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
         retVal = { duration: shortBreakDuration };
@@ -673,6 +714,7 @@ export function Timer({
               ? 1
               : 1 - remainingDuration / durationInSeconds
           }
+          startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
           remainingDuration={remainingDuration}
           setRemainingDuration={setRemainingDuration}

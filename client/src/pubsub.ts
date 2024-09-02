@@ -15,8 +15,8 @@ export const pubsub: PubsubType = {
       this.events[evName] = new Set();
     }
     this.events[evName].add(cb);
-    console.log(`subscription to ${evName} has started`);
-    console.log("events", this.events);
+    // console.log(`subscription to ${evName} has started`);
+    // console.log("events", this.events);
 
     return () => {
       this.events[evName].delete(cb);
@@ -26,7 +26,7 @@ export const pubsub: PubsubType = {
   unsubscribe: function (evName, cb) {
     if (evName in this.events) {
       this.events[evName].delete(cb);
-      console.log(`The Subscription to the ${evName} has been unsubscribed.`);
+      // console.log(`The Subscription to the ${evName} has been unsubscribed.`);
     }
   },
 

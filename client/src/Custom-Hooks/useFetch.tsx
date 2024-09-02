@@ -60,25 +60,24 @@ export function useFetch<T, S = undefined>({
     async function getData() {
       let resData = await caches.match(BASE_URL + urlSegment);
       if (resData) {
-        // console.log(
-        //   "------------------------------- from Cache -------------------------------"
-        // );
         let data =
           modifier !== undefined
             ? modifier((await resData.json()) as T)
             : await resData.json();
 
         console.log("data from cache", data);
-        setData(data);
         if (callbacks !== undefined) {
-          callbacks.forEach((fn) => {
-            fn(data);
-          });
+          // await Promise.all(
+          //   callbacks.map(async (fn) => {
+          //     await fn(data);
+          //   })
+          // );
+          for (const fn of callbacks) {
+            await fn(data);
+          }
         }
+        setData(data);
       } else {
-        // console.log(
-        //   "------------------------------- useFetch with HTTP response -------------------------------"
-        // );
         let res = await fetchDataFromServer();
 
         if (res !== undefined) {
@@ -89,7 +88,7 @@ export function useFetch<T, S = undefined>({
       }
     }
 
-    // This is going to be used in the getDate() function.
+    // This is going to be used in the getData() function.
     async function fetchDataFromServer() {
       try {
         const response = await axiosInstance.get(urlSegment);
@@ -97,13 +96,17 @@ export function useFetch<T, S = undefined>({
         let data =
           modifier !== undefined ? modifier(response.data as T) : response.data;
 
-        // console.log("data from remote server", data);
-        setData(data);
         if (callbacks !== undefined) {
-          callbacks.forEach((fn) => {
-            fn(data);
-          });
+          for (const fn of callbacks) {
+            await fn(data);
+          }
+          // await Promise.all(
+          //   callbacks.map(async (fn) => {
+          //     await fn(data);
+          //   })
+          // );
         }
+        setData(data);
 
         return response;
       } catch (error) {
@@ -118,8 +121,6 @@ export function useFetch<T, S = undefined>({
     function isAdditionalConditionSatisfiedWhenProvided() {
       return additionalCondition ?? true;
     }
-
-    // console.log("Fetching Data", typeof data);
   }, [user, ...moreDeps]);
 
   return [data, setData];

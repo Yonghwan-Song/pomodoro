@@ -1,7 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Timer } from "../../Timer-Related/Timer/Timer";
 import { AxiosError } from "axios";
-import { CacheName, RESOURCE, BASE_URL } from "../../../../constants/index";
+import {
+  CacheName,
+  RESOURCE,
+  BASE_URL,
+  SUB_SET,
+} from "../../../../constants/index";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { User } from "firebase/auth";
 import {
@@ -10,9 +15,12 @@ import {
   persistSingleTodaySessionToIDB,
   postMsgToSW,
   makeSound,
+  obtainStatesFromIDB,
+  persistCategoryChangeInfoArrayToIDB,
 } from "../../../..";
 import {
   Category,
+  CategoryChangeInfo,
   RecType,
   TimerStateType,
   TimersStatesType,
@@ -20,6 +28,15 @@ import {
 import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
 import { useUserContext } from "../../../../Context/UserContext";
 import { PomodoroSessionDocument } from "../../../Statistics/statRelatedTypes";
+import {
+  createDataSortedByTimestamp,
+  calculateDurationForEveryCategory,
+  aggregateFocusDurationOfTheSameCategory,
+  NN,
+  M,
+  convertMilliSecToMin,
+} from "./category-change-utility";
+import { getProgress } from "../utility-functions";
 
 type PatternTimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -59,18 +76,43 @@ export function TimerController({
   const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
 
   const userInfoContext = useUserContext()!;
-  const currentCategory: Category | null = useMemo(() => {
+  const setPomoInfo = userInfoContext.setPomoInfo;
+  const colorForUnCategorized = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.colorForUnCategorized;
+    } else {
+      return "#f04005";
+    }
+  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+  //#region New with doesItJustChangeCategory: boolean.
+  const [currentCategory, doesItJustChangeCategory]: [
+    Category | null,
+    boolean | undefined
+  ] = useMemo(() => {
     if (
       userInfoContext.pomoInfo !== null &&
       userInfoContext.pomoInfo.categories !== undefined
     ) {
-      return (
-        userInfoContext.pomoInfo.categories.find((c) => c.isCurrent) ?? null
-      );
+      return [
+        userInfoContext.pomoInfo.categories.find((c) => c.isCurrent) ?? null,
+        userInfoContext.pomoInfo.doesItJustChangeCategory,
+      ];
     } else {
-      return null;
+      return [null, undefined];
     }
   }, [userInfoContext.pomoInfo?.categories]);
+  //#endregion
+
+  const categoryChangeInfoArray: CategoryChangeInfo[] = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.categoryChangeInfoArray;
+    } else {
+      return [];
+    }
+  }, [userInfoContext.pomoInfo?.categoryChangeInfoArray]);
+
+  const isFirstRender = useRef(true);
+  const prevSessionType = useRef<number>(0);
 
   // function checkRendering() {
   //   // console.log("user", user === null ? null : "non-null");
@@ -81,7 +123,18 @@ export function TimerController({
   //   // console.log(
   //   //   "------------------------------------------------------------------"
   //   // );
-  //   console.log(`currentCategory is ${JSON.stringify(currentCategory)}`);
+  //   // console.log(`currentCategory -> ${JSON.stringify(currentCategory)}`);
+  //   // console.log("----------------ref");
+  //   // console.log("isFirstRender", isFirstRender.current);
+  //   // console.log("prevSession was", prevSessionType.current);
+  //   // console.log("current category", currentCategory);
+  //   // console.log("categoryChangeInfoArray", categoryChangeInfoArray);
+  //   // console.log("_arr", categoryChangeInfoArray);
+
+  //   // console.log("-------------------------------------------------->");
+  //   // console.log("userInfoContext.pomoInfo", userInfoContext.pomoInfo);
+  //   // console.log("<--------------------------------------------------");
+  //   console.log("statesRelatedToTimers PROP - ", statesRelatedToTimer);
   // }
   // useEffect(checkRendering);
 
@@ -157,6 +210,14 @@ export function TimerController({
     howManyCountdown: number;
     numOfPomo: number;
   }): SESSION {
+    if (howManyCountdown === 0) {
+      // Timer component말고 여기서 re-fresh했을 때, repetitionCount가 0인 경우에 call되면, 계속 short-break이라고 나와서.
+      //! determineNextPatternTimerStates함수 in Timer.tsx의 마지막 else, 그리고 return값에 대한 주석 확인.
+      return SESSION.LONG_BREAK;
+    }
+    console.log("howManyCountdown:", howManyCountdown);
+    console.log("numOfPomo", numOfPomo);
+
     if (howManyCountdown < numOfPomo! * 2 - 1 && howManyCountdown % 2 === 1) {
       return SESSION.POMO;
     } else if (
@@ -169,6 +230,21 @@ export function TimerController({
     } else {
       return SESSION.LONG_BREAK;
     }
+
+    //#region Original
+    // if (howManyCountdown < numOfPomo! * 2 - 1 && howManyCountdown % 2 === 1) {
+    //   return SESSION.POMO;
+    // } else if (
+    //   howManyCountdown < numOfPomo! * 2 - 1 &&
+    //   howManyCountdown % 2 === 0
+    // ) {
+    //   return SESSION.SHORT_BREAK;
+    // } else if (howManyCountdown === numOfPomo * 2 - 1) {
+    //   return SESSION.LAST_POMO;
+    // } else {
+    //   return SESSION.LONG_BREAK;
+    // }
+    //#endregion
   }
 
   async function wrapUpSession({
@@ -183,14 +259,54 @@ export function TimerController({
     };
   }) {
     let { state, timeCountedDownInMilliSeconds, sessionData } = data;
+    if (user) {
+      const infoArr = [
+        {
+          categoryName:
+            currentCategory === null ? "uncategorized" : currentCategory.name,
+          categoryChangeTimestamp: 0,
+          _uuid: currentCategory?._uuid,
+          color:
+            currentCategory !== null
+              ? currentCategory.color
+              : colorForUnCategorized,
+          progress: 0, //? 시작을 아직 안한거니까 0으로 하겠음.
+        },
+      ];
+      setPomoInfo((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          categoryChangeInfoArray: infoArr,
+        };
+      });
+      // console.log("categoryChangeInfoArray", infoArr);
+      persistCategoryChangeInfoArrayToIDB(infoArr);
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
+        categoryChangeInfoArray: infoArr.map((info) => {
+          return {
+            categoryName: info.categoryName,
+            categoryChangeTimestamp: info.categoryChangeTimestamp,
+            color: info.color,
+            progress: info.progress,
+          };
+        }),
+      });
+    }
     switch (session) {
       case SESSION.POMO:
+        prevSessionType.current = session;
         if (user) {
-          recordPomo(
+          categoryChangeInfoArray[0].categoryChangeTimestamp =
+            sessionData.startTime;
+          await recordPomo(
             user,
             Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
             state.startTime,
-            currentCategory
+            currentCategory,
+            categoryChangeInfoArray,
+            sessionData
           ); // Non null assertion is correct because a user is already signed in at this point.
         } else {
           // console.log("user is not ready", user);
@@ -213,6 +329,7 @@ export function TimerController({
         break;
 
       case SESSION.SHORT_BREAK:
+        prevSessionType.current = session;
         notify("pomo");
         setDurationInMinutes(pomoDuration!);
         postMsgToSW("saveStates", {
@@ -230,12 +347,17 @@ export function TimerController({
         break;
 
       case SESSION.LAST_POMO:
+        prevSessionType.current = session;
         if (user) {
-          recordPomo(
+          categoryChangeInfoArray[0].categoryChangeTimestamp = //? unde냥ined.categoryChangeTimestamp 이런식으로 해서 error가 발생했음.
+            sessionData.startTime;
+          await recordPomo(
             user,
             Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
             state.startTime,
-            currentCategory
+            currentCategory,
+            categoryChangeInfoArray,
+            sessionData
           );
         } else {
           // console.log("user is not ready", user);
@@ -257,6 +379,7 @@ export function TimerController({
         break;
 
       case SESSION.LONG_BREAK:
+        prevSessionType.current = session;
         notify("nextCycle");
         //setCycleCount((prev) => prev + 1);
         setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
@@ -287,6 +410,222 @@ export function TimerController({
   //     console.log("Pattern Timer was unmounted");
   //   };
   // }, []);
+
+  //#region Revised
+  useEffect(() => {
+    async function reflectCategoryChange() {
+      // console.log("revised is called");
+      if (isFirstRender.current) {
+        isFirstRender.current = false;
+      } else {
+        let states = await obtainStatesFromIDB("withoutSettings");
+        const progress = getProgress(states as TimersStatesType);
+
+        if (
+          SESSION[prevSessionType.current] === "SHORT_BREAK" ||
+          SESSION[prevSessionType.current] === "LONG_BREAK"
+        ) {
+          if (
+            (states as TimersStatesType).running === false &&
+            (states as TimersStatesType).startTime === 0
+          ) {
+            // console.log("pomo session but not started yet");
+            const infoObj: CategoryChangeInfo = {
+              categoryName:
+                currentCategory !== null
+                  ? currentCategory.name
+                  : "uncategorized",
+              categoryChangeTimestamp: 0,
+              _uuid: currentCategory?._uuid,
+              color:
+                currentCategory !== null
+                  ? currentCategory.color
+                  : colorForUnCategorized,
+              progress,
+            };
+            setPomoInfo((prev) => {
+              if (!prev) return prev;
+              return { ...prev, categoryChangeInfoArray: [infoObj] };
+            });
+            // console.log("categoryChangeInfoArray", [infoObj]);
+            persistCategoryChangeInfoArrayToIDB([infoObj]);
+            axiosInstance.patch(
+              RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+              {
+                categoryChangeInfoArray: [
+                  {
+                    categoryName: infoObj.categoryName,
+                    categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
+                    color: infoObj.color,
+                    progress: infoObj.progress,
+                  },
+                ],
+              }
+            );
+          } else {
+            // console.log("pomo session is on going");
+            // console.log("running", (states as TimersStatesType).running);
+            // console.log("startTime", (states as TimersStatesType).startTime);
+
+            const infoObj = {
+              categoryName:
+                currentCategory !== null
+                  ? currentCategory.name
+                  : "uncategorized",
+              categoryChangeTimestamp: Date.now(),
+              _uuid: currentCategory?._uuid,
+              color:
+                currentCategory !== null
+                  ? currentCategory.color
+                  : colorForUnCategorized,
+              progress,
+            };
+
+            setPomoInfo((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                categoryChangeInfoArray: [...categoryChangeInfoArray, infoObj],
+              };
+            });
+            // console.log("categoryChangeInfoArray", [
+            //   ...categoryChangeInfoArray,
+            //   infoObj,
+            // ]);
+            persistCategoryChangeInfoArrayToIDB([
+              ...categoryChangeInfoArray,
+              infoObj,
+            ]);
+            axiosInstance.patch(
+              RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+              {
+                categoryChangeInfoArray: [
+                  ...categoryChangeInfoArray.map((info) => {
+                    return {
+                      categoryName: info.categoryName,
+                      categoryChangeTimestamp: info.categoryChangeTimestamp,
+                      color: info.color,
+                      progress: info.progress,
+                    };
+                  }),
+                  {
+                    categoryName: infoObj.categoryName,
+                    categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
+                    color: infoObj.color,
+                    progress: infoObj.progress,
+                  },
+                ],
+              }
+            );
+          }
+        }
+        if (
+          SESSION[prevSessionType.current] === "POMO" ||
+          SESSION[prevSessionType.current] === "LAST_POMO"
+        ) {
+          // console.log("break session");
+          const infoObj = {
+            categoryName:
+              currentCategory !== null ? currentCategory.name : "uncategorized",
+            categoryChangeTimestamp: 0,
+            _uuid: currentCategory?._uuid,
+            color:
+              currentCategory !== null
+                ? currentCategory.color
+                : colorForUnCategorized,
+            progress,
+          };
+          setPomoInfo((prev) => {
+            if (!prev) return prev;
+            return { ...prev, categoryChangeInfoArray: [infoObj] };
+          });
+          // console.log("categoryChangeInfoArray", [infoObj]);
+          persistCategoryChangeInfoArrayToIDB([infoObj]);
+          axiosInstance.patch(
+            RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+            {
+              categoryChangeInfoArray: [
+                {
+                  categoryName: infoObj.categoryName,
+                  categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
+                  color: infoObj.color,
+                  progress: infoObj.progress,
+                },
+              ],
+            }
+          );
+        }
+      }
+    }
+
+    async function justChangeCateogry() {
+      if (isFirstRender.current) {
+        isFirstRender.current = false;
+      } else {
+        const updated = [...categoryChangeInfoArray];
+        if (currentCategory) {
+          updated[updated.length - 1]._uuid = currentCategory?._uuid;
+          updated[updated.length - 1].categoryName = currentCategory?.name;
+          updated[updated.length - 1].color = currentCategory?.color;
+        } else {
+          delete updated[updated.length - 1]._uuid;
+          updated[updated.length - 1].categoryName = "uncategorized";
+          updated[updated.length - 1].color = colorForUnCategorized;
+        }
+
+        setPomoInfo((prev) => {
+          if (!prev) return prev;
+
+          return { ...prev, categoryChangeInfoArray: updated };
+        });
+        persistCategoryChangeInfoArrayToIDB(updated);
+        currentCategory && delete updated[updated.length - 1]._uuid; // _uuid is only valid in client side
+        axiosInstance.patch(
+          RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+          {
+            categoryChangeInfoArray: updated,
+          }
+        );
+      }
+      // 1. idb (x)
+      // 2. server (x)
+      // 3. pomoInfo (x)
+    }
+
+    if (user) {
+      if (!doesItJustChangeCategory) reflectCategoryChange();
+      else justChangeCateogry();
+    }
+  }, [currentCategory?.name]);
+
+  useEffect(() => {
+    const prevSession = identifySession({
+      howManyCountdown: repetitionCount,
+      numOfPomo,
+    });
+    // console.log(
+    //   `prevSession calculated in  [] side-effect`,
+    //   SESSION[prevSession]
+    // );
+    prevSessionType.current = prevSession;
+  }, []);
+
+  useEffect(() => {
+    console.log("categoryChangeInfoArray", categoryChangeInfoArray);
+  });
+
+  useEffect(() => {
+    console.log("prev session - ", SESSION[prevSessionType.current]);
+    if (SESSION[prevSessionType.current] === "SHORT_BREAK" || "LONG_BREAK") {
+      if (
+        (statesRelatedToTimer as TimersStatesType).running === false &&
+        (statesRelatedToTimer as TimersStatesType).startTime === 0
+      ) {
+        // console.log("-------pomo has not started yet.");
+      }
+    }
+  });
+  //#endregion
 
   return (
     <Timer
@@ -339,52 +678,130 @@ async function recordPomo(
   user: User,
   durationInMinutes: number,
   startTime: number,
-  currentCategory: Category | null
+  currentCategory: Category | null,
+  categoryChangeInfoArray: {
+    categoryName: string;
+    categoryChangeTimestamp: number;
+  }[],
+  sessionData: Omit<RecType, "kind">
 ) {
   try {
+    //#region
+    // console.log("categoryChangeInfoArray", categoryChangeInfoArray);
+    // console.log("sessionData", sessionData);
+    //#endregion
+
+    //#region Prepare some values
     const today = new Date(startTime);
     let LocaleDateString = `${
       today.getMonth() + 1
     }/${today.getDate()}/${today.getFullYear()}`;
+    const newData = createDataSortedByTimestamp(
+      categoryChangeInfoArray,
+      sessionData.pause.record as {
+        start: number;
+        end: number; // After a session is ended, the end property is no longer able to have "undefined".
+      }[],
+      sessionData.endTime
+    )
+      .reduce<NN>(calculateDurationForEveryCategory, {
+        durationArr: [],
+        currentType: "focus",
+        currentOwner: "",
+        currentStartTime: 0,
+      })
+      .durationArr.reduce<M>(aggregateFocusDurationOfTheSameCategory, {
+        c_duration_array: [],
+        currentCategoryName: "",
+      });
 
-    // update
+    // data type at stat cache
+    // {
+    //*     "userEmail": "syh300089@gmail.com",
+    //     "duration": 1,
+    //     "startTime": 1723690589962,
+    //*     "date": "8/15/2024",
+    //!     "isDummy": false,
+    //?     "category": {
+    //?         "name": "et cetera"
+    //?     }
+    // }
+    const final: {
+      userEmail: string;
+      duration: number;
+      startTime: number;
+      date: string;
+      isDummy: boolean;
+      category?: {
+        name: string;
+      };
+    }[] = convertMilliSecToMin(newData.c_duration_array).map((val) => {
+      if (val.categoryName !== "uncategorized") {
+        return {
+          userEmail: user.email!,
+          duration: val.duration,
+          startTime: val.startTime,
+          date: LocaleDateString,
+          isDummy: false,
+          category: {
+            name: val.categoryName,
+          },
+        };
+      } else {
+        return {
+          userEmail: user.email!,
+          duration: val.duration,
+          startTime: val.startTime,
+          date: LocaleDateString,
+          isDummy: false,
+        };
+      }
+    });
+
+    // console.log("final by Array.Prototype.Map()", final);
+    // [
+    //     {
+    //         "userEmail": "syh300089@gmail.com",
+    //         "duration": 1,
+    //         "startTime": 1723701247658,
+    //         "date": "8/15/2024",
+    //         "isDummy": false,
+    //         "category": {
+    //             "name": "Netflix"
+    //         }
+    //     },
+    //     {
+    //         "userEmail": "syh300089@gmail.com",
+    //         "duration": 1,
+    //         "startTime": 1723701310612,
+    //         "date": "8/15/2024",
+    //         "isDummy": false,
+    //         "category": {
+    //             "name": "ENGLISH"
+    //         }
+    //     }
+    // ]
+    //#endregion
+
+    //#region Update cache
     let cache = DynamicCache || (await openCache(CacheName));
     let statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
     if (statResponse !== undefined) {
       let statData = await statResponse.json();
-      const dataToPush: PomodoroSessionDocument = {
-        userEmail: user.email!, //TODO  <---- 걍 non null assertion 갈겼음
-        duration: durationInMinutes,
-        startTime,
-        date: LocaleDateString,
-        isDummy: false,
-      };
-      if (currentCategory !== null) {
-        dataToPush.category = { name: currentCategory.name };
-      }
 
-      statData.push(dataToPush);
+      const dataToPush: PomodoroSessionDocument[] = final;
+      statData.push(...dataToPush);
+
       await cache.put(
         BASE_URL + RESOURCE.POMODOROS,
         new Response(JSON.stringify(statData))
       );
     }
+    //#endregion
 
-    const data =
-      currentCategory !== null
-        ? {
-            duration: durationInMinutes,
-            startTime,
-            date: LocaleDateString,
-            currentCategoryName: currentCategory.name,
-          }
-        : {
-            duration: durationInMinutes,
-            startTime,
-            date: LocaleDateString,
-          };
-
-    axiosInstance.post(RESOURCE.POMODOROS, data);
+    axiosInstance.post(RESOURCE.POMODOROS, {
+      pomodoroRecordArr: final,
+    });
   } catch (err) {
     if (
       // ignore the code below for now

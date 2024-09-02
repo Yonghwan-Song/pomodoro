@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/schemas/user.schema';
@@ -11,6 +11,7 @@ import { TodayRecord } from 'src/schemas/todayRecord.schema';
 import { Category } from 'src/schemas/category.schema';
 import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
 import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
+import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 
 @Injectable()
 export class UsersService {
@@ -92,33 +93,100 @@ export class UsersService {
     updateIsUnCategorizedOnStatDto: UpdateIsUnCategorizedOnStatDto,
     userEmail: string,
   ) {
-    return this.userModel.findOneAndUpdate(
-      { userEmail },
-      {
-        $set: {
-          isUnCategorizedOnStat:
-            updateIsUnCategorizedOnStatDto.isUnCategorizedOnStat,
+    return this.userModel
+      .findOneAndUpdate(
+        { userEmail },
+        {
+          $set: {
+            isUnCategorizedOnStat:
+              updateIsUnCategorizedOnStatDto.isUnCategorizedOnStat,
+          },
         },
-      },
-      { new: true },
-    );
+        { new: true },
+      )
+      .exec();
   }
 
-  updateColorForUnCategorized(
+  async updateColorForUnCategorized(
     updateColorForUnCategorizedDto: UpdateColorForUnCategorizedDto,
     userEmail: string,
   ) {
-    return this.userModel.findOneAndUpdate(
-      { userEmail },
-      {
-        $set: {
-          colorForUnCategorized:
-            updateColorForUnCategorizedDto.colorForUnCategorized,
-        },
-      },
-      { new: true },
-    );
+    const user = await this.userModel.findOne({ userEmail });
+    if (!user) {
+      throw new NotFoundException(`User with email ${userEmail} not found`);
+    }
+    user.colorForUnCategorized =
+      updateColorForUnCategorizedDto.colorForUnCategorized;
+    user.categoryChangeInfoArray.forEach((info) => {
+      if (info.categoryName === 'uncategorized') {
+        info.color = updateColorForUnCategorizedDto.colorForUnCategorized;
+      }
+    });
+    return await user.save();
+
+    // return this.userModel
+    //   .findOneAndUpdate(
+    //     { userEmail },
+    //     {
+    //       $set: {
+    //         colorForUnCategorized:
+    //           updateColorForUnCategorizedDto.colorForUnCategorized,
+    //       },
+    //     },
+    //     { new: true },
+    //   )
+    //   .exec();
   }
+
+  updateCategoryChangeInfoArray(
+    updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
+    userEmail: string,
+  ) {
+    return this.userModel
+      .findOneAndUpdate(
+        { userEmail },
+        {
+          $set: {
+            categoryChangeInfoArray:
+              updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
+          },
+        },
+        { new: true, upsert: true },
+      )
+      .exec(); // I read that .exec() is not neccessary when using findByIdAnd_____ ... but cannot remember where I read it..
+  }
+
+  //TODO: test
+  // async updateCategoryChangeInfoArray(
+  //   updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
+  //   userEmail: string,
+  // ) {
+  //   const arrayForUpdate: {
+  //     category: ObjectId;
+  //     categoryChangeTimestamp: number;
+  //   }[] = [];
+  //   for (const infoDto of updateCategoryChangeInfoArrayDto.categoryChangeInfoArray) {
+  //     const category = await this.categoryModel
+  //       .findOne({ userEmail, name: infoDto.categoryName })
+  //       .exec();
+  //     arrayForUpdate.push({
+  //       category: category.id,
+  //       categoryChangeTimestamp: infoDto.categoryChangeTimestamp,
+  //     });
+  //   }
+
+  //   return this.userModel
+  //     .findOneAndUpdate(
+  //       { userEmail },
+  //       {
+  //         $set: {
+  //           categoryChangeInfoArray: arrayForUpdate,
+  //         },
+  //       },
+  //       { new: true, upsert: true },
+  //     )
+  //     .exec(); // I read that .exec() is not neccessary when using findByIdAnd_____ ... but cannot remember where I read it..
+  // }
 
   async deleteUser(userEmail: string) {
     const deletedPomodoroRecords = await this.pomodoroModel

@@ -4,6 +4,7 @@ import { useAuthContext } from "../../Context/AuthContext";
 import { useUserContext } from "../../Context/UserContext";
 import {
   AutoStartSettingType,
+  Category,
   PomoSettingType,
   RequiredStatesToRunTimerType,
 } from "../../types/clientStatesType";
@@ -29,11 +30,12 @@ import {
 import styles from "./Settings.module.css";
 import {
   DynamicCache,
-  clearStateStoreAndRecOfToday,
+  clear__StateStore_RecOfToday_CategoryStore,
   countDown,
   deleteCache,
   emptyStateStore,
   openCache,
+  persistCategoryChangeInfoArrayToIDB,
   postMsgToSW,
   stopCountDownInBackground,
   updateAutoStartSetting,
@@ -65,6 +67,27 @@ function Settings() {
         : ({} as AutoStartSettingType),
     [userInfoContext.pomoInfo]
   );
+
+  const colorForUnCategorized = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.colorForUnCategorized;
+    } else {
+      return "#f04005";
+    }
+  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+
+  const currentCategory: Category | null = useMemo(() => {
+    if (
+      userInfoContext.pomoInfo !== null &&
+      userInfoContext.pomoInfo.categories !== undefined
+    ) {
+      return (
+        userInfoContext.pomoInfo.categories.find((c) => c.isCurrent) ?? null
+      );
+    } else {
+      return null;
+    }
+  }, [userInfoContext.pomoInfo?.categories]);
 
   const [pomoSettingInputs, setPomoSettingInputs] = useState(() =>
     userInfoContext.pomoInfo !== null
@@ -128,7 +151,6 @@ function Settings() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    // postMsgToSW("emptyStateStore", {}); // 여기서 그냥 다른식으로 해보겠음.//! Original
     postMsgToSW("saveStates", {
       stateArr: [
         { name: "pomoSetting", value: pomoSettingInputs },
@@ -146,8 +168,30 @@ function Settings() {
         { name: "pause", value: { totalLength: 0, record: [] } },
       ],
     });
+
     stopCountDownInBackground();
+
     if (user !== null) {
+      const infoArr = [
+        {
+          categoryName:
+            currentCategory === null ? "uncategorized" : currentCategory.name,
+          categoryChangeTimestamp: 0,
+          _uuid: currentCategory?._uuid,
+          color:
+            currentCategory !== null
+              ? currentCategory.color
+              : colorForUnCategorized,
+          progress: 0,
+        },
+      ];
+
+      persistCategoryChangeInfoArrayToIDB(infoArr);
+
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
+        categoryChangeInfoArray: infoArr,
+      });
+
       updatePomoSetting(user, pomoSettingInputs)
         .then(() =>
           // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
@@ -165,17 +209,30 @@ function Settings() {
             doesBreakStartAutomatically,
           })
         );
+
+      setPomoInfo((prev) => {
+        return {
+          ...(prev as RequiredStatesToRunTimerType),
+          pomoSetting: pomoSettingInputs,
+          autoStartSetting: {
+            doesPomoStartAutomatically,
+            doesBreakStartAutomatically,
+          },
+          categoryChangeInfoArray: infoArr,
+        };
+      });
+    } else {
+      setPomoInfo((prev) => {
+        return {
+          ...(prev as RequiredStatesToRunTimerType),
+          pomoSetting: pomoSettingInputs,
+          autoStartSetting: {
+            doesPomoStartAutomatically,
+            doesBreakStartAutomatically,
+          },
+        };
+      });
     }
-    setPomoInfo((prev) => {
-      return {
-        ...(prev as RequiredStatesToRunTimerType),
-        pomoSetting: pomoSettingInputs,
-        autoStartSetting: {
-          doesPomoStartAutomatically,
-          doesBreakStartAutomatically,
-        },
-      };
-    });
   }
   //#endregion
 
@@ -377,7 +434,7 @@ async function deleteAccount(user: User) {
     console.log("deleteAccount res", res.data);
     //await user.delete();
     let result = await deleteUser(user);
-    await clearStateStoreAndRecOfToday();
+    await clear__StateStore_RecOfToday_CategoryStore();
     await deleteCache(CacheName);
     window.location.reload();
     // console.log(result);

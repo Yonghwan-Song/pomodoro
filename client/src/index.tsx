@@ -12,6 +12,7 @@ import {
   RecType,
   AutoStartSettingType,
   TimersStatesType,
+  CategoryChangeInfo,
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
@@ -21,6 +22,7 @@ import {
   RESOURCE,
   SUB_SET,
   BASE_URL,
+  CURRENT_CATEGORY_NAME,
 } from "./constants";
 import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
@@ -67,6 +69,13 @@ interface TimerRelatedDB extends DBSchema {
     value: {
       userEmail: string;
       value: ERR_CONTROLLER["failedReqInfo"]; //https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
+    };
+    key: string;
+  };
+  categoryStore: {
+    value: {
+      name: "changeInfoArray";
+      value: CategoryChangeInfo[];
     };
     key: string;
   };
@@ -133,24 +142,52 @@ root.render(
 //#region event handlers
 BC.addEventListener("message", async (ev) => {
   const { evName, payload } = ev.data;
-  // console.log("payload of BC", payload);
-  if (evName === "pomoAdded") {
-    pubsub.publish(evName, payload);
-  } else if (evName === "makeSound") {
-    makeSound();
-  } else if (evName === "autoStartNextSession") {
-    let { timersStates, pomoSetting, endTime, currentCategoryName } = payload;
 
-    autoStartNextSession({
-      timersStates,
-      pomoSetting,
-      endTimeOfPrevSession: endTime,
-      currentCategoryName,
-    });
-  } else if (evName === "fetchCallFailed_Network_Error") {
-    // console.log("A Payload of FetchCallFailed_Network_Error");
-    // console.log(payload);
-    errController.registerFailedReqInfo(payload as AxiosRequestConfig);
+  switch (evName) {
+    case "pomoAdded":
+      // type of the payload
+      // {
+      //   userEmail: string;
+      //   duration: number;
+      //   startTime: number;
+      //   date: string;
+      //   isDummy: boolean;
+      //   category?: {
+      //     name: string;
+      //   };
+      // }[]
+      pubsub.publish(evName, payload);
+      break;
+
+    case "sessionEndBySW":
+      pubsub.publish(evName, payload); // This event is subscribed by NavBar's useEffect callback.
+      break;
+
+    case "makeSound":
+      makeSound();
+      break;
+
+    case "autoStartNextSession":
+      let { timersStates, pomoSetting, endTime, currentCategoryName } = payload;
+
+      autoStartNextSession({
+        timersStates,
+        pomoSetting,
+        endTimeOfPrevSession: endTime,
+        currentCategoryName,
+      });
+      break;
+
+    case "fetchCallFailed_Network_Error":
+      // console.log("A Payload of FetchCallFailed_Network_Error");
+      // console.log(payload);
+      errController.registerFailedReqInfo(payload as AxiosRequestConfig);
+      break;
+
+    default:
+      // Optional: Handle cases where evName doesn't match any known cases
+      console.warn(`Unhandled event name: ${evName}`);
+      break;
   }
 });
 
@@ -183,9 +220,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
   if (localStorage.getItem("user") === "authenticated") {
-    sessionStorage.removeItem("currentCategoryName");
+    sessionStorage.removeItem(CURRENT_CATEGORY_NAME);
     await deleteCache(CacheName);
-    await clearStateStoreAndRecOfToday();
+    await clear__StateStore_RecOfToday_CategoryStore();
   }
 });
 //#endregion
@@ -352,17 +389,21 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
   }
 }
 
-export async function clearStateStoreAndRecOfToday() {
+export async function clear__StateStore_RecOfToday_CategoryStore() {
   let db = DB || (await openIndexedDB());
   try {
-    let store = db
+    let stateStore = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
-    await store.clear();
-    let another = db
+    await stateStore.clear();
+    let recOfToday = db
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
-    await another.clear();
+    await recOfToday.clear();
+    let categoryStore = db
+      .transaction("categoryStore", "readwrite")
+      .objectStore("categoryStore");
+    await categoryStore.clear();
   } catch (error) {
     console.warn(error);
   }
@@ -459,6 +500,12 @@ export async function openIndexedDB() {
       db.createObjectStore("failedReqInfo", {
         keyPath: "userEmail",
       });
+      if (db.objectStoreNames.contains("categoryStore")) {
+        db.deleteObjectStore("categoryStore");
+      }
+      db.createObjectStore("categoryStore", {
+        keyPath: "name",
+      });
     },
     blocking(currentVersion, blockedVersion, event) {
       console.log("blocking", event);
@@ -485,7 +532,7 @@ export async function obtainStatesFromIDB(
   opt: "withoutSettings" | "withSettings"
 ): Promise<any | {}> {
   let db = DB || (await openIndexedDB());
-  console.log("db", db);
+  // console.log("db", db);
   const store = db.transaction("stateStore").objectStore("stateStore");
   let dataArr = await store.getAll(); // dataArr gets [] if the store is empty.
   let states: dataCombinedFromIDB | {} = dataArr.reduce((acc, cur) => {
@@ -615,6 +662,33 @@ export async function persistStatesToIDB(
   }
 }
 
+export async function persistCategoryChangeInfoArrayToIDB(
+  infoArr: CategoryChangeInfo[]
+) {
+  let db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("categoryStore", "readwrite")
+    .objectStore("categoryStore");
+
+  try {
+    await store.put({ name: "changeInfoArray", value: infoArr });
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function clearCategoryStore() {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("categoryStore", "readwrite")
+      .objectStore("categoryStore");
+    await store.clear();
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
 export async function emptyStateStore() {
   try {
     let db = DB || (await openIndexedDB());
@@ -662,13 +736,13 @@ export type ActionType =
 
 export function postMsgToSW(action: ActionType, payload: any) {
   if (SW !== null && SW.state !== "redundant") {
-    console.log(`SW !== null && SW.state !== "redundant"`, SW);
+    // console.log(`SW !== null && SW.state !== "redundant"`, SW);
     SW.postMessage({ action, payload });
     if (action === "stopCountdown") {
       localStorage.removeItem("idOfSetInterval");
     }
   } else if (SW === null) {
-    console.log("SW === null", SW);
+    // console.log("SW === null", SW);
     registerServiceWorker((sw) => {
       sw.postMessage({ action, payload });
       if (action === "stopCountdown") {
@@ -676,7 +750,7 @@ export function postMsgToSW(action: ActionType, payload: any) {
       }
     });
   } else if (SW.state === "redundant") {
-    console.log("SW.state === redundant", SW);
+    // console.log("SW.state === redundant", SW);
     SW = null; //The redundant SW above is going to be garbage collected
     registerServiceWorker((sw) => {
       sw.postMessage({ action, payload });
@@ -703,7 +777,7 @@ export function stopCountDownInBackground() {
 export async function countDown(setIntervalId: number | string | null) {
   let statesFromIDB = await obtainStatesFromIDB("withSettings");
 
-  console.log("states in countDown()", statesFromIDB);
+  // console.log("states in countDown()", statesFromIDB);
 
   if (Object.entries(statesFromIDB).length !== 0) {
     let { pomoSetting, autoStartSetting, ...timersStates } =
@@ -732,7 +806,6 @@ export async function countDown(setIntervalId: number | string | null) {
             "-------------------------------------About To Call EndTimer()-------------------------------------"
           );
           postMsgToSW("endTimer", {
-            currentCategoryName: sessionStorage.getItem("currentCategoryName"),
             pomoSetting,
             ...timersStates,
           });
@@ -793,7 +866,9 @@ async function autoStartNextSession({
 }) {
   if (currentCategoryName === undefined) currentCategoryName = null;
   console.log("moment when autoStartNextSession starts", new Date());
-  timersStates.startTime = endTimeOfPrevSession;
+  // timersStates.startTime = endTimeOfPrevSession; //? 이렇게하면... 말이 안되지 않나?.. '찰나' 라는 델타 값 정도는 더해줘야 하지 않나?
+  //! 1초 ?.. 최소 1 millisecond
+  timersStates.startTime = endTimeOfPrevSession + 1; // 이렇게 해도 초단위는 같아지잖아.. 걍 1초 차이는 나게 해줘야 ..
   timersStates.running = true;
 
   // 1. persist locally.
@@ -860,7 +935,7 @@ async function autoStartNextSession({
         //* 왜냐하면, 딱 이 세션이 시작했을 때라는 과거의 데이터이기 때문.
         //* category를 지우거나 이름을 변경할 때 만약에 그게 current session의 category이면, 즉각 session storage에 반영하고 있다.
         //* 그러면 endTimer는 항상 거기에서 직접 가져와서 써야 하는 것임.
-        currentCategoryName: sessionStorage.getItem("currentCategoryName"),
+        // currentCategory: sessionStorage.getItem(CURRENT_CATEGORY_NAME),
         //? 만약에 user가 currentCategory를 지우는 버튼을 클릭하는 시각이 이 object argument를 만들기 시작하는 시각과 같거나 그 언저리면 어떻게 되는거야?
         // 눌러서 remove item하기 전에 sessionStorage에서 null값이 아닌 유의미한 값을 가져왔으면... 걍 네가 더 빨리 remove 버튼을 눌렀어야하는거임... 걍 신경 끄면 될 듯...:::
         pomoSetting,
@@ -905,5 +980,15 @@ export function getUserEmail(): Promise<string | null> {
       }
     });
   });
+}
+
+export async function getCacheNames() {
+  try {
+    const cacheNames = await caches.keys();
+    console.log("Cache Names:", cacheNames);
+    return cacheNames;
+  } catch (error) {
+    console.error("Error fetching cache names:", error);
+  }
 }
 //#endregion

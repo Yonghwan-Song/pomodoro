@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { AuthContextProvider } from "./Context/AuthContext";
 import { UserInfoContextProvider } from "./Context/UserContext";
 import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
-import Navbar from "./ReusableComponents/NavBar/NavBar";
+import Navbar from "./Pages/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
 import { pubsub } from "./pubsub";
 export interface ThemeCustomized extends DefaultTheme {

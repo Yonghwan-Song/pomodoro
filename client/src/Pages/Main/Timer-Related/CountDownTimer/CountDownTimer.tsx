@@ -56,6 +56,7 @@ export default function CountDownTimer({
             ? 1
             : 1 - remainingDuration / durationInSeconds
         }
+        startTime={startTime}
         durationInSeconds={durationInSeconds}
         remainingDuration={remainingDuration}
         setRemainingDuration={setRemainingDuration}

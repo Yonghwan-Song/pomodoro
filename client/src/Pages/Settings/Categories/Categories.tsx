@@ -3,10 +3,23 @@ import { ReactComponent as TrashBinIcon } from "../../../Icons/trash-bin-trash-s
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { BASE_URL, CacheName, RESOURCE, SUB_SET } from "../../../constants";
+import {
+  BASE_URL,
+  CacheName,
+  CURRENT_CATEGORY_NAME,
+  RESOURCE,
+  SUB_SET,
+} from "../../../constants";
 import { useUserContext } from "../../../Context/UserContext";
-import { Category, NewCategory } from "../../../types/clientStatesType";
-import { delete_entry_of_cache } from "../../..";
+import {
+  Category,
+  CategoryChangeInfo,
+  NewCategory,
+} from "../../../types/clientStatesType";
+import {
+  delete_entry_of_cache,
+  persistCategoryChangeInfoArrayToIDB,
+} from "../../..";
 import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
 
 const customModalStyles = {
@@ -23,10 +36,12 @@ const customModalStyles = {
 type NameInputType = {
   index: string;
   name: string;
+  _uuid?: string;
 };
 type ColorInputType = {
   index: string;
   color: string;
+  _uuid?: string;
 };
 
 export default function Categories() {
@@ -43,7 +58,14 @@ export default function Categories() {
     }
   }, [userInfoContext.pomoInfo?.categories]);
 
-  //
+  const categoryChangeInfoArray: CategoryChangeInfo[] = useMemo(() => {
+    if (userInfoContext.pomoInfo !== null) {
+      return userInfoContext.pomoInfo.categoryChangeInfoArray;
+    } else {
+      return [];
+    }
+  }, [userInfoContext.pomoInfo?.categoryChangeInfoArray]);
+
   const colorForUnCategorized = useMemo(() => {
     if (userInfoContext.pomoInfo !== null) {
       return userInfoContext.pomoInfo.colorForUnCategorized;
@@ -51,6 +73,7 @@ export default function Categories() {
       return "#f04005";
     }
   }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+
   const [colorInputForUnCategorized, setColorInputForUnCategorized] =
     useState<string>(colorForUnCategorized);
   const [
@@ -87,24 +110,6 @@ export default function Categories() {
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
 
   //#region Edit Existing
-  function handleColorInputChange(ev: React.ChangeEvent<HTMLInputElement>) {
-    setCategoriesInputs((prev) => {
-      return prev.map((category, index) => {
-        if (index === parseInt(ev.target.id)) {
-          return { ...category, color: ev.target.value };
-        }
-        return category;
-      });
-    });
-    setColorInput({ index: ev.target.id, color: ev.target.value });
-  }
-
-  function handleColorInputChangeForUnCategorized(
-    ev: React.ChangeEvent<HTMLInputElement>
-  ) {
-    setColorInputForUnCategorized(ev.target.value);
-  }
-
   function handleNameInputChange(ev: React.ChangeEvent<HTMLInputElement>) {
     setCategoriesInputs((prev) => {
       return prev.map((category, index) => {
@@ -114,8 +119,35 @@ export default function Categories() {
         return category;
       });
     });
-    setNameInput({ index: ev.target.id, name: ev.target.value });
+    setNameInput({
+      index: ev.target.id,
+      name: ev.target.value,
+      _uuid: ev.currentTarget.dataset.uuid,
+    });
   }
+
+  function handleColorInputChange(ev: React.ChangeEvent<HTMLInputElement>) {
+    setCategoriesInputs((prev) => {
+      return prev.map((category, index) => {
+        if (index === parseInt(ev.target.id)) {
+          return { ...category, color: ev.target.value };
+        }
+        return category;
+      });
+    });
+    setColorInput({
+      index: ev.target.id,
+      color: ev.target.value,
+      _uuid: ev.currentTarget.dataset.uuid,
+    });
+  }
+
+  function handleColorInputChangeForUnCategorized(
+    ev: React.ChangeEvent<HTMLInputElement>
+  ) {
+    setColorInputForUnCategorized(ev.target.value);
+  }
+
   //#endregion
 
   //#region Add New
@@ -156,15 +188,10 @@ export default function Categories() {
       (category) => category.name === name
     );
     if (index !== -1) {
-      console.log(`name is duplicated at ${index}`);
+      // console.log(`name is duplicated at ${index}`);
       retVal = true;
       setIndexOfDuplication(index);
-      //TODO: when should I set it to -1.
     }
-    //! here?
-    // cancel 눌렀을 때,
-    // newCategories에서 다시 다른 이름 적었을 때,
-    //? 그런데.. 여기서 debouncedNewNameInput 해야하는거 아니야?....
 
     return retVal;
   }
@@ -189,19 +216,32 @@ export default function Categories() {
   }
   function confirmDeleteCategory() {
     if (categoryToDelete) {
-      axiosInstance.delete(RESOURCE.CATEGORIES + `/${categoryToDelete}`);
-      delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        const newCategories = prev.categories.filter((category) => {
-          return category.name !== categoryToDelete;
+      if (
+        categoryChangeInfoArray.some((info) => {
+          return info.categoryName === categoryToDelete;
+        })
+      ) {
+        alert(
+          // "The category is in use. Please end the current session before deleting this category."
+          "The category is included in the current session. Please end the session and deselect the category before deleting it."
+        );
+      } else {
+        axiosInstance.delete(RESOURCE.CATEGORIES + `/${categoryToDelete}`);
+        delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
+        setPomoInfo((prev) => {
+          if (!prev) return prev;
+          const newCategories = prev.categories.filter((category) => {
+            return category.name !== categoryToDelete;
+          });
+          return { ...prev, categories: newCategories };
         });
-        return { ...prev, categories: newCategories };
-      });
-      if (sessionStorage.getItem("currentCategoryName") === categoryToDelete) {
-        sessionStorage.removeItem("currentCategoryName");
+        if (
+          sessionStorage.getItem(CURRENT_CATEGORY_NAME) === categoryToDelete
+        ) {
+          sessionStorage.removeItem(CURRENT_CATEGORY_NAME);
+        }
+        closeModal();
       }
-      closeModal();
     }
   }
   //#endregion
@@ -213,15 +253,137 @@ export default function Categories() {
     //          2. when deleting an item from the list => setPomoInfo()
     setCategoriesInputs(categoriesFromServer);
   }, [categoriesFromServer]);
-  useEffect(() => {
-    // 전제: setIndexOfDuplication과 setDebouncedNameInput은 batch?되어서 딱 한번만 이 component를 update한다.
-    const id = setTimeout(() => {
-      // 그냥 여기서 중복인지 확인 가능하지 않나?.. //!edit의 경우에 한해서.
-      //* 그래서 대충 setIndexOfDuplication 설정해주면 이제... setPomoInfo랑 axiosInstance.post 안보내겠지...
-      //? 그런데 이거는 대충 edit이야기고.. add에서는 따로 해줘야하나? //! 그냥 대충 드는 생각에는
-      // 아마도... newCategoryInput이 계속 바뀌는데 거기에서 계속 변할 때 마다 중복확인하면 비효율적일 것 같으니
-      // debouncing을 해야할지도 모르겠다.
+  useEffect(debounceNameInputChange, [nameInput]);
+  useEffect(debounceColorInputChangeOfCategorized, [colorInput]);
+  useEffect(debounceColorInputChangeOfUnCategorized, [
+    colorInputForUnCategorized,
+  ]);
+  useEffect(handleDebouncedNameInputChange, [debouncedNameInput]);
+  useEffect(handleDebouncedColorInputChange, [debouncedColorInput]);
+  useEffect(handleDebouncedColorInputChangeForUncategorized, [
+    debouncedColorInputForUnCategorized,
+  ]);
+  //#endregion
 
+  //#region useEffect callback definitions
+  function handleDebouncedNameInputChange() {
+    if (debouncedNameInput !== null && indexOfDuplication === -1) {
+      const existingName =
+        categoriesFromServer[parseInt(debouncedNameInput.index)].name;
+      const newName = debouncedNameInput?.name;
+      axiosInstance.patch(RESOURCE.CATEGORIES, {
+        name: existingName,
+        data: { name: newName },
+      });
+      delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
+
+      //* If what I want to rename is the current session's category, I need to rename the one in the session storage.
+      //#region Original
+      if (sessionStorage.getItem(CURRENT_CATEGORY_NAME) === existingName) {
+        sessionStorage.setItem(CURRENT_CATEGORY_NAME, newName);
+      }
+      //#endregion
+      //#region Attempt
+      // const storedCategory = sessionStorage.getItem(CURRENT_CATEGORY_NAME);
+      // if (storedCategory !== null) {
+      //   const parsedStoredCategory = JSON.parse(storedCategory);
+
+      //   if (parsedStoredCategory.name === existingName) {
+      //     parsedStoredCategory.name = newName;
+      //     sessionStorage.setItem(
+      //       CURRENT_CATEGORY_NAME,
+      //       JSON.stringify(parsedStoredCategory)
+      //     );
+      //   }
+      // }
+      //#endregion
+
+      const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
+        (info) => {
+          if (info._uuid === debouncedNameInput._uuid) {
+            info.categoryName = debouncedNameInput.name;
+          }
+          return info;
+        }
+      );
+      persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
+      // deleteCache(CacheName);
+      setPomoInfo((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          categories: categoriesInputs,
+          categoryChangeInfoArray: updatedCategoryChangeInfoArray,
+        };
+      });
+
+      //
+      // console.log("debouncedNameInput", debouncedNameInput);
+    }
+  }
+  function handleDebouncedColorInputChange() {
+    if (debouncedColorInput !== null) {
+      axiosInstance.patch(RESOURCE.CATEGORIES, {
+        name: categoriesFromServer[parseInt(debouncedColorInput.index)].name,
+        data: { color: debouncedColorInput?.color },
+      });
+      delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
+      // deleteCache(CacheName);
+      setDebouncedColorInput(null);
+      const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
+        (info) => {
+          if (info._uuid === debouncedColorInput._uuid) {
+            info.color = debouncedColorInput.color;
+          }
+          return info;
+        }
+      );
+      setPomoInfo((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          categories: categoriesInputs,
+
+          categoryChangeInfoArray: updatedCategoryChangeInfoArray,
+        };
+      });
+      persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
+      // console.log("debouncedColorInput", debouncedColorInput);
+    }
+  }
+  function handleDebouncedColorInputChangeForUncategorized() {
+    if (debouncedColorInputForUnCategorized !== null) {
+      // console.log(
+      //   "debouncedColorInputForUnCategorized",
+      //   debouncedColorInputForUnCategorized
+      // );
+      const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
+        (info) => {
+          if (info.categoryName === "uncategorized") {
+            info.color = debouncedColorInputForUnCategorized;
+          }
+          return info;
+        }
+      );
+      setPomoInfo((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          colorForUnCategorized: debouncedColorInputForUnCategorized,
+          categoryChangeInfoArray: updatedCategoryChangeInfoArray,
+        };
+      });
+      persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
+
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.COLOR_FOR_UNCATEGORIZED, {
+        colorForUnCategorized: debouncedColorInputForUnCategorized,
+      });
+
+      setDebouncedColorInputForUnCategorized(null); // re-initialize
+    }
+  }
+  function debounceNameInputChange() {
+    const id = setTimeout(() => {
       setDebouncedNameInput(nameInput);
 
       if (nameInput !== null) {
@@ -239,8 +401,8 @@ export default function Categories() {
     return () => {
       clearTimeout(id);
     };
-  }, [nameInput]);
-  useEffect(() => {
+  }
+  function debounceColorInputChangeOfCategorized() {
     const id = setTimeout(() => {
       setDebouncedColorInput(colorInput);
       //? What if we could just make an HTTP request and update pomoInfo here?
@@ -248,83 +410,15 @@ export default function Categories() {
     return () => {
       clearTimeout(id);
     };
-  }, [colorInput]);
-  useEffect(() => {
-    setPomoInfo((prev) => {
-      if (!prev) return prev;
-      return { ...prev, categories: categoriesInputs };
-    });
-  }, [debouncedColorInput]);
-  useEffect(() => {
-    if (debouncedColorInput !== null) {
-      axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name: categoriesFromServer[parseInt(debouncedColorInput.index)].name,
-        data: { color: debouncedColorInput?.color },
-      });
-      delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
-      // deleteCache(CacheName);
-      setDebouncedColorInput(null);
-    }
-  }, [debouncedColorInput]);
-
-  useEffect(() => {
-    if (debouncedNameInput !== null && indexOfDuplication === -1) {
-      const existingName =
-        categoriesFromServer[parseInt(debouncedNameInput.index)].name;
-      const newName = debouncedNameInput?.name;
-      axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name: existingName,
-        data: { name: newName },
-      });
-      delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
-
-      //* If what I want to rename is the current session's category, I need to rename the one in the session storage.
-      if (sessionStorage.getItem("currentCategoryName") === existingName) {
-        sessionStorage.setItem("currentCategoryName", newName);
-      }
-
-      // deleteCache(CacheName);
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return { ...prev, categories: categoriesInputs };
-      });
-    }
-  }, [debouncedNameInput]); //TODO: indexOfDuplication를 넣어야해 말아야해? - 안 넣어도 딱히 눈에 보이는 문제가 발생하지는 않고 있음.
-
-  useEffect(() => {
+  }
+  function debounceColorInputChangeOfUnCategorized() {
     const id = setTimeout(() => {
       setDebouncedColorInputForUnCategorized(colorInputForUnCategorized);
     }, 500);
     return () => {
       clearTimeout(id);
     };
-  }, [colorInputForUnCategorized]);
-
-  useEffect(() => {
-    console.log(
-      "debouncedColorInputForUnCategorized",
-      debouncedColorInputForUnCategorized
-    );
-    if (debouncedColorInputForUnCategorized !== null) {
-      console.log(
-        "debouncedColorInputForUnCategorized",
-        debouncedColorInputForUnCategorized
-      );
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          colorForUnCategorized: debouncedColorInputForUnCategorized,
-        };
-      });
-
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.COLOR_FOR_UNCATEGORIZED, {
-        colorForUnCategorized: debouncedColorInputForUnCategorized,
-      });
-
-      setDebouncedColorInputForUnCategorized(null); // re-initialize
-    }
-  }, [debouncedColorInputForUnCategorized]);
+  }
   //#endregion
 
   return (
@@ -336,6 +430,7 @@ export default function Categories() {
               <label htmlFor={item.color}>
                 <input
                   id={index.toString()}
+                  data-uuid={item._uuid}
                   type={"color"}
                   name={item.color}
                   value={item.color}
@@ -345,6 +440,7 @@ export default function Categories() {
               <label htmlFor={item.name}>
                 <input
                   id={index.toString()}
+                  data-uuid={item._uuid}
                   type={"text"}
                   name={item.name}
                   value={item.name}

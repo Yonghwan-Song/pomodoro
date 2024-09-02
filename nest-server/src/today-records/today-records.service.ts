@@ -15,6 +15,7 @@ export class TodayRecordsService {
     createTodayRecordDto: CreateTodayRecordDto,
     userEmail: string,
   ) {
+    console.log('createTodayRecordDto', createTodayRecordDto);
     const newRecordOfToday = new this.todayRecordModel({
       userEmail,
       ...createTodayRecordDto,

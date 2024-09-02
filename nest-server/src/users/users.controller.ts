@@ -16,6 +16,7 @@ import { UpdateTimersStatesDto } from './dto/update-timers-states.dto';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
 import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
+import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 
 @Controller('users')
 export class UsersController {
@@ -92,6 +93,19 @@ export class UsersController {
   ) {
     return await this.usersService.updateColorForUnCategorized(
       updateColorForUnCategorizedDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('category-change-info-array')
+  async updateCategoryChangeInfo(
+    @Body(new ValidationPipe())
+    updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
+    @Req() request: CustomRequest,
+  ) {
+    console.log(updateCategoryChangeInfoArrayDto.categoryChangeInfoArray);
+    return await this.usersService.updateCategoryChangeInfoArray(
+      updateCategoryChangeInfoArrayDto,
       request.userEmail,
     );
   }

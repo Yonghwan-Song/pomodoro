@@ -21,7 +21,7 @@ export class PomodorosController {
     @Body(new ValidationPipe()) createPomodoroDto: CreatePomodoroDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.pomodorosService.addPomodoroRecord(
+    return await this.pomodorosService.persistPomodoroRecords(
       createPomodoroDto,
       request.userEmail,
     );

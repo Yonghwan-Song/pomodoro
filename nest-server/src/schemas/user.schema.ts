@@ -84,6 +84,26 @@ export class User {
 
   @Prop({ default: '#f04005' })
   colorForUnCategorized: string;
+
+  @Prop(
+    raw({
+      type: [
+        {
+          categoryName: String,
+          categoryChangeTimestamp: Number,
+          color: String,
+          progress: { type: Number, default: 0 },
+        },
+      ],
+      default: [],
+    }),
+  )
+  categoryChangeInfoArray: {
+    categoryName: string;
+    categoryChangeTimestamp: number;
+    color: string;
+    progress: number;
+  }[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

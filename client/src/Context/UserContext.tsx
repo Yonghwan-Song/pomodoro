@@ -6,11 +6,12 @@ import {
   useEffect,
 } from "react";
 import { useAuthContext } from "./AuthContext";
-import { RESOURCE } from "../constants/index";
+import { CURRENT_CATEGORY_NAME, RESOURCE } from "../constants/index";
 import { useFetch } from "../Custom-Hooks/useFetch";
 import {
   dataCombinedFromIDB,
   obtainStatesFromIDB,
+  persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
   postMsgToSW,
 } from "..";
@@ -57,7 +58,7 @@ export function UserInfoContextProvider({
      *      그 앱에서 서버쪽으로 persist한 데이터들을 받아와서 싱크를 맞추어 줘야 하기 때문.
      *
      */
-    callbacks: [persistRequiredStatesToRunTimer, addUUIDToCategory],
+    callbacks: [persistRequiredStatesToRunTimer],
     additionalDeps: [isNewUser, isNewUserRegistered],
     additionalCondition: isNewUser === false || isNewUserRegistered,
   });
@@ -243,19 +244,12 @@ export function useUserContext() {
 //if authenticated is false, this is not going to be called... we just might remove authenticated property then...
 //if email is different, persist and publish the event.
 
-// TODO: clean code. I can extract some functions from this one. Thus, he can say this function does not do one thing.
 async function persistRequiredStatesToRunTimer(
   states: RequiredStatesToRunTimerType
 ) {
   await persistStatesToIDB(states.timersStates);
   localStorage.setItem("user", "authenticated");
-  console.log("persist success - ", states.timersStates);
-  pubsub.publish("successOfPersistingTimersStatesToIDB", states.timersStates); // Actually, this event is also indicating that clearing recOfToday objectStore has finished because we put this line after the emptyRecOfToday().
 
-  // This works only for logged-in users.
-  // Like the logged-in user, I need to allow unlogged-in users
-  // to continue to use the timer with the same setting as the one before they close the app.
-  // ->
   postMsgToSW("saveStates", {
     stateArr: [
       { name: "pomoSetting", value: states.pomoSetting },
@@ -263,21 +257,33 @@ async function persistRequiredStatesToRunTimer(
     ],
   });
 
+  // Ensure the UUIDs are added before proceeding
+  await addUUIDToCategory(states);
+
+  await persistCategoryChangeInfoArrayToIDB(states.categoryChangeInfoArray);
+
+  pubsub.publish("successOfPersistingTimersStatesToIDB", states.timersStates);
+
   const currentCategory = states.categories.find(
     (category) => category.isCurrent
   );
 
   if (currentCategory) {
-    sessionStorage.setItem("currentCategoryName", currentCategory.name);
+    sessionStorage.setItem(CURRENT_CATEGORY_NAME, currentCategory.name);
   } else {
-    sessionStorage.removeItem("currentCategoryName");
+    sessionStorage.removeItem(CURRENT_CATEGORY_NAME);
   }
 }
 
 async function addUUIDToCategory(states: RequiredStatesToRunTimerType) {
   states.categories.forEach((category) => {
-    // In a tabbed browser, each tab is represented by its own Window object; the global window seen by JavaScript code running within a given tab always represents the tab in which the code is running.
-    // (https://developer.mozilla.org/en-US/docs/Web/API/Window)
     category._uuid = window.crypto.randomUUID();
   });
+
+  for (const info of states.categoryChangeInfoArray) {
+    const matchingCategory = states.categories.find(
+      (category) => category.name === info.categoryName
+    );
+    info._uuid = matchingCategory?._uuid;
+  }
 }

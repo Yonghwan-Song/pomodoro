@@ -1,12 +1,6 @@
 import { useMemo, useState } from "react";
 import { useEffect } from "react";
-import {
-  FOREGROUND_COLOR,
-  MINIMUMS,
-  RESOURCE,
-  SUB_SET,
-  VH_RATIO,
-} from "../../constants";
+import { MINIMUMS, RESOURCE, SUB_SET, VH_RATIO } from "../../constants";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import {
@@ -24,7 +18,6 @@ import { Overview } from "./Graph-Related/Overview";
 import { CategoryGraph } from "./Graph-Related/CategoryGraph";
 import { useFetch } from "../../Custom-Hooks/useFetch";
 import { PomodoroSessionDocument } from "./statRelatedTypes";
-import { StyledLoadingMessage } from "../../ReusableComponents/styles/LoadingMessage.styled";
 import { useUserContext } from "../../Context/UserContext";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
@@ -620,74 +613,115 @@ export default function Statistics() {
 
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
-    const unsub = pubsub.subscribe("pomoAdded", (dataOfPomoSession: any) => {
-      let { startTime, timeCountedDown, currentCategoryName } =
-        dataOfPomoSession;
-      console.log(`currentCateFromPayload - ${currentCategoryName}`);
-      const nameOfCurrentCategory = categoriesFromServer.find(
-        (category) => category.isCurrent
-      )?.name;
-      setStatData((prev) => {
-        if (!prev) {
-          return prev;
-        } else {
-          let today = new Date();
-          const todayDateStr = `${
-            today.getMonth() + 1
-          }/${today.getDate()}/${today.getFullYear()}`;
-          let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-          let cloned = [...prev];
-          let doesTodayPomodoroStatExist =
-            cloned.length !== 0 &&
-            cloned[cloned.length - 1].date === todayDateStr;
-          if (doesTodayPomodoroStatExist) {
-            // if (currentCategoryName !== null) {
-            if (nameOfCurrentCategory !== undefined) {
-              // console.log(`currentCategoryName - ${nameOfCurrentCategory}`);
-              // console.log(`cloned<----------------------------`);
-              // console.log(cloned);
-              cloned[cloned.length - 1].withCategories[
-                nameOfCurrentCategory
-              ].duration += timeCountedDown;
-              cloned[cloned.length - 1].total += timeCountedDown;
-            } else {
-              cloned[cloned.length - 1].total += timeCountedDown;
-              cloned[cloned.length - 1].withoutCategory += timeCountedDown;
-            }
-          }
+    // {
+    //   userEmail: string;
+    //   duration: number;
+    //   startTime: number;
+    //   date: string;
+    //   isDummy: boolean;
+    //   category?: {
+    //     name: string;
+    //   };
+    // }[]
+    const unsub = pubsub.subscribe(
+      "pomoAdded",
+      (
+        final: {
+          useEmail: string;
+          duration: number;
+          startTime: number;
+          date: string;
+          isDummy: boolean;
+          category?: {
+            name: string;
+          };
+        }[]
+      ) => {
+        const nameOfCurrentCategory = categoriesFromServer.find(
+          (category) => category.isCurrent
+        )?.name;
+        setStatData((prev) => {
+          if (!prev) {
+            return prev;
+          } else {
+            let today = new Date();
+            const todayDateString = `${
+              today.getMonth() + 1
+            }/${today.getDate()}/${today.getFullYear()}`;
+            let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-          if (!doesTodayPomodoroStatExist) {
-            let dailyPomos: DayStat = {
-              date: todayDateStr,
-              timestamp: startTime,
-              dayOfWeek: days[today.getDay()],
-              total: timeCountedDown,
-              withCategories: createInitialCategoryStat(),
-              withoutCategory: 0,
-            };
-            // if (currentCategoryName !== null) {
-            if (nameOfCurrentCategory !== undefined) {
-              dailyPomos.withCategories[nameOfCurrentCategory].duration =
-                timeCountedDown;
-            } else {
-              dailyPomos.withoutCategory += timeCountedDown;
+            // const newSum = { ...sum };
+
+            let cloned = [...prev];
+            let doesTodayStatExist =
+              cloned.length !== 0 &&
+              cloned[cloned.length - 1].date === todayDateString;
+
+            if (doesTodayStatExist) {
+              for (const pomoDoc of final) {
+                cloned[cloned.length - 1].total += pomoDoc.duration;
+                if (pomoDoc.category) {
+                  // console.log("pomoDoc.category", pomoDoc.category);
+                  // console.log(
+                  //   "cloned[cloned.length - 1].withCategories[pomoDoc.category.name]",
+                  //   cloned[cloned.length - 1].withCategories[
+                  //     pomoDoc.category.name
+                  //   ]
+                  // );
+                  cloned[cloned.length - 1].withCategories[
+                    pomoDoc.category.name
+                  ].duration += pomoDoc.duration;
+                } else {
+                  cloned[cloned.length - 1].withoutCategory += pomoDoc.duration;
+                }
+              }
             }
-            cloned.push(dailyPomos);
+            if (!doesTodayStatExist) {
+              const now = new Date();
+              const startOfTodayTimestamp = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate()
+              ).getTime();
+
+              let dayStat: DayStat = {
+                date: todayDateString,
+                timestamp: startOfTodayTimestamp,
+                dayOfWeek: days[today.getDay()],
+                total: 0,
+                withCategories: createInitialCategoryStat(),
+                withoutCategory: 0,
+              };
+
+              for (const pomoDoc of final) {
+                dayStat.total += pomoDoc.duration;
+                if (pomoDoc.category) {
+                  dayStat.withCategories[pomoDoc.category.name].duration +=
+                    pomoDoc.duration;
+                } else {
+                  dayStat.withoutCategory += pomoDoc.duration;
+                }
+              }
+
+              cloned.push(dayStat);
+            }
+
+            setSum((prev) => {
+              const retVal = { ...prev };
+              for (const pomoDoc of final) {
+                retVal.today += pomoDoc.duration;
+                retVal.thisWeek += pomoDoc.duration;
+                retVal.thisMonth += pomoDoc.duration;
+                retVal.allTime += pomoDoc.duration;
+              }
+              return retVal;
+            });
+
+            return cloned;
           }
-          // calculateThisWeekData(cloned); // ThisWeekData() is called to calculate weekStat because the "pomoAdded" event occurred today while you are using this app..
-          setSum((prev) => {
-            return {
-              ...prev,
-              today: prev.today + timeCountedDown,
-              thisWeek: prev.thisWeek + timeCountedDown,
-              thisMonth: prev.thisMonth + timeCountedDown,
-              allTime: prev.allTime + timeCountedDown,
-            };
-          });
-          return cloned;
-        }
-      });
-    });
+        });
+      }
+    );
 
     return () => {
       unsub();

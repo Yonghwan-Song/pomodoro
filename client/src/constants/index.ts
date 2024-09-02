@@ -39,11 +39,12 @@ export const SUB_SET = {
   CATEGORIES: "/categories",
   IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
   COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
+  CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
 };
 
 //#endregion
 
-export const IDB_VERSION = 8;
+export const IDB_VERSION = 9;
 const cacheVersion = 1;
 export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion
@@ -95,3 +96,7 @@ export const MINIMUMS = {
   SESSION: VH_RATIO.SESSION * MIN_BASE,
   DETAIL_AREA: VH_RATIO.DETAIL_AREA * MIN_BASE,
 };
+
+//#region Session storage item names
+export const CURRENT_CATEGORY_NAME = "currentCategoryName";
+//#endregion

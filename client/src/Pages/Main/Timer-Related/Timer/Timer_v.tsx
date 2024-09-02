@@ -164,7 +164,7 @@ export function TimerVVV({
 
   //#region Button Click Handlers
   async function toggleTimer(momentTimerIsToggled: number) {
-    if (start()) {
+    if (doWeStartTimer()) {
       dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
       if (repetitionCount === 0) {
         //new cycle
@@ -192,10 +192,10 @@ export function TimerVVV({
             running: true,
             pause: { totalLength: 0, record: [] },
             repetitionCount,
-            duration: durationInSeconds / 60,
+            duration: durationInSeconds / 60, // re-render 되기 전에..
           });
       }
-    } else if (resume()) {
+    } else if (doWeResumeTimer()) {
       // resume
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
@@ -221,7 +221,7 @@ export function TimerVVV({
                   .start),
           },
         });
-    } else if (pause()) {
+    } else if (doWePauseTimer()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
       user &&
@@ -237,17 +237,17 @@ export function TimerVVV({
           },
         });
     }
-    function start() {
+    function doWeStartTimer() {
       return (
         timerState.running === false && timerState.pause!.record.length === 0
       );
     }
-    function resume() {
+    function doWeResumeTimer() {
       return (
         timerState.running === false && timerState.pause!.record.length !== 0
       );
     }
-    function pause() {
+    function doWePauseTimer() {
       return timerState.running;
     }
   }
@@ -266,6 +266,14 @@ export function TimerVVV({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
     });
+    // console.log(
+    //   "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<endTimer>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    // );
+    // console.log("args", {
+    //   howManyCountdown: repetitionCount + 1,
+    //   numOfPomo: numOfPomo,
+    // });
+    // console.log("patternTimerStates", patternTimerStates);
 
     postMsgToSW("saveStates", {
       stateArr: [
@@ -377,7 +385,7 @@ export function TimerVVV({
   }
 
   //#region UseEffects
-  useEffect(autoStartNextSession, [repetitionCount]);
+  useEffect(autoStartNextSession, [repetitionCount, durationInSeconds]);
 
   useEffect(logPause, [
     remainingDuration,
@@ -573,7 +581,7 @@ export function TimerVVV({
       isNextSessionPomo() &&
       !isNextSessionStartOfCycle()
     ) {
-      toggleTimer(Date.now());
+      startNext(pomoDuration, Date.now());
     }
 
     // Auto start all break sessions of a cycle
@@ -583,7 +591,9 @@ export function TimerVVV({
       isNextSessionBreak() &&
       !isNextSessionStartOfCycle()
     ) {
-      toggleTimer(Date.now());
+      if (repetitionCount === numOfPomo * 2 - 1)
+        startNext(longBreakDuration, Date.now());
+      else startNext(shortBreakDuration, Date.now());
     }
 
     // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
@@ -598,6 +608,33 @@ export function TimerVVV({
     }
     function isNextSessionBreak() {
       return repetitionCount % 2 !== 0;
+    }
+    function startNext(duration: number, startTime: number) {
+      if (repetitionCount === 0) {
+        user !== null &&
+          updateTimersStates({
+            startTime,
+            running: true,
+            pause: { totalLength: 0, record: [] },
+          });
+        postMsgToSW("saveStates", {
+          stateArr: [
+            { name: "repetitionCount", value: 0 },
+            { name: "duration", value: duration },
+          ],
+        });
+        setIsOnCycle(true);
+      } else {
+        dispatch({ type: ACTION.START, payload: startTime });
+        user !== null &&
+          updateTimersStates({
+            startTime,
+            running: true,
+            pause: { totalLength: 0, record: [] },
+            repetitionCount,
+            duration,
+          });
+      }
     }
   }
   //#endregion
@@ -616,7 +653,17 @@ export function TimerVVV({
     howManyCountdown: number;
     numOfPomo: number;
   }): { duration: number; repetitionCount?: number } {
-    let retVal = null;
+    let retVal: { duration: number; repetitionCount?: number } | null = null;
+    // console.log(
+    //   "<-------------------determineNextPatternTimerStates------------------->"
+    // );
+    // console.log("durations", {
+    //   pomoDuration,
+    //   shortBreakDuration,
+    //   longBreakDuration,
+    // });
+    // console.log("args", { howManyCountdown, numOfPomo });
+
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
         retVal = { duration: shortBreakDuration };
@@ -628,6 +675,10 @@ export function TimerVVV({
     } else {
       retVal = { duration: pomoDuration, repetitionCount: 0 };
     }
+    // console.log("next patternTimer states", retVal);
+    // console.log(
+    //   "<--------------------------------------------------------------------->"
+    // );
     return retVal;
   }
   //#endregion
@@ -669,6 +720,7 @@ export function TimerVVV({
               ? 1
               : 1 - remainingDuration / durationInSeconds
           }
+          startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
           remainingDuration={remainingDuration}
           setRemainingDuration={setRemainingDuration}

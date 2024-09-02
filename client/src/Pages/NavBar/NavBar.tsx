@@ -1,13 +1,14 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
-import { StyledNav } from "../styles/Nav.styled";
-import { UnorderedList } from "../UnorderedList";
-import { StyledLink } from "../styles/Link.styled";
+import { StyledNav } from "../../ReusableComponents/styles/Nav.styled";
+import { UnorderedList } from "../../ReusableComponents/UnorderedList";
+import { StyledLink } from "../../ReusableComponents/styles/Link.styled";
 import { useTheme } from "styled-components";
 import styles from "./navBar.module.css";
 import { ThemeCustomized } from "../../App";
 import {
+  clearCategoryStore,
   clearRecOfToday,
   deciderOfWhetherDataForRunningTimerFetched,
   deleteCache,
@@ -20,12 +21,16 @@ import { TimersStatesType } from "../../types/clientStatesType";
 import { errController } from "../../axios-and-error-handling/errorController";
 import { pubsub } from "../../pubsub";
 import * as CONSTANTS from "../../constants/index";
+import { useUserContext } from "../../Context/UserContext";
 
 function Navbar() {
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef<HTMLUListElement | null>(null); // interface MutableRefObject<T> { current: T;}
   const theme = useTheme() as ThemeCustomized;
+
+  // Main에서와 다르게 pomoInfo는 null값을 가질 수 있다. Main에서는 conditional rendering했던 것으로 기억.
+  const userInfoContext = useUserContext();
 
   async function handleSignOut() {
     try {
@@ -36,16 +41,18 @@ function Navbar() {
           await updateTimersStates(statesFromIDB as TimersStatesType);
         }
       }
-      await setStateStoreToDefault();
+      await setStateStoreToDefault(); //TODO: index.tsx에서 unload할때는 clear하고 여기서는 default로 했음. 이유를 까먹었다. 왜 안적었지? //! issue 38
       await clearRecOfToday();
+      await clearCategoryStore();
       pubsub.publish("prepareTimerRelatedDBForUnloggedInUser", 1); //어차피 recOfToday도 이 시점에서는 clear되었기 때문에 따로 event를 만들어서 publish하지 않겠다.
       await deleteCache(CONSTANTS.CacheName);
       localStorage.setItem("user", "unAuthenticated");
-      sessionStorage.removeItem("currentCategoryName");
+      sessionStorage.removeItem(CONSTANTS.CURRENT_CATEGORY_NAME);
       deciderOfWhetherDataForRunningTimerFetched[0] = false;
       deciderOfWhetherDataForRunningTimerFetched[1] = false;
       await logOut();
       errController.emptyFailedReqInfo();
+      window.location.reload();
     } catch (error) {
       console.log(error);
     }
@@ -88,6 +95,26 @@ function Navbar() {
     stopCountDownInBackground();
     handleSignOut();
   }
+
+  useEffect(() => {
+    const unsub = pubsub.subscribe("sessionEndBySW", (payload) => {
+      // console.log(payload);
+      // console.log("userInfoContext inside subscribe cb", userInfoContext);
+
+      userInfoContext?.setPomoInfo((prev) => {
+        if (!prev) return prev;
+
+        console.log("{...prev} in pubsub.subscribe(sessionEndBySW...)", {
+          ...prev,
+        });
+        return { ...prev, categoryChangeInfoArray: payload };
+      });
+    });
+
+    return () => {
+      unsub();
+    };
+  }, []);
 
   return (
     <StyledNav>

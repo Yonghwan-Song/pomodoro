@@ -35,6 +35,10 @@ export class CategoriesController {
     @Body(new ValidationPipe()) updateCategoryDto: UpdateCategoryDto,
     @Req() request: CustomRequest,
   ) {
+    console.log(
+      '<------------------------updateCategoryDto in the controller------------------------>',
+      updateCategoryDto,
+    );
     return await this.categoriesService.update(
       updateCategoryDto,
       request.userEmail,

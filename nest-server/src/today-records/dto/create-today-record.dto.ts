@@ -31,9 +31,9 @@ class RecordDto {
 class PauseDto {
   totalLength: number;
 
-  @ValidateNested()
+  @ValidateNested({ each: true })
   @Type(() => RecordDto)
-  record: RecordDto;
+  record: RecordDto[];
 }
 
 export class CreateTodayRecordDto {
