@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { useUserContext } from "../../../Context/UserContext";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { CURRENT_CATEGORY_NAME, RESOURCE } from "../../../constants";
+import {
+  CURRENT_CATEGORY_NAME,
+  CURRENT_SESSION_TYPE,
+  RESOURCE,
+} from "../../../constants";
 import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
@@ -62,22 +66,24 @@ export default function CategoryList() {
    */
   async function selectCurrent({
     doesItJustChangeCategory,
+    nameOfCategoryClicked,
   }: {
     doesItJustChangeCategory: boolean;
+    nameOfCategoryClicked?: string; // This is used only when the current session is break.
   }) {
-    if (!clickedCategoryName) return;
+    const clickedName = nameOfCategoryClicked ?? clickedCategoryName;
+
+    if (!clickedName) return; //
 
     // This false has no meaning for now since it is just an initial value.
     // What it means can be determined at the callback to the following map method.
     let isCurrentCategoryClickedAgain = false;
     const updatedCategories = categoriesFromServer.map((category) => {
-      if (category.name === clickedCategoryName) {
-        if (category.isCurrent) {
+      if (category.name === clickedName) {
+        if (category.isCurrent)
           //* This prevents duplicated clicks.
           isCurrentCategoryClickedAgain = true;
-        } else {
-          category.isCurrent = true;
-        }
+        else category.isCurrent = true;
       } else if (category.isCurrent) {
         category.isCurrent = false;
       }
@@ -85,23 +91,8 @@ export default function CategoryList() {
     });
 
     if (!isCurrentCategoryClickedAgain) {
-      //! Original <-- 지우지마
-      // setPomoInfo((prev) => {
-      //   if (!prev) return prev;
-      //   return { ...prev, categories: updatedCategories };
-      // });
-      // sessionStorage.setItem(CURRENT_CATEGORY_NAME, clickedCategoryName);
-      // axiosInstance.patch(RESOURCE.CATEGORIES, {
-      //   name: clickedCategoryName,
-      //   data: { isCurrent: true },
-      // });
-      //! New
-      // When I refresh the app as soon as I change the current category, I guess that the data in the remote server, idb, session storage, and pomoInfo are not the same.
-      // the data in the remote server is not updated. And I think this is because the HTTP request is cancelled when the app is re-freshed.
-      // I think I can handle this using fetch method's.. certain option which, as far as I remember, does not exist in the axios library.
-
       const res = await axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name: clickedCategoryName,
+        name: clickedName,
         data: { isCurrent: true },
       });
       if (res) {
@@ -113,7 +104,7 @@ export default function CategoryList() {
             doesItJustChangeCategory,
           };
         });
-        sessionStorage.setItem(CURRENT_CATEGORY_NAME, clickedCategoryName);
+        sessionStorage.setItem(CURRENT_CATEGORY_NAME, clickedName);
       }
     }
   }
@@ -173,6 +164,14 @@ export default function CategoryList() {
     setClickedCategoryName(null);
   }
 
+  function changeCategoryWhenSessionIsBreak(nameOfCategoryClicked: string) {
+    if (nameOfCategoryClicked !== "uncategorized") {
+      selectCurrent({ doesItJustChangeCategory: true, nameOfCategoryClicked });
+    } else {
+      runSessionUncategorized({ doesItJustChangeCategory: true });
+    }
+  }
+
   function openModal(category: string) {
     console.log("categoryClicked", category);
     setClickedCategoryName(category);
@@ -196,7 +195,23 @@ export default function CategoryList() {
               columnGap: "8px",
             }}
             onClick={() => {
-              if (category.name !== curCategoryName) openModal(category.name);
+              const currentSessionType =
+                sessionStorage.getItem(CURRENT_SESSION_TYPE);
+
+              //! clickedCategoryName is category.name
+              if (
+                category.name !== curCategoryName &&
+                currentSessionType === "break"
+              ) {
+                //Just change it
+                changeCategoryWhenSessionIsBreak(category.name);
+              }
+              if (
+                category.name !== curCategoryName &&
+                currentSessionType === "pomo"
+              ) {
+                openModal(category.name);
+              }
             }}
           >
             <div
@@ -227,7 +242,15 @@ export default function CategoryList() {
           columnGap: "8px",
         }}
         onClick={() => {
-          if (curCategoryName) openModal("uncategorized");
+          const currentSessionType =
+            sessionStorage.getItem(CURRENT_SESSION_TYPE);
+
+          if (curCategoryName && currentSessionType === "break") {
+            changeCategoryWhenSessionIsBreak("uncategorized");
+          }
+          if (curCategoryName && currentSessionType === "pomo") {
+            openModal("uncategorized");
+          }
         }}
       >
         <div

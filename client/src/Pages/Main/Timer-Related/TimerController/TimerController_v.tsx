@@ -5,6 +5,7 @@ import {
   RESOURCE,
   BASE_URL,
   SUB_SET,
+  CURRENT_SESSION_TYPE,
 } from "../../../../constants/index";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { User } from "firebase/auth";
@@ -16,7 +17,6 @@ import {
   makeSound,
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
-  getCacheNames,
 } from "../../../..";
 import {
   Category,
@@ -47,6 +47,13 @@ type PatternTimerProps = {
   numOfPomo: number;
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
+
+enum SESSION {
+  POMO = 1,
+  SHORT_BREAK,
+  LAST_POMO,
+  LONG_BREAK,
+}
 
 export function TimerControllerVVV({
   statesRelatedToTimer,
@@ -183,11 +190,15 @@ export function TimerControllerVVV({
       timeCountedDown: timeCountedDownInMilliSeconds,
     };
 
+    const session = identifySession({
+      howManyCountdown,
+      numOfPomo,
+    });
+    const currentSessionType = +session % 2 === 0 ? "pomo" : "break";
+    sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
+
     wrapUpSession({
-      session: identifySession({
-        howManyCountdown,
-        numOfPomo,
-      }),
+      session,
       data: {
         state,
         timeCountedDownInMilliSeconds,
@@ -197,13 +208,6 @@ export function TimerControllerVVV({
   }
 
   //#region Utils
-  enum SESSION {
-    POMO = 1,
-    SHORT_BREAK,
-    LAST_POMO,
-    LONG_BREAK,
-  }
-
   function identifySession({
     howManyCountdown,
     numOfPomo,
@@ -544,7 +548,11 @@ export function TimerControllerVVV({
       }
     }
 
-    async function justChangeCateogry() {
+    //#region Original
+    //  * Cases 1. categoriezd -> categoriezd
+    //  *       2. uncategorized -> categorized - _uuid should be re-assigned.
+    //  *       3. categorized -> uncategorized
+    async function justChangeCategory() {
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
@@ -565,11 +573,13 @@ export function TimerControllerVVV({
           return { ...prev, categoryChangeInfoArray: updated };
         });
         persistCategoryChangeInfoArrayToIDB(updated);
-        currentCategory && delete updated[updated.length - 1]._uuid; // _uuid is only valid in client side
         axiosInstance.patch(
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           {
-            categoryChangeInfoArray: updated,
+            categoryChangeInfoArray: updated.map((info) => {
+              const { _uuid, ...infoWithout_uuid } = info;
+              return infoWithout_uuid;
+            }),
           }
         );
       }
@@ -580,12 +590,13 @@ export function TimerControllerVVV({
 
     //TODO 테스 트으~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if (user) {
-      if (!doesItJustChangeCategory) reflectCategoryChange();
-      else justChangeCateogry();
+      if (doesItJustChangeCategory) justChangeCategory();
+      else reflectCategoryChange();
     }
   }, [currentCategory?.name]);
 
   useEffect(() => {
+    // Why is this a previous session? - It is because we identify the type of session that has just ended in order to persist it on the server with the correct type
     const prevSession = identifySession({
       howManyCountdown: repetitionCount,
       numOfPomo,
@@ -595,6 +606,9 @@ export function TimerControllerVVV({
     //   SESSION[prevSession]
     // );
     prevSessionType.current = prevSession;
+
+    const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
+    sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
   }, []);
 
   // useEffect(() => {

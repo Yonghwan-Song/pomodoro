@@ -6,6 +6,7 @@ import {
   RESOURCE,
   BASE_URL,
   SUB_SET,
+  CURRENT_SESSION_TYPE,
 } from "../../../../constants/index";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { User } from "firebase/auth";
@@ -46,6 +47,13 @@ type PatternTimerProps = {
   numOfPomo: number;
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
+
+enum SESSION {
+  POMO = 1,
+  SHORT_BREAK,
+  LAST_POMO,
+  LONG_BREAK,
+}
 
 export function TimerController({
   statesRelatedToTimer,
@@ -182,11 +190,15 @@ export function TimerController({
       timeCountedDown: timeCountedDownInMilliSeconds,
     };
 
+    const session = identifySession({
+      howManyCountdown,
+      numOfPomo,
+    });
+    const currentSessionType = +session % 2 === 0 ? "pomo" : "break";
+    sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
+
     wrapUpSession({
-      session: identifySession({
-        howManyCountdown,
-        numOfPomo,
-      }),
+      session,
       data: {
         state,
         timeCountedDownInMilliSeconds,
@@ -196,13 +208,6 @@ export function TimerController({
   }
 
   //#region Utils
-  enum SESSION {
-    POMO = 1,
-    SHORT_BREAK,
-    LAST_POMO,
-    LONG_BREAK,
-  }
-
   function identifySession({
     howManyCountdown,
     numOfPomo,
@@ -558,7 +563,10 @@ export function TimerController({
       }
     }
 
-    async function justChangeCateogry() {
+    //  * Cases 1. categoriezd -> categoriezd
+    //  *       2. uncategorized -> categorized - _uuid should be re-assigned.
+    //  *       3. categorized -> uncategorized
+    async function justChangeCategory() {
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
@@ -579,22 +587,24 @@ export function TimerController({
           return { ...prev, categoryChangeInfoArray: updated };
         });
         persistCategoryChangeInfoArrayToIDB(updated);
-        currentCategory && delete updated[updated.length - 1]._uuid; // _uuid is only valid in client side
         axiosInstance.patch(
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           {
-            categoryChangeInfoArray: updated,
+            categoryChangeInfoArray: updated.map((info) => {
+              const { _uuid, ...infoWithout_uuid } = info;
+              return infoWithout_uuid;
+            }),
           }
         );
       }
-      // 1. idb (x)
-      // 2. server (x)
-      // 3. pomoInfo (x)
+      // 0. idb (x)
+      // 1. server (x)
+      // 2. pomoInfo (x)
     }
 
     if (user) {
-      if (!doesItJustChangeCategory) reflectCategoryChange();
-      else justChangeCateogry();
+      if (doesItJustChangeCategory) justChangeCategory();
+      else reflectCategoryChange();
     }
   }, [currentCategory?.name]);
 
@@ -608,6 +618,9 @@ export function TimerController({
     //   SESSION[prevSession]
     // );
     prevSessionType.current = prevSession;
+
+    const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
+    sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
   }, []);
 
   useEffect(() => {

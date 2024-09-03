@@ -99,4 +99,5 @@ export const MINIMUMS = {
 
 //#region Session storage item names
 export const CURRENT_CATEGORY_NAME = "currentCategoryName";
+export const CURRENT_SESSION_TYPE = "currentSessionType"; // This is not updated at sw.js. But as soon as the TimerController is mounted, it is updated. Why? - I just didn't update it at sw.js since a service worker doesn't have direct access to a session storage.
 //#endregion
