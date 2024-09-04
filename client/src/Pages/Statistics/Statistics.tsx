@@ -430,10 +430,10 @@ export default function Statistics() {
       let matchingStat = weekStatFromData.find(
         (fromData) => fromData.date === cloned.date
       );
-      console.log(
-        "matchingStat from weekStatFromData in fillWeekCloned",
-        matchingStat
-      );
+      // console.log(
+      //   "matchingStat from weekStatFromData in fillWeekCloned",
+      //   matchingStat
+      // );
       if (matchingStat) {
         cloned.total = matchingStat.total;
         cloned.withCategories = matchingStat.withCategories;

@@ -220,8 +220,8 @@ export function TimerController({
       //! determineNextPatternTimerStates함수 in Timer.tsx의 마지막 else, 그리고 return값에 대한 주석 확인.
       return SESSION.LONG_BREAK;
     }
-    console.log("howManyCountdown:", howManyCountdown);
-    console.log("numOfPomo", numOfPomo);
+    // console.log("howManyCountdown:", howManyCountdown);
+    // console.log("numOfPomo", numOfPomo);
 
     if (howManyCountdown < numOfPomo! * 2 - 1 && howManyCountdown % 2 === 1) {
       return SESSION.POMO;
@@ -623,21 +623,9 @@ export function TimerController({
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
   }, []);
 
-  useEffect(() => {
-    console.log("categoryChangeInfoArray", categoryChangeInfoArray);
-  });
-
-  useEffect(() => {
-    console.log("prev session - ", SESSION[prevSessionType.current]);
-    if (SESSION[prevSessionType.current] === "SHORT_BREAK" || "LONG_BREAK") {
-      if (
-        (statesRelatedToTimer as TimersStatesType).running === false &&
-        (statesRelatedToTimer as TimersStatesType).startTime === 0
-      ) {
-        // console.log("-------pomo has not started yet.");
-      }
-    }
-  });
+  // useEffect(() => {
+  //   console.log("categoryChangeInfoArray", categoryChangeInfoArray);
+  // });
   //#endregion
 
   return (
@@ -681,7 +669,7 @@ async function persistRecOfTodayToServer(user: User, record: RecType) {
     const response = await axiosInstance.post(RESOURCE.TODAY_RECORDS, {
       ...record,
     });
-    console.log("res of persistRecOfTodayToSever", response);
+    // console.log("res of persistRecOfTodayToSever", response);
   } catch (error) {
     console.warn(error);
   }
@@ -822,7 +810,7 @@ async function recordPomo(
       // !(err as AxiosError).response && // https://stackoverflow.com/questions/62061642/how-to-check-if-axios-call-fails-due-to-no-internet-connection/72198060#72198060
       (err as AxiosError).code === "ERR_NETWORK"
     ) {
-      console.log("network is not connected");
+      // console.log("network is not connected");
       console.warn(err);
     } else {
       console.warn(err);

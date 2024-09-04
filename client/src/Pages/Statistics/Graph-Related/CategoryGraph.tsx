@@ -67,7 +67,7 @@ export function CategoryGraph({
         startOfWeek(new Date(), { weekStartsOn: 1 }).getTime() &&
       statData[statData.length - 1].date === todayDateStr
     ) {
-      console.log(statData[statData.length - 1]);
+      // console.log(statData[statData.length - 1]);
       setLocalWeekStat((prev) => {
         const updated = prev.map((dayStat) => {
           // 전제: ===의 오른쪽 operand는 이번주 데이터다. 왜냐하면, 나는 이 side effect이 무조건 이 앱을 사용하는 그 당일 (즉, 오늘)에만 일어나기 때문에,
@@ -231,10 +231,10 @@ export function CategoryGraph({
       let matchingStat = weekStatFromData.find(
         (fromData) => fromData.date === cloned.date
       );
-      console.log(
-        "matchingStat from weekStatFromData in fillWeekCloned",
-        matchingStat
-      );
+      // console.log(
+      //   "matchingStat from weekStatFromData in fillWeekCloned",
+      //   matchingStat
+      // );
       if (matchingStat) {
         cloned.total = matchingStat.total;
         cloned.withCategories = matchingStat.withCategories;
@@ -261,10 +261,10 @@ export function CategoryGraph({
   }
 
   function createInitialCategoryStat() {
-    console.log(
-      "inside createInitialCategoryStat---------------------------------"
-    );
-    console.log(c_info_list);
+    // console.log(
+    //   "inside createInitialCategoryStat---------------------------------"
+    // );
+    // console.log(c_info_list);
     const retVal = c_info_list.reduce<CategoryStat>(
       (previousValue, currentValue) => {
         previousValue[currentValue.name] = {
@@ -277,7 +277,7 @@ export function CategoryGraph({
       },
       {}
     );
-    console.log(retVal);
+    // console.log(retVal);
     return retVal;
   }
   //#endregion

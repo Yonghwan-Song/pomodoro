@@ -67,18 +67,18 @@ export const errController: ERR_CONTROLLER = {
   },
 
   registerFailedReqInfo(reqConfig: AxiosRequestConfig) {
-    console.log("adapter", reqConfig.adapter);
+    // console.log("adapter", reqConfig.adapter);
     switch (reqConfig.method?.toUpperCase()) {
       case "GET":
         this.failedReqInfo.GET.push({ url: reqConfig.url! });
-        console.log("GET", this.failedReqInfo.GET);
+        // console.log("GET", this.failedReqInfo.GET);
         break;
       case "POST":
         this.failedReqInfo.POST.push({
           url: reqConfig.url!,
           data: JSON.parse(reqConfig.data),
         });
-        console.log("POST", this.failedReqInfo.POST);
+        // console.log("POST", this.failedReqInfo.POST);
         break;
       case "PATCH":
         // users/updateTimersStates
@@ -91,13 +91,13 @@ export const errController: ERR_CONTROLLER = {
             const existingUrlAndData = this.failedReqInfo.PATCH.get(
               reqConfig.url
             );
-            console.log("data before merge", existingUrlAndData?.data);
+            // console.log("data before merge", existingUrlAndData?.data);
             if (existingUrlAndData) {
               existingUrlAndData.data = this.mergeData(
                 existingUrlAndData.data,
                 reqConfig
               );
-              console.log("data after merge", existingUrlAndData?.data);
+              // console.log("data after merge", existingUrlAndData?.data);
               this.failedReqInfo.PATCH.set(reqConfig.url, existingUrlAndData!);
             } else {
               this.failedReqInfo.PATCH.set(reqConfig.url, {
@@ -120,7 +120,7 @@ export const errController: ERR_CONTROLLER = {
           }
         }
 
-        console.log("PATCH", [...this.failedReqInfo.PATCH.entries()]);
+        // console.log("PATCH", [...this.failedReqInfo.PATCH.entries()]);
 
         // function mergeData(
         //   existingData: any,
@@ -142,14 +142,14 @@ export const errController: ERR_CONTROLLER = {
           this.failedReqInfo.DELETE.push({ url: reqConfig.url });
         }
 
-        console.log("DELETE", this.failedReqInfo.DELETE);
+        // console.log("DELETE", this.failedReqInfo.DELETE);
         break;
 
       default:
         break;
     }
 
-    console.log("failedReqInfo", this.failedReqInfo);
+    // console.log("failedReqInfo", this.failedReqInfo);
 
     this.storeFailedReqsToIDB();
   },
@@ -186,11 +186,11 @@ export const errController: ERR_CONTROLLER = {
     );
 
     this.failedReqInfo.POST = [];
-    console.log("POST");
+    // console.log("POST");
 
     const putResults = await Promise.allSettled(
       [...this.failedReqInfo.PATCH.values()].map(async (urlAndData) => {
-        console.log("urlAndData from Put", urlAndData);
+        // console.log("urlAndData from Put", urlAndData);
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
@@ -200,7 +200,7 @@ export const errController: ERR_CONTROLLER = {
     );
 
     this.failedReqInfo.PATCH.clear();
-    console.log("PATCH");
+    // console.log("PATCH");
 
     const deleteResults = await Promise.allSettled(
       this.failedReqInfo.DELETE.map(async (urlAndData) => {
@@ -212,14 +212,14 @@ export const errController: ERR_CONTROLLER = {
     );
 
     this.failedReqInfo.DELETE = [];
-    console.log("DELETE");
+    // console.log("DELETE");
 
     if (this.failedReqInfo.GET.length !== 0) {
       this.failedReqInfo.GET = [];
     }
 
     const userEmail = await getUserEmail();
-    console.log("empty failed req info");
+    // console.log("empty failed req info");
 
     if (userEmail) {
       emptyFailedReqInfo(userEmail);

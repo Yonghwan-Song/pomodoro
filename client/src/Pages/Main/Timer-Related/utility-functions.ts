@@ -51,7 +51,7 @@ export function getProgress(statesRelatedToTimer: TimersStatesType) {
 
   // progress = parseFloat(progress.toFixed(2));
 
-  console.log("progress from getProgress()", progress);
+  // console.log("progress from getProgress()", progress);
 
   return progress;
 }

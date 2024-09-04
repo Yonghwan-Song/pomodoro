@@ -75,16 +75,16 @@ export default function TimelineUsingStyledComponent({
     }
   }
   function handleMouseDown(ev: React.MouseEvent<HTMLDivElement>) {
-    console.log("handleMouseDown", ev);
+    // console.log("handleMouseDown", ev);
 
     // Main button pressed, usually the left button
     if (ev.button === 0) {
       isButtonPressed = true;
       clientXByMouseDown = ev.clientX;
-      console.log(
-        "can isButtonPressed be changed? -> isButtonPressed should be true at this point ==>",
-        isButtonPressed
-      );
+      // console.log(
+      //   "can isButtonPressed be changed? -> isButtonPressed should be true at this point ==>",
+      //   isButtonPressed
+      // );
       //3
       leftWhenMouseDown = dynamicLeftAndRight.left;
 

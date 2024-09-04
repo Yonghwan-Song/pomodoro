@@ -180,7 +180,7 @@ async function saveStates(data) {
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
 
-    console.log(data);
+    // console.log(data);
 
     Array.from(data.stateArr).forEach(async (obj) => {
       await store.put(obj);
@@ -642,7 +642,7 @@ async function getCategoryChangeInfoArrayFromIDB() {
 
 async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
   let body = null;
-  console.log("info arr in recordPomo", infoArray);
+  // console.log("info arr in recordPomo", infoArray);
 
   try {
     const { idToken, email } = idTokenAndEmail;
@@ -702,7 +702,7 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
         };
       }
     });
-    console.log("final in sw.js<----------------------------------", final);
+    // console.log("final in sw.js<----------------------------------", final);
     //#endregion
 
     //#region
@@ -710,7 +710,7 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
       evName: "pomoAdded",
       payload: final,
     });
-    console.log("pubsub event from sw", pubsub.events);
+    // console.log("pubsub event from sw", pubsub.events);
 
     //#endregion
 
@@ -724,7 +724,7 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
     // console.log("cache address", cacheUrl);
 
     let statResponse = await cache.match(cacheUrl); //<------ was a problem. statResponse was undefined. Sol: open cache in the message event handler above.
-    console.log("statResponse", statResponse);
+    // console.log("statResponse", statResponse);
 
     if (statResponse !== undefined) {
       let statData = await statResponse.json();
@@ -811,7 +811,7 @@ async function updateTimersStates(states) {
           },
         }
       );
-      console.log("res of updateTimersStates in sw: ", res);
+      // console.log("res of updateTimersStates in sw: ", res);
     }
   } catch (error) {
     if (
@@ -837,7 +837,6 @@ async function persistRecOfTodayToServer(record) {
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
-      console.log("in the if block");
       const { idToken, email } = idTokenAndEmail;
       // caching
       let cache = CACHE || (await openCache(CacheName));
@@ -869,7 +868,7 @@ async function persistRecOfTodayToServer(record) {
           "Content-Type": "application/json",
         },
       });
-      console.log("res of persistRecOfTodayToSever", res);
+      // console.log("res of persistRecOfTodayToSever", res);
     }
   } catch (error) {
     if (

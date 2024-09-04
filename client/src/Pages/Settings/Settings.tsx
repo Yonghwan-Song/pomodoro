@@ -247,7 +247,7 @@ function Settings() {
     if (Object.entries(pomoSettingInputs).length === 0) {
       setPomoSettingInputs(pomoSetting);
     }
-    console.log("POMO SETTING INPUTS", pomoSettingInputs);
+    // console.log("POMO SETTING INPUTS", pomoSettingInputs);
   }, [user, pomoSetting, pomoSettingInputs]);
 
   // To set pomoSettingInputs to default when a user logs out.
@@ -428,10 +428,10 @@ function Settings() {
 }
 
 async function deleteAccount(user: User) {
-  console.log(`--------------------DELETE ACCOUNT-------------------`);
+  // console.log(`--------------------DELETE ACCOUNT-------------------`);
   try {
     const res = await axiosInstance.delete(RESOURCE.USERS);
-    console.log("deleteAccount res", res.data);
+    // console.log("deleteAccount res", res.data);
     //await user.delete();
     let result = await deleteUser(user);
     await clear__StateStore_RecOfToday_CategoryStore();
@@ -439,7 +439,7 @@ async function deleteAccount(user: User) {
     window.location.reload();
     // console.log(result);
   } catch (error) {
-    console.log(error);
+    console.warn(error);
   }
 }
 async function createDemoData(user: User) {
@@ -457,9 +457,9 @@ async function createDemoData(user: User) {
         timezoneOffset: now.getTimezoneOffset(),
       }
     );
-    console.log("res obj.data", res.data);
+    // console.log("res obj.data", res.data);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
   }
 }
 async function removeDemoData(user: User) {
@@ -469,9 +469,9 @@ async function removeDemoData(user: User) {
     const res = await axiosInstance.delete(
       RESOURCE.POMODOROS + SUB_SET.DEMO_DATA
     );
-    console.log("res obj.data", res.data);
+    // console.log("res obj.data", res.data);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
   }
 }
 
@@ -499,9 +499,9 @@ async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
       }
     );
 
-    console.log("res obj.data", res.data);
+    // console.log("res obj.data", res.data);
   } catch (err) {
-    console.log(err);
+    console.warn(err);
   }
 }
 

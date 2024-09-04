@@ -19,12 +19,12 @@ export function ArrowDown({ handleClick }) {
   }
 
   function handleMouseUp(e) {
-    console.log(
-      `TIMEOUT ID--------------------${timerId.current}--------------------------------------------`
-    );
-    console.log(
-      `INTERVAL ID--------------------${intervalId.current}--------------------------------------------`
-    );
+    // console.log(
+    //   `TIMEOUT ID--------------------${timerId.current}--------------------------------------------`
+    // );
+    // console.log(
+    //   `INTERVAL ID--------------------${intervalId.current}--------------------------------------------`
+    // );
     clearTimeout(timerId.current);
     clearInterval(intervalId.current);
   }
@@ -56,12 +56,12 @@ export function ArrowUp({ handleClick }) {
   }
 
   function handleMouseUp(e) {
-    console.log(
-      `TIMEOUT ID--------------------${timerId.current}--------------------------------------------`
-    );
-    console.log(
-      `INTERVAL ID--------------------${intervalId.current}--------------------------------------------`
-    );
+    // console.log(
+    //   `TIMEOUT ID--------------------${timerId.current}--------------------------------------------`
+    // );
+    // console.log(
+    //   `INTERVAL ID--------------------${intervalId.current}--------------------------------------------`
+    // );
     clearTimeout(timerId.current);
     clearInterval(intervalId.current);
   }

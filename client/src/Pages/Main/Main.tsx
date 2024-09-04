@@ -39,8 +39,8 @@ export default function Main() {
   const toggleCounter = useRef(0);
   const userInfoContext = useUserContext()!;
   const pomoSetting = useMemo(() => {
-    console.log("useMemo at Main");
-    console.log(userInfoContext.pomoInfo);
+    // console.log("useMemo at Main");
+    // console.log(userInfoContext.pomoInfo);
     if (
       userInfoContext.pomoInfo !== null &&
       userInfoContext.pomoInfo.pomoSetting !== undefined
@@ -91,7 +91,7 @@ export default function Main() {
   // }
 
   function endTimerInBackground() {
-    console.log("statesRelatedToTimer", statesRelatedToTimer);
+    // console.log("statesRelatedToTimer", statesRelatedToTimer);
     statesRelatedToTimer !== null &&
       Object.keys(statesRelatedToTimer).length !== 0 &&
       (statesRelatedToTimer as TimersStatesType).running &&

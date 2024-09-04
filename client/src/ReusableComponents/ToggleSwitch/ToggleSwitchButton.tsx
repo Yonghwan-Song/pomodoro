@@ -9,7 +9,7 @@ export default function ToggleSwitchButton({
   xAxisEdgeWidth,
   backgroundColorForSwitch,
 }: StyledToggleSwitchButtonPropsType) {
-  console.log("doesPomoAutoStart", isSwitchOn);
+  // console.log("doesPomoAutoStart", isSwitchOn);
   return (
     <StyledToggleSwitchButton
       isSwitchOn={isSwitchOn}

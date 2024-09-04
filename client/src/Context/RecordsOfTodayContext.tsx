@@ -64,7 +64,7 @@ function removeRecordsBeforeToday(records: RecType[]): RecType[] {
 
 async function persistRecordsOfTodayToIDB(records: RecType[]) {
   await persistManyTodaySessionsToIDB(records);
-  console.log("persisting recordsOfToday succeeded");
+  // console.log("persisting recordsOfToday succeeded");
   pubsub.publish("successOfPersistingRecordsOfTodayToIDB", records);
 }
 

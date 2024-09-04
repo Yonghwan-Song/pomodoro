@@ -404,7 +404,6 @@ export function TimerControllerVVV({
   //#region Revised
   useEffect(() => {
     async function reflectCategoryChange() {
-      console.log("revised is called");
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
@@ -808,7 +807,7 @@ async function recordPomo(
       // !(err as AxiosError).response && // https://stackoverflow.com/questions/62061642/how-to-check-if-axios-call-fails-due-to-no-internet-connection/72198060#72198060
       (err as AxiosError).code === "ERR_NETWORK"
     ) {
-      console.log("network is not connected");
+      // console.log("network is not connected");
       console.warn(err);
     } else {
       console.warn(err);

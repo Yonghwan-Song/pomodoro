@@ -115,7 +115,7 @@ export function TimerVVV({
     let timePassed = 0;
     let timeCountedDown = 0; // timeCountedDown = timePassed - pause.totalLength
 
-    console.log("statesRelatedToTimer", statesRelatedToTimer);
+    // console.log("statesRelatedToTimer", statesRelatedToTimer);
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       let { duration, pause, running, startTime } =
         statesRelatedToTimer as TimersStatesType;
@@ -154,12 +154,12 @@ export function TimerVVV({
   //#endregion
 
   //#region Tracking Unmount
-  useEffect(() => {
-    console.log("Timer_v was mounted");
-    return () => {
-      console.log("Timer_v was unmounted");
-    };
-  }, []);
+  // useEffect(() => {
+  //   console.log("Timer_v was mounted");
+  //   return () => {
+  //     console.log("Timer_v was unmounted");
+  //   };
+  // }, []);
   //#endregion
 
   //#region Button Click Handlers
@@ -318,15 +318,15 @@ export function TimerVVV({
     let nextRepetitionCount =
       patternTimerStates.repetitionCount ?? repetitionCount + 1;
 
-    console.log("nextRepetitionCount", nextRepetitionCount);
-    console.log(
-      "doesPomoAutoStart",
-      autoStartSetting.doesPomoStartAutomatically
-    );
-    console.log(
-      "doesBreakAutoStart",
-      autoStartSetting.doesBreakStartAutomatically
-    );
+    // console.log("nextRepetitionCount", nextRepetitionCount);
+    // console.log(
+    //   "doesPomoAutoStart",
+    //   autoStartSetting.doesPomoStartAutomatically
+    // );
+    // console.log(
+    //   "doesBreakAutoStart",
+    //   autoStartSetting.doesBreakStartAutomatically
+    // );
 
     if (nextSessionIsStartOfCycle()) {
       user &&

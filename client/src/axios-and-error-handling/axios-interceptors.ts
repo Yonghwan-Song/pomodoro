@@ -59,8 +59,8 @@ export function defineInterceptorsForAxiosInstance() {
     function (error: AxiosError) {
       console.log("error message from the interceptor", error);
       if (error.code === "ERR_NETWORK") {
-        console.log("axios req config is here");
-        console.log(error.config);
+        // console.log("axios req config is here");
+        // console.log(error.config);
         errController.registerFailedReqInfo(error.config);
       }
       return Promise.reject(error);

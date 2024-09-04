@@ -54,7 +54,7 @@ function Navbar() {
       errController.emptyFailedReqInfo();
       window.location.reload();
     } catch (error) {
-      console.log(error);
+      console.warn(error);
     }
   }
 
@@ -70,7 +70,7 @@ function Navbar() {
       let navLinks = Array.from(
         ulRef.current!.children as HTMLCollectionOf<HTMLLIElement>
       ); // children property is inhertied from the Element interface
-      console.log(navLinks);
+      // console.log(navLinks);
 
       navLinks.forEach((link: HTMLLIElement, index) => {
         if (link.style.animation) {
@@ -80,8 +80,8 @@ function Navbar() {
             index / 7 + 0.2
           }s`;
         }
-        console.log(link.style);
-        console.log(index / 7);
+        // console.log(link.style);
+        // console.log(index / 7);
       });
     }
   }
@@ -104,9 +104,9 @@ function Navbar() {
       userInfoContext?.setPomoInfo((prev) => {
         if (!prev) return prev;
 
-        console.log("{...prev} in pubsub.subscribe(sessionEndBySW...)", {
-          ...prev,
-        });
+        // console.log("{...prev} in pubsub.subscribe(sessionEndBySW...)", {
+        //   ...prev,
+        // });
         return { ...prev, categoryChangeInfoArray: payload };
       });
     });

@@ -13794,41 +13794,7 @@
   var IDB_VERSION = 9;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
-   //#endregion
-
-  // reference: https://www.youtube.com/watch?v=aynSM8llOBs
-  var pubsub = {
-    events: {},
-    subscribe: function subscribe(evName, cb) {
-      var _this = this;
-
-      if (!(evName in this.events)) {
-        this.events[evName] = new Set();
-      }
-
-      this.events[evName].add(cb); // console.log(`subscription to ${evName} has started`);
-      // console.log("events", this.events);
-
-      return function () {
-        _this.events[evName].delete(cb);
-      };
-    },
-    unsubscribe: function unsubscribe(evName, cb) {
-      if (evName in this.events) {
-        this.events[evName].delete(cb); // console.log(`The Subscription to the ${evName} has been unsubscribed.`);
-      }
-    },
-    publish: function publish(evName, data) {
-      // console.log(`${evName} is published with data`, data);
-      // console.log("Set of subscribers's callbacks", this.events[evName]);
-      // console.log("this is", this);
-      if (this.events[evName]) {
-        this.events[evName].forEach(function (f) {
-          f(data);
-        });
-      }
-    }
-  };
+  //#endregion
 
   var _excluded = ["pomoSetting"];
   var DB = null;
@@ -14227,8 +14193,8 @@
 
             case 6:
               db = _context12.t0;
-              store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
-              console.log(data);
+              store = db.transaction("stateStore", "readwrite").objectStore("stateStore"); // console.log(data);
+
               Array.from(data.stateArr).forEach( /*#__PURE__*/function () {
                 var _ref10 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(obj) {
                   return _regeneratorRuntime().wrap(function _callee11$(_context11) {
@@ -14250,20 +14216,20 @@
                   return _ref10.apply(this, arguments);
                 };
               }());
-              _context12.next = 15;
+              _context12.next = 14;
               break;
 
-            case 12:
-              _context12.prev = 12;
+            case 11:
+              _context12.prev = 11;
               _context12.t1 = _context12["catch"](0);
               console.warn(_context12.t1);
 
-            case 15:
+            case 14:
             case "end":
               return _context12.stop();
           }
         }
-      }, _callee12, null, [[0, 12]]);
+      }, _callee12, null, [[0, 11]]);
     }));
     return _saveStates.apply(this, arguments);
   }
@@ -14977,9 +14943,9 @@
         while (1) {
           switch (_context22.prev = _context22.next) {
             case 0:
-              body = null;
-              console.log("info arr in recordPomo", infoArray);
-              _context22.prev = 2;
+              body = null; // console.log("info arr in recordPomo", infoArray);
+
+              _context22.prev = 1;
               idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email;
               today = new Date(startTime);
               LocaleDateString = "".concat(today.getMonth() + 1, "/").concat(today.getDate(), "/").concat(today.getFullYear()); //#region PLZ
@@ -15024,81 +14990,79 @@
                     isDummy: false
                   };
                 }
-              });
-              console.log("final in sw.js<----------------------------------", final); //#endregion
+              }); // console.log("final in sw.js<----------------------------------", final);
+              //#endregion
               //#region
 
               BC.postMessage({
                 evName: "pomoAdded",
                 payload: final
-              });
-              console.log("pubsub event from sw", pubsub.events); //#endregion
+              }); // console.log("pubsub event from sw", pubsub.events);
+              //#endregion
               //#region Update cache
 
               _context22.t0 = CACHE;
 
               if (_context22.t0) {
-                _context22.next = 15;
+                _context22.next = 12;
                 break;
               }
 
-              _context22.next = 14;
+              _context22.next = 11;
               return openCache(CacheName);
 
-            case 14:
+            case 11:
               _context22.t0 = _context22.sent;
 
-            case 15:
+            case 12:
               cache = _context22.t0;
               // console.log("CACHE", CACHE);
               // console.log("cache in recordPomo", cache);
               cacheUrl = BASE_URL + RESOURCE.POMODOROS; // console.log("cache address", cacheUrl);
 
-              _context22.next = 19;
+              _context22.next = 16;
               return cache.match(cacheUrl);
 
-            case 19:
+            case 16:
               statResponse = _context22.sent;
-              //<------ was a problem. statResponse was undefined. Sol: open cache in the message event handler above.
-              console.log("statResponse", statResponse);
 
               if (!(statResponse !== undefined)) {
-                _context22.next = 36;
+                _context22.next = 32;
                 break;
               }
 
-              _context22.next = 24;
+              _context22.next = 20;
               return statResponse.json();
 
-            case 24:
+            case 20:
               statData = _context22.sent;
-              _context22.prev = 25;
-              _context22.next = 28;
+              _context22.prev = 21;
+              _context22.next = 24;
               return cache.put(cacheUrl, new Response(JSON.stringify([].concat(_toConsumableArray(statData), _toConsumableArray(final))), {
                 headers: {
                   "Content-Type": "application/json"
                 }
               }));
 
-            case 28:
+            case 24:
               console.log("Data successfully cached.");
-              _context22.next = 34;
+              _context22.next = 30;
               break;
 
-            case 31:
-              _context22.prev = 31;
-              _context22.t1 = _context22["catch"](25);
+            case 27:
+              _context22.prev = 27;
+              _context22.t1 = _context22["catch"](21);
               console.error("Failed to put data in cache", _context22.t1);
 
-            case 34:
-              _context22.next = 37;
+            case 30:
+              _context22.next = 33;
               break;
 
-            case 36:
+            case 32:
               console.warn("No existing cache entry found for ".concat(CacheName, ".")); // name I defined.
               // console.log(await getCacheNames()); // real ones.
 
-            case 37:
+            case 33:
               //#endregion
               body = JSON.stringify({
                 pomodoroRecordArr: final
@@ -15106,12 +15070,12 @@
               fetchWrapper(BASE_URL + RESOURCE.POMODOROS, "POST", {
                 pomodoroRecordArr: final
               }, idToken);
-              _context22.next = 44;
+              _context22.next = 40;
               break;
 
-            case 41:
-              _context22.prev = 41;
-              _context22.t2 = _context22["catch"](2);
+            case 37:
+              _context22.prev = 37;
+              _context22.t2 = _context22["catch"](1);
 
               if (_context22.t2 instanceof TypeError && _context22.t2.message.toLowerCase() === "failed to fetch") {
                 BC.postMessage({
@@ -15126,12 +15090,12 @@
                 console.warn(_context22.t2);
               }
 
-            case 44:
+            case 40:
             case "end":
               return _context22.stop();
           }
         }
-      }, _callee22, null, [[2, 41], [25, 31]]);
+      }, _callee22, null, [[1, 37], [21, 27]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
@@ -15142,7 +15106,7 @@
 
   function _updateTimersStates() {
     _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee23(states) {
-      var body, idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates, res;
+      var body, idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates;
       return _regeneratorRuntime().wrap(function _callee23$(_context23) {
         while (1) {
           switch (_context23.prev = _context23.next) {
@@ -15156,7 +15120,7 @@
               idTokenAndEmail = _context23.sent;
 
               if (!idTokenAndEmail) {
-                _context23.next = 28;
+                _context23.next = 27;
                 break;
               }
 
@@ -15210,15 +15174,14 @@
               });
 
             case 26:
-              res = _context23.sent;
-              console.log("res of updateTimersStates in sw: ", res);
+              _context23.sent;
 
-            case 28:
-              _context23.next = 33;
+            case 27:
+              _context23.next = 32;
               break;
 
-            case 30:
-              _context23.prev = 30;
+            case 29:
+              _context23.prev = 29;
               _context23.t1 = _context23["catch"](1);
 
               if (_context23.t1 instanceof TypeError && _context23.t1.message.toLowerCase() === "failed to fetch") {
@@ -15234,12 +15197,12 @@
                 console.warn(_context23.t1);
               }
 
-            case 33:
+            case 32:
             case "end":
               return _context23.stop();
           }
         }
-      }, _callee23, null, [[1, 30]]);
+      }, _callee23, null, [[1, 29]]);
     }));
     return _updateTimersStates.apply(this, arguments);
   }
@@ -15250,7 +15213,7 @@
 
   function _persistRecOfTodayToServer() {
     _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee24(record) {
-      var body, idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday, res;
+      var body, idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday;
       return _regeneratorRuntime().wrap(function _callee24$(_context24) {
         while (1) {
           switch (_context24.prev = _context24.next) {
@@ -15264,56 +15227,55 @@
               idTokenAndEmail = _context24.sent;
 
               if (!idTokenAndEmail) {
-                _context24.next = 29;
+                _context24.next = 27;
                 break;
               }
 
-              console.log("in the if block");
               idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email; // caching
 
               _context24.t0 = CACHE;
 
               if (_context24.t0) {
-                _context24.next = 13;
+                _context24.next = 12;
                 break;
               }
 
-              _context24.next = 12;
+              _context24.next = 11;
               return openCache(CacheName);
 
-            case 12:
+            case 11:
               _context24.t0 = _context24.sent;
 
-            case 13:
+            case 12:
               cache = _context24.t0;
-              _context24.next = 16;
+              _context24.next = 15;
               return cache.match(BASE_URL + RESOURCE.TODAY_RECORDS);
 
-            case 16:
+            case 15:
               resOfRecordOfToday = _context24.sent;
 
               if (!(resOfRecordOfToday !== undefined)) {
-                _context24.next = 24;
+                _context24.next = 23;
                 break;
               }
 
-              _context24.next = 20;
+              _context24.next = 19;
               return resOfRecordOfToday.json();
 
-            case 20:
+            case 19:
               recordsOfToday = _context24.sent;
               recordsOfToday.push({
                 record: record
               });
-              _context24.next = 24;
+              _context24.next = 23;
               return cache.put(BASE_URL + RESOURCE.TODAY_RECORDS, new Response(JSON.stringify(recordsOfToday)));
 
-            case 24:
+            case 23:
               body = JSON.stringify(_objectSpread2({
                 userEmail: email
               }, record)); // http requeset
 
-              _context24.next = 27;
+              _context24.next = 26;
               return fetch(BASE_URL + RESOURCE.TODAY_RECORDS, {
                 method: "POST",
                 body: body,
@@ -15323,16 +15285,15 @@
                 }
               });
 
-            case 27:
-              res = _context24.sent;
-              console.log("res of persistRecOfTodayToSever", res);
+            case 26:
+              _context24.sent;
 
-            case 29:
-              _context24.next = 34;
+            case 27:
+              _context24.next = 32;
               break;
 
-            case 31:
-              _context24.prev = 31;
+            case 29:
+              _context24.prev = 29;
               _context24.t1 = _context24["catch"](1);
 
               if (_context24.t1 instanceof TypeError && _context24.t1.message.toLowerCase() === "failed to fetch") {
@@ -15348,12 +15309,12 @@
                 console.warn(_context24.t1);
               }
 
-            case 34:
+            case 32:
             case "end":
               return _context24.stop();
           }
         }
-      }, _callee24, null, [[1, 31]]);
+      }, _callee24, null, [[1, 29]]);
     }));
     return _persistRecOfTodayToServer.apply(this, arguments);
   }

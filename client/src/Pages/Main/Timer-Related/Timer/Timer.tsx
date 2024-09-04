@@ -158,12 +158,12 @@ export function Timer({
   //   console.log("AutoStartSetting", autoStartSetting);
   // });
 
-  useEffect(() => {
-    console.log("Timer was mounted");
-    return () => {
-      console.log("Timer was unmounted");
-    };
-  }, []);
+  // useEffect(() => {
+  //   console.log("Timer was mounted");
+  //   return () => {
+  //     console.log("Timer was unmounted");
+  //   };
+  // }, []);
   //#endregion
 
   //#region Button Click Handlers
@@ -314,15 +314,15 @@ export function Timer({
     let nextRepetitionCount =
       patternTimerStates.repetitionCount ?? repetitionCount + 1;
 
-    console.log("nextRepetitionCount", nextRepetitionCount);
-    console.log(
-      "doesPomoAutoStart",
-      autoStartSetting.doesPomoStartAutomatically
-    );
-    console.log(
-      "doesBreakAutoStart",
-      autoStartSetting.doesBreakStartAutomatically
-    );
+    // console.log("nextRepetitionCount", nextRepetitionCount);
+    // console.log(
+    //   "doesPomoAutoStart",
+    //   autoStartSetting.doesPomoStartAutomatically
+    // );
+    // console.log(
+    //   "doesBreakAutoStart",
+    //   autoStartSetting.doesBreakStartAutomatically
+    // );
 
     if (nextSessionIsStartOfCycle()) {
       user &&

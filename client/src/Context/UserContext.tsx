@@ -30,9 +30,9 @@ export function UserInfoContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  console.log(
-    `localStorage.getItem("user") === ${localStorage.getItem("user")}`
-  );
+  // console.log(
+  //   `localStorage.getItem("user") === ${localStorage.getItem("user")}`
+  // );
   const { user, isNewUser, isNewUserRegistered } = useAuthContext()!;
   const [pomoInfo, setPomoInfo] = useFetch<RequiredStatesToRunTimerType>({
     urlSegment: RESOURCE.USERS,
@@ -95,13 +95,13 @@ export function UserInfoContextProvider({
     //! 주의: pomoInfo는 로그인을 해서 쓰든 아니든 처음에는 무조건 null값을 갖는다.
     //!        왜냐하면, useFetch에서 처음에 data가 null을 init값으로 설정했기 때문.
     if (pomoInfo === null && localStorage.getItem("user") !== "authenticated") {
-      console.log(
-        "------------------inside pomoInfo===null && localStorage.getItem(user) !== authenticated------------------"
-      );
+      // console.log(
+      //   "------------------inside pomoInfo===null && localStorage.getItem(user) !== authenticated------------------"
+      // );
       const getPomoSettingFromIDB = async () => {
         // when deleting all history including indexed DB... it does not work.
         let states = await obtainStatesFromIDB("withSettings");
-        console.log("states in the setPomoInfoOfUnLoggedInUser", states);
+        // console.log("states in the setPomoInfoOfUnLoggedInUser", states);
 
         let pomoSetting = doesPomoSettingExist()
           ? (states as dataCombinedFromIDB).pomoSetting
@@ -162,9 +162,9 @@ export function UserInfoContextProvider({
   // I am going to comment the `useEffect(postSaveStatesMessageToServiceWorker, [user, pomoSetting]);` in the Main.tsx
   // Instead, I will post a message to the service worker to save pomoSetting and autoStartSetting here.
   function setPomoInfoToDefaultAfterLogOut() {
-    console.log("setPomoSettingToDefault is called");
+    // console.log("setPomoSettingToDefault is called");
     if (isRightAfterLogOut()) {
-      console.log("inside if condition: setting pomoSetting to default");
+      // console.log("inside if condition: setting pomoSetting to default");
       // setPomoInfo({
       //   timersStates: {
       //     duration: 25,
@@ -202,7 +202,7 @@ export function UserInfoContextProvider({
       });
 
       if (localStorage.getItem("user") === null) {
-        console.log("setting L_user to unAuthenticated");
+        // console.log("setting L_user to unAuthenticated");
         localStorage.setItem("user", "unAuthenticated");
       }
     }

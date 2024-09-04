@@ -173,7 +173,7 @@ export default function CategoryList() {
   }
 
   function openModal(category: string) {
-    console.log("categoryClicked", category);
+    // console.log("categoryClicked", category);
     setClickedCategoryName(category);
     setIsModalOpen(true);
   }

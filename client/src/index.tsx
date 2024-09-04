@@ -348,7 +348,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
       })
       .then(
         (registration) => {
-          console.log("registration", registration);
+          // console.log("registration", registration);
 
           SW =
             registration.installing ||
@@ -361,7 +361,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
           }
         },
         (err) => {
-          console.log("Service worker registration failed:", err);
+          console.warn("Service worker registration failed:", err);
           prompt(
             "An unexpected problem happened. Please refresh the current page"
           );
@@ -410,7 +410,7 @@ export async function clear__StateStore_RecOfToday_CategoryStore() {
 }
 
 export async function setStateStoreToDefault() {
-  console.log("setStateStoreToDefault");
+  // console.log("setStateStoreToDefault");
   let db = DB || (await openIndexedDB());
   try {
     let tx = db.transaction("stateStore", "readwrite");
@@ -454,7 +454,7 @@ export async function deleteCache(name: string) {
   try {
     let result = await caches.delete(name);
     if (result) {
-      console.log(`deleting was successful - ${result}`);
+      // console.log(`deleting was successful - ${result}`);
       DynamicCache = null;
     } else {
       console.warn(`deleting  the cache ${name} has failed`);
@@ -471,7 +471,7 @@ export async function delete_entry_of_cache(
   try {
     const cache = await caches.open(cacheName);
     const result = await cache.delete(entryName);
-    console.log(`delete cache entry result - ${result}`);
+    // console.log(`delete cache entry result - ${result}`);
   } catch (error) {
     console.warn(error);
   }
@@ -619,10 +619,10 @@ export async function persistSingleTodaySessionToIDB({
       // if it is 0, it means user just clicks end button without having not started the session.
       await store.add({ kind, ...data });
       if (kind === "pomo") {
-        console.log(
-          "adding pomo in --------------persistingSingleTodaySessionToIDB--------------",
-          { kind, ...data }
-        );
+        // console.log(
+        //   "adding pomo in --------------persistingSingleTodaySessionToIDB--------------",
+        //   { kind, ...data }
+        // );
       }
     }
   } catch (error) {
@@ -652,7 +652,7 @@ export async function persistStatesToIDB(
     .transaction("stateStore", "readwrite")
     .objectStore("stateStore");
   try {
-    console.log("INSIDE PERSIST-STATES-TO-IDB");
+    // console.log("INSIDE PERSIST-STATES-TO-IDB");
     for (const [key, value] of Object.entries(states)) {
       let obj = { name: key, value: value };
       await store.put(obj);
@@ -797,14 +797,14 @@ export async function countDown(setIntervalId: number | string | null) {
               (timersStates as dataCombinedFromIDB).pause.totalLength)) /
             1000
         );
-        console.log("count down remaining duration", remainingDuration);
+        // console.log("count down remaining duration", remainingDuration);
         if (remainingDuration <= 0) {
-          console.log("idOfSetInterval", idOfSetInterval);
+          // console.log("idOfSetInterval", idOfSetInterval);
           clearInterval(idOfSetInterval);
           localStorage.removeItem("idOfSetInterval");
-          console.log(
-            "-------------------------------------About To Call EndTimer()-------------------------------------"
-          );
+          // console.log(
+          //   "-------------------------------------About To Call EndTimer()-------------------------------------"
+          // );
           postMsgToSW("endTimer", {
             pomoSetting,
             ...timersStates,
@@ -838,7 +838,7 @@ export async function makeSound() {
     const buffer = await (
       await fetch("/the-little-dwarf-498.ogg")
     ).arrayBuffer();
-    console.log("buffer", buffer);
+    // console.log("buffer", buffer);
     const audioBuffer = await audioContext.decodeAudioData(buffer);
     const audioBufferSourceNode = audioContext.createBufferSource();
     audioBufferSourceNode.buffer = audioBuffer;
@@ -865,7 +865,7 @@ async function autoStartNextSession({
   currentCategoryName: string | undefined | null;
 }) {
   if (currentCategoryName === undefined) currentCategoryName = null;
-  console.log("moment when autoStartNextSession starts", new Date());
+  // console.log("moment when autoStartNextSession starts", new Date());
   // timersStates.startTime = endTimeOfPrevSession; //? 이렇게하면... 말이 안되지 않나?.. '찰나' 라는 델타 값 정도는 더해줘야 하지 않나?
   //! 1초 ?.. 최소 1 millisecond
   timersStates.startTime = endTimeOfPrevSession + 1; // 이렇게 해도 초단위는 같아지잖아.. 걍 1초 차이는 나게 해줘야 ..
@@ -919,14 +919,14 @@ async function autoStartNextSession({
           (timersStates as dataCombinedFromIDB).pause.totalLength)) /
         1000
     );
-    console.log("count down remaining duration", remainingDuration);
+    // console.log("count down remaining duration", remainingDuration);
     if (remainingDuration <= 0) {
-      console.log("idOfSetInterval", idOfSetInterval);
+      // console.log("idOfSetInterval", idOfSetInterval);
       clearInterval(idOfSetInterval);
       localStorage.removeItem("idOfSetInterval");
-      console.log(
-        "-------------------------------------About To Call EndTimer()-------------------------------------"
-      );
+      // console.log(
+      //   "-------------------------------------About To Call EndTimer()-------------------------------------"
+      // );
 
       postMsgToSW("endTimer", {
         // currentCategoryName,
@@ -985,7 +985,7 @@ export function getUserEmail(): Promise<string | null> {
 export async function getCacheNames() {
   try {
     const cacheNames = await caches.keys();
-    console.log("Cache Names:", cacheNames);
+    // console.log("Cache Names:", cacheNames);
     return cacheNames;
   } catch (error) {
     console.error("Error fetching cache names:", error);

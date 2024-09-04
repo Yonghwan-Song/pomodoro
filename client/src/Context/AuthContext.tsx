@@ -47,7 +47,7 @@ export function AuthContextProvider({
       if (details !== null && details.isNewUser) {
         setIsNewUser(true);
         let userRegistered = await registerUser(result.user);
-        console.log(userRegistered);
+        // console.log(userRegistered);
       }
     } catch (error) {
       console.warn(`------------------------googleSignIn in AuthContext.js-------------------------
@@ -72,7 +72,7 @@ export function AuthContextProvider({
       setIsNewUserRegistered(true);
       return response;
     } catch (err) {
-      console.log(err);
+      console.warn(err);
     }
   }
 

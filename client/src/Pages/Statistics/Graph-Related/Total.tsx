@@ -9,7 +9,7 @@ type TotalProps = {
 export function TotalComparison({ thisTotal, lastTotal, target }: TotalProps) {
   const [sign, setSign] = useState<"+" | "-">(() => {
     const SIGN = thisTotal - lastTotal >= 0 ? "+" : "-";
-    console.log("init sign", SIGN);
+
     return SIGN;
   });
 
