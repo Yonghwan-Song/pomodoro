@@ -1,10 +1,15 @@
 import React, { useMemo } from "react";
 import * as C from "../../../../constants/index";
 import styles from "./circularProgressBar.module.css";
-import { persistStatesToIDB, updateTimersStates } from "../../../..";
+import {
+  persistCategoryChangeInfoArrayToIDB,
+  persistStatesToIDB,
+  updateTimersStates,
+} from "../../../..";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { useUserContext } from "../../../../Context/UserContext";
 import { CategoryChangeInfoForCircularProgressBar } from "../../../../types/clientStatesType";
+import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
 
 type CircularProgressBarProps = {
   progress: number;
@@ -144,6 +149,40 @@ const CircularProgressBar = ({
     }
     setDurationInMinutes((prev) => prev + 5);
     setRemainingDuration((prev) => prev + 5 * 60);
+
+    //TODO I'm going to change categoryChangeInfoArray here. But I am not sure if this is good since it will re-calculate
+    //     `infoArrayOfPrevCategories` and hopefully `currentCategoryInfo` kind of
+    //!    in an indirect way by useMemo... <--- this seems inefficient
+    //?     Probably, I can change it in an easier way if I use a state management library like zustand later...??..
+    // What is expected: change in userInfoContext.pomoInfo?.categoryChangeInfoArray -> invokes the first useMemo() defined in this file.
+    // -> change progress in the return values.
+    const infoArray_upgraded =
+      userInfoContext.pomoInfo?.categoryChangeInfoArray.map((info) => {
+        const newProgress =
+          // For example, when subtracting 5 minutes ->
+          // r0: original remainingDuration d0: original durationInMinutes. And we want to know x.
+          // (1 - r0/d0) * x = 1 - (r0 - 5)/(d0 - 5)
+          // x = d0/(d0 - 5)
+          info.progress * (durationInSeconds / (durationInSeconds + 5 * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
+
+        return { ...info, progress: newProgress };
+      });
+
+    if (infoArray_upgraded) {
+      console.log("Entered upgradeInfoArray if block.");
+      userInfoContext.setPomoInfo((prev) => {
+        if (!prev) return prev;
+
+        return { ...prev, categoryChangeInfoArray: infoArray_upgraded };
+      });
+      persistCategoryChangeInfoArrayToIDB(infoArray_upgraded);
+      axiosInstance.patch(
+        C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+        {
+          categoryChangeInfoArray: infoArray_upgraded,
+        }
+      );
+    }
   }
 
   async function subtractFiveMinutes() {
@@ -158,6 +197,30 @@ const CircularProgressBar = ({
       }
       setDurationInMinutes((prev) => prev - 5);
       setRemainingDuration((prev) => prev - 5 * 60);
+
+      const upgradedInfoArray =
+        userInfoContext.pomoInfo?.categoryChangeInfoArray.map((info) => {
+          const newProgress =
+            info.progress * (durationInSeconds / (durationInSeconds - 5 * 60));
+
+          return { ...info, progress: newProgress };
+        });
+
+      if (upgradedInfoArray) {
+        console.log("Entered upgradeInfoArray if block.");
+        userInfoContext.setPomoInfo((prev) => {
+          if (!prev) return prev;
+
+          return { ...prev, categoryChangeInfoArray: upgradedInfoArray };
+        });
+        persistCategoryChangeInfoArrayToIDB(upgradedInfoArray);
+        axiosInstance.patch(
+          C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+          {
+            categoryChangeInfoArray: upgradedInfoArray,
+          }
+        );
+      }
     }
   }
 
@@ -195,6 +258,17 @@ const CircularProgressBar = ({
             strokeDasharray={`${getProgressSegment(
               info.segmentProgress
             )} ${getRemainingSegment(info.segmentProgress)}`}
+            onMouseEnter={() => {
+              const segDurationInSec = Math.floor(
+                info.segmentProgress * durationInSeconds
+              );
+              console.log(`${segDurationInSec}sec`);
+              const dur = `${Math.floor(segDurationInSec / 60)}min ${
+                segDurationInSec % 60
+              }sec`;
+              console.log(dur);
+            }}
+            onMouseLeave={() => console.log("leave")}
           ></circle>
         );
       })}

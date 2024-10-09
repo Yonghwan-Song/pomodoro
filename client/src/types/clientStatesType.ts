@@ -53,6 +53,13 @@ export type CategoryInfoTweakeFroStatPurpose = {
 
 export type NewCategory = Omit<Category, "_id">; // _id is not generated yet by the mongodb since it is a new one to be added later by server.
 
+/**
+ * @prop progress - a number that represents how much progress has been made in the current session at the moment this category starts.
+ *           In other words, how much progress has been made by a previous category.
+ *
+ * @prop _uuid? - uncategorized -> no _uuid
+ *
+ */
 export type CategoryChangeInfo = {
   categoryName: string;
   categoryChangeTimestamp: number;
@@ -61,6 +68,10 @@ export type CategoryChangeInfo = {
   progress: number;
 };
 
+/**
+ * segmentProgress -
+ * This represents the progress made by a category. It is calculated when switching from one category to another—for example, from category A to category B. Category B becomes the current category, and we need to display how much progress was made by category A during the current session. I named this 'segment progress' because it represents the progress made by category A, which is only a segment of the entire session.
+ */
 export type CategoryChangeInfoForCircularProgressBar = CategoryChangeInfo & {
   segmentProgress: number;
 };
