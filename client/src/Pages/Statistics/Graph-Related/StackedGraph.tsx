@@ -13,6 +13,7 @@ import {
   CartesianGrid,
   TooltipProps,
   ReferenceLine,
+  LabelList,
 } from "recharts";
 import {
   CategoryInfoForStat,
@@ -21,7 +22,7 @@ import {
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
 } from "../statRelatedTypes";
-import { useEffect, useState } from "react";
+import { FunctionComponent, useEffect, useState } from "react";
 import { endOfWeek, startOfWeek } from "date-fns";
 
 type GraphProps = {
@@ -307,6 +308,37 @@ export function StackedGraph({
     return tweaked;
   }
 
+  const dataArray = getTweakedWeekStat();
+
+  console.log("dataArray", dataArray);
+
+  const CustomizedLabel: FunctionComponent<any> = (props: any) => {
+    const { x, y, stroke, value, index } = props;
+
+    console.log(props);
+    let diff = 0;
+    if (index !== 0) {
+      let prevValue = dataArray[index - 1].total;
+      if (prevValue !== undefined) {
+        diff = value - prevValue;
+      }
+    }
+
+    return (
+      <text
+        x={x}
+        y={y}
+        dy={-5}
+        fill={stroke}
+        fontSize={13}
+        textAnchor="middle"
+        style={{ fontWeight: "bold" }}
+      >
+        {diff > 0 ? `+${diff}` : diff}
+      </text>
+    );
+  };
+
   return (
     <BoxShadowWrapper
     // inset={true}
@@ -325,10 +357,12 @@ export function StackedGraph({
         <p>{weekRange}</p>
         <RightArrow handleClick={() => calculateNextWeekData(statData)} />
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+      {/* <ResponsiveContainer width="100%" height={400}> */}
+      <ResponsiveContainer width="100%" minHeight={300}>
         <AreaChart
-          data={getTweakedWeekStat()}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          data={dataArray}
+          //* IMPT: This margin is applied to the acutal graph that consists of the cartesian grid and the two cartesian axises. And they are  the children of the Surface component the parent of which is the AreaChart.
+          margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
         >
           <defs></defs>
           <CartesianGrid strokeDasharray="3 3" />
@@ -370,7 +404,9 @@ export function StackedGraph({
             fillOpacity={1}
             fill={colorForUnCategorized}
             name="Uncategorized"
-          />
+          >
+            <LabelList content={CustomizedLabel} />
+          </Area>
           <ReferenceLine
             y={average}
             label={`Average ${Math.floor(average / 60)}h ${average % 60}m`}
