@@ -1,4 +1,4 @@
-# Pomodoro Timer
+# Overview of [Pomodoro Timer](https://www.pomodoroaid.online)
 
 ## 개념
 
@@ -92,3 +92,8 @@
 
 ![settings](https://github.com/user-attachments/assets/cdf46e6f-0b21-4480-b531-f0d9b07ec154)  
 ![small-width-in-settings](https://github.com/user-attachments/assets/649db24e-b76a-4192-b193-4e4204984e7d)
+
+---
+
+## Futher Info - [pomodoro-doc](https://pomodoro-doc.vercel.app/)
+기능들이 실제로 어떻게 작동하는지 짧은 동영상을 만들어 놓았습니다.
