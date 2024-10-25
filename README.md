@@ -15,11 +15,15 @@
 
 ### 프론트엔드
 
-- React(with TypeScript), React Router DOM, Axios, Firebase Authentication, Styled Components
+- React, React Router DOM, Axios, Firebase Authentication
+- React Inline Style, Styled Components
+- TypeScript, Rechart, idb, date-fns
 
 ### 백엔드
 
-- NestJS, Express (구 서버), Firebase Admin, MongoDB Atlas, Mongoose
+- NestJS, Express
+- Firebase Admin
+- MongoDB Atlas, Mongoose, @nest/mongoose
 
 ### 호스팅
 
