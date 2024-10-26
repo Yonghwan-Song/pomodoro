@@ -1,10 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { ObjectId } from 'mongoose';
 
-// interface Category {
-//   name: string;
-//   color: string;
-// }
 @Schema()
 export class Pomodoro {
   @Prop({ required: true })
@@ -25,9 +21,6 @@ export class Pomodoro {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Category' })
   category?: ObjectId;
-
-  // @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Category' })
-  // category: ObjectId;
 }
 
 export const PomodoroSchema = SchemaFactory.createForClass(Pomodoro);

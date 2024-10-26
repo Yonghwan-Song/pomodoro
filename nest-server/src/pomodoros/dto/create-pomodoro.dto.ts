@@ -38,7 +38,7 @@ class PomodoroRecord {
   category?: Category;
 }
 export class CreatePomodoroDto {
-  @ValidateNested({ each: true })
+  @ValidateNested({ each: true }) // Each object in the pomodoroRecordArr array, which is nested, is validated individually.
   @Type(() => PomodoroRecord)
   pomodoroRecordArr: PomodoroRecord[];
 }

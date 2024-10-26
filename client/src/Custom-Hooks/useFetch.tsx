@@ -36,6 +36,9 @@ type CustomReturnType<T, S> = [
  *
  * callbacks: fetch된 데이터 혹은 추후 수정된 데이터를 argument로 하여 call되는 callback함수들의 array.
  *
+ * return type은 S가 정의된 경우 S 그렇지 않으면 T이다.
+ * callbacks은 return type관여하지 않는다.
+ *
  */
 export function useFetch<T, S = undefined>({
   urlSegment,
@@ -60,7 +63,7 @@ export function useFetch<T, S = undefined>({
     async function getData() {
       let resData = await caches.match(BASE_URL + urlSegment);
       if (resData) {
-        let data =
+        let data: DataType<T, S> =
           modifier !== undefined
             ? modifier((await resData.json()) as T)
             : await resData.json();
@@ -93,7 +96,7 @@ export function useFetch<T, S = undefined>({
       try {
         const response = await axiosInstance.get(urlSegment);
 
-        let data =
+        let data = // TODO 이거 타입이 어떻게 되는거야?... 그냥 DataType<T, S>인가... 그러면 T는... response.data가 존재 하지 않는경우는?.. 404로 돌리나 ㅠ
           modifier !== undefined ? modifier(response.data as T) : response.data;
 
         if (callbacks !== undefined) {

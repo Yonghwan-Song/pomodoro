@@ -1,3 +1,24 @@
+//#region Timer-Related
+export type RequiredStatesToRunTimerType = {
+  pomoSetting: PomoSettingType;
+  timersStates: TimersStatesType;
+  autoStartSetting: AutoStartSettingType;
+  categories: Category[];
+  isUnCategorizedOnStat: boolean;
+  colorForUnCategorized: string;
+  categoryChangeInfoArray: CategoryChangeInfo[];
+  doesItJustChangeCategory?: boolean;
+};
+
+export type PomoSettingType = {
+  pomoDuration: number;
+  shortBreakDuration: number;
+  longBreakDuration: number;
+  numOfPomo: number;
+};
+
+export type TimersStatesType = TimerStateType & PatternTimerStatesType;
+
 export type TimerStateType = {
   running: boolean;
   startTime: number;
@@ -13,20 +34,12 @@ export type PatternTimerStatesType = {
   repetitionCount: number;
 };
 
-export type TimersStatesType = TimerStateType & PatternTimerStatesType;
-
-export type PomoSettingType = {
-  pomoDuration: number;
-  shortBreakDuration: number;
-  longBreakDuration: number;
-  numOfPomo: number;
-};
-
 export type AutoStartSettingType = {
   doesPomoStartAutomatically: boolean;
   doesBreakStartAutomatically: boolean;
 };
 
+//#region Category-Related
 export interface Category {
   name: string;
   color: string;
@@ -35,23 +48,14 @@ export interface Category {
   isOnStat: boolean;
   _uuid?: string;
 }
-export interface Category_new_candidate_for_stat_showing_purpose {
-  _id?: string;
-  isCurrent: boolean;
 
-  // these three are the main (properties)
-  name: string;
-  color: string;
-  isOnStat?: boolean;
-}
-
-export type CategoryInfoTweakeFroStatPurpose = {
-  name: string;
-  color: string;
-  isOnStat: boolean; //<-----
-};
-
-export type NewCategory = Omit<Category, "_id">; // _id is not generated yet by the mongodb since it is a new one to be added later by server.
+/**
+ * At the moment we create a new category in this front end, we don't know what the _id is going to be
+ * because it is assigned by MongoDB in the database when the category is saved.
+ * !Thus, a _uuid is used to uniquely identify categories on the front end before saving them to the database.
+ * !It serves as a temporary identifier to distinguish different categories.
+ */
+export type NewCategory = Omit<Category, "_id">;
 
 /**
  * @prop progress - a number that represents how much progress has been made in the current session at the moment this category starts.
@@ -75,18 +79,10 @@ export type CategoryChangeInfo = {
 export type CategoryChangeInfoForCircularProgressBar = CategoryChangeInfo & {
   segmentProgress: number;
 };
+//#endregion
+//#endregion
 
-export type RequiredStatesToRunTimerType = {
-  pomoSetting: PomoSettingType;
-  timersStates: TimersStatesType;
-  autoStartSetting: AutoStartSettingType;
-  categories: Category[];
-  isUnCategorizedOnStat: boolean;
-  colorForUnCategorized: string;
-  categoryChangeInfoArray: CategoryChangeInfo[];
-  doesItJustChangeCategory?: boolean;
-};
-
+//#region Timeline-Related
 export type RecType = Omit<TimerStateType, "running"> & {
   kind: "pomo" | "break";
   endTime: number;
@@ -105,5 +101,6 @@ export type DurationType = {
  * if a user pauses the timer once.
  */
 export type SessionType = DurationType[];
+//#endregion
 
 export type BroadCastMessage = { evName: string; payload: any };

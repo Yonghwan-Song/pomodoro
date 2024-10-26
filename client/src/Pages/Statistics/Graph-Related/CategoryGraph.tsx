@@ -14,8 +14,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import {
-  CategoryInfoForStat,
-  CategoryStat,
+  CategoryDetailForStat,
+  CategorySubtotal,
   DayStat,
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
@@ -26,7 +26,7 @@ import { startOfWeek, endOfWeek } from "date-fns";
 type GraphProps = {
   statData: DayStat[] | null;
   weekStatForThisWeek: DayStatForGraph[];
-  c_info_list: CategoryInfoForStat[];
+  listOfCategoryDetails: CategoryDetailForStat[];
   weekRangeForThisWeek: string;
   isUnCategorizedOnStat: boolean;
   colorForUnCategorized: string;
@@ -35,7 +35,7 @@ type GraphProps = {
 export function CategoryGraph({
   statData,
   weekStatForThisWeek,
-  c_info_list,
+  listOfCategoryDetails,
   weekRangeForThisWeek,
   isUnCategorizedOnStat,
   colorForUnCategorized,
@@ -76,8 +76,8 @@ export function CategoryGraph({
             dayStat.total = statData[statData.length - 1].total;
             dayStat.withoutCategory =
               statData[statData.length - 1].withoutCategory;
-            dayStat.withCategories = JSON.parse(
-              JSON.stringify(statData[statData.length - 1].withCategories)
+            dayStat.subtotalByCategory = JSON.parse(
+              JSON.stringify(statData[statData.length - 1].subtotalByCategory)
             );
           }
 
@@ -112,7 +112,7 @@ export function CategoryGraph({
           aDate.getMonth() + 1
         }/${aDate.getDate()}/${aDate.getFullYear()}`;
         delete weekCloned[i].total;
-        delete weekCloned[i].withCategories;
+        delete weekCloned[i].subtotalByCategory;
         delete weekCloned[i].withoutCategory;
         weekCloned[i].timestamp = newWeekStart + i * _24h;
       }
@@ -222,7 +222,7 @@ export function CategoryGraph({
       timestamp: number;
       dayOfWeek: string;
       total?: number;
-      withCategories?: CategoryStat;
+      subtotalByCategory?: CategorySubtotal;
       withoutCategory?: number;
     }[],
     weekStatFromData: DayStat[]
@@ -237,7 +237,7 @@ export function CategoryGraph({
       // );
       if (matchingStat) {
         cloned.total = matchingStat.total;
-        cloned.withCategories = matchingStat.withCategories;
+        cloned.subtotalByCategory = matchingStat.subtotalByCategory;
         cloned.withoutCategory = matchingStat.withoutCategory;
       } else if (cloned.timestamp <= new Date().getTime()) {
         //! 1) match되는 stat이 없다는 것은. 그날 session진행을 한번도 안했다는 것.
@@ -250,7 +250,7 @@ export function CategoryGraph({
         // }
 
         cloned.total = 0;
-        cloned.withCategories = createInitialCategoryStat();
+        cloned.subtotalByCategory = createBaseCategorySubtotal();
         cloned.withoutCategory = 0;
       } else {
         // console.log(
@@ -260,12 +260,12 @@ export function CategoryGraph({
     }
   }
 
-  function createInitialCategoryStat() {
+  function createBaseCategorySubtotal() {
     // console.log(
     //   "inside createInitialCategoryStat---------------------------------"
     // );
     // console.log(c_info_list);
-    const retVal = c_info_list.reduce<CategoryStat>(
+    const retVal = listOfCategoryDetails.reduce<CategorySubtotal>(
       (previousValue, currentValue) => {
         previousValue[currentValue.name] = {
           _uuid: currentValue._uuid,
@@ -281,37 +281,6 @@ export function CategoryGraph({
     return retVal;
   }
   //#endregion
-
-  function getTweakedWeekStat() {
-    const tweaked = localWeekStat.map((dayStat) => {
-      const transformed: {
-        [_uuid: string]: {
-          name: string;
-          duration: number;
-          isOnStat: boolean;
-        };
-      } = {};
-
-      for (const name in dayStat.withCategories) {
-        transformed[dayStat.withCategories[name]._uuid] = {
-          name,
-          duration: dayStat.withCategories[name].duration,
-          isOnStat: dayStat.withCategories[name].isOnStat,
-        };
-      }
-
-      return {
-        dayOfWeek: dayStat.dayOfWeek,
-        date: dayStat.date,
-        timeStamp: dayStat.timestamp,
-        total: dayStat.total,
-        withCategories: transformed,
-        withoutCategory: dayStat.withoutCategory,
-      };
-    });
-
-    return tweaked;
-  }
 
   return (
     <BoxShadowWrapper
@@ -334,15 +303,14 @@ export function CategoryGraph({
 
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
-          // data={localWeekStat}
-          data={getTweakedWeekStat()} //이거 data만 잘 조작하면... {total, withCategoreis: {[_uuid]: {name, duration, isOnStat}}, withoutCategory}로 만들 수 있지 않나? 그러면 category name아무렇게나 막 해도 될 것 같은데?
+          data={localWeekStat}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={"dayOfWeek"} />
           <YAxis />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
-          {c_info_list.map((c_info, index) => {
+          {listOfCategoryDetails.map((c_info, index) => {
             return (
               c_info.isOnStat && (
                 <Area
@@ -353,9 +321,7 @@ export function CategoryGraph({
                     r: 3,
                     fill: "#ffffff",
                   }}
-                  // dataKey={`withCategories.${c_info.name}.duration`}
-                  // dataKey={`withCategories[${name}].duration`}
-                  dataKey={`withCategories.${c_info._uuid}.duration`}
+                  dataKey={`subtotalByCategory.${c_info.name}.duration`}
                   stroke={c_info.color}
                   strokeWidth={1.5}
                   fillOpacity={0}

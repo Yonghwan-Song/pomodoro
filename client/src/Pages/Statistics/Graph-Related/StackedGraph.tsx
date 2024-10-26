@@ -16,8 +16,8 @@ import {
   LabelList,
 } from "recharts";
 import {
-  CategoryInfoForStat,
-  CategoryStat,
+  CategoryDetailForStat,
+  CategorySubtotal,
   DayStat,
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
@@ -29,7 +29,7 @@ type GraphProps = {
   statData: StatDataForGraph_DailyPomoStat | null;
   weekStatForThisWeek: DayStatForGraph[];
   weekRangeForThisWeek: string;
-  c_info_list: CategoryInfoForStat[];
+  listOfCategoryDetails: CategoryDetailForStat[];
   averageForThisWeek: number;
   colorForUnCategorized: string;
 };
@@ -37,7 +37,7 @@ type GraphProps = {
 export function StackedGraph({
   statData,
   weekStatForThisWeek,
-  c_info_list,
+  listOfCategoryDetails,
   weekRangeForThisWeek,
   averageForThisWeek,
   colorForUnCategorized,
@@ -76,8 +76,8 @@ export function StackedGraph({
             dayStat.total = statData[statData.length - 1].total;
             dayStat.withoutCategory =
               statData[statData.length - 1].withoutCategory;
-            dayStat.withCategories = JSON.parse(
-              JSON.stringify(statData[statData.length - 1].withCategories)
+            dayStat.subtotalByCategory = JSON.parse(
+              JSON.stringify(statData[statData.length - 1].subtotalByCategory)
             );
           }
 
@@ -111,7 +111,7 @@ export function StackedGraph({
           aDate.getMonth() + 1
         }/${aDate.getDate()}/${aDate.getFullYear()}`;
         delete weekCloned[i].total;
-        delete weekCloned[i].withCategories;
+        delete weekCloned[i].subtotalByCategory;
         delete weekCloned[i].withoutCategory;
         weekCloned[i].timestamp = newWeekStart + i * _24h;
       }
@@ -218,7 +218,7 @@ export function StackedGraph({
       timestamp: number;
       dayOfWeek: string;
       total?: number;
-      withCategories?: CategoryStat;
+      subtotalByCategory?: CategorySubtotal;
       withoutCategory?: number;
     }[],
     weekStatFromData: DayStat[]
@@ -233,7 +233,7 @@ export function StackedGraph({
       // );
       if (matchingStat) {
         cloned.total = matchingStat.total;
-        cloned.withCategories = matchingStat.withCategories;
+        cloned.subtotalByCategory = matchingStat.subtotalByCategory;
         cloned.withoutCategory = matchingStat.withoutCategory;
       } else if (cloned.timestamp <= new Date().getTime()) {
         //! 1) match되는 stat이 없다는 것은. 그날 session진행을 한번도 안했다는 것.
@@ -246,7 +246,7 @@ export function StackedGraph({
         // }
 
         cloned.total = 0;
-        cloned.withCategories = createInitialCategoryStat();
+        cloned.subtotalByCategory = createBaseCategorySubtotal();
         cloned.withoutCategory = 0;
       } else {
         // console.log(
@@ -256,12 +256,12 @@ export function StackedGraph({
     }
   }
 
-  function createInitialCategoryStat() {
+  function createBaseCategorySubtotal() {
     // console.log(
     //   "inside createInitialCategoryStat---------------------------------"
     // );
     // console.log(c_info_list);
-    const retVal = c_info_list.reduce<CategoryStat>(
+    const retVal = listOfCategoryDetails.reduce<CategorySubtotal>(
       (previousValue, currentValue) => {
         previousValue[currentValue.name] = {
           _uuid: currentValue._uuid,
@@ -276,49 +276,15 @@ export function StackedGraph({
     // console.log(retVal);
     return retVal;
   }
-  function getTweakedWeekStat() {
-    const tweaked = localWeekStat.map((dayStat) => {
-      const transformed: {
-        [_uuid: string]: {
-          name: string;
-          duration: number;
-          isOnStat: boolean;
-        };
-      } = {};
 
-      for (const name in dayStat.withCategories) {
-        transformed[dayStat.withCategories[name]._uuid] = {
-          name,
-          duration: dayStat.withCategories[name].duration,
-          isOnStat: dayStat.withCategories[name].isOnStat,
-        };
-      }
-
-      return {
-        dayOfWeek: dayStat.dayOfWeek,
-        date: dayStat.date,
-        timeStamp: dayStat.timestamp,
-        total: dayStat.total,
-        withCategories: transformed,
-        withoutCategory: dayStat.withoutCategory,
-      };
-    });
-
-    // console.log("tweaked", tweaked);
-    return tweaked;
-  }
-
-  const dataArray = getTweakedWeekStat();
-
-  console.log("dataArray", dataArray);
+  // console.log("dataArray", localWeekStat);
 
   const CustomizedLabel: FunctionComponent<any> = (props: any) => {
     const { x, y, stroke, value, index } = props;
 
-    console.log(props);
     let diff = 0;
     if (index !== 0) {
-      let prevValue = dataArray[index - 1].total;
+      let prevValue = localWeekStat[index - 1].total;
       if (prevValue !== undefined) {
         diff = value - prevValue;
       }
@@ -360,7 +326,7 @@ export function StackedGraph({
       {/* <ResponsiveContainer width="100%" height={400}> */}
       <ResponsiveContainer width="100%" minHeight={300}>
         <AreaChart
-          data={dataArray}
+          data={localWeekStat}
           //* IMPT: This margin is applied to the acutal graph that consists of the cartesian grid and the two cartesian axises. And they are  the children of the Surface component the parent of which is the AreaChart.
           margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
         >
@@ -370,7 +336,7 @@ export function StackedGraph({
           <YAxis />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
           {/* c_info_list의 isOnStat을 이용하기 때문에 Stat.withCategories에서 isOnStat은 사실상 현재 없어도 된다. */}
-          {c_info_list.map((c_info, index) => {
+          {listOfCategoryDetails.map((c_info, index) => {
             return (
               <Area
                 key={index}
@@ -381,7 +347,7 @@ export function StackedGraph({
                   r: 3,
                   fill: "#ffffff",
                 }}
-                dataKey={`withCategories.${c_info._uuid}.duration`}
+                dataKey={`subtotalByCategory.${c_info.name}.duration`}
                 stroke={c_info.color}
                 strokeWidth={1.5}
                 fillOpacity={1}

@@ -6,10 +6,9 @@ import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import {
   DayStat,
   DayStatForGraph,
-  StatDataFromServer_PomoDocs,
   StatDataForGraph_DailyPomoStat,
-  CategoryStat,
-  CategoryInfoForStat,
+  CategorySubtotal,
+  CategoryDetailForStat,
 } from "./statRelatedTypes";
 import { countDown } from "../..";
 import { pubsub } from "../../pubsub";
@@ -90,23 +89,27 @@ export default function Statistics() {
     }
   }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
 
-  const [c_info_list, isThisSessionWithoutCategory] = useMemo(() => {
+  const [listOfCategoryDetails, isThisSessionWithoutCategory] = useMemo(() => {
     if (
       userInfoContext.pomoInfo !== null &&
       userInfoContext.pomoInfo.categories !== undefined
     ) {
-      const c_info_list = userInfoContext.pomoInfo.categories.reduce<
-        CategoryInfoForStat[]
+      const listOfCategoryDetails = userInfoContext.pomoInfo.categories.reduce<
+        CategoryDetailForStat[]
       >((previousValue, currentValue) => {
         const { name, color, isOnStat, isCurrent, _uuid } = currentValue;
         previousValue.push({ name, color, isOnStat, _uuid: _uuid!, isCurrent });
         return previousValue;
       }, []);
+
+      //
       const isThisSessionWithoutCategory =
-        c_info_list.find((info) => info.isCurrent === true) === undefined
+        listOfCategoryDetails.find((info) => info.isCurrent === true) ===
+        undefined
           ? true
           : false;
-      return [c_info_list, isThisSessionWithoutCategory];
+
+      return [listOfCategoryDetails, isThisSessionWithoutCategory];
     } else {
       return [[], false];
     }
@@ -114,37 +117,39 @@ export default function Statistics() {
 
   //#region functions to modify data from server
   /**
-   * Reduce the data into the daily pomodoro array
-   * @param pomodoroDocs an array of pomodoro records.
-   * @returns an element in DailyPomo[] is just total pomodoro duration in the particular day.
+   * 어떤 과정을 거쳐서 DayStat[]값을 만드는지:
+   *
+   * DayStat 틀을 우선 먼저 만들어 놓고, PomodoroSessionDocument[]를 iterate하면서
+   * DayStat을 완성해 나가는데, total 과 withoutCategory는 단순히 숫자를 더해 나가고,
+   * categorySubtotal의 경우는 pomodoroSessionDocument가 어떤 카테고리값을 가지고 있는지 확인하면서
+   * object를 완성해 나간다.
    */
   function calculateDailyPomodoroDuration(
-    pomodoroDocs: StatDataFromServer_PomoDocs
-  ): StatDataForGraph_DailyPomoStat {
+    pomodoroDocs: PomodoroSessionDocument[]
+  ): DayStat[] {
     let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     // [{ date: '9/12/2022', total: 300 }, ... ]
 
     let arrOfDurationByDate = pomodoroDocs
       .sort(
         (a: PomodoroSessionDocument, b: PomodoroSessionDocument) =>
-          a.startTime - b.startTime
+          a.startTime - b.startTime // in ascending order
       )
       .reduce<DayStat[]>((acc, curRec) => {
         // 1. 첫번째 계산
         if (acc.length === 0) {
-          const dayOfWeekNumber = new Date(curRec.date).getDay();
-          const categoryStat = createInitialCategoryStat();
+          const dayOfWeekIndex = new Date(curRec.date).getDay();
+          const categorySubtotal = createBaseCategorySubtotal();
           let dailyPomos: DayStat = {
             date: curRec.date,
             timestamp: new Date(curRec.date).getTime(),
-            dayOfWeek: days[dayOfWeekNumber],
+            dayOfWeek: days[dayOfWeekIndex],
             total: curRec.duration,
-            withCategories: categoryStat,
+            subtotalByCategory: categorySubtotal,
             withoutCategory: 0,
           };
-          //
           if (curRec.category !== undefined) {
-            dailyPomos.withCategories[curRec.category.name].duration =
+            dailyPomos.subtotalByCategory[curRec.category.name].duration =
               curRec.duration;
           } else {
             dailyPomos.withoutCategory += curRec.duration;
@@ -157,10 +162,12 @@ export default function Statistics() {
           acc[acc.length - 1].total += curRec.duration;
           if (curRec.category !== undefined) {
             // console.log(curRec.category.name);
-            // console.log(acc[acc.length - 1].withCategories);
+            // console.log(acc[acc.length - 1].subtotalByCategory);
 
-            acc[acc.length - 1].withCategories[curRec.category.name].duration +=
-              curRec.duration;
+            //!<--------------- How the `[name: string]` index signature is used.
+            acc[acc.length - 1].subtotalByCategory[
+              curRec.category.name
+            ].duration += curRec.duration;
           } else {
             acc[acc.length - 1].withoutCategory += curRec.duration;
           }
@@ -169,18 +176,18 @@ export default function Statistics() {
         } else {
           // 3. 다음 날 첫번째 계산
           const dayOfWeekNumber = new Date(curRec.date).getDay();
-          const categoryStat = createInitialCategoryStat();
+          const categoryStat = createBaseCategorySubtotal();
           let dailyPomos: DayStat = {
             date: curRec.date,
             timestamp: new Date(curRec.date).getTime(),
             dayOfWeek: days[dayOfWeekNumber],
             total: curRec.duration,
-            withCategories: categoryStat,
+            subtotalByCategory: categoryStat,
             withoutCategory: 0,
           };
 
           if (curRec.category !== undefined) {
-            dailyPomos.withCategories[curRec.category.name].duration +=
+            dailyPomos.subtotalByCategory[curRec.category.name].duration +=
               curRec.duration;
           } else {
             dailyPomos.withoutCategory += curRec.duration;
@@ -189,6 +196,8 @@ export default function Statistics() {
           return [...acc, dailyPomos];
         }
       }, []);
+
+    // console.log("arrOfDurationByDate", arrOfDurationByDate);
 
     return arrOfDurationByDate;
   }
@@ -288,14 +297,11 @@ export default function Statistics() {
   }
 
   /**
-   * Purpose:  to filter the statArray to get the array of this week
+   * Purpose:  to filter the statData to get the array of this week
    *           and use the filtered array to set the week state variable.
    *           An average and weekRange are calcuated and set using the filtered array.
-   * @param {DayStat[]} pomodoroDailyStat the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
-  function calculateThisWeekData(
-    pomodoroDailyStat: StatDataForGraph_DailyPomoStat
-  ) {
+  function calculateThisWeekData(pomodoroDailyStat: DayStat[]) {
     let weekCloned = [...weekStat];
     let correspondingWeekData = extractWeekData(pomodoroDailyStat, [
       weekStart,
@@ -421,7 +427,7 @@ export default function Statistics() {
       timestamp: number;
       dayOfWeek: string;
       total?: number;
-      withCategories?: CategoryStat;
+      subtotalByCategory?: CategorySubtotal;
       withoutCategory?: number;
     }[],
     weekStatFromData: DayStat[]
@@ -436,7 +442,7 @@ export default function Statistics() {
       // );
       if (matchingStat) {
         cloned.total = matchingStat.total;
-        cloned.withCategories = matchingStat.withCategories;
+        cloned.subtotalByCategory = matchingStat.subtotalByCategory;
         cloned.withoutCategory = matchingStat.withoutCategory;
       } else if (cloned.timestamp <= new Date().getTime()) {
         //! 1) match되는 stat이 없다는 것은. 그날 session진행을 한번도 안했다는 것.
@@ -449,7 +455,7 @@ export default function Statistics() {
         // }
 
         cloned.total = 0;
-        cloned.withCategories = createInitialCategoryStat();
+        cloned.subtotalByCategory = createBaseCategorySubtotal();
         cloned.withoutCategory = 0;
       } else {
         // console.log(
@@ -459,12 +465,8 @@ export default function Statistics() {
     }
   }
 
-  function createInitialCategoryStat() {
-    // console.log(
-    //   "inside createInitialCategoryStat---------------------------------"
-    // );
-    // console.log(c_info_list);
-    const retVal = c_info_list.reduce<CategoryStat>(
+  function createBaseCategorySubtotal() {
+    const retVal = listOfCategoryDetails.reduce<CategorySubtotal>(
       (previousValue, currentValue) => {
         previousValue[currentValue.name] = {
           _uuid: currentValue._uuid,
@@ -477,99 +479,6 @@ export default function Statistics() {
       {}
     );
     return retVal;
-  }
-
-  function reCalculateStatData() {
-    if (statData) {
-      const statDataUpdated = statData.map((dayStat) => {
-        const transformed: {
-          [_uuid: string]: {
-            name: string;
-            duration: number;
-            isOnStat: boolean;
-          };
-        } = {};
-        for (const name in dayStat.withCategories) {
-          transformed[dayStat.withCategories[name]._uuid] = {
-            name,
-            duration: dayStat.withCategories[name].duration,
-            isOnStat: dayStat.withCategories[name].isOnStat,
-          };
-        }
-        const newStat: {
-          [name: string]: {
-            _uuid: string;
-            duration: number;
-            isOnStat: boolean;
-          };
-        } = {};
-        for (const c_info of c_info_list) {
-          newStat[c_info.name] = {
-            _uuid: c_info._uuid,
-            duration: transformed[c_info._uuid]
-              ? transformed[c_info._uuid].duration
-              : 0,
-            isOnStat: c_info.isOnStat,
-          };
-        }
-        dayStat.withCategories = newStat;
-
-        return dayStat;
-      });
-      // console.log(
-      //   "----------------------------------reCalculateStatData----------------------------------"
-      // );
-      // console.log(statData);
-      // console.log(statDataUpdated);
-
-      setStatData(statDataUpdated);
-    }
-  }
-  function reCalculateWeekData() {
-    const weekStatUpdated = weekStat.map((dayStat) => {
-      if (dayStat.withCategories) {
-        const transformed: {
-          [_uuid: string]: {
-            name: string;
-            duration: number;
-            isOnStat: boolean;
-          };
-        } = {};
-        for (const name in dayStat.withCategories) {
-          transformed[dayStat.withCategories[name]._uuid] = {
-            name,
-            duration: dayStat.withCategories[name].duration,
-            isOnStat: dayStat.withCategories[name].isOnStat,
-          };
-        }
-        const newStat: {
-          [name: string]: {
-            _uuid: string;
-            duration: number;
-            isOnStat: boolean;
-          };
-        } = {};
-        for (const c_info of c_info_list) {
-          newStat[c_info.name] = {
-            _uuid: c_info._uuid,
-            duration: transformed[c_info._uuid]
-              ? transformed[c_info._uuid].duration
-              : 0,
-            isOnStat: c_info.isOnStat,
-          };
-        }
-        dayStat.withCategories = newStat;
-      }
-      return dayStat;
-    });
-
-    // console.log(
-    //   "----------------------------------reCalculateWeekData----------------------------------"
-    // );
-    // console.log(weekStat);
-    // console.log(weekStatUpdated);
-
-    setWeekStat(weekStatUpdated);
   }
 
   function changeIsOnStat(ev: React.MouseEvent<HTMLDivElement>) {
@@ -663,12 +572,12 @@ export default function Statistics() {
                 if (pomoDoc.category) {
                   // console.log("pomoDoc.category", pomoDoc.category);
                   // console.log(
-                  //   "cloned[cloned.length - 1].withCategories[pomoDoc.category.name]",
-                  //   cloned[cloned.length - 1].withCategories[
+                  //   "cloned[cloned.length - 1].subtotalByCategory[pomoDoc.category.name]",
+                  //   cloned[cloned.length - 1].subtotalByCategory[
                   //     pomoDoc.category.name
                   //   ]
                   // );
-                  cloned[cloned.length - 1].withCategories[
+                  cloned[cloned.length - 1].subtotalByCategory[
                     pomoDoc.category.name
                   ].duration += pomoDoc.duration;
                 } else {
@@ -689,14 +598,14 @@ export default function Statistics() {
                 timestamp: startOfTodayTimestamp,
                 dayOfWeek: days[today.getDay()],
                 total: 0,
-                withCategories: createInitialCategoryStat(),
+                subtotalByCategory: createBaseCategorySubtotal(),
                 withoutCategory: 0,
               };
 
               for (const pomoDoc of final) {
                 dayStat.total += pomoDoc.duration;
                 if (pomoDoc.category) {
-                  dayStat.withCategories[pomoDoc.category.name].duration +=
+                  dayStat.subtotalByCategory[pomoDoc.category.name].duration +=
                     pomoDoc.duration;
                 } else {
                   dayStat.withoutCategory += pomoDoc.duration;
@@ -763,7 +672,7 @@ export default function Statistics() {
                 <StackedGraph
                   statData={statData}
                   weekStatForThisWeek={weekStat}
-                  c_info_list={c_info_list}
+                  listOfCategoryDetails={listOfCategoryDetails}
                   weekRangeForThisWeek={weekRange}
                   averageForThisWeek={average}
                   colorForUnCategorized={colorForUnCategorized}
@@ -775,7 +684,7 @@ export default function Statistics() {
                 <CategoryGraph
                   statData={statData}
                   weekStatForThisWeek={weekStat}
-                  c_info_list={c_info_list}
+                  listOfCategoryDetails={listOfCategoryDetails}
                   weekRangeForThisWeek={weekRange}
                   isUnCategorizedOnStat={isUnCategorizedOnStat}
                   colorForUnCategorized={colorForUnCategorized}
