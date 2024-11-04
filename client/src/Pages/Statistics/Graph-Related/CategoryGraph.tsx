@@ -14,7 +14,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import {
-  CategoryDetailForStat,
+  CategoryDetail,
   CategorySubtotal,
   DayStat,
   DayStatForGraph,
@@ -26,7 +26,7 @@ import { startOfWeek, endOfWeek } from "date-fns";
 type GraphProps = {
   statData: DayStat[] | null;
   weekStatForThisWeek: DayStatForGraph[];
-  listOfCategoryDetails: CategoryDetailForStat[];
+  listOfCategoryDetails: CategoryDetail[];
   weekRangeForThisWeek: string;
   isUnCategorizedOnStat: boolean;
   colorForUnCategorized: string;
@@ -282,6 +282,23 @@ export function CategoryGraph({
   }
   //#endregion
 
+  //#region Calculate tickCount
+  const arrOfMaxDurations = listOfCategoryDetails.map((detail) => {
+    if (detail.isOnStat) {
+      const durationsOfAcategory = localWeekStat.map((stat) =>
+        stat.subtotalByCategory !== undefined
+          ? stat.subtotalByCategory[detail.name].duration
+          : 0
+      );
+      return Math.max(...durationsOfAcategory);
+    } else {
+      return 0;
+    }
+  });
+  const maxValOfYAxis = Math.floor(Math.max(...arrOfMaxDurations) / 60) + 1;
+  const tickCount = maxValOfYAxis + 1;
+  //#endregion
+
   return (
     <BoxShadowWrapper
     // inset={true}
@@ -308,11 +325,25 @@ export function CategoryGraph({
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={"dayOfWeek"} />
-          <YAxis />
+          {/* //*IMPT: Since these Area Graphs are not stacked, dataMax parameter in the callback below changes depending on what areas we select to draw on the graph. */}
+          {/* //*Therefore, tickCount should be calculated differently than we did at the `StackedGraph.tsx` */}
+          <YAxis
+            domain={[
+              0,
+              (dataMax: number) => (Math.floor(dataMax / 60) + 1) * 60,
+            ]}
+            tickFormatter={(value: any, index: number) => {
+              // return `${value / 60}h`;
+              const hour = Math.floor(value / 60);
+              const min = value % 60;
+              return `${hour}h ${min !== 0 ? min + "m" : ""}`;
+            }}
+            tickCount={tickCount}
+          />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
-          {listOfCategoryDetails.map((c_info, index) => {
+          {listOfCategoryDetails.map((detail, index) => {
             return (
-              c_info.isOnStat && (
+              detail.isOnStat && (
                 <Area
                   key={index}
                   type="monotone"
@@ -321,12 +352,12 @@ export function CategoryGraph({
                     r: 3,
                     fill: "#ffffff",
                   }}
-                  dataKey={`subtotalByCategory.${c_info.name}.duration`}
-                  stroke={c_info.color}
+                  dataKey={`subtotalByCategory.${detail.name}.duration`}
+                  stroke={detail.color}
                   strokeWidth={1.5}
                   fillOpacity={0}
                   // fill="url(#color)"
-                  name={c_info.name}
+                  name={detail.name}
                 />
               )
             );

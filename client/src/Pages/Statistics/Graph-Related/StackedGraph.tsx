@@ -16,7 +16,7 @@ import {
   LabelList,
 } from "recharts";
 import {
-  CategoryDetailForStat,
+  CategoryDetail,
   CategorySubtotal,
   DayStat,
   DayStatForGraph,
@@ -29,7 +29,7 @@ type GraphProps = {
   statData: StatDataForGraph_DailyPomoStat | null;
   weekStatForThisWeek: DayStatForGraph[];
   weekRangeForThisWeek: string;
-  listOfCategoryDetails: CategoryDetailForStat[];
+  listOfCategoryDetails: CategoryDetail[];
   averageForThisWeek: number;
   colorForUnCategorized: string;
 };
@@ -305,6 +305,13 @@ export function StackedGraph({
     );
   };
 
+  //#region Calculate tickCount
+  const maxValOfYAxis =
+    Math.floor(Math.max(...localWeekStat.map((stat) => stat.total ?? 0)) / 60) +
+    1;
+  const tickCount = maxValOfYAxis + 1;
+  //#endregion
+
   return (
     <BoxShadowWrapper
     // inset={true}
@@ -328,15 +335,27 @@ export function StackedGraph({
         <AreaChart
           data={localWeekStat}
           //* IMPT: This margin is applied to the acutal graph that consists of the cartesian grid and the two cartesian axises. And they are  the children of the Surface component the parent of which is the AreaChart.
-          margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
         >
           <defs></defs>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="dayOfWeek" />
-          <YAxis />
+          <YAxis
+            domain={[
+              0,
+              (dataMax: number) => (Math.floor(dataMax / 60) + 1) * 60,
+            ]}
+            tickFormatter={(value: any, index: number) => {
+              // return `${value / 60}h`;
+              const hour = Math.floor(value / 60);
+              const min = value % 60;
+              return `${hour}h ${min !== 0 ? min + "m" : ""}`;
+            }}
+            tickCount={tickCount}
+          />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
           {/* c_info_list의 isOnStat을 이용하기 때문에 Stat.withCategories에서 isOnStat은 사실상 현재 없어도 된다. */}
-          {listOfCategoryDetails.map((c_info, index) => {
+          {listOfCategoryDetails.map((detail, index) => {
             return (
               <Area
                 key={index}
@@ -347,12 +366,12 @@ export function StackedGraph({
                   r: 3,
                   fill: "#ffffff",
                 }}
-                dataKey={`subtotalByCategory.${c_info.name}.duration`}
-                stroke={c_info.color}
+                dataKey={`subtotalByCategory.${detail.name}.duration`}
+                stroke={detail.color}
                 strokeWidth={1.5}
-                fillOpacity={1}
-                fill={c_info.color}
-                name={c_info.name}
+                fillOpacity={0.3}
+                fill={detail.color}
+                name={detail.name}
               />
             );
           })}
@@ -367,7 +386,7 @@ export function StackedGraph({
             }}
             stroke={colorForUnCategorized}
             strokeWidth={1.5}
-            fillOpacity={1}
+            fillOpacity={0.3}
             fill={colorForUnCategorized}
             name="Uncategorized"
           >

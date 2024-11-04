@@ -8,7 +8,7 @@ import {
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
   CategorySubtotal,
-  CategoryDetailForStat,
+  CategoryDetail,
 } from "./statRelatedTypes";
 import { countDown } from "../..";
 import { pubsub } from "../../pubsub";
@@ -34,7 +34,8 @@ export default function Statistics() {
     allTime: 0,
   });
 
-  const [weekStat, setWeekStat] = useState<DayStatForGraph[]>(init);
+  const [dailyStatOfWeek, setDailyStatOfWeek] =
+    useState<DayStatForGraph[]>(init);
   // This is an example of a weekStat after initialization.
   //  [
   //   { date: "7/1/2024", dayOfWeek: "Mon", timestamp: 1719759600000 },
@@ -95,7 +96,7 @@ export default function Statistics() {
       userInfoContext.pomoInfo.categories !== undefined
     ) {
       const listOfCategoryDetails = userInfoContext.pomoInfo.categories.reduce<
-        CategoryDetailForStat[]
+        CategoryDetail[]
       >((previousValue, currentValue) => {
         const { name, color, isOnStat, isCurrent, _uuid } = currentValue;
         previousValue.push({ name, color, isOnStat, _uuid: _uuid!, isCurrent });
@@ -302,7 +303,7 @@ export default function Statistics() {
    *           An average and weekRange are calcuated and set using the filtered array.
    */
   function calculateThisWeekData(pomodoroDailyStat: DayStat[]) {
-    let weekCloned = [...weekStat];
+    let weekCloned = [...dailyStatOfWeek];
     let correspondingWeekData = extractWeekData(pomodoroDailyStat, [
       weekStart,
       weekEnd,
@@ -321,7 +322,7 @@ export default function Statistics() {
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    setWeekStat(weekCloned);
+    setDailyStatOfWeek(weekCloned);
   }
 
   /**
@@ -671,7 +672,7 @@ export default function Statistics() {
               {weekRange && (
                 <StackedGraph
                   statData={statData}
-                  weekStatForThisWeek={weekStat}
+                  weekStatForThisWeek={dailyStatOfWeek}
                   listOfCategoryDetails={listOfCategoryDetails}
                   weekRangeForThisWeek={weekRange}
                   averageForThisWeek={average}
@@ -683,7 +684,7 @@ export default function Statistics() {
               {weekRange && (
                 <CategoryGraph
                   statData={statData}
-                  weekStatForThisWeek={weekStat}
+                  weekStatForThisWeek={dailyStatOfWeek}
                   listOfCategoryDetails={listOfCategoryDetails}
                   weekRangeForThisWeek={weekRange}
                   isUnCategorizedOnStat={isUnCategorizedOnStat}

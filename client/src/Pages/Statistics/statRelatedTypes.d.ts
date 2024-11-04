@@ -100,7 +100,7 @@ export interface CategorySubtotal {
  *
  * 2. addUUIDToCategory() is called inside the persistRequiredStatesToRunTimer() that is passed as a callback argument of useFetch() in UserContext.tsx
  */
-export type CategoryDetailForStat = {
+export type CategoryDetail = {
   name: string;
   color: string;
   isOnStat: boolean;
