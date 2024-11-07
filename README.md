@@ -31,15 +31,16 @@ I initially used another app, but it didn’t record the elapsed time when I pau
 
 ## Features
 
-- Configure a cycle consisting of pomodoros and breaks, and measure each session.
-- Provide visual feedback through a timeline.
-- Automatic start of the next session.
-- Weekly statistics available on the Statistics page.
-- Create categories to distinguish sessions.
-- Track statistics by category.
-- Pause tracking and measure the time spent paused.
+- [Configure a cycle consisting of pomodoros and breaks, and measure each session.](https://pomodoro-doc.vercel.app/features#settings)
+- [Provide visual feedback through a timeline.](https://pomodoro-doc.vercel.app/features#timeline)
+- [Automatic start of the next session.](https://pomodoro-doc.vercel.app/features#autostart)
+- [Weekly statistics available on the Statistics page.](https://pomodoro-doc.vercel.app/features#statistics)
+- [Create categories to distinguish sessions.](https://pomodoro-doc.vercel.app/features#settings)
+- [A single session can encompass work from multiple categories.](https://pomodoro-doc.vercel.app/features#categorized-sessions)
+- [Track statistics by category.](https://pomodoro-doc.vercel.app/features#total-graph)
+- [Pause tracking and measure the time spent paused.](https://pomodoro-doc.vercel.app/features#time-countdown-and-pause)
   - Display pauses in the timeline for feedback.
-- Navigate freely between `/timer`, `/statistics`, and `/settings` during a session.
+- [Navigate freely between `/timer`, `/statistics`, and `/settings` during a session.](https://pomodoro-doc.vercel.app/problem-solving#%ED%95%9C-%EC%84%B8%EC%85%98%EC%9D%B4-%EC%A7%84%ED%96%89-%EC%A4%91%EC%9D%BC-%EB%95%8Cpomo-or-break-%EA%B4%80%EA%B3%84%EC%97%86%EC%9D%B4-%EB%8B%A4%EB%A5%B8-%ED%8E%98%EC%9D%B4%EC%A7%80%EB%93%A4%EC%9D%84-%EC%9E%90%EC%9C%A0%EB%A1%AD%EA%B2%8C-%EB%B0%A9%EB%AC%B8%ED%95%A0-%EC%88%98-%EC%9E%88%EB%8F%84%EB%A1%9D-%ED%95%98%EB%8A%94-%EA%B2%83)
 
 ## Architecture
 
@@ -64,28 +65,29 @@ Timeline view
 
 #### Total Graph and Category Graph
 
-The second graph displays only the statistics for the `uncategorized` session.  
+The second graph displays only the statistics for the `Uncategorized` session.  
+![same-w-1](https://github.com/user-attachments/assets/52449d64-4167-410c-b847-4e0b77940364)
 
-![same-week-1](https://github.com/user-attachments/assets/1826ae0c-2dc1-4897-a721-7409f5805aa8)
+The second graph shows `Documentation` and `Development`.  
+![same-w-2](https://github.com/user-attachments/assets/4ea4546c-7e31-4013-a265-b363d3cf6dcd)
 
-The second graph shows `Documentation` and `Features & Debugging`.  
-![same-week-2](https://github.com/user-attachments/assets/e54e771b-977f-44ba-9961-4f4bfb6ca554)
 
-The second graph shows `uncategorized` and `Job Search and Application`.  
-![same-week-3](https://github.com/user-attachments/assets/05acebf2-d924-4546-9ba8-963ed9566a62)
+The second graph shows `Uncategorized` and `Job Search and Application`.  
+![same-w-3](https://github.com/user-attachments/assets/76d276d9-872a-4f64-923c-bb9adc03aa2b)
+
 
 #### Two Graphs Displaying Data from Different Weeks
 
-First graph - `9.9 ~ 9.15`, second graph - `9.2 ~ 9.8`.  
-![diff-week-data](https://github.com/user-attachments/assets/53c46e3f-1d5f-4add-be28-107f359eee2c)
+First graph - `11.4 ~ 11.10`, second graph - `10.28 ~ 11.3`.  
+![diff-w-1](https://github.com/user-attachments/assets/765d41a2-c553-49d6-bc5f-6e139050f366)
 
-First graph - `9.2 ~ 9.8`, second graph - `9.9 ~ 9.15`.  
-![diff-week-data-2](https://github.com/user-attachments/assets/49b72959-71d4-49ef-a9bd-da9212b55ad9)
+First graph - `10.28 ~ 11.3`, second graph - `11.4 ~ 11.10`.  
+![diff-w-2](https://github.com/user-attachments/assets/1e853b36-ec59-49eb-8ffe-5e0dc8252451)
+
 
 #### Mouse Hover Over Each Graph
-
-![hover-over-first](https://github.com/user-attachments/assets/9bd0a235-ca67-4038-a58e-0a2d5f58ed61)  
-![hover-over-second](https://github.com/user-attachments/assets/9c6cd9d6-d0df-4dd8-807e-64c971cf7c90)
+![hover-1](https://github.com/user-attachments/assets/e4b2ff05-e107-43a9-a000-37d16cb1e615)  
+![hover-2](https://github.com/user-attachments/assets/29de1b00-9b23-4882-8454-da11996c1c48)
 
 ### `/settings`
 
@@ -94,6 +96,6 @@ First graph - `9.2 ~ 9.8`, second graph - `9.9 ~ 9.15`.
 
 ---
 
-## Further Info - [pomodoro-doc](https://pomodoro-doc.vercel.app/)
+## Further Info - [pomodoro-doc](https://pomodoro-doc.vercel.app/features)
 
 Short demo videos are available to show how the features work.
