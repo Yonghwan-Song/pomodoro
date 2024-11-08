@@ -283,7 +283,7 @@ export function CategoryGraph({
   //#endregion
 
   //#region Calculate tickCount
-  const arrOfMaxDurations = listOfCategoryDetails.map((detail) => {
+  const arrOfMaxDurationsCategorized = listOfCategoryDetails.map((detail) => {
     if (detail.isOnStat) {
       const durationsOfAcategory = localWeekStat.map((stat) =>
         stat.subtotalByCategory !== undefined
@@ -295,7 +295,17 @@ export function CategoryGraph({
       return 0;
     }
   });
-  const maxValOfYAxis = Math.floor(Math.max(...arrOfMaxDurations) / 60) + 1;
+
+  let maxOfUnCategorized = 0;
+  if (isUnCategorizedOnStat) {
+    let arr = localWeekStat.map((stat) => stat.withoutCategory ?? 0);
+    maxOfUnCategorized = Math.max(...arr);
+  }
+
+  const maxValOfYAxis =
+    Math.floor(
+      Math.max(...arrOfMaxDurationsCategorized, maxOfUnCategorized) / 60
+    ) + 1;
   const tickCount = maxValOfYAxis + 1;
   //#endregion
 

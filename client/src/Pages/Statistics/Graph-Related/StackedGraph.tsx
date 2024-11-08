@@ -490,7 +490,7 @@ function CustomTooltip({
   }
 }
 
-function getHHmm(duration: number | undefined) {
+export function getHHmm(duration: number | undefined) {
   if (duration) {
     return `${Math.trunc(duration / 60)}h ${duration % 60}m`;
   } else {

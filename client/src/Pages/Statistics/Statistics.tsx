@@ -9,10 +9,11 @@ import {
   StatDataForGraph_DailyPomoStat,
   CategorySubtotal,
   CategoryDetail,
+  WeekStat,
 } from "./statRelatedTypes";
 import { countDown } from "../..";
 import { pubsub } from "../../pubsub";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, getISOWeek, getISOWeekYear } from "date-fns";
 import { Overview } from "./Graph-Related/Overview";
 import { CategoryGraph } from "./Graph-Related/CategoryGraph";
 import { useFetch } from "../../Custom-Hooks/useFetch";
@@ -22,6 +23,7 @@ import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
 import { StackedGraph } from "./Graph-Related/StackedGraph";
+import { WeeklyTrendStacked } from "./Graph-Related/WeeklyTrendStacked";
 
 export default function Statistics() {
   const [sum, setSum] = useState({
@@ -33,7 +35,7 @@ export default function Statistics() {
     lastMonth: 0,
     allTime: 0,
   });
-
+  const [weeklyTrend, setWeeklyTrend] = useState<WeekStat[]>([]);
   const [dailyStatOfWeek, setDailyStatOfWeek] =
     useState<DayStatForGraph[]>(init);
   // This is an example of a weekStat after initialization.
@@ -63,7 +65,7 @@ export default function Statistics() {
   >({
     urlSegment: RESOURCE.POMODOROS,
     modifier: calculateDailyPomodoroDuration,
-    callbacks: [calculateOverview, calculateThisWeekData], // ThisWeekData is calculated in the Statistics component, which is the parent of the Graphs component. This ensures that the Graphs component displays this week's data when it initially mounts.
+    callbacks: [calculateWeeklyTrend, calculateOverview, calculateThisWeekData], // ThisWeekData is calculated in the Statistics component, which is the parent of the Graphs component. This ensures that the Graphs component displays this week's data when it initially mounts.
   });
 
   const userInfoContext = useUserContext()!;
@@ -141,14 +143,21 @@ export default function Statistics() {
         if (acc.length === 0) {
           const dayOfWeekIndex = new Date(curRec.date).getDay();
           const categorySubtotal = createBaseCategorySubtotal();
+          const timestamp = new Date(curRec.date).getTime();
           let dailyPomos: DayStat = {
             date: curRec.date,
-            timestamp: new Date(curRec.date).getTime(),
+            timestamp,
             dayOfWeek: days[dayOfWeekIndex],
             total: curRec.duration,
             subtotalByCategory: categorySubtotal,
             withoutCategory: 0,
+            weekNumber: getISOWeek(timestamp),
           };
+          //* error occurred after making the `weekNumber` in the TimeRelated type required.
+          //* Thus, I commented out the code below and instead initialize it in the object above.
+          // dailyPomos.weekNumber = getWeek(dailyPomos.timestamp, {
+          //   weekStartsOn: 1,
+          // });
           if (curRec.category !== undefined) {
             dailyPomos.subtotalByCategory[curRec.category.name].duration =
               curRec.duration;
@@ -178,14 +187,19 @@ export default function Statistics() {
           // 3. 다음 날 첫번째 계산
           const dayOfWeekNumber = new Date(curRec.date).getDay();
           const categoryStat = createBaseCategorySubtotal();
+          const timestamp = new Date(curRec.date).getTime();
           let dailyPomos: DayStat = {
             date: curRec.date,
-            timestamp: new Date(curRec.date).getTime(),
+            timestamp,
             dayOfWeek: days[dayOfWeekNumber],
             total: curRec.duration,
             subtotalByCategory: categoryStat,
             withoutCategory: 0,
+            weekNumber: getISOWeek(timestamp),
           };
+          // dailyPomos.weekNumber = getWeek(dailyPomos.timestamp, {
+          //   weekStartsOn: 1,
+          // });
 
           if (curRec.category !== undefined) {
             dailyPomos.subtotalByCategory[curRec.category.name].duration +=
@@ -325,6 +339,68 @@ export default function Statistics() {
     setDailyStatOfWeek(weekCloned);
   }
 
+  function calculateWeeklyTrend(pomodoroDailyStat: DayStat[]) {
+    const weeklyTrend: WeekStat[] = pomodoroDailyStat.reduce<WeekStat[]>(
+      (acc: WeekStat[], curRec) => {
+        // 1. get the first base category subtotal combined.
+        if (acc.length === 0) {
+          const dummy: CategorySubtotal = {};
+
+          for (const name in curRec.subtotalByCategory) {
+            dummy[name] = { ...curRec.subtotalByCategory[name] };
+          }
+
+          const weekStat: WeekStat = {
+            timestampOfFirstDate: curRec.timestamp,
+            weekNumber: curRec.weekNumber,
+            year: getISOWeekYear(curRec.timestamp),
+            total: curRec.total,
+            subtotalByCategory: dummy,
+            withoutCategory: curRec.withoutCategory,
+          };
+
+          acc.push(weekStat);
+
+          return acc;
+        }
+
+        // 2. combine subtotals
+        if (acc[acc.length - 1].weekNumber === curRec.weekNumber) {
+          acc[acc.length - 1].total += curRec.total;
+          acc[acc.length - 1].withoutCategory += curRec.withoutCategory;
+          for (const name in curRec.subtotalByCategory) {
+            acc[acc.length - 1].subtotalByCategory[name].duration +=
+              curRec.subtotalByCategory[name].duration;
+          }
+          return acc;
+        } else {
+          // 3. move to the next week and get the base category subtotal combined.
+          const dummy: CategorySubtotal = {};
+
+          for (const name in curRec.subtotalByCategory) {
+            dummy[name] = { ...curRec.subtotalByCategory[name] };
+          }
+
+          const weekStat: WeekStat = {
+            timestampOfFirstDate: curRec.timestamp,
+            weekNumber: curRec.weekNumber,
+            year: getISOWeekYear(curRec.timestamp),
+            total: curRec.total,
+            subtotalByCategory: dummy,
+            withoutCategory: curRec.withoutCategory,
+          };
+
+          return [...acc, weekStat];
+        }
+      },
+      []
+    );
+
+    console.log("weeklyTrend at Statistics.tsx", weeklyTrend);
+
+    setWeeklyTrend(weeklyTrend);
+  }
+
   /**
  * Purpose: to initialize the local state variable, week.
  * @returns the array representing the current week. But the elements in it do not get the property, total.
@@ -340,41 +416,49 @@ export default function Statistics() {
     ]
  */
   function init() {
+    const weekNumber = getISOWeek(Date.now());
     let weekStat: DayStatForGraph[] = [
       {
         date: "",
         dayOfWeek: "Mon",
         timestamp: 0,
+        weekNumber,
       },
       {
         date: "",
         dayOfWeek: "Tue",
         timestamp: 0,
+        weekNumber,
       },
       {
         date: "",
         dayOfWeek: "Wed",
         timestamp: 0,
+        weekNumber,
       },
       {
         date: "",
         dayOfWeek: "Thu",
         timestamp: 0,
+        weekNumber,
       },
       {
         date: "",
         dayOfWeek: "Fri",
         timestamp: 0,
+        weekNumber,
       },
       {
         date: "",
         dayOfWeek: "Sat",
         timestamp: 0,
+        weekNumber,
       },
       {
         date: "",
         dayOfWeek: "Sun",
         timestamp: 0,
+        weekNumber,
       },
     ];
 
@@ -521,6 +605,18 @@ export default function Statistics() {
 
   //#endregion
 
+  // useEffect(() => {
+  //   console.log("weeklyTrend", weeklyTrend);
+  // }, [weeklyTrend]);
+
+  // useEffect(() => {
+  //   console.log("statData", statData);
+  // });
+
+  useEffect(() => {
+    statData !== null && calculateWeeklyTrend(statData);
+  }, [statData]);
+
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
     // {
@@ -601,6 +697,7 @@ export default function Statistics() {
                 total: 0,
                 subtotalByCategory: createBaseCategorySubtotal(),
                 withoutCategory: 0,
+                weekNumber: getISOWeek(Date.now()),
               };
 
               for (const pomoDoc of final) {
@@ -769,6 +866,13 @@ export default function Statistics() {
                   </div>
                 </FlexBox>
               </BoxShadowWrapper>
+            </GridItem>
+            <GridItem>
+              <WeeklyTrendStacked
+                weeklyTrend={weeklyTrend}
+                listOfCategoryDetails={listOfCategoryDetails}
+                colorForUnCategorized={colorForUnCategorized}
+              />
             </GridItem>
           </Grid>
         </div>

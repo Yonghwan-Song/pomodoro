@@ -11,6 +11,15 @@
  */
 export type DayStat = TimeRelated & DurationRelated;
 
+/**
+ * `timestampOfFirstDate` - represents the start of a day when the first pomodoro session was done in the week.
+ */
+export type WeekStat = {
+  timestampOfFirstDate: number; // the timestamp of the first day a pomodoro session was done.
+  weekNumber: number;
+  year: number;
+} & DurationRelated;
+
 export type StatDataForGraph_DailyPomoStat = DayStat[]; //TODO 이거 이름이 좀 잘못된거 아니냐?... ForGraph는 아래에 있는 타입에서 다루는거잖아..
 //TODO 이거는 그냥.. From Server아닌가....
 //? 그런데 저 아래에 From Server가 또 있는데?.............저거는
@@ -24,6 +33,7 @@ type TimeRelated = {
   date: string;
   timestamp: number;
   dayOfWeek: string;
+  weekNumber: number;
 };
 
 /**
