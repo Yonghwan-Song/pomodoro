@@ -14,20 +14,63 @@ I initially used another app, but it didn’t record the elapsed time when I pau
 
 ### Frontend
 
-- React, React Router DOM, Axios, Firebase Authentication
-- React Inline Style, Styled Components
-- TypeScript, Rechart, idb, date-fns
+#### HTML, CSS, JavaScript and WEB APIs
+
+- CSS
+  - [Positioning](https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Positioning), [Coordinate systems](https://developer.mozilla.org/en-US/docs/Web/CSS/CSSOM_view/Coordinate_systems)
+    - [example](https://pomodoro-doc.vercel.app/features#%EC%8B%9C%EA%B0%81%EC%A0%81-%ED%94%BC%EB%93%9C%EB%B0%B1-19-17-16)
+- WEB APIs
+  - [matchMedia](https://developer.mozilla.org/en-US/docs/Web/API/Window/matchMedia), [MediaQueryList](https://developer.mozilla.org/en-US/docs/Web/API/MediaQueryList)
+    - [example](https://pomodoro-doc.vercel.app/features#%EB%B0%98%EC%9D%91%ED%98%95-%EB%94%94%EC%9E%90%EC%9D%B8-29-34)
+
+#### TypeScript
+
+- [Index Signatures](https://www.typescriptlang.org/docs/handbook/2/objects.html#index-signatures)
+- [Generic Types](https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-types), [Conditional Types](https://www.typescriptlang.org/docs/handbook/2/conditional-types.html)
+  - [example](https://github.com/Yonghwan-Song/pomodoro/blob/main/client/src/Custom-Hooks/useFetch.tsx#L43)
+
+<!-- #### SPA Related
+
+- React
+  - useMemo, useCallback, useContext, and etc
+- React Router DOM - Nested Routing -->
+
+#### SPA (Single Page Application)
+
+- React
+  - `useMemo`, `useCallback`, `useContext`, etc.
+- React Router DOM
+  - Nested Routing
+
+#### HTTP Requests & Authentication
+
+- Axios
+  - [axios instance](https://axios-http.com/docs/instance), [interceptors](https://axios-http.com/docs/interceptors)
+    - [example](https://github.com/Yonghwan-Song/pomodoro/tree/main/client/src/axios-and-error-handling)
+- [Firebase Authentication](https://firebase.google.com/docs/auth/web/start)
+
+#### Styling
+
+- Styled Components, React Inline Style
+
+#### Etc
+
+- [Recharts](https://recharts.org/)
+  - [example](https://github.com/Yonghwan-Song/pomodoro/tree/main/client/src/Pages/Statistics/Graph-Related)
+- [idb](https://www.npmjs.com/package/idb)
+  - for a promise-based interface for interacting with Indexed DB
+- date-fns
 
 ### Backend
 
 - NestJS, Express
-- Firebase Admin
+- [Firebase Admin](https://www.npmjs.com/package/firebase-admin)
 - MongoDB Atlas, Mongoose, @nest/mongoose
 
 ### Hosting
 
 - Vercel for the React app
-- Render.com for the API server
+- [Render.com](https://render.com) for the API server
 
 ## Features
 
@@ -88,6 +131,9 @@ First graph - `10.28 ~ 11.3`, second graph - `11.4 ~ 11.10`.
 #### Mouse Hover Over Each Graph
 ![hover-1](https://github.com/user-attachments/assets/e4b2ff05-e107-43a9-a000-37d16cb1e615)  
 ![hover-2](https://github.com/user-attachments/assets/29de1b00-9b23-4882-8454-da11996c1c48)
+
+#### Weekly Trend
+![weeklyTrend](https://github.com/user-attachments/assets/ada3a56b-2592-4b14-b4dc-f8c0de1c2655)
 
 ### `/settings`
 
