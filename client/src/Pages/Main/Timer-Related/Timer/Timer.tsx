@@ -27,6 +27,7 @@ import { useAuthContext } from "../../../../Context/AuthContext";
 import { useUserContext } from "../../../../Context/UserContext";
 import Time from "../Time/Time";
 import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
+import { Tooltip } from "react-tooltip";
 
 type TimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -97,6 +98,12 @@ export function Timer({
     [userInfoContext.pomoInfo]
   );
   //#endregion
+
+  const DURATIONS = {
+    pomoDuration,
+    shortBreakDuration,
+    longBreakDuration,
+  };
 
   //#region Initializers
   function initializeTimerState(initialVal: TimerStateType): TimerStateType {
@@ -266,7 +273,7 @@ export function Timer({
    * @param now the moment a session is forced to end in the middle.
    */
   async function endTimer(now: number) {
-    const patternTimerStates = determineNextPatternTimerStates({
+    const patternTimerStates = determinePatternTimerStates({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
     });
@@ -463,7 +470,7 @@ export function Timer({
   // 이 함수에 의해 종료되는 세션은 next함수에서 concentrationTime === duration인 경우에 해당된다.
   // 왜냐하면 remainingDuration <= 0인 경우에 발동되기 때문이다.
   function checkIfSessionShouldBeFinished() {
-    const patternTimerStates = determineNextPatternTimerStates({
+    const patternTimerStates = determinePatternTimerStates({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: numOfPomo,
     });
@@ -642,14 +649,22 @@ export function Timer({
    * @param howManyCountdown numOfPomo중에 실제로 몇번 pomo세션을 완료했는지를 나타낸다. 이 두개를 비교해서 한사이클이 다 끝났는지 그리고 다음 세션은 어떤 것이어야 하는지 파악 할 수 있다.
    * @returns 이제 한사이클 다 돌아서 새로 시작해야 하는 경우에만 repetitionCount를 0값으로 return value에 포함시킨다.
    */
-  function determineNextPatternTimerStates({
+  function determinePatternTimerStates({
     howManyCountdown,
     numOfPomo,
   }: {
     howManyCountdown: number;
     numOfPomo: number;
-  }): { duration: number; repetitionCount?: number } {
-    let retVal: { duration: number; repetitionCount?: number } | null = null;
+  }): {
+    duration: number;
+    kind: "pomoDuration" | "shortBreakDuration" | "longBreakDuration";
+    repetitionCount?: number;
+  } {
+    let retVal: {
+      duration: number;
+      kind: "pomoDuration" | "shortBreakDuration" | "longBreakDuration";
+      repetitionCount?: number;
+    } | null = null;
     // console.log(
     //   "<-------------------determineNextPatternTimerStates------------------->"
     // );
@@ -664,14 +679,18 @@ export function Timer({
     // );
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
-        retVal = { duration: shortBreakDuration };
+        retVal = { duration: shortBreakDuration, kind: "shortBreakDuration" };
       } else {
-        retVal = { duration: pomoDuration };
+        retVal = { duration: pomoDuration, kind: "pomoDuration" };
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
-      retVal = { duration: longBreakDuration };
+      retVal = { duration: longBreakDuration, kind: "longBreakDuration" };
     } else {
-      retVal = { duration: pomoDuration, repetitionCount: 0 };
+      retVal = {
+        duration: pomoDuration,
+        kind: "pomoDuration",
+        repetitionCount: 0,
+      };
     }
     return retVal;
   }
@@ -682,20 +701,38 @@ export function Timer({
     remainingDuration < 0 ? (
       <h2>ending session...</h2>
     ) : (
-      <h2>
+      <h2 data-tooltip-id="session-info" style={{ cursor: "pointer" }}>
         <Time seconds={remainingDuration} />
       </h2>
     );
-  let durationBeforeStart = (
-    <h2>
-      {!!(durationInSeconds / 60) === false ? (
-        "loading data..."
-      ) : (
+  let durationBeforeStart =
+    !!(durationInSeconds / 60) === false ? (
+      <h2>"loading data..."</h2>
+    ) : (
+      <h2 data-tooltip-id="session-info" style={{ cursor: "pointer" }}>
         <Time seconds={durationInSeconds} />
-      )}
-    </h2>
-  );
+      </h2>
+    );
   //#endregion
+
+  let startMoment = "";
+  if (timerState.startTime !== 0) {
+    const date = new Date(timerState.startTime);
+    startMoment = `${date.toLocaleTimeString()} | `;
+  }
+
+  const sessionInfo = determinePatternTimerStates({
+    howManyCountdown: repetitionCount,
+    numOfPomo: numOfPomo,
+  });
+  const originalDuration = DURATIONS[sessionInfo.kind];
+  const tooltipContent =
+    startMoment +
+    `${durationInSeconds / 60} = ${originalDuration} ${
+      durationInSeconds / 60 - originalDuration >= 0
+        ? "+ " + (durationInSeconds / 60 - originalDuration)
+        : "- " + Math.abs(durationInSeconds / 60 - originalDuration)
+    }`;
 
   return (
     <Grid column={2} alignItems={"center"} columnGap="23px" padding="0px">
@@ -704,6 +741,7 @@ export function Timer({
           <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
+        <Tooltip id="session-info" content={tooltipContent} place="top" />
       </GridItem>
       <GridItem rowStart={1} rowEnd={5} columnStart={2} columnEnd={3}>
         <CircularProgressBar

@@ -380,7 +380,7 @@ function Settings() {
                   <GridItem columnStart={1} columnEnd={3}>
                     {/* <GridItem columnStart={1} columnEnd={1}> */}
                     <Button type={"submit"} color={"primary"}>
-                      SAVE
+                      SAVE and RESET
                     </Button>
                   </GridItem>
                 </Grid>

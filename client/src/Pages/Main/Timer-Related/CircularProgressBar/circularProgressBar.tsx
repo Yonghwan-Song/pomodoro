@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import * as C from "../../../../constants/index";
 import styles from "./circularProgressBar.module.css";
 import {
@@ -49,6 +49,9 @@ const CircularProgressBar = ({
 }: CircularProgressBarProps) => {
   const { user } = useAuthContext()!;
   const userInfoContext = useUserContext()!;
+
+  const [addCount, setAddCount] = useState(0);
+  const [subtractCount, setSubtractCount] = useState(0);
 
   // progress는 시간이 카운트 될 때마다 계속해서 부모로부터 전달되는 거니까,
   // 지금 category그러니까 가장 마지막 요소에 한해서만 계산을 해주고.
@@ -127,28 +130,18 @@ const CircularProgressBar = ({
     }
   }, [userInfoContext.pomoInfo?.categoryChangeInfoArray]);
 
-  // useEffect(() => {
-  //   console.log("user------------------------------------->", user);
-  //   console.log("infoArrayOfPrevCategories", infoArrayOfPrevCategories);
-  //   console.log("currentCategoryInfo", currentCategoryInfo);
-  //   console.log(
-  //     "categoryChangeInfoArray",
-  //     userInfoContext.pomoInfo?.categoryChangeInfoArray
-  //   );
-  //   console.log("<----------------------------------------");
-  // }, [infoArrayOfPrevCategories, currentCategoryInfo, user]);
-
-  async function addFiveMinutes() {
+  async function addFiveMinutes(addCount: number) {
+    const additionalMinutes = 5 * addCount;
     await persistStatesToIDB({
-      duration: durationInSeconds / 60 + 5,
+      duration: durationInSeconds / 60 + additionalMinutes,
     });
     if (user) {
       await updateTimersStates({
-        duration: durationInSeconds / 60 + 5,
+        duration: durationInSeconds / 60 + additionalMinutes,
       });
     }
-    setDurationInMinutes((prev) => prev + 5);
-    setRemainingDuration((prev) => prev + 5 * 60);
+    setDurationInMinutes((prev) => prev + additionalMinutes);
+    setRemainingDuration((prev) => prev + additionalMinutes * 60);
 
     //TODO I'm going to change categoryChangeInfoArray here. But I am not sure if this is good since it will re-calculate
     //     `infoArrayOfPrevCategories` and hopefully `currentCategoryInfo` kind of
@@ -163,13 +156,14 @@ const CircularProgressBar = ({
           // r0: original remainingDuration d0: original durationInMinutes. And we want to know x.
           // (1 - r0/d0) * x = 1 - (r0 - 5)/(d0 - 5)
           // x = d0/(d0 - 5)
-          info.progress * (durationInSeconds / (durationInSeconds + 5 * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
+          info.progress *
+          (durationInSeconds / (durationInSeconds + additionalMinutes * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
 
         return { ...info, progress: newProgress };
       });
 
     if (infoArray_upgraded) {
-      console.log("Entered upgradeInfoArray if block.");
+      // console.log("Entered upgradeInfoArray if block.");
       userInfoContext.setPomoInfo((prev) => {
         if (!prev) return prev;
 
@@ -185,29 +179,31 @@ const CircularProgressBar = ({
     }
   }
 
-  async function subtractFiveMinutes() {
-    if (remainingDuration - 5 * 60 > 0) {
+  async function subtractFiveMinutes(subtractCount: number) {
+    const subtractedMinutes = 5 * subtractCount;
+    if (remainingDuration - subtractedMinutes * 60 > 0) {
       await persistStatesToIDB({
-        duration: durationInSeconds / 60 - 5,
+        duration: durationInSeconds / 60 - subtractedMinutes,
       });
       if (user) {
         await updateTimersStates({
-          duration: durationInSeconds / 60 - 5,
+          duration: durationInSeconds / 60 - subtractedMinutes,
         });
       }
-      setDurationInMinutes((prev) => prev - 5);
-      setRemainingDuration((prev) => prev - 5 * 60);
+      setDurationInMinutes((prev) => prev - subtractedMinutes);
+      setRemainingDuration((prev) => prev - subtractedMinutes * 60);
 
       const upgradedInfoArray =
         userInfoContext.pomoInfo?.categoryChangeInfoArray.map((info) => {
           const newProgress =
-            info.progress * (durationInSeconds / (durationInSeconds - 5 * 60));
+            info.progress *
+            (durationInSeconds / (durationInSeconds - subtractedMinutes * 60));
 
           return { ...info, progress: newProgress };
         });
 
       if (upgradedInfoArray) {
-        console.log("Entered upgradeInfoArray if block.");
+        // console.log("Entered upgradeInfoArray if block.");
         userInfoContext.setPomoInfo((prev) => {
           if (!prev) return prev;
 
@@ -223,6 +219,43 @@ const CircularProgressBar = ({
       }
     }
   }
+
+  useEffect(() => {
+    if (addCount !== 0) {
+      const id = setTimeout(() => {
+        addFiveMinutes(addCount);
+        setAddCount(0);
+      }, 500);
+
+      return () => {
+        clearTimeout(id);
+      };
+    }
+  }, [addCount]);
+
+  useEffect(() => {
+    if (subtractCount !== 0) {
+      const id = setTimeout(() => {
+        subtractFiveMinutes(subtractCount);
+        setSubtractCount(0);
+      }, 500);
+
+      return () => {
+        clearTimeout(id);
+      };
+    }
+  }, [subtractCount]);
+
+  // useEffect(() => {
+  //   console.log("user------------------------------------->", user);
+  //   console.log("infoArrayOfPrevCategories", infoArrayOfPrevCategories);
+  //   console.log("currentCategoryInfo", currentCategoryInfo);
+  //   console.log(
+  //     "categoryChangeInfoArray",
+  //     userInfoContext.pomoInfo?.categoryChangeInfoArray
+  //   );
+  //   console.log("<----------------------------------------");
+  // }, [infoArrayOfPrevCategories, currentCategoryInfo, user]);
 
   return (
     <svg
@@ -305,7 +338,7 @@ const CircularProgressBar = ({
         y={C.SVG.HEGITH / 2 - 20}
       >
         {/* to make the sign easier to click, I created a transparent circle */}
-        <g onClick={addFiveMinutes} cursor={"pointer"}>
+        <g onClick={() => setAddCount((prev) => prev + 1)} cursor={"pointer"}>
           <circle cx={20} cy={20} r={20} fill="transparent" />
           <line
             x1="10"
@@ -334,7 +367,10 @@ const CircularProgressBar = ({
         x={(C.SVG.WIDTH * 1) / 4 - 20}
         y={C.SVG.HEGITH / 2 - 20}
       >
-        <g onClick={subtractFiveMinutes} cursor={"pointer"}>
+        <g
+          onClick={() => setSubtractCount((prev) => prev + 1)}
+          cursor={"pointer"}
+        >
           <circle cx={20} cy={20} r={20} fill="transparent" />
           <line
             x1="10"
