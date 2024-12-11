@@ -4,11 +4,7 @@ import {
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
 } from "../..";
-import { useUserContext } from "../../Context/UserContext";
-import {
-  PomoSettingType,
-  TimersStatesType,
-} from "../../types/clientStatesType";
+import { TimersStatesType } from "../../types/clientStatesType";
 import { useAuthContext } from "../../Context/AuthContext";
 import RecOfToday from "./Timeline-Related/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
@@ -20,6 +16,7 @@ import CategoryList from "./Category-Related/CategoryList";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
+import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -37,19 +34,7 @@ export default function Main() {
     deciderOfWhetherDataForRunningTimerFetched
   );
   const toggleCounter = useRef(0);
-  const userInfoContext = useUserContext()!;
-  const pomoSetting = useMemo(() => {
-    // console.log("useMemo at Main");
-    // console.log(userInfoContext.pomoInfo);
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.pomoSetting !== undefined
-    ) {
-      return userInfoContext.pomoInfo.pomoSetting;
-    } else {
-      return {} as PomoSettingType;
-    }
-  }, [userInfoContext.pomoInfo]); //<-- 이렇게 하면 pomoSetting값중에 하나가 변해도 pomoSetting이 변하나?...
+  const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
 
   //#region UseEffects
   /**
@@ -230,6 +215,7 @@ export default function Main() {
   // pomoSetting object를 가져오는 데 걸리는 시간이다.
   // 왜냐하면 이것은 애초에 remote server에서 가져오는 데이터이기 때문이다(비록 cache를 하더라도).
   // statesRelatedToTimer는 user가 사용하는 브라우저에 저장되기 때문에 준비하는 데 걸리는 시간은 유의미한 영향을 주지 않는다.
+  // TODO: I think this becomes always true after we apply the zustand store (because of initial value is never an empty object)
   const isPomoSettingReady = !!Object.entries(pomoSetting).length;
   const isStatesRelatedToTimerReady = statesRelatedToTimer !== null;
   const isUserAuthReady = user !== null;

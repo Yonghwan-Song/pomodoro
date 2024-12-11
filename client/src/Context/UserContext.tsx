@@ -60,7 +60,7 @@ export function UserInfoContextProvider({
      */
     callbacks: [persistRequiredStatesToRunTimer],
     additionalDeps: [isNewUser, isNewUserRegistered],
-    additionalCondition: isNewUser === false || isNewUserRegistered,
+    additionalCondition: isNewUser === false || isNewUserRegistered, // 기존에 가입된 사용자이거나, 새로운 사용자이면 서버에서 register를 하고 난 후이어야 한다.
   });
 
   //#region To Observe LifeCycle
@@ -69,8 +69,8 @@ export function UserInfoContextProvider({
   //#endregion
 
   //#region UseEffect Calls
-  useEffect(setPomoInfoToDefaultAfterLogOut, [user]); //1.
-  useEffect(setPomoInfoOfUnLoggedInUser, [user, pomoInfo]); //2.
+  //! useEffect(setPomoInfoToDefaultAfterLogOut, [user]); //1.
+  useEffect(setPomoInfoOfUnLoggedInUser, []); //2. <------------ No Problem. 로그아웃할때 그냥 refresh하기로 해서 괜찮음.
   // 1. The code in this callback actually runs only right after a user logs out. (`isRightAfterLogOut() returns true`)
   // 2. The code in this callback actually runs
   //    only when (1)`pomoInfo` is/is changed to null. AND (2)localStorage.getItem("user") !== "authenticated".
@@ -82,6 +82,8 @@ export function UserInfoContextProvider({
 
   //! Purpose: to allow _unauthenticated(un-logged-in) users_ to continue to run timer from where they left when refreshing the app.
   function setPomoInfoOfUnLoggedInUser() {
+    // console.log("user", user);
+    // console.log("pomoInfo", pomoInfo);
     //? isn't this called when a user logs in but not yet gets its data from server?...
     /**
      * What this condition mean? - unauthenticated user is using the app.
@@ -94,16 +96,11 @@ export function UserInfoContextProvider({
      */
     //! 주의: pomoInfo는 로그인을 해서 쓰든 아니든 처음에는 무조건 null값을 갖는다.
     //!        왜냐하면, useFetch에서 처음에 data가 null을 init값으로 설정했기 때문.
-    if (pomoInfo === null && localStorage.getItem("user") !== "authenticated") {
-      // console.log(
-      //   "------------------inside pomoInfo===null && localStorage.getItem(user) !== authenticated------------------"
-      // );
-      const getPomoSettingFromIDB = async () => {
-        // when deleting all history including indexed DB... it does not work.
+    if (localStorage.getItem("user") !== "authenticated") {
+      async function getPomoSettingFromIDB() {
         let states = await obtainStatesFromIDB("withSettings");
-        // console.log("states in the setPomoInfoOfUnLoggedInUser", states);
 
-        let pomoSetting = doesPomoSettingExist()
+        let pomoSetting = doesPomoSettingExistInIDB()
           ? (states as dataCombinedFromIDB).pomoSetting
           : {
               pomoDuration: 25,
@@ -111,8 +108,7 @@ export function UserInfoContextProvider({
               longBreakDuration: 15,
               numOfPomo: 4,
             };
-
-        let autoStartSetting = doesAutoStartSettingExist()
+        let autoStartSetting = doesAutoStartSettingExistInIDB()
           ? (states as dataCombinedFromIDB).autoStartSetting
           : {
               doesPomoStartAutomatically: false,
@@ -142,19 +138,19 @@ export function UserInfoContextProvider({
           ],
         });
 
-        function doesPomoSettingExist() {
+        function doesPomoSettingExistInIDB() {
           return (
             Object.entries(states).length !== 0 &&
             (states as dataCombinedFromIDB).pomoSetting
           );
         }
-        function doesAutoStartSettingExist() {
+        function doesAutoStartSettingExistInIDB() {
           return (
             Object.entries(states).length !== 0 &&
             (states as dataCombinedFromIDB).autoStartSetting
           );
         }
-      };
+      }
       getPomoSettingFromIDB();
     }
   }

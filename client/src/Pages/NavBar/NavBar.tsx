@@ -21,16 +21,18 @@ import { TimersStatesType } from "../../types/clientStatesType";
 import { errController } from "../../axios-and-error-handling/errorController";
 import { pubsub } from "../../pubsub";
 import * as CONSTANTS from "../../constants/index";
-import { useUserContext } from "../../Context/UserContext";
+import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 
 function Navbar() {
+  const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
+    (state) => state.setCategoryChangeInfoArray
+  );
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
   const [isActive, setIsActive] = useState(false);
   const ulRef = useRef<HTMLUListElement | null>(null); // interface MutableRefObject<T> { current: T;}
   const theme = useTheme() as ThemeCustomized;
 
   // Main에서와 다르게 pomoInfo는 null값을 가질 수 있다. Main에서는 conditional rendering했던 것으로 기억.
-  const userInfoContext = useUserContext();
 
   async function handleSignOut() {
     try {
@@ -96,25 +98,22 @@ function Navbar() {
     handleSignOut();
   }
 
+  // When this component is mounted, user is null. Thus, subscription does not happen.
+  // But after a usre logs in, a subscription to the event starts...
+  // When the user logs out, ubsub() is supposed to be called. But I guess it will not be since the entire app is going to be refreshed...
+  // Though the return statement does not have to be here due to the reason above, I will just keep it.. since it is logically correct...?....
   useEffect(() => {
+    if (user == null) return;
+
     const unsub = pubsub.subscribe("sessionEndBySW", (payload) => {
-      // console.log(payload);
-      // console.log("userInfoContext inside subscribe cb", userInfoContext);
-
-      userInfoContext?.setPomoInfo((prev) => {
-        if (!prev) return prev;
-
-        // console.log("{...prev} in pubsub.subscribe(sessionEndBySW...)", {
-        //   ...prev,
-        // });
-        return { ...prev, categoryChangeInfoArray: payload };
-      });
+      console.log("inside sessionEndBySW subscriber: user is", user);
+      updateCategoryChangeInfoArray(payload);
     });
 
     return () => {
       unsub();
     };
-  }, []);
+  }, [user]);
 
   return (
     <StyledNav>

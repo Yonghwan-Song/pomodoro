@@ -10,17 +10,13 @@ import {
   RESOURCE,
   SUB_SET,
 } from "../../../constants";
-import { useUserContext } from "../../../Context/UserContext";
-import {
-  Category,
-  CategoryChangeInfo,
-  NewCategory,
-} from "../../../types/clientStatesType";
+import { Category, NewCategory } from "../../../types/clientStatesType";
 import {
   delete_entry_of_cache,
   persistCategoryChangeInfoArrayToIDB,
 } from "../../..";
 import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
+import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 
 const customModalStyles = {
   content: {
@@ -45,34 +41,24 @@ type ColorInputType = {
 };
 
 export default function Categories() {
-  const userInfoContext = useUserContext()!;
-  const setPomoInfo = userInfoContext.setPomoInfo;
-  const categoriesFromServer = useMemo(() => {
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.categories !== undefined
-    ) {
-      return userInfoContext.pomoInfo.categories;
-    } else {
-      return [];
-    }
-  }, [userInfoContext.pomoInfo?.categories]);
-
-  const categoryChangeInfoArray: CategoryChangeInfo[] = useMemo(() => {
-    if (userInfoContext.pomoInfo !== null) {
-      return userInfoContext.pomoInfo.categoryChangeInfoArray;
-    } else {
-      return [];
-    }
-  }, [userInfoContext.pomoInfo?.categoryChangeInfoArray]);
-
-  const colorForUnCategorized = useMemo(() => {
-    if (userInfoContext.pomoInfo !== null) {
-      return userInfoContext.pomoInfo.colorForUnCategorized;
-    } else {
-      return "#f04005";
-    }
-  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+  const categoriesFromServer = useBoundedPomoInfoStore(
+    (state) => state.categories
+  );
+  const categoryChangeInfoArray = useBoundedPomoInfoStore(
+    (state) => state.categoryChangeInfoArray
+  );
+  const colorForUnCategorized = useBoundedPomoInfoStore(
+    (state) => state.colorForUnCategorized
+  );
+  const updateCategories = useBoundedPomoInfoStore(
+    (state) => state.setCategories
+  );
+  const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
+    (state) => state.setCategoryChangeInfoArray
+  );
+  const updateColorForUnCategorized = useBoundedPomoInfoStore(
+    (state) => state.setColorForUnCategorized
+  );
 
   const [colorInputForUnCategorized, setColorInputForUnCategorized] =
     useState<string>(colorForUnCategorized);
@@ -81,11 +67,8 @@ export default function Categories() {
     setDebouncedColorInputForUnCategorized,
   ] = useState<string | null>(null);
 
-  const [categoriesInputs, setCategoriesInputs] = useState<Category[]>(() => {
-    if (userInfoContext.pomoInfo !== null)
-      return userInfoContext.pomoInfo.categories;
-    else return [];
-  });
+  const [categoriesInputs, setCategoriesInputs] =
+    useState<Category[]>(categoriesFromServer);
 
   // For editing an existing cateogry
   const [nameInput, setNameInput] = useState<NameInputType | null>(null);
@@ -159,19 +142,11 @@ export default function Categories() {
         ...newCategoryInput,
       });
       delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
 
-        const updatedCategories = [
-          ...prev.categories,
-          { ...newCategoryInput, _uuid: window.crypto.randomUUID() },
-        ];
-
-        return {
-          ...prev,
-          categories: updatedCategories,
-        };
-      });
+      updateCategories([
+        ...categoriesFromServer,
+        { ...newCategoryInput, _uuid: window.crypto.randomUUID() },
+      ]);
       setNewCategoryInput({
         name: "add a new category",
         color: "#F04005",
@@ -228,13 +203,11 @@ export default function Categories() {
       } else {
         axiosInstance.delete(RESOURCE.CATEGORIES + `/${categoryToDelete}`);
         delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
-        setPomoInfo((prev) => {
-          if (!prev) return prev;
-          const newCategories = prev.categories.filter((category) => {
+        updateCategories(
+          categoriesFromServer.filter((category) => {
             return category.name !== categoryToDelete;
-          });
-          return { ...prev, categories: newCategories };
-        });
+          })
+        );
         if (
           sessionStorage.getItem(CURRENT_CATEGORY_NAME) === categoryToDelete
         ) {
@@ -300,24 +273,17 @@ export default function Categories() {
 
       const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
         (info) => {
-          if (info._uuid === debouncedNameInput._uuid) {
-            info.categoryName = debouncedNameInput.name;
+          let infoCloned = { ...info };
+          if (infoCloned._uuid === debouncedNameInput._uuid) {
+            infoCloned.categoryName = debouncedNameInput.name;
           }
-          return info;
+          return infoCloned;
         }
       );
       persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
       // deleteCache(CacheName);
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          categories: categoriesInputs,
-          categoryChangeInfoArray: updatedCategoryChangeInfoArray,
-        };
-      });
-
-      //
+      updateCategories(categoriesInputs);
+      updateCategoryChangeInfoArray(updatedCategoryChangeInfoArray);
       // console.log("debouncedNameInput", debouncedNameInput);
     }
   }
@@ -332,21 +298,15 @@ export default function Categories() {
       setDebouncedColorInput(null);
       const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
         (info) => {
-          if (info._uuid === debouncedColorInput._uuid) {
-            info.color = debouncedColorInput.color;
+          let infoCloned = { ...info };
+          if (infoCloned._uuid === debouncedColorInput._uuid) {
+            infoCloned.color = debouncedColorInput.color;
           }
-          return info;
+          return infoCloned;
         }
       );
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          categories: categoriesInputs,
-
-          categoryChangeInfoArray: updatedCategoryChangeInfoArray,
-        };
-      });
+      updateCategories(categoriesInputs);
+      updateCategoryChangeInfoArray(updatedCategoryChangeInfoArray);
       persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
       // console.log("debouncedColorInput", debouncedColorInput);
     }
@@ -359,20 +319,16 @@ export default function Categories() {
       // );
       const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
         (info) => {
-          if (info.categoryName === "uncategorized") {
-            info.color = debouncedColorInputForUnCategorized;
+          let infoCloned = { ...info };
+          if (infoCloned.categoryName === "uncategorized") {
+            infoCloned.color = debouncedColorInputForUnCategorized;
           }
-          return info;
+          return infoCloned;
         }
       );
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          colorForUnCategorized: debouncedColorInputForUnCategorized,
-          categoryChangeInfoArray: updatedCategoryChangeInfoArray,
-        };
-      });
+
+      updateColorForUnCategorized(debouncedColorInputForUnCategorized);
+      updateCategoryChangeInfoArray(updatedCategoryChangeInfoArray);
       persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
 
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.COLOR_FOR_UNCATEGORIZED, {

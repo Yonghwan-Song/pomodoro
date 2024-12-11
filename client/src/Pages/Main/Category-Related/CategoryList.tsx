@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useUserContext } from "../../../Context/UserContext";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
 import {
   CURRENT_CATEGORY_NAME,
@@ -9,6 +8,7 @@ import {
 import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
+import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 
 const customModalStyles = {
   content: {
@@ -22,34 +22,34 @@ const customModalStyles = {
 };
 
 export default function CategoryList() {
-  const userInfoContext = useUserContext()!;
-  const setPomoInfo = userInfoContext.setPomoInfo;
-  const [categoriesFromServer, curCategoryName] = useMemo(() => {
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.categories !== undefined
-    ) {
-      const categoriesFromServer = userInfoContext.pomoInfo.categories;
-      const curC = categoriesFromServer.find((c) => c.isCurrent === true);
-      let curCategoryName: string | null = null;
+  //#region New
+  const categoriesFromServer = useBoundedPomoInfoStore(
+    (state) => state.categories
+  );
+  //#endregion
+  const colorForUnCategorized = useBoundedPomoInfoStore(
+    (state) => state.colorForUnCategorized
+  );
+  const updateCategories = useBoundedPomoInfoStore(
+    (state) => state.setCategories
+  );
+  const updateDoesItJustChangeCategory = useBoundedPomoInfoStore(
+    (state) => state.setDoesItJustChangeCategory
+  );
+  const currentCategoryName: string | null = useMemo(() => {
+    const currentCategory = categoriesFromServer.find(
+      (c) => c.isCurrent === true
+    );
+    let currentCategoryName: string | null = null;
 
-      if (curC) {
-        curCategoryName = curC.name;
-      }
-
-      return [categoriesFromServer, curCategoryName];
-    } else {
-      return [[], null];
+    if (currentCategory) {
+      currentCategoryName = currentCategory.name;
     }
-  }, [userInfoContext.pomoInfo?.categories]);
 
-  const colorForUnCategorized = useMemo(() => {
-    if (userInfoContext.pomoInfo !== null) {
-      return userInfoContext.pomoInfo.colorForUnCategorized;
-    } else {
-      return "#f04005";
-    }
-  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
+    return currentCategoryName;
+  }, [categoriesFromServer]);
+
+  //
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clickedCategoryName, setClickedCategoryName] = useState<string | null>(
@@ -68,7 +68,8 @@ export default function CategoryList() {
     doesItJustChangeCategory,
     nameOfCategoryClicked,
   }: {
-    doesItJustChangeCategory: boolean;
+    doesItJustChangeCategory: boolean; // To update the global state. The state's name is the same as this argument.
+    // The global state is used in a if conditional statement at TimerController.tsx
     nameOfCategoryClicked?: string; // This is used only when the current session is break.
   }) {
     const clickedName = nameOfCategoryClicked ?? clickedCategoryName;
@@ -79,15 +80,17 @@ export default function CategoryList() {
     // What it means can be determined at the callback to the following map method.
     let isCurrentCategoryClickedAgain = false;
     const updatedCategories = categoriesFromServer.map((category) => {
-      if (category.name === clickedName) {
-        if (category.isCurrent)
+      let categoryCloned = { ...category };
+
+      if (categoryCloned.name === clickedName) {
+        if (categoryCloned.isCurrent)
           //* This prevents duplicated clicks.
           isCurrentCategoryClickedAgain = true;
-        else category.isCurrent = true;
-      } else if (category.isCurrent) {
-        category.isCurrent = false;
+        else categoryCloned.isCurrent = true;
+      } else if (categoryCloned.isCurrent) {
+        categoryCloned.isCurrent = false;
       }
-      return category;
+      return categoryCloned;
     });
 
     if (!isCurrentCategoryClickedAgain) {
@@ -96,14 +99,8 @@ export default function CategoryList() {
         data: { isCurrent: true },
       });
       if (res) {
-        setPomoInfo((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            categories: updatedCategories,
-            doesItJustChangeCategory,
-          };
-        });
+        updateCategories(updatedCategories);
+        updateDoesItJustChangeCategory(doesItJustChangeCategory);
         sessionStorage.setItem(CURRENT_CATEGORY_NAME, clickedName);
       }
     }
@@ -117,27 +114,22 @@ export default function CategoryList() {
     doesItJustChangeCategory: boolean;
   }) {
     const updatedCategories = categoriesFromServer.map((category) => {
-      if (category.isCurrent) {
-        category.isCurrent = false;
+      let categoryCloned = { ...category };
+      if (categoryCloned.isCurrent) {
+        categoryCloned.isCurrent = false;
       }
-      return category;
+      return categoryCloned;
     });
 
     //* This prevents duplicated clicks. curCategoryName === null -> "uncategorized".
-    if (curCategoryName) {
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          categories: updatedCategories,
-          doesItJustChangeCategory,
-        };
-      });
+    if (currentCategoryName) {
+      updateCategories(updatedCategories);
+      updateDoesItJustChangeCategory(doesItJustChangeCategory);
 
       sessionStorage.removeItem(CURRENT_CATEGORY_NAME);
 
       axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name: curCategoryName,
+        name: currentCategoryName,
         data: { isCurrent: false },
       });
     }
@@ -200,14 +192,14 @@ export default function CategoryList() {
 
               //! clickedCategoryName is category.name
               if (
-                category.name !== curCategoryName &&
+                category.name !== currentCategoryName &&
                 currentSessionType === "break"
               ) {
                 //Just change it
                 changeCategoryWhenSessionIsBreak(category.name);
               }
               if (
-                category.name !== curCategoryName &&
+                category.name !== currentCategoryName &&
                 currentSessionType === "pomo"
               ) {
                 openModal(category.name);
@@ -245,10 +237,10 @@ export default function CategoryList() {
           const currentSessionType =
             sessionStorage.getItem(CURRENT_SESSION_TYPE);
 
-          if (curCategoryName && currentSessionType === "break") {
+          if (currentCategoryName && currentSessionType === "break") {
             changeCategoryWhenSessionIsBreak("uncategorized");
           }
-          if (curCategoryName && currentSessionType === "pomo") {
+          if (currentCategoryName && currentSessionType === "pomo") {
             openModal("uncategorized");
           }
         }}
@@ -263,8 +255,8 @@ export default function CategoryList() {
         ></div>
         <div
           style={{
-            color: curCategoryName === null ? "#ff8522" : "black",
-            fontWeight: curCategoryName === null ? "bold" : "normal",
+            color: currentCategoryName === null ? "#ff8522" : "black",
+            fontWeight: currentCategoryName === null ? "bold" : "normal",
           }}
         >
           Uncategorized
@@ -278,12 +270,12 @@ export default function CategoryList() {
         contentLabel="Category Change Confirmation"
       >
         <p>
-          Category change from <b>{curCategoryName ?? "uncategorized"}</b> to{" "}
-          <b>{clickedCategoryName}</b>
+          Category change from <b>{currentCategoryName ?? "uncategorized"}</b>{" "}
+          to <b>{clickedCategoryName}</b>
         </p>
         <br></br>
         <p>
-          Do you want to record <b>{curCategoryName}</b>?
+          Do you want to record <b>{currentCategoryName}</b>?
         </p>
         <div
           style={{

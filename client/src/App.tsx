@@ -1,7 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthContextProvider } from "./Context/AuthContext";
-import { UserInfoContextProvider } from "./Context/UserContext";
 import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
 import Navbar from "./Pages/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
@@ -104,14 +103,12 @@ function App() {
 
   return (
     <AuthContextProvider>
-      <UserInfoContextProvider>
-        <RecordsOfTodayContextProvider>
-          <ThemeProvider theme={theme}>
-            <Navbar />
-            <Outlet />
-          </ThemeProvider>
-        </RecordsOfTodayContextProvider>
-      </UserInfoContextProvider>
+      <RecordsOfTodayContextProvider>
+        <ThemeProvider theme={theme}>
+          <Navbar />
+          <Outlet />
+        </ThemeProvider>
+      </RecordsOfTodayContextProvider>
     </AuthContextProvider>
   );
 }

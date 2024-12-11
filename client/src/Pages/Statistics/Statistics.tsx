@@ -18,14 +18,29 @@ import { Overview } from "./Graph-Related/Overview";
 import { CategoryGraph } from "./Graph-Related/CategoryGraph";
 import { useFetch } from "../../Custom-Hooks/useFetch";
 import { PomodoroSessionDocument } from "./statRelatedTypes";
-import { useUserContext } from "../../Context/UserContext";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
 import { StackedGraph } from "./Graph-Related/StackedGraph";
 import { WeeklyTrendStacked } from "./Graph-Related/WeeklyTrendStacked";
+import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 
 export default function Statistics() {
+  const categoriesFromServer = useBoundedPomoInfoStore(
+    (state) => state.categories
+  );
+  const isUnCategorizedOnStat = useBoundedPomoInfoStore(
+    (state) => state.isUnCategorizedOnStat
+  );
+  const colorForUnCategorized = useBoundedPomoInfoStore(
+    (state) => state.colorForUnCategorized
+  );
+  const updateCategories = useBoundedPomoInfoStore(
+    (state) => state.setCategories
+  );
+  const updateIsUncategorizedOnStat = useBoundedPomoInfoStore(
+    (state) => state.setIsUnCategorizedOnStat
+  );
   const [sum, setSum] = useState({
     today: 0,
     lastDay: 0,
@@ -68,55 +83,25 @@ export default function Statistics() {
     callbacks: [calculateWeeklyTrend, calculateOverview, calculateThisWeekData], // ThisWeekData is calculated in the Statistics component, which is the parent of the Graphs component. This ensures that the Graphs component displays this week's data when it initially mounts.
   });
 
-  const userInfoContext = useUserContext()!;
-  const setPomoInfo = userInfoContext.setPomoInfo;
-  const categoriesFromServer = useMemo(() => {
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.categories !== undefined
-    ) {
-      return userInfoContext.pomoInfo.categories;
-    } else {
-      return [];
-    }
-  }, [userInfoContext.pomoInfo?.categories]);
-  const isUnCategorizedOnStat = useMemo(() => {
-    return userInfoContext.pomoInfo?.isUnCategorizedOnStat ?? false;
-  }, [userInfoContext.pomoInfo?.isUnCategorizedOnStat]);
-
-  const colorForUnCategorized = useMemo(() => {
-    if (userInfoContext.pomoInfo !== null) {
-      return userInfoContext.pomoInfo.colorForUnCategorized;
-    } else {
-      return "#f04005";
-    }
-  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
-
   const [listOfCategoryDetails, isThisSessionWithoutCategory] = useMemo(() => {
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.categories !== undefined
-    ) {
-      const listOfCategoryDetails = userInfoContext.pomoInfo.categories.reduce<
-        CategoryDetail[]
-      >((previousValue, currentValue) => {
+    const listOfCategoryDetails = categoriesFromServer.reduce<CategoryDetail[]>(
+      (previousValue, currentValue) => {
         const { name, color, isOnStat, isCurrent, _uuid } = currentValue;
         previousValue.push({ name, color, isOnStat, _uuid: _uuid!, isCurrent });
         return previousValue;
-      }, []);
+      },
+      []
+    );
 
-      //
-      const isThisSessionWithoutCategory =
-        listOfCategoryDetails.find((info) => info.isCurrent === true) ===
-        undefined
-          ? true
-          : false;
+    //
+    const isThisSessionWithoutCategory =
+      listOfCategoryDetails.find((info) => info.isCurrent === true) ===
+      undefined
+        ? true
+        : false;
 
-      return [listOfCategoryDetails, isThisSessionWithoutCategory];
-    } else {
-      return [[], false];
-    }
-  }, [userInfoContext.pomoInfo?.categories]);
+    return [listOfCategoryDetails, isThisSessionWithoutCategory];
+  }, [categoriesFromServer]);
 
   //#region functions to modify data from server
   /**
@@ -567,23 +552,21 @@ export default function Statistics() {
   }
 
   function changeIsOnStat(ev: React.MouseEvent<HTMLDivElement>) {
-    const name = ev.currentTarget.getAttribute("data-name");
-    if (name) {
+    const nameClicked = ev.currentTarget.getAttribute("data-name");
+    if (nameClicked) {
       let isOnStat: boolean = true;
       const categoriesUpdated = categoriesFromServer.map((category) => {
-        if (category.name === name) {
-          isOnStat = !category.isOnStat;
-          category.isOnStat = isOnStat;
+        let categoryCloned = { ...category };
+        if (categoryCloned.name === nameClicked) {
+          isOnStat = !categoryCloned.isOnStat;
+          categoryCloned.isOnStat = isOnStat;
         }
-        return category;
+        return categoryCloned;
       });
 
-      setPomoInfo((prev) => {
-        if (!prev) return prev;
-        return { ...prev, categories: categoriesUpdated };
-      });
+      updateCategories(categoriesUpdated);
       axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name,
+        name: nameClicked,
         data: { isOnStat },
       });
     }
@@ -591,10 +574,7 @@ export default function Statistics() {
 
   function changeIsUnCategorizedOnStat(ev: React.MouseEvent<HTMLDivElement>) {
     const newVal = !isUnCategorizedOnStat;
-    setPomoInfo((prev) => {
-      if (!prev) return prev;
-      return { ...prev, isUnCategorizedOnStat: newVal };
-    });
+    updateIsUncategorizedOnStat(newVal);
     axiosInstance.patch(RESOURCE.USERS + SUB_SET.IS_UNCATEGORIZED_ON_STAT, {
       isUnCategorizedOnStat: newVal,
     });
@@ -643,9 +623,6 @@ export default function Statistics() {
           };
         }[]
       ) => {
-        const nameOfCurrentCategory = categoriesFromServer.find(
-          (category) => category.isCurrent
-        )?.name;
         setStatData((prev) => {
           if (!prev) {
             return prev;

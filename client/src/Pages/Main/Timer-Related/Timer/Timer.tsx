@@ -4,11 +4,9 @@ import {
   useReducer,
   Dispatch,
   SetStateAction,
-  useMemo,
 } from "react";
 import { reducerTimer as reducer, ACTION, TimerAction } from "../reducers";
 import {
-  AutoStartSettingType,
   TimerStateType,
   TimersStatesType,
 } from "../../../../types/clientStatesType";
@@ -24,10 +22,10 @@ import {
 } from "../../../..";
 import PauseTimer from "../PauseTimer";
 import { useAuthContext } from "../../../../Context/AuthContext";
-import { useUserContext } from "../../../../Context/UserContext";
 import Time from "../Time/Time";
 import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
 import { Tooltip } from "react-tooltip";
+import { useBoundedPomoInfoStore } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
 
 type TimerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -89,13 +87,8 @@ export function Timer({
   const [remainingDuration, setRemainingDuration] = useState(
     initializeRemainingDuration
   );
-  const userInfoContext = useUserContext()!;
-  const autoStartSetting = useMemo(
-    () =>
-      userInfoContext.pomoInfo !== null
-        ? userInfoContext.pomoInfo.autoStartSetting
-        : ({} as AutoStartSettingType),
-    [userInfoContext.pomoInfo]
+  const autoStartSetting = useBoundedPomoInfoStore(
+    (state) => state.autoStartSetting
   );
   //#endregion
 

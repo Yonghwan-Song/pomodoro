@@ -1,8 +1,8 @@
 //#region Timer-Related
 export type RequiredStatesToRunTimerType = {
   pomoSetting: PomoSettingType;
-  timersStates: TimersStatesType;
   autoStartSetting: AutoStartSettingType;
+  timersStates: TimersStatesType;
   categories: Category[];
   isUnCategorizedOnStat: boolean;
   colorForUnCategorized: string;
@@ -58,17 +58,15 @@ export interface Category {
 export type NewCategory = Omit<Category, "_id">;
 
 /**
- * @prop progress - a number that represents how much progress has been made in the current session at the moment this category starts.
+ * @prop progress - a number that represents how much progress has been made in the current session until this category starts.
  *           In other words, how much progress has been made by a previous category.
  *
  * @prop _uuid? - uncategorized -> no _uuid
  *
  */
-export type CategoryChangeInfo = {
+export type CategoryChangeInfo = Pick<Category, "color" | "_uuid"> & {
   categoryName: string;
   categoryChangeTimestamp: number;
-  color: string;
-  _uuid?: string; // uncategorized -> no _uuid
   progress: number;
 };
 

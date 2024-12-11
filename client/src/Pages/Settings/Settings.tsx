@@ -1,13 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
-import { useUserContext } from "../../Context/UserContext";
-import {
-  AutoStartSettingType,
-  Category,
-  PomoSettingType,
-  RequiredStatesToRunTimerType,
-} from "../../types/clientStatesType";
+import { PomoSettingType } from "../../types/clientStatesType";
 import { Button } from "../../ReusableComponents/Buttons/Button";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
@@ -44,68 +38,51 @@ import {
 import ToggleSwitch from "../../ReusableComponents/ToggleSwitch/ToggleSwitch";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import Categories from "./Categories/Categories";
+import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 
 function Settings() {
   const { user } = useAuthContext()!;
-  const userInfoContext = useUserContext()!;
-  const setPomoInfo = userInfoContext.setPomoInfo;
-
-  // to prevent infinite loop after clearing history from a browser including cache.
-  const pomoSetting = useMemo(
-    () =>
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.pomoSetting !== undefined //TODO: Category에서 error났던거 때문에 이렇게 하긴 했는데 괜찮은건지 모르겠네..
-        ? userInfoContext.pomoInfo.pomoSetting
-        : ({} as PomoSettingType),
-    [userInfoContext.pomoInfo]
+  //
+  const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
+  const autoStartSetting = useBoundedPomoInfoStore(
+    (state) => state.autoStartSetting
+  );
+  const setPomoSetting = useBoundedPomoInfoStore(
+    (state) => state.setPomoSetting
+  );
+  const setAutoStartSetting = useBoundedPomoInfoStore(
+    (state) => state.setAutoStartSetting
+  );
+  //
+  const categories = useBoundedPomoInfoStore((state) => state.categories);
+  const colorForUnCategorized = useBoundedPomoInfoStore(
+    (state) => state.colorForUnCategorized
+  );
+  // To reset the current cycle.
+  const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
+    (state) => state.setCategoryChangeInfoArray
   );
 
-  const autoStartSetting = useMemo(
-    () =>
-      userInfoContext.pomoInfo !== null
-        ? userInfoContext.pomoInfo.autoStartSetting
-        : ({} as AutoStartSettingType),
-    [userInfoContext.pomoInfo]
-  );
+  const pomoSettingMemoized = useMemo(() => {
+    return pomoSetting;
+  }, [pomoSetting]);
+  const autoStartSettingMemoized = useMemo(() => {
+    return autoStartSetting;
+  }, [autoStartSetting]);
+  const currentCategory = useMemo(() => {
+    // if (user !== null) return categories.find((c) => c.isCurrent) ?? null;
+    // else return null;
 
-  const colorForUnCategorized = useMemo(() => {
-    if (userInfoContext.pomoInfo !== null) {
-      return userInfoContext.pomoInfo.colorForUnCategorized;
-    } else {
-      return "#f04005";
-    }
-  }, [userInfoContext.pomoInfo?.colorForUnCategorized]);
-
-  const currentCategory: Category | null = useMemo(() => {
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.categories !== undefined
-    ) {
-      return (
-        userInfoContext.pomoInfo.categories.find((c) => c.isCurrent) ?? null
-      );
-    } else {
-      return null;
-    }
-  }, [userInfoContext.pomoInfo?.categories]);
-
-  const [pomoSettingInputs, setPomoSettingInputs] = useState(() =>
-    userInfoContext.pomoInfo !== null
-      ? userInfoContext.pomoInfo.pomoSetting
-      : ({} as PomoSettingType)
-  );
+    //IMO: we don't need to strictly divide cases like above because returning null below includes
+    // both non-sign-in users and a sign-in user who hasn't created categories.
+    return categories.find((c) => c.isCurrent) ?? null;
+  }, [categories]);
+  const [pomoSettingInputs, setPomoSettingInputs] = useState(pomoSetting);
   const [doesPomoStartAutomatically, setDoesPomoStartAutomatically] = useState(
-    () =>
-      userInfoContext.pomoInfo !== null
-        ? userInfoContext.pomoInfo.autoStartSetting.doesPomoStartAutomatically
-        : false
+    autoStartSetting.doesPomoStartAutomatically
   );
   const [doesBreakStartAutomatically, setDoesBreakStartAutomatically] =
-    useState(() =>
-      userInfoContext.pomoInfo !== null
-        ? userInfoContext.pomoInfo.autoStartSetting.doesBreakStartAutomatically
-        : false
-    );
+    useState(autoStartSetting.doesBreakStartAutomatically);
 
   //#region To Observe LifeCycle
   // const mountCount = useRef(0);
@@ -210,27 +187,17 @@ function Settings() {
           })
         );
 
-      setPomoInfo((prev) => {
-        return {
-          ...(prev as RequiredStatesToRunTimerType),
-          pomoSetting: pomoSettingInputs,
-          autoStartSetting: {
-            doesPomoStartAutomatically,
-            doesBreakStartAutomatically,
-          },
-          categoryChangeInfoArray: infoArr,
-        };
+      setPomoSetting(pomoSettingInputs);
+      setAutoStartSetting({
+        doesPomoStartAutomatically,
+        doesBreakStartAutomatically,
       });
+      updateCategoryChangeInfoArray(infoArr);
     } else {
-      setPomoInfo((prev) => {
-        return {
-          ...(prev as RequiredStatesToRunTimerType),
-          pomoSetting: pomoSettingInputs,
-          autoStartSetting: {
-            doesPomoStartAutomatically,
-            doesBreakStartAutomatically,
-          },
-        };
+      setPomoSetting(pomoSettingInputs);
+      setAutoStartSetting({
+        doesPomoStartAutomatically,
+        doesBreakStartAutomatically,
       });
     }
   }
@@ -245,25 +212,27 @@ function Settings() {
     // console.log(pomoSetting);
 
     if (Object.entries(pomoSettingInputs).length === 0) {
-      setPomoSettingInputs(pomoSetting);
+      setPomoSettingInputs(pomoSettingMemoized);
     }
     // console.log("POMO SETTING INPUTS", pomoSettingInputs);
-  }, [user, pomoSetting, pomoSettingInputs]);
+  }, [user, pomoSettingMemoized, pomoSettingInputs]);
 
   // To set pomoSettingInputs to default when a user logs out.
   useEffect(() => {
-    setPomoSettingInputs(pomoSetting);
-  }, [pomoSetting]);
+    setPomoSettingInputs(pomoSettingMemoized);
+  }, [pomoSettingMemoized]);
 
   //TODO:
   // What if only one of the autostart settings has changed? e.g. pomo start?
   // If it does, setDoesBreakStartAutomatically should've not called.
   useEffect(() => {
-    setDoesPomoStartAutomatically(autoStartSetting.doesPomoStartAutomatically);
-    setDoesBreakStartAutomatically(
-      autoStartSetting.doesBreakStartAutomatically
+    setDoesPomoStartAutomatically(
+      autoStartSettingMemoized.doesPomoStartAutomatically
     );
-  }, [autoStartSetting]);
+    setDoesBreakStartAutomatically(
+      autoStartSettingMemoized.doesBreakStartAutomatically
+    );
+  }, [autoStartSettingMemoized]);
 
   useEffect(() => {
     countDown(localStorage.getItem("idOfSetInterval"));
@@ -279,150 +248,143 @@ function Settings() {
         justifyContent: "center",
       }}
     >
-      {userInfoContext.pomoInfo === null ? (
-        <h2>loading data...</h2>
-      ) : (
-        <Grid maxWidth="634px" columnGap="25px" rowGap="25px">
-          <GridItem>
-            <BoxShadowWrapper>
-              <form onSubmit={handleSubmit}>
-                <Grid
-                  column={2}
-                  row={2}
-                  // autoRow={45}
-                  columnGap={"38px"}
-                  rowGap={"38px"}
-                  justifyItems="center"
-                  alignItems="center"
-                >
-                  <label className={styles.arrangeLabel}>
-                    Pomo Duration
-                    <div className={styles.alignBoxes}>
-                      <input
-                        name="pomoDuration"
-                        type="number"
-                        className={styles.arrangeInput}
-                        value={pomoSettingInputs.pomoDuration || 0}
-                        onChange={handlePomoSettingChange}
-                      />
-                    </div>
-                  </label>
-                  <label className={styles.arrangeLabel}>
-                    Short Break Duration
-                    <div className={styles.alignBoxes}>
-                      <input
-                        name="shortBreakDuration"
-                        type="number"
-                        className={styles.arrangeInput}
-                        value={pomoSettingInputs.shortBreakDuration || 0}
-                        onChange={handlePomoSettingChange}
-                      />
-                    </div>
-                  </label>
-                  <label className={styles.arrangeLabel}>
-                    Long Break Duration
-                    <div className={styles.alignBoxes}>
-                      <input
-                        name="longBreakDuration"
-                        type="number"
-                        className={styles.arrangeInput}
-                        value={pomoSettingInputs.longBreakDuration || 0}
-                        onChange={handlePomoSettingChange}
-                      />
-                    </div>
-                  </label>
-                  <label className={styles.arrangeLabel}>
-                    Number of Pomos
-                    <div className={styles.alignBoxes}>
-                      <input
-                        name="numOfPomo"
-                        type="number"
-                        className={styles.arrangeInput}
-                        value={pomoSettingInputs.numOfPomo || 0}
-                        onChange={handlePomoSettingChange}
-                      />
-                    </div>
-                  </label>
-                  <GridItem>
-                    <ToggleSwitch
-                      labelName="Auto Start Pomo"
-                      name="pomo"
-                      isSwitchOn={doesPomoStartAutomatically}
-                      isHorizontal={true}
-                      onChange={(e) => {
-                        setDoesPomoStartAutomatically(e.target.checked);
-                      }}
-                      unitSize={25}
-                      xAxisEdgeWidth={2}
-                      borderWidth={2}
-                      backgroundColorForOn="#75BBAF"
-                      backgroundColorForOff="#bbc5c7"
-                      backgroundColorForSwitch="#f0f0f0"
+      <Grid maxWidth="634px" columnGap="25px" rowGap="25px">
+        <GridItem>
+          <BoxShadowWrapper>
+            <form onSubmit={handleSubmit}>
+              <Grid
+                column={2}
+                row={2}
+                // autoRow={45}
+                columnGap={"38px"}
+                rowGap={"38px"}
+                justifyItems="center"
+                alignItems="center"
+              >
+                <label className={styles.arrangeLabel}>
+                  Pomo Duration
+                  <div className={styles.alignBoxes}>
+                    <input
+                      name="pomoDuration"
+                      type="number"
+                      className={styles.arrangeInput}
+                      value={pomoSettingInputs.pomoDuration || 0}
+                      onChange={handlePomoSettingChange}
                     />
-                  </GridItem>
-                  <GridItem>
-                    <ToggleSwitch
-                      labelName="Auto Start Break"
-                      name="break"
-                      isSwitchOn={doesBreakStartAutomatically}
-                      isHorizontal={true}
-                      onChange={(e) => {
-                        setDoesBreakStartAutomatically(e.target.checked);
-                      }}
-                      unitSize={25}
-                      xAxisEdgeWidth={2}
-                      borderWidth={2}
-                      backgroundColorForOn="#75BBAF"
-                      backgroundColorForOff="#bbc5c7"
-                      backgroundColorForSwitch="#f0f0f0"
+                  </div>
+                </label>
+                <label className={styles.arrangeLabel}>
+                  Short Break Duration
+                  <div className={styles.alignBoxes}>
+                    <input
+                      name="shortBreakDuration"
+                      type="number"
+                      className={styles.arrangeInput}
+                      value={pomoSettingInputs.shortBreakDuration || 0}
+                      onChange={handlePomoSettingChange}
                     />
-                  </GridItem>
-                  <GridItem columnStart={1} columnEnd={3}>
-                    {/* <GridItem columnStart={1} columnEnd={1}> */}
-                    <Button type={"submit"} color={"primary"}>
-                      SAVE and RESET
-                    </Button>
-                  </GridItem>
-                </Grid>
-              </form>
-            </BoxShadowWrapper>
-          </GridItem>
-          {user !== null && (
-            <>
-              <GridItem>
-                <FlexBox justifyContent="space-between">
-                  <Button
-                    color={"primary"}
-                    handleClick={() => createDemoData(user!)}
-                  >
-                    Create Demo data
-                  </Button>
-                  <Button handleClick={() => removeDemoData(user!)}>
-                    Remove Demo data
-                  </Button>
-                  <Button
-                    handleClick={async () => {
-                      const provider = new GoogleAuthProvider();
-                      let result = await reauthenticateWithPopup(
-                        user!,
-                        provider
-                      );
-                      await emptyStateStore();
-                      localStorage.removeItem("user");
-                      deleteAccount(result.user);
+                  </div>
+                </label>
+                <label className={styles.arrangeLabel}>
+                  Long Break Duration
+                  <div className={styles.alignBoxes}>
+                    <input
+                      name="longBreakDuration"
+                      type="number"
+                      className={styles.arrangeInput}
+                      value={pomoSettingInputs.longBreakDuration || 0}
+                      onChange={handlePomoSettingChange}
+                    />
+                  </div>
+                </label>
+                <label className={styles.arrangeLabel}>
+                  Number of Pomos
+                  <div className={styles.alignBoxes}>
+                    <input
+                      name="numOfPomo"
+                      type="number"
+                      className={styles.arrangeInput}
+                      value={pomoSettingInputs.numOfPomo || 0}
+                      onChange={handlePomoSettingChange}
+                    />
+                  </div>
+                </label>
+                <GridItem>
+                  <ToggleSwitch
+                    labelName="Auto Start Pomo"
+                    name="pomo"
+                    isSwitchOn={doesPomoStartAutomatically}
+                    isHorizontal={true}
+                    onChange={(e) => {
+                      setDoesPomoStartAutomatically(e.target.checked);
                     }}
-                  >
-                    Delete account
+                    unitSize={25}
+                    xAxisEdgeWidth={2}
+                    borderWidth={2}
+                    backgroundColorForOn="#75BBAF"
+                    backgroundColorForOff="#bbc5c7"
+                    backgroundColorForSwitch="#f0f0f0"
+                  />
+                </GridItem>
+                <GridItem>
+                  <ToggleSwitch
+                    labelName="Auto Start Break"
+                    name="break"
+                    isSwitchOn={doesBreakStartAutomatically}
+                    isHorizontal={true}
+                    onChange={(e) => {
+                      setDoesBreakStartAutomatically(e.target.checked);
+                    }}
+                    unitSize={25}
+                    xAxisEdgeWidth={2}
+                    borderWidth={2}
+                    backgroundColorForOn="#75BBAF"
+                    backgroundColorForOff="#bbc5c7"
+                    backgroundColorForSwitch="#f0f0f0"
+                  />
+                </GridItem>
+                <GridItem columnStart={1} columnEnd={3}>
+                  {/* <GridItem columnStart={1} columnEnd={1}> */}
+                  <Button type={"submit"} color={"primary"}>
+                    SAVE and RESET
                   </Button>
-                </FlexBox>
-              </GridItem>
-              <GridItem>
-                <Categories />
-              </GridItem>
-            </>
-          )}
-        </Grid>
-      )}
+                </GridItem>
+              </Grid>
+            </form>
+          </BoxShadowWrapper>
+        </GridItem>
+        {user !== null && (
+          <>
+            <GridItem>
+              <FlexBox justifyContent="space-between">
+                <Button
+                  color={"primary"}
+                  handleClick={() => createDemoData(user!)}
+                >
+                  Create Demo data
+                </Button>
+                <Button handleClick={() => removeDemoData(user!)}>
+                  Remove Demo data
+                </Button>
+                <Button
+                  handleClick={async () => {
+                    const provider = new GoogleAuthProvider();
+                    let result = await reauthenticateWithPopup(user!, provider);
+                    await emptyStateStore();
+                    localStorage.removeItem("user");
+                    deleteAccount(result.user);
+                  }}
+                >
+                  Delete account
+                </Button>
+              </FlexBox>
+            </GridItem>
+            <GridItem>
+              <Categories />
+            </GridItem>
+          </>
+        )}
+      </Grid>
     </main>
   );
 }

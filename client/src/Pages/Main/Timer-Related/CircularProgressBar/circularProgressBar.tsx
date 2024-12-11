@@ -7,9 +7,9 @@ import {
   updateTimersStates,
 } from "../../../..";
 import { useAuthContext } from "../../../../Context/AuthContext";
-import { useUserContext } from "../../../../Context/UserContext";
 import { CategoryChangeInfoForCircularProgressBar } from "../../../../types/clientStatesType";
 import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
+import { useBoundedPomoInfoStore } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
 
 type CircularProgressBarProps = {
   progress: number;
@@ -47,8 +47,13 @@ const CircularProgressBar = ({
   setRemainingDuration,
   setDurationInMinutes,
 }: CircularProgressBarProps) => {
+  const categoryChangeInfoArray = useBoundedPomoInfoStore(
+    (state) => state.categoryChangeInfoArray
+  );
+  const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
+    (state) => state.setCategoryChangeInfoArray
+  );
   const { user } = useAuthContext()!;
-  const userInfoContext = useUserContext()!;
 
   const [addCount, setAddCount] = useState(0);
   const [subtractCount, setSubtractCount] = useState(0);
@@ -62,61 +67,49 @@ const CircularProgressBar = ({
   // 지금 돌리고 있는 카테고리에서 offset은 상수이고 dash array값만 계속 변하게 되니까.
   // 그것 빼고는 memoization을 하든 해서 계산하지 않게 하기..
 
+  /**
+   * infoArrayOfPrevCategories: to render the previous categories UI on the circular progress bar.
+   *
+   * currentCategoryInfo: to render the current category UI on the circular progress bar.
+   */
   const [infoArrayOfPrevCategories, currentCategoryInfo]: [
     CategoryChangeInfoForCircularProgressBar[],
     { categoryName: string; color: string; progress: number }
   ] = useMemo(() => {
-    if (
-      userInfoContext.pomoInfo !== null &&
-      userInfoContext.pomoInfo.categoryChangeInfoArray !== undefined
-    ) {
-      if (userInfoContext.pomoInfo.categoryChangeInfoArray.length > 1) {
-        // console.log(
-        //   "categoryChangeInfoArray inside the first if conditional statement",
-        //   userInfoContext.pomoInfo.categoryChangeInfoArray
-        // );
-        const lastIndex =
-          userInfoContext.pomoInfo.categoryChangeInfoArray.length - 1;
-        const changeInfoArrwithSegmentProgress =
-          userInfoContext.pomoInfo.categoryChangeInfoArray.map(
-            (info, index, array) => {
-              let segmentProgress = 0; // A dummy value
-              if (index !== array.length - 1) {
-                segmentProgress = array[index + 1].progress - info.progress;
-              }
-
-              return { ...info, segmentProgress };
+    if (user !== null) {
+      if (categoryChangeInfoArray.length > 1) {
+        const lastIndex = categoryChangeInfoArray.length - 1;
+        const changeInfoArrwithSegmentProgress = categoryChangeInfoArray.map(
+          (info, index, array) => {
+            let segmentProgress = 0; // A dummy value
+            if (index !== array.length - 1) {
+              segmentProgress = array[index + 1].progress - info.progress;
             }
-          );
+
+            return { ...info, segmentProgress };
+          }
+        );
         changeInfoArrwithSegmentProgress.pop();
 
         return [
           changeInfoArrwithSegmentProgress,
           {
-            categoryName:
-              userInfoContext.pomoInfo.categoryChangeInfoArray[lastIndex]
-                .categoryName,
-            color:
-              userInfoContext.pomoInfo.categoryChangeInfoArray[lastIndex].color,
-            progress:
-              userInfoContext.pomoInfo.categoryChangeInfoArray[lastIndex]
-                .progress,
+            categoryName: categoryChangeInfoArray[lastIndex].categoryName,
+            color: categoryChangeInfoArray[lastIndex].color,
+            progress: categoryChangeInfoArray[lastIndex].progress,
           },
         ];
-      } else if (
-        userInfoContext.pomoInfo.categoryChangeInfoArray.length === 1
-      ) {
+      } else if (categoryChangeInfoArray.length === 1) {
         return [
           [],
           {
-            categoryName:
-              userInfoContext.pomoInfo.categoryChangeInfoArray[0].categoryName,
-            color: userInfoContext.pomoInfo.categoryChangeInfoArray[0].color,
-            progress:
-              userInfoContext.pomoInfo.categoryChangeInfoArray[0].progress,
+            categoryName: categoryChangeInfoArray[0].categoryName,
+            color: categoryChangeInfoArray[0].color,
+            progress: categoryChangeInfoArray[0].progress,
           },
         ];
       } else {
+        // for new users who do not have any categories yet.
         return [
           [],
           { categoryName: "uncategorized", color: "#f04005", progress: 0 },
@@ -128,7 +121,7 @@ const CircularProgressBar = ({
         { categoryName: "uncategorized", color: "#f04005", progress: 0 },
       ];
     }
-  }, [userInfoContext.pomoInfo?.categoryChangeInfoArray]);
+  }, [categoryChangeInfoArray, user]);
 
   async function addFiveMinutes(addCount: number) {
     const additionalMinutes = 5 * addCount;
@@ -149,26 +142,21 @@ const CircularProgressBar = ({
     //?     Probably, I can change it in an easier way if I use a state management library like zustand later...??..
     // What is expected: change in userInfoContext.pomoInfo?.categoryChangeInfoArray -> invokes the first useMemo() defined in this file.
     // -> change progress in the return values.
-    const infoArray_upgraded =
-      userInfoContext.pomoInfo?.categoryChangeInfoArray.map((info) => {
-        const newProgress =
-          // For example, when subtracting 5 minutes ->
-          // r0: original remainingDuration d0: original durationInMinutes. And we want to know x.
-          // (1 - r0/d0) * x = 1 - (r0 - 5)/(d0 - 5)
-          // x = d0/(d0 - 5)
-          info.progress *
-          (durationInSeconds / (durationInSeconds + additionalMinutes * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
+    const infoArray_upgraded = categoryChangeInfoArray.map((info) => {
+      const newProgress =
+        // For example, when subtracting 5 minutes ->
+        // r0: original remainingDuration d0: original durationInMinutes. And we want to know x.
+        // (1 - r0/d0) * x = 1 - (r0 - 5)/(d0 - 5)
+        // x = d0/(d0 - 5)
+        info.progress *
+        (durationInSeconds / (durationInSeconds + additionalMinutes * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
 
-        return { ...info, progress: newProgress };
-      });
+      return { ...info, progress: newProgress };
+    });
 
     if (infoArray_upgraded) {
+      updateCategoryChangeInfoArray(infoArray_upgraded);
       // console.log("Entered upgradeInfoArray if block.");
-      userInfoContext.setPomoInfo((prev) => {
-        if (!prev) return prev;
-
-        return { ...prev, categoryChangeInfoArray: infoArray_upgraded };
-      });
       persistCategoryChangeInfoArrayToIDB(infoArray_upgraded);
       axiosInstance.patch(
         C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
@@ -193,22 +181,16 @@ const CircularProgressBar = ({
       setDurationInMinutes((prev) => prev - subtractedMinutes);
       setRemainingDuration((prev) => prev - subtractedMinutes * 60);
 
-      const upgradedInfoArray =
-        userInfoContext.pomoInfo?.categoryChangeInfoArray.map((info) => {
-          const newProgress =
-            info.progress *
-            (durationInSeconds / (durationInSeconds - subtractedMinutes * 60));
+      const upgradedInfoArray = categoryChangeInfoArray.map((info) => {
+        const newProgress =
+          info.progress *
+          (durationInSeconds / (durationInSeconds - subtractedMinutes * 60));
 
-          return { ...info, progress: newProgress };
-        });
+        return { ...info, progress: newProgress };
+      });
 
       if (upgradedInfoArray) {
-        // console.log("Entered upgradeInfoArray if block.");
-        userInfoContext.setPomoInfo((prev) => {
-          if (!prev) return prev;
-
-          return { ...prev, categoryChangeInfoArray: upgradedInfoArray };
-        });
+        updateCategoryChangeInfoArray(upgradedInfoArray);
         persistCategoryChangeInfoArrayToIDB(upgradedInfoArray);
         axiosInstance.patch(
           C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
@@ -245,17 +227,6 @@ const CircularProgressBar = ({
       };
     }
   }, [subtractCount]);
-
-  // useEffect(() => {
-  //   console.log("user------------------------------------->", user);
-  //   console.log("infoArrayOfPrevCategories", infoArrayOfPrevCategories);
-  //   console.log("currentCategoryInfo", currentCategoryInfo);
-  //   console.log(
-  //     "categoryChangeInfoArray",
-  //     userInfoContext.pomoInfo?.categoryChangeInfoArray
-  //   );
-  //   console.log("<----------------------------------------");
-  // }, [infoArrayOfPrevCategories, currentCategoryInfo, user]);
 
   return (
     <svg
