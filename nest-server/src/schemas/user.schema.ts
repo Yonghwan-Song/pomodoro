@@ -95,7 +95,14 @@ export class User {
           progress: { type: Number, default: 0 },
         },
       ],
-      default: [],
+      default: [
+        {
+          categoryName: 'uncategorized',
+          categoryChangeTimestamp: 0,
+          color: '#f04005',
+          progress: 0,
+        },
+      ],
     }),
   )
   categoryChangeInfoArray: {
