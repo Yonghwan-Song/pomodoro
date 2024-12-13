@@ -42,6 +42,8 @@ export function WeeklyTrendStacked({
   function selectPreviousTenWeekData() {
     if (start === 0) {
       alert("No more data");
+    } else if (localWeeklyTrend.length <= count) {
+      alert("No more data");
     } else {
       let newStart = start - INITIAL_COUNT;
       if (newStart < 0) newStart = 0;
@@ -51,6 +53,8 @@ export function WeeklyTrendStacked({
   }
   function selectNextTenWeekData() {
     if (start === localWeeklyTrend.length - count) {
+      alert("No more data");
+    } else if (localWeeklyTrend.length <= count) {
       alert("No more data");
     } else {
       let newStart = start + INITIAL_COUNT;

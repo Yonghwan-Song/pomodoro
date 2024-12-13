@@ -50,9 +50,11 @@ export default function Statistics() {
     lastMonth: 0,
     allTime: 0,
   });
-  const [weeklyTrend, setWeeklyTrend] = useState<WeekStat[]>([]);
-  const [dailyStatOfWeek, setDailyStatOfWeek] =
-    useState<DayStatForGraph[]>(init);
+  const [weeklyStatUpToTenWeeks, setWeeklyStatUpToTenWeeks] = useState<
+    WeekStat[]
+  >([]);
+  const [dailyStatOfThisWeek, setDailyStatOfThisWeek] =
+    useState<DayStatForGraph[]>(createStatTemplate);
   // This is an example of a weekStat after initialization.
   //  [
   //   { date: "7/1/2024", dayOfWeek: "Mon", timestamp: 1719759600000 },
@@ -302,7 +304,7 @@ export default function Statistics() {
    *           An average and weekRange are calcuated and set using the filtered array.
    */
   function calculateThisWeekData(pomodoroDailyStat: DayStat[]) {
-    let weekCloned = [...dailyStatOfWeek];
+    let weekCloned = [...dailyStatOfThisWeek];
     let correspondingWeekData = extractWeekData(pomodoroDailyStat, [
       weekStart,
       weekEnd,
@@ -321,12 +323,12 @@ export default function Statistics() {
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    setDailyStatOfWeek(weekCloned);
+    setDailyStatOfThisWeek(weekCloned);
   }
 
   function calculateWeeklyTrend(pomodoroDailyStat: DayStat[]) {
     const weeklyTrend: WeekStat[] = pomodoroDailyStat.reduce<WeekStat[]>(
-      (acc: WeekStat[], curRec) => {
+      (acc: WeekStat[], curRec: DayStat) => {
         // 1. get the first base category subtotal combined.
         if (acc.length === 0) {
           const dummy: CategorySubtotal = {};
@@ -381,9 +383,7 @@ export default function Statistics() {
       []
     );
 
-    console.log("weeklyTrend at Statistics.tsx", weeklyTrend);
-
-    setWeeklyTrend(weeklyTrend);
+    setWeeklyStatUpToTenWeeks(weeklyTrend);
   }
 
   /**
@@ -400,9 +400,9 @@ export default function Statistics() {
       ...
     ]
  */
-  function init() {
+  function createStatTemplate() {
     const weekNumber = getISOWeek(Date.now());
-    let weekStat: DayStatForGraph[] = [
+    let statArr: DayStatForGraph[] = [
       {
         date: "",
         dayOfWeek: "Mon",
@@ -448,22 +448,23 @@ export default function Statistics() {
     ];
 
     const start = startOfWeek(new Date(), { weekStartsOn: 1 });
-    weekStat[0].date = `${
+    statArr[0].date = `${
       start.getMonth() + 1
     }/${start.getDate()}/${start.getFullYear()}`;
 
     const startOfWeekTimestamp = start.getTime();
-    weekStat[0].timestamp = startOfWeekTimestamp;
+    statArr[0].timestamp = startOfWeekTimestamp;
 
     const _24h = 24 * 60 * 60 * 1000;
     for (let i = 1; i < 7; i++) {
       let nextDate = new Date(startOfWeekTimestamp + i * _24h);
-      weekStat[i].date = `${
+      statArr[i].date = `${
         nextDate.getMonth() + 1
       }/${nextDate.getDate()}/${nextDate.getFullYear()}`;
-      weekStat[i].timestamp = startOfWeekTimestamp + i * _24h;
+      statArr[i].timestamp = startOfWeekTimestamp + i * _24h;
     }
-    return weekStat;
+
+    return statArr;
   }
 
   /**
@@ -594,7 +595,22 @@ export default function Statistics() {
   // });
 
   useEffect(() => {
-    statData !== null && calculateWeeklyTrend(statData);
+    if (statData !== null) {
+      if (statData.length !== 0) calculateWeeklyTrend(statData);
+      else {
+        //initialize.... weeklyStatOfTenWeeks.
+        const now = Date.now();
+        const initialWeekStat: WeekStat = {
+          timestampOfFirstDate: now, // Placeholder for initialization.
+          weekNumber: getISOWeek(now),
+          year: getISOWeekYear(now),
+          total: 0,
+          subtotalByCategory: createBaseCategorySubtotal(),
+          withoutCategory: 0,
+        };
+        setWeeklyStatUpToTenWeeks([initialWeekStat]);
+      }
+    }
   }, [statData]);
 
   useEffect(() => {
@@ -746,7 +762,7 @@ export default function Statistics() {
               {weekRange && (
                 <StackedGraph
                   statData={statData}
-                  weekStatForThisWeek={dailyStatOfWeek}
+                  dailyStatOfThisWeek={dailyStatOfThisWeek}
                   listOfCategoryDetails={listOfCategoryDetails}
                   weekRangeForThisWeek={weekRange}
                   averageForThisWeek={average}
@@ -758,7 +774,7 @@ export default function Statistics() {
               {weekRange && (
                 <CategoryGraph
                   statData={statData}
-                  weekStatForThisWeek={dailyStatOfWeek}
+                  dailyStatOfThisWeek={dailyStatOfThisWeek}
                   listOfCategoryDetails={listOfCategoryDetails}
                   weekRangeForThisWeek={weekRange}
                   isUnCategorizedOnStat={isUnCategorizedOnStat}
@@ -846,7 +862,7 @@ export default function Statistics() {
             </GridItem>
             <GridItem>
               <WeeklyTrendStacked
-                weeklyTrend={weeklyTrend}
+                weeklyTrend={weeklyStatUpToTenWeeks}
                 listOfCategoryDetails={listOfCategoryDetails}
                 colorForUnCategorized={colorForUnCategorized}
               />

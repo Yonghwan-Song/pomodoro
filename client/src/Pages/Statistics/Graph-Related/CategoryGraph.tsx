@@ -25,7 +25,7 @@ import { startOfWeek, endOfWeek } from "date-fns";
 
 type GraphProps = {
   statData: DayStat[] | null;
-  weekStatForThisWeek: DayStatForGraph[];
+  dailyStatOfThisWeek: DayStatForGraph[];
   listOfCategoryDetails: CategoryDetail[];
   weekRangeForThisWeek: string;
   isUnCategorizedOnStat: boolean;
@@ -34,14 +34,14 @@ type GraphProps = {
 
 export function CategoryGraph({
   statData,
-  weekStatForThisWeek,
+  dailyStatOfThisWeek,
   listOfCategoryDetails,
   weekRangeForThisWeek,
   isUnCategorizedOnStat,
   colorForUnCategorized,
 }: GraphProps) {
   const [localWeekStat, setLocalWeekStat] = useState<DayStatForGraph[]>(
-    JSON.parse(JSON.stringify(weekStatForThisWeek))
+    JSON.parse(JSON.stringify(dailyStatOfThisWeek))
   );
 
   const [weekStart, setWeekStart] = useState(

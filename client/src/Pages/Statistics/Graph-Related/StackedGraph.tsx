@@ -27,7 +27,7 @@ import { endOfWeek, startOfWeek } from "date-fns";
 
 type GraphProps = {
   statData: StatDataForGraph_DailyPomoStat | null;
-  weekStatForThisWeek: DayStatForGraph[];
+  dailyStatOfThisWeek: DayStatForGraph[];
   weekRangeForThisWeek: string;
   listOfCategoryDetails: CategoryDetail[];
   averageForThisWeek: number;
@@ -36,14 +36,14 @@ type GraphProps = {
 
 export function StackedGraph({
   statData,
-  weekStatForThisWeek,
+  dailyStatOfThisWeek,
   listOfCategoryDetails,
   weekRangeForThisWeek,
   averageForThisWeek,
   colorForUnCategorized,
 }: GraphProps) {
   const [localWeekStat, setLocalWeekStat] = useState<DayStatForGraph[]>(
-    JSON.parse(JSON.stringify(weekStatForThisWeek))
+    JSON.parse(JSON.stringify(dailyStatOfThisWeek))
     // weekStatForThisWeek
   );
   const [weekStart, setWeekStart] = useState(
