@@ -161,9 +161,9 @@ export function AuthContextProvider({
       );
     }
 
-    console.log("user", user);
-    console.log("isUserNew", isUserNew);
-    console.log("isUserNewlyRegistered", isUserNewlyRegistered);
+    // console.log("user", user);
+    // console.log("isUserNew", isUserNew);
+    // console.log("isUserNewlyRegistered", isUserNewlyRegistered);
 
     // 1. user is updated first followed by isUserNew - true && false -> again with isUserNew later
     // 2. isUserNew is updated first followed by user - false && whatever -> again with user later
