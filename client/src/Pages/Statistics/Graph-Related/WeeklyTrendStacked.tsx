@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import { CategoryDetail, WeekStat } from "../statRelatedTypes";
-import { BoxShadowWrapper } from "../../../ReusableComponents/Wrapper";
+import {
+  CategoryDetail,
+  WeekStat,
+  WeekStatWithGoal,
+} from "../statRelatedTypes";
 import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   TooltipProps,
@@ -17,6 +21,11 @@ import {
 } from "../../../ReusableComponents/Icons/ChevronArrows";
 import { endOfISOWeek, startOfISOWeek } from "date-fns";
 import { getHHmm } from "./StackedGraph";
+import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+import {
+  getMessageForRemainingDuration,
+  roundTo_X_DecimalPoints,
+} from "../../../utils/number-related-utils";
 
 export function WeeklyTrendStacked({
   weeklyTrend,
@@ -27,13 +36,11 @@ export function WeeklyTrendStacked({
   listOfCategoryDetails: CategoryDetail[];
   colorForUnCategorized: string;
 }) {
-  console.log("weeklyTrend Prop", weeklyTrend);
-  const [localWeeklyTrend, setLocalWeeklyTrend] = useState<WeekStat[]>(
-    JSON.parse(JSON.stringify(weeklyTrend))
-  );
-
-  const INITIAL_COUNT = 10;
-
+  const INITIAL_COUNT = 10; // 나중에 이거 input으로 받을 수 있게 하면 좋을 듯.
+  const weeklyGoal = useBoundedPomoInfoStore((state) => state.goals.weeklyGoal);
+  const [localWeeklyTrend, setLocalWeeklyTrend] = useState<WeekStat[]>(() => {
+    return structuredClone(weeklyTrend);
+  });
   const [count, setCount] = useState(INITIAL_COUNT);
   const [start, setStart] = useState(() =>
     Math.max(localWeeklyTrend.length - INITIAL_COUNT, 0)
@@ -68,17 +75,40 @@ export function WeeklyTrendStacked({
     setLocalWeeklyTrend(weeklyTrend);
   }, [weeklyTrend]);
 
-  //#region Calculate tickCount
-  // const slicedLocalWeeklyTrend = localWeeklyTrend.slice(-10);
-  // const slicedLocalWeeklyTrend = localWeeklyTrend.slice(-20, -10);
+  //#region With Goals
   const slicedLocalWeeklyTrend = localWeeklyTrend.slice(start, start + count);
-  const maxDurationRoundedUp =
-    Math.floor(
-      Math.max(...slicedLocalWeeklyTrend.map((stat) => stat.total ?? 0)) / 60
-    ) + 1; // e.g) 20h 55m -> 21h
-  const maxValOfYAxis = maxDurationRoundedUp + (5 - (maxDurationRoundedUp % 5));
-  const tickCount = maxValOfYAxis / 5 + 1; // because of 0 at the bottom
+  const combinedWithGoals: WeekStatWithGoal[] = slicedLocalWeeklyTrend.map(
+    (weekStat, index) => {
+      let cloned = structuredClone(weekStat); // TODO: is this unnecessary since we are not going to modify this value?
+
+      return {
+        ...cloned,
+        goal: {
+          minimum: weeklyGoal.minimum * 60,
+          ideal: weeklyGoal.ideal * 60,
+        },
+      };
+    }
+  );
+  const maxValueOfData = Math.max(
+    ...combinedWithGoals.map((stat) => stat.total ?? 0),
+    weeklyGoal.ideal * 60
+  );
+  let mintuesRemoved = removeMintues(maxValueOfData);
+  const maxTickOfYAxis = roundUpToNearest_X_hour(mintuesRemoved, 300);
+  const desirableTickCount = maxTickOfYAxis / 300 + 1;
+  const ticks: number[] = [];
+  for (let i = 0; i < desirableTickCount; i++) {
+    ticks.push(i * 300);
+  }
   //#endregion
+
+  function removeMintues(hhmm: number) {
+    return hhmm - (hhmm % 60);
+  }
+  function roundUpToNearest_X_hour(hhmm: number, X: number) {
+    return hhmm + (X - (hhmm % X));
+  }
 
   //#region Calculate week range
   let range = "";
@@ -95,7 +125,7 @@ export function WeeklyTrendStacked({
   //#endregion
 
   return (
-    <BoxShadowWrapper>
+    <>
       <div
         style={{
           position: "absolute",
@@ -112,7 +142,7 @@ export function WeeklyTrendStacked({
       </div>
       <ResponsiveContainer width={"100%"} minHeight={300}>
         <AreaChart
-          data={slicedLocalWeeklyTrend}
+          data={combinedWithGoals}
           margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
         >
           <defs></defs>
@@ -123,28 +153,34 @@ export function WeeklyTrendStacked({
             tickFormatter={(value: string, index: number) => "W" + value}
           />
           <YAxis
-            domain={[
-              0,
-              (dataMax: number) => {
-                const roundedUp = Math.floor(dataMax / 60) + 1; // e.g) 20h 55m -> 21h
-                /**
-                 * This makes the roundedUp a multiple of 5
-                 * 21 + (5 - 21 % 5) = 21 + (5 - 1). 21 + 4 = 25
-                 */
-                const aMultipleOfFive = roundedUp + (5 - (roundedUp % 5));
-
-                return aMultipleOfFive * 60;
-              },
-            ]}
-            tickFormatter={(value: any, index: number) => {
-              // return `${value / 60}h`;
-              const hour = Math.floor(value / 60);
-              const min = value % 60;
-              return `${hour}h ${min !== 0 ? min + "m" : ""}`;
+            domain={[0, maxTickOfYAxis]}
+            ticks={ticks}
+            tickFormatter={(val: any) => {
+              return `${val / 60}h`;
             }}
-            tickCount={tickCount}
+            interval={0}
           />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
+          <ReferenceLine
+            y={weeklyGoal.minimum * 60}
+            // label={getHHmm(weeklyGoal.minimum * 60)}
+            label={{
+              position: "center",
+              value: getHHmm(weeklyGoal.minimum * 60),
+              fill: "#12489e",
+            }}
+            stroke="#4081e9"
+          />
+          <ReferenceLine
+            y={weeklyGoal.ideal * 60}
+            // label={getHHmm(weeklyGoal.ideal * 60)}
+            label={{
+              position: "center",
+              value: getHHmm(weeklyGoal.ideal * 60),
+              fill: "#0e8b48",
+            }}
+            stroke="#5cca90"
+          />
           {listOfCategoryDetails.map((detail, index) => {
             return (
               <Area
@@ -182,18 +218,16 @@ export function WeeklyTrendStacked({
           />
         </AreaChart>
       </ResponsiveContainer>
-    </BoxShadowWrapper>
+    </>
   );
 }
-function CustomTooltip({
-  active,
-  payload,
-  label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
-}: TooltipProps<number, string>) {
-  // console.log(`active - ${active}`);
-  // console.log(`payload -------->`);
-  // console.log(payload);
-  // console.log(`label - ${label}`);
+
+function CustomTooltip(prop: TooltipProps<number, string>) {
+  const {
+    active,
+    payload,
+    label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
+  } = prop;
 
   if (active && payload && payload.length) {
     const startOfCorrespondingWeek = startOfISOWeek(
@@ -202,6 +236,21 @@ function CustomTooltip({
     const endOfCorrespondingWeek = endOfISOWeek(
       payload[payload.length - 1].payload.timestampOfFirstDate
     );
+
+    const minimum = payload[0].payload.goal.minimum;
+    const ideal = payload[0].payload.goal.ideal;
+    const weekTotal = payload[0].payload.total;
+    const minimumGoalRateInPercent = roundTo_X_DecimalPoints(
+      (weekTotal / minimum) * 100,
+      1
+    ); // Round to one decimal point
+    const idealGoalRateInPercent = roundTo_X_DecimalPoints(
+      (weekTotal / ideal) * 100,
+      1
+    );
+
+    const remainingUntilMinimum = minimum - weekTotal;
+    const remainingUntilIdeal = ideal - weekTotal;
 
     return (
       <div
@@ -215,13 +264,35 @@ function CustomTooltip({
         }}
       >
         <p>
-          W{label} ({startOfCorrespondingWeek.toLocaleDateString()} ~
+          W{label} ({startOfCorrespondingWeek.toLocaleDateString()} ~{" "}
           {endOfCorrespondingWeek.toLocaleDateString()})
         </p>
         {payload.map((dayData, index) => {
           return (
             <div key={index}>
-              <p>{index === 0 && `Total: ${getHHmm(dayData.payload.total)}`}</p>
+              {index === 0 && (
+                <div>
+                  <p
+                    style={{
+                      fontWeight: "bold",
+                      fontStyle: "italic",
+                      textAlign: "center",
+                    }}
+                  >
+                    Total: {getHHmm(dayData.payload.total)}
+                  </p>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-evenly" }}
+                  >
+                    <p style={{ color: "#4081e9" }}>
+                      {minimumGoalRateInPercent}%
+                    </p>
+                    <p style={{ color: "#5cca90" }}>
+                      {idealGoalRateInPercent}%
+                    </p>
+                  </div>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
@@ -233,10 +304,23 @@ function CustomTooltip({
                 <p>{dayData.name}:</p>
                 <p>{getHHmm(dayData.value)}</p>
               </div>
+              <p
+                style={{
+                  fontStyle: "italic",
+                }}
+              >
+                {index === payload.length - 1 &&
+                  getMessageForRemainingDuration(
+                    remainingUntilMinimum,
+                    remainingUntilIdeal
+                  )}
+              </p>
             </div>
           );
         })}
       </div>
     );
   }
+
+  return null; // Return null if `active` or `payload` is invalid
 }

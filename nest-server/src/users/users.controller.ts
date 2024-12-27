@@ -17,6 +17,7 @@ import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
 import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
+import { UpdateGoalsDto } from './dto/update-goals.dto';
 
 @Controller('users')
 export class UsersController {
@@ -58,6 +59,18 @@ export class UsersController {
     console.log(updateAutoStartSettingDto);
     return await this.usersService.updateAutoStartSetting(
       updateAutoStartSettingDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('goals')
+  async updateGoals(
+    @Body(new ValidationPipe())
+    updateGoalsDto: UpdateGoalsDto,
+    @Req() request: CustomRequest,
+  ) {
+    return await this.usersService.updateGoals(
+      updateGoalsDto,
       request.userEmail,
     );
   }

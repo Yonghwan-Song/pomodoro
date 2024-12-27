@@ -39,6 +39,7 @@ import ToggleSwitch from "../../ReusableComponents/ToggleSwitch/ToggleSwitch";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import Categories from "./Categories/Categories";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
+import GoalForm from "./GoalForm/GoalForm";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -356,31 +357,43 @@ function Settings() {
         {user !== null && (
           <>
             <GridItem>
-              <FlexBox justifyContent="space-between">
-                <Button
-                  color={"primary"}
-                  handleClick={() => createDemoData(user!)}
-                >
-                  Create Demo data
-                </Button>
-                <Button handleClick={() => removeDemoData(user!)}>
-                  Remove Demo data
-                </Button>
-                <Button
-                  handleClick={async () => {
-                    const provider = new GoogleAuthProvider();
-                    let result = await reauthenticateWithPopup(user!, provider);
-                    await emptyStateStore();
-                    localStorage.removeItem("user");
-                    deleteAccount(result.user);
-                  }}
-                >
-                  Delete account
-                </Button>
-              </FlexBox>
+              <BoxShadowWrapper>
+                <FlexBox justifyContent="space-between">
+                  <Button
+                    color={"primary"}
+                    handleClick={() => createDemoData(user!)}
+                  >
+                    Create Demo data
+                  </Button>
+                  <Button handleClick={() => removeDemoData(user!)}>
+                    Remove Demo data
+                  </Button>
+                  <Button
+                    handleClick={async () => {
+                      const provider = new GoogleAuthProvider();
+                      let result = await reauthenticateWithPopup(
+                        user!,
+                        provider
+                      );
+                      await emptyStateStore();
+                      localStorage.removeItem("user");
+                      deleteAccount(result.user);
+                    }}
+                  >
+                    Delete account
+                  </Button>
+                </FlexBox>
+              </BoxShadowWrapper>
             </GridItem>
             <GridItem>
-              <Categories />
+              <BoxShadowWrapper>
+                <GoalForm />
+              </BoxShadowWrapper>
+            </GridItem>
+            <GridItem>
+              <BoxShadowWrapper>
+                <Categories />
+              </BoxShadowWrapper>
             </GridItem>
           </>
         )}

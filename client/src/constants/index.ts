@@ -40,6 +40,7 @@ export const SUB_SET = {
   IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
   COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
   CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
+  GOALS: "/goals",
 };
 
 //#endregion
@@ -101,3 +102,16 @@ export const MINIMUMS = {
 export const CURRENT_CATEGORY_NAME = "currentCategoryName";
 export const CURRENT_SESSION_TYPE = "currentSessionType"; // This is not updated at sw.js. But as soon as the TimerController is mounted, it is updated. Why? - I just didn't update it at sw.js since a service worker doesn't have direct access to a session storage.
 //#endregion
+
+//
+export const dayOfWeekArr: readonly string[] = [
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+  "Sun",
+];
+
+export const _24h = 24 * 60 * 60 * 1000;

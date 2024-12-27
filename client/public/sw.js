@@ -13788,13 +13788,13 @@
     CATEGORIES: "/categories",
     IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
     COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
-    CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array"
+    CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
+    GOALS: "/goals"
   }; //#endregion
 
   var IDB_VERSION = 9;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
-  //#endregion
 
   var _excluded = ["pomoSetting"];
   var DB = null;

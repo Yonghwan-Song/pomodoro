@@ -24,6 +24,7 @@ import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
 import { StackedGraph } from "./Graph-Related/StackedGraph";
 import { WeeklyTrendStacked } from "./Graph-Related/WeeklyTrendStacked";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
+import GoalGraph from "./Graph-Related/GoalGraph";
 
 export default function Statistics() {
   const categoriesFromServer = useBoundedPomoInfoStore(
@@ -772,6 +773,18 @@ export default function Statistics() {
             </GridItem>
             <GridItem>
               {weekRange && (
+                <GoalGraph
+                  statData={statData}
+                  dailyStatOfThisWeek={dailyStatOfThisWeek}
+                  listOfCategoryDetails={listOfCategoryDetails}
+                  weekRangeForThisWeek={weekRange}
+                  averageForThisWeek={average}
+                  colorForUnCategorized={colorForUnCategorized}
+                />
+              )}
+            </GridItem>
+            <GridItem>
+              {weekRange && (
                 <CategoryGraph
                   statData={statData}
                   dailyStatOfThisWeek={dailyStatOfThisWeek}
@@ -861,11 +874,13 @@ export default function Statistics() {
               </BoxShadowWrapper>
             </GridItem>
             <GridItem>
-              <WeeklyTrendStacked
-                weeklyTrend={weeklyStatUpToTenWeeks}
-                listOfCategoryDetails={listOfCategoryDetails}
-                colorForUnCategorized={colorForUnCategorized}
-              />
+              <BoxShadowWrapper>
+                <WeeklyTrendStacked
+                  weeklyTrend={weeklyStatUpToTenWeeks}
+                  listOfCategoryDetails={listOfCategoryDetails}
+                  colorForUnCategorized={colorForUnCategorized}
+                />
+              </BoxShadowWrapper>
             </GridItem>
           </Grid>
         </div>

@@ -22,10 +22,11 @@ import {
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
 } from "../statRelatedTypes";
+import { _24h } from "../../../constants";
 import { FunctionComponent, useEffect, useState } from "react";
 import { endOfWeek, startOfWeek } from "date-fns";
 
-type GraphProps = {
+type StackedGraphProps = {
   statData: StatDataForGraph_DailyPomoStat | null;
   dailyStatOfThisWeek: DayStatForGraph[];
   weekRangeForThisWeek: string;
@@ -41,9 +42,9 @@ export function StackedGraph({
   weekRangeForThisWeek,
   averageForThisWeek,
   colorForUnCategorized,
-}: GraphProps) {
-  const [localWeekStat, setLocalWeekStat] = useState<DayStatForGraph[]>(
-    JSON.parse(JSON.stringify(dailyStatOfThisWeek))
+}: StackedGraphProps) {
+  const [dailyStatOfWeek, setDailyStatOfWeek] = useState<DayStatForGraph[]>(
+    structuredClone(dailyStatOfThisWeek)
     // weekStatForThisWeek
   );
   const [weekStart, setWeekStart] = useState(
@@ -54,7 +55,6 @@ export function StackedGraph({
   );
   const [weekRange, setWeekRange] = useState(weekRangeForThisWeek);
   const [average, setAverage] = useState(averageForThisWeek);
-  const _24h = 24 * 60 * 60 * 1000;
 
   useEffect(() => {
     let today = new Date();
@@ -65,12 +65,12 @@ export function StackedGraph({
       // statData가 존재하고, []이 아니여야함.
       statData &&
       statData.length !== 0 &&
-      localWeekStat[0].timestamp ===
+      dailyStatOfWeek[0].timestamp ===
         startOfWeek(new Date(), { weekStartsOn: 1 }).getTime() &&
       statData[statData.length - 1].date === todayDateStr
     ) {
       // console.log(statData[statData.length - 1]);
-      setLocalWeekStat((prev) => {
+      setDailyStatOfWeek((prev) => {
         const updated = prev.map((dayStat) => {
           if (dayStat.dayOfWeek === statData[statData.length - 1].dayOfWeek) {
             dayStat.total = statData[statData.length - 1].total;
@@ -98,7 +98,7 @@ export function StackedGraph({
   function calculateNextWeekData(
     pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
   ) {
-    let weekCloned = [...localWeekStat];
+    let weekCloned = [...dailyStatOfWeek];
 
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
       alert("No more data");
@@ -142,7 +142,7 @@ export function StackedGraph({
           .slice(0, -5)
           .replace("/", ". ")}`
       );
-      setLocalWeekStat(weekCloned);
+      setDailyStatOfWeek(weekCloned);
     }
   }
 
@@ -155,7 +155,7 @@ export function StackedGraph({
   function calculatePrevWeekData(
     pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
   ) {
-    let weekCloned = [...localWeekStat];
+    let weekCloned = [...dailyStatOfWeek];
     let newWeekStart = weekStart - 7 * _24h;
     let newWeekEnd = weekEnd - 7 * _24h;
     for (let i = 0; i < 7; i++) {
@@ -186,7 +186,7 @@ export function StackedGraph({
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    setLocalWeekStat(weekCloned);
+    setDailyStatOfWeek(weekCloned);
   }
   /**
    * Purpose: to extract a specific week data from the statArray
@@ -284,7 +284,7 @@ export function StackedGraph({
 
     let diff = 0;
     if (index !== 0) {
-      let prevValue = localWeekStat[index - 1].total;
+      let prevValue = dailyStatOfWeek[index - 1].total;
       if (prevValue !== undefined) {
         diff = value - prevValue;
       }
@@ -306,10 +306,15 @@ export function StackedGraph({
   };
 
   //#region Calculate tickCount
-  const maxValOfYAxis =
-    Math.floor(Math.max(...localWeekStat.map((stat) => stat.total ?? 0)) / 60) +
-    1;
-  const tickCount = maxValOfYAxis + 1;
+  const maxValueOfData = Math.max(
+    ...dailyStatOfWeek.map((stat) => stat.total ?? 0)
+  );
+  const maxTickOfYAxis = maxValueOfData - (maxValueOfData % 60) + 60;
+  const desirableTickCount = maxTickOfYAxis / 60 + 1;
+  const ticks: number[] = [];
+  for (let i = 0; i < desirableTickCount; i++) {
+    ticks.push(i * 60);
+  }
   //#endregion
 
   return (
@@ -333,7 +338,7 @@ export function StackedGraph({
       {/* <ResponsiveContainer width="100%" height={400}> */}
       <ResponsiveContainer width="100%" minHeight={300}>
         <AreaChart
-          data={localWeekStat}
+          data={dailyStatOfWeek}
           //* IMPT: This margin is applied to the acutal graph that consists of the cartesian grid and the two cartesian axises. And they are  the children of the Surface component the parent of which is the AreaChart.
           margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
         >
@@ -341,17 +346,12 @@ export function StackedGraph({
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="dayOfWeek" />
           <YAxis
-            domain={[
-              0,
-              (dataMax: number) => (Math.floor(dataMax / 60) + 1) * 60,
-            ]}
-            tickFormatter={(value: any, index: number) => {
-              // return `${value / 60}h`;
-              const hour = Math.floor(value / 60);
-              const min = value % 60;
-              return `${hour}h ${min !== 0 ? min + "m" : ""}`;
+            domain={[0, maxTickOfYAxis]}
+            tickFormatter={(val: any) => {
+              return `${val / 60}h`;
             }}
-            tickCount={tickCount}
+            ticks={ticks}
+            interval={0}
           />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
           {/* c_info_list의 isOnStat을 이용하기 때문에 Stat.withCategories에서 isOnStat은 사실상 현재 없어도 된다. */}
@@ -470,7 +470,15 @@ function CustomTooltip({
         {payload.map((dayData, index) => {
           return (
             <div key={index}>
-              <p>{index === 0 && `Total: ${getHHmm(dayData.payload.total)}`}</p>
+              <p
+                style={{
+                  fontWeight: "bold",
+                  fontStyle: "italic",
+                  textAlign: "center",
+                }}
+              >
+                {index === 0 && `Total: ${getHHmm(dayData.payload.total)}`}
+              </p>
               <div
                 style={{
                   display: "flex",

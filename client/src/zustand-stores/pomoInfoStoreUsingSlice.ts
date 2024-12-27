@@ -5,6 +5,8 @@ import {
   AutoStartSettingType,
   Category,
   CategoryChangeInfo,
+  DailyGoals,
+  Goals,
   PomoSettingType,
   TimersStatesType,
 } from "../types/clientStatesType";
@@ -16,18 +18,28 @@ interface TimerSliceStates {
   autoStartSetting: AutoStartSettingType;
 }
 
-interface TimerSlice extends TimerSliceStates {
-  setPomoSetting: (pomoSetting: PomoSettingType) => void;
-  setAutoStartSetting: (autoStartSetting: AutoStartSettingType) => void;
-  populateNonSignInUserStates: (data: TimerSliceStates) => void;
-}
-
 interface CategorySliceStates {
   categories: Category[];
   isUnCategorizedOnStat: boolean;
   colorForUnCategorized: string;
   categoryChangeInfoArray: CategoryChangeInfo[];
   doesItJustChangeCategory: boolean;
+}
+
+interface GoalSliceStates {
+  goals: Goals;
+}
+
+interface GoalSlice extends GoalSliceStates {
+  setWeeklyMinimum: (minimum: number) => void;
+  setWeeklyIdeal: (ideal: number) => void;
+  setDailyGoals: (dailyGoals: DailyGoals) => void;
+}
+
+interface TimerSlice extends TimerSliceStates {
+  setPomoSetting: (pomoSetting: PomoSettingType) => void;
+  setAutoStartSetting: (autoStartSetting: AutoStartSettingType) => void;
+  populateNonSignInUserStates: (data: TimerSliceStates) => void;
 }
 
 interface CategorySlice extends CategorySliceStates {
@@ -41,14 +53,15 @@ interface CategorySlice extends CategorySliceStates {
 }
 
 export type DataFromServer = TimerSliceStates &
-  Omit<CategorySliceStates, "doesItJustChangeCategory">;
+  Omit<CategorySliceStates, "doesItJustChangeCategory"> &
+  GoalSliceStates;
 
 interface SharedSlice {
   populateExisitingUserStates: (data: DataFromServer) => void;
 }
 
 const createTimerSlice: StateCreator<
-  TimerSlice & CategorySlice & SharedSlice,
+  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   TimerSlice
@@ -95,7 +108,7 @@ const createTimerSlice: StateCreator<
 });
 
 const createCategorySlice: StateCreator<
-  TimerSlice & CategorySlice & SharedSlice,
+  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   CategorySlice
@@ -133,8 +146,54 @@ const createCategorySlice: StateCreator<
     ),
 });
 
+const createGoalSlice: StateCreator<
+  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
+  [["zustand/devtools", never], ["zustand/immer", never]],
+  [],
+  GoalSlice
+> = (set) => ({
+  goals: {
+    weeklyGoal: {
+      minimum: 30,
+      ideal: 40,
+    },
+    dailyGoals: [
+      { minimum: 4, ideal: 6 },
+      { minimum: 4, ideal: 6 },
+      { minimum: 4, ideal: 6 },
+      { minimum: 4, ideal: 6 },
+      { minimum: 4, ideal: 6 },
+      { minimum: 4, ideal: 6 },
+      { minimum: 4, ideal: 6 },
+    ],
+  },
+  setWeeklyMinimum: (minimum: number) =>
+    set(
+      (state) => {
+        state.goals.weeklyGoal.minimum = minimum;
+      },
+      undefined,
+      "goal/setWeeklyMinimum"
+    ),
+  setWeeklyIdeal: (ideal: number) =>
+    set(
+      (state) => {
+        state.goals.weeklyGoal.ideal = ideal;
+      },
+      undefined,
+      "goal/setWeeklyIdeal"
+    ),
+  setDailyGoals: (dailyGoals) =>
+    set(
+      (state) => {
+        state.goals.dailyGoals = dailyGoals;
+      },
+      undefined,
+      "goal/setDailyGoals"
+    ),
+});
 const createSharedSlice: StateCreator<
-  TimerSlice & CategorySlice & SharedSlice,
+  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   SharedSlice
@@ -144,6 +203,7 @@ const createSharedSlice: StateCreator<
       (state) => ({
         pomoSetting: data.pomoSetting,
         autoStartSetting: data.autoStartSetting,
+        goals: data.goals,
         timersStates: data.timersStates,
         categories: data.categories,
         isUnCategorizedOnStat: data.isUnCategorizedOnStat,
@@ -157,12 +217,13 @@ const createSharedSlice: StateCreator<
 });
 
 export const useBoundedPomoInfoStore = create<
-  TimerSlice & CategorySlice & SharedSlice
+  TimerSlice & CategorySlice & GoalSlice & SharedSlice
 >()(
   devtools(
     immer((...a) => ({
       ...createTimerSlice(...a),
       ...createCategorySlice(...a),
+      ...createGoalSlice(...a),
       ...createSharedSlice(...a),
     }))
   )

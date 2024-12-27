@@ -12,6 +12,7 @@ import { Category } from 'src/schemas/category.schema';
 import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on-stat.dto';
 import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
+import { UpdateGoalsDto } from './dto/update-goals.dto';
 
 @Injectable()
 export class UsersService {
@@ -65,6 +66,21 @@ export class UsersService {
         },
         {
           autoStartSetting: updateAutoStartSettingDto,
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  updateGoals(updateGoalsDto: UpdateGoalsDto, userEmail: string) {
+    console.log('updateGoalsDto', updateGoalsDto);
+    return this.userModel
+      .findOneAndUpdate(
+        {
+          userEmail,
+        },
+        {
+          goals: updateGoalsDto,
         },
         { new: true },
       )

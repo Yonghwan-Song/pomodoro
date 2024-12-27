@@ -40,8 +40,8 @@ export function CategoryGraph({
   isUnCategorizedOnStat,
   colorForUnCategorized,
 }: GraphProps) {
-  const [localWeekStat, setLocalWeekStat] = useState<DayStatForGraph[]>(
-    JSON.parse(JSON.stringify(dailyStatOfThisWeek))
+  const [dailyStatOfWeek, setDailyStatOfWeek] = useState<DayStatForGraph[]>(
+    structuredClone(dailyStatOfThisWeek)
   );
 
   const [weekStart, setWeekStart] = useState(
@@ -63,12 +63,12 @@ export function CategoryGraph({
       statData &&
       statData.length !== 0 &&
       // 만약 유저가 이번주 통계를 보고있으면,
-      localWeekStat[0].timestamp ===
+      dailyStatOfWeek[0].timestamp ===
         startOfWeek(new Date(), { weekStartsOn: 1 }).getTime() &&
       statData[statData.length - 1].date === todayDateStr
     ) {
       // console.log(statData[statData.length - 1]);
-      setLocalWeekStat((prev) => {
+      setDailyStatOfWeek((prev) => {
         const updated = prev.map((dayStat) => {
           // 전제: ===의 오른쪽 operand는 이번주 데이터다. 왜냐하면, 나는 이 side effect이 무조건 이 앱을 사용하는 그 당일 (즉, 오늘)에만 일어나기 때문에,
           // 그런데 이게 이번주 일요일에 저번주 일요일 데이터를 집어넣는 꼴이 되서 버그가 생겼다.
@@ -99,7 +99,7 @@ export function CategoryGraph({
   function calculateNextWeekData(
     pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
   ) {
-    let weekCloned = [...localWeekStat];
+    let weekCloned = [...dailyStatOfWeek];
 
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
       alert("No more data");
@@ -144,7 +144,7 @@ export function CategoryGraph({
           .slice(0, -5)
           .replace("/", ". ")}`
       );
-      setLocalWeekStat(weekCloned);
+      setDailyStatOfWeek(weekCloned);
     }
   }
 
@@ -157,7 +157,7 @@ export function CategoryGraph({
   function calculatePrevWeekData(
     pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
   ) {
-    let weekCloned = [...localWeekStat];
+    let weekCloned = [...dailyStatOfWeek];
     let newWeekStart = weekStart - 7 * _24h;
     let newWeekEnd = weekEnd - 7 * _24h;
     for (let i = 0; i < 7; i++) {
@@ -188,7 +188,7 @@ export function CategoryGraph({
         .slice(0, -5)
         .replace("/", ". ")}`
     );
-    setLocalWeekStat(weekCloned);
+    setDailyStatOfWeek(weekCloned);
   }
 
   /**
@@ -283,36 +283,54 @@ export function CategoryGraph({
   //#endregion
 
   //#region Calculate tickCount
-  const arrOfMaxDurationsCategorized = listOfCategoryDetails.map((detail) => {
-    if (detail.isOnStat) {
-      const durationsOfAcategory = localWeekStat.map((stat) =>
-        stat.subtotalByCategory !== undefined
-          ? stat.subtotalByCategory[detail.name].duration
-          : 0
-      );
-      return Math.max(...durationsOfAcategory);
-    } else {
-      return 0;
+  const maxCandidatesOfEachCategory = listOfCategoryDetails.map(
+    (categoryDetail) => {
+      if (categoryDetail.isOnStat) {
+        return getMaxOfWeek(dailyStatOfWeek, categoryDetail);
+      } else {
+        return 0;
+      }
     }
-  });
+  );
+
+  /**
+   * To get the max value of a category's stat in a week
+   *
+   * @param dailyStatOfWeek
+   * @param categoryDetail
+   */
+  function getMaxOfWeek(
+    dailyStatOfWeek: DayStatForGraph[],
+    categoryDetail: CategoryDetail
+  ) {
+    const durationArray = dailyStatOfWeek.map((stat) =>
+      stat.subtotalByCategory !== undefined
+        ? stat.subtotalByCategory[categoryDetail.name].duration
+        : 0
+    );
+    return Math.max(...durationArray);
+  }
 
   let maxOfUnCategorized = 0;
   if (isUnCategorizedOnStat) {
-    let arr = localWeekStat.map((stat) => stat.withoutCategory ?? 0);
+    let arr = dailyStatOfWeek.map((stat) => stat.withoutCategory ?? 0);
     maxOfUnCategorized = Math.max(...arr);
   }
 
-  const maxValOfYAxis =
-    Math.floor(
-      Math.max(...arrOfMaxDurationsCategorized, maxOfUnCategorized) / 60
-    ) + 1;
-  const tickCount = maxValOfYAxis + 1;
+  const maxValueOfData = Math.max(
+    ...maxCandidatesOfEachCategory,
+    maxOfUnCategorized
+  );
+  const maxTickOfYAxis = maxValueOfData - (maxValueOfData % 60) + 60;
+  const desirableTickCount = maxTickOfYAxis / 60 + 1;
+  const ticks: number[] = [];
+  for (let i = 0; i < desirableTickCount; i++) {
+    ticks.push(i * 60);
+  }
   //#endregion
 
   return (
-    <BoxShadowWrapper
-    // inset={true}
-    >
+    <BoxShadowWrapper>
       <div
         style={{
           position: "absolute",
@@ -330,7 +348,7 @@ export function CategoryGraph({
 
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
-          data={localWeekStat}
+          data={dailyStatOfWeek}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
@@ -338,17 +356,12 @@ export function CategoryGraph({
           {/* //*IMPT: Since these Area Graphs are not stacked, dataMax parameter in the callback below changes depending on what areas we select to draw on the graph. */}
           {/* //*Therefore, tickCount should be calculated differently than we did at the `StackedGraph.tsx` */}
           <YAxis
-            domain={[
-              0,
-              (dataMax: number) => (Math.floor(dataMax / 60) + 1) * 60,
-            ]}
-            tickFormatter={(value: any, index: number) => {
-              // return `${value / 60}h`;
-              const hour = Math.floor(value / 60);
-              const min = value % 60;
-              return `${hour}h ${min !== 0 ? min + "m" : ""}`;
+            domain={[0, maxTickOfYAxis]}
+            ticks={ticks}
+            tickFormatter={(val: any) => {
+              return `${val / 60}h`;
             }}
-            tickCount={tickCount}
+            interval={0}
           />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
           {listOfCategoryDetails.map((detail, index) => {

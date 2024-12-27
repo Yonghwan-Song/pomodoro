@@ -39,6 +39,7 @@ export type StyledBoxProps = {
   paddingRight?: string;
   paddingTop?: string;
   paddingBottom?: string;
+  borderRadius?: string;
 };
 
 export const StyledBox = styled.div<StyledBoxProps>`
@@ -64,6 +65,9 @@ export const StyledBox = styled.div<StyledBoxProps>`
     css`
       padding-bottom: ${paddingBottom};
     `}
+  ${({ borderRadius = "0.5em" }) => css`
+    border-radius: ${borderRadius};
+  `}
 
   ${({ inset }) =>
     inset
@@ -72,7 +76,6 @@ export const StyledBox = styled.div<StyledBoxProps>`
         `
       : css`
           box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.7);
-          border-radius: 0.5em;
         `}
   ${({ fontSize }) =>
     fontSize &&

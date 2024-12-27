@@ -1,4 +1,7 @@
 //#region //TODO - name this region
+
+import { Goal } from "../../types/clientStatesType";
+
 /**
  * 필요한 이유:
  *
@@ -20,6 +23,10 @@ export type WeekStat = {
   year: number;
 } & DurationRelated;
 
+export type WeekStatWithGoal = WeekStat & {
+  goal: Goal;
+};
+
 export type StatDataForGraph_DailyPomoStat = DayStat[]; //TODO 이거 이름이 좀 잘못된거 아니냐?... ForGraph는 아래에 있는 타입에서 다루는거잖아..
 //TODO 이거는 그냥.. From Server아닌가....
 //? 그런데 저 아래에 From Server가 또 있는데?.............저거는
@@ -28,6 +35,10 @@ export type StatDataForGraph_DailyPomoStat = DayStat[]; //TODO 이거 이름이 
 // e.g. If today is Thu, the remaining three days should not have total properties
 //      so that the area chart can only show data until today.
 export type DayStatForGraph = TimeRelated & Partial<DurationRelated>;
+
+export type DayStatWithGoal = DayStatForGraph & {
+  goal: Goal & { gap: number };
+};
 
 type TimeRelated = {
   date: string;

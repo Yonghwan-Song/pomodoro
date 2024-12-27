@@ -25,12 +25,17 @@ interface TimersStates {
   startTime: number;
 }
 
-// interface Category {
-//   name: string;
-//   color: string;
-//   // _id?: ObjectId; //이거 너무 가라 아니냐
-//   _id?: string; //이거 너무 가라 아니냐
-// }
+interface Goal {
+  minimum: number;
+  ideal: number;
+}
+
+type DailyGoals = [Goal, Goal, Goal, Goal, Goal, Goal, Goal];
+
+interface Goals {
+  weeklyGoal: Goal;
+  dailyGoals: DailyGoals;
+}
 
 @Schema()
 export class User {
@@ -57,6 +62,28 @@ export class User {
     }),
   )
   autoStartSetting: AutoStartSetting;
+
+  @Prop(
+    raw({
+      weeklyGoal: {
+        type: { minimum: Number, ideal: Number },
+        default: { minimum: 30, ideal: 40 },
+      },
+      dailyGoals: {
+        type: [{ minimum: Number, ideal: Number }],
+        default: [
+          { minimum: 4, ideal: 6 },
+          { minimum: 4, ideal: 6 },
+          { minimum: 4, ideal: 6 },
+          { minimum: 4, ideal: 6 },
+          { minimum: 4, ideal: 6 },
+          { minimum: 4, ideal: 6 },
+          { minimum: 4, ideal: 6 },
+        ],
+      },
+    }),
+  )
+  goals: Goals;
 
   @Prop(
     raw({

@@ -38,6 +38,7 @@ export type AutoStartSettingType = {
   doesPomoStartAutomatically: boolean;
   doesBreakStartAutomatically: boolean;
 };
+//#endregion
 
 //#region Category-Related
 export interface Category {
@@ -78,6 +79,21 @@ export type CategoryChangeInfoForCircularProgressBar = CategoryChangeInfo & {
   segmentProgress: number;
 };
 //#endregion
+
+//#region Goal-Related
+export interface Goals {
+  weeklyGoal: Goal;
+  dailyGoals: DailyGoals;
+}
+
+export interface Goal {
+  minimum: number;
+  ideal: number;
+}
+
+// I will not create dayOfWeek property for each element here
+// because we can change easily whether weekdays should start from "Mon" or "Sun" by creating different days array.
+export type DailyGoals = [Goal, Goal, Goal, Goal, Goal, Goal, Goal];
 //#endregion
 
 //#region Timeline-Related
