@@ -11,7 +11,10 @@ import {
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import {
+  BatchUpdateCategoryDto,
+  UpdateCategoryDto,
+} from './dto/update-category.dto';
 
 @Controller('categories')
 export class CategoriesController {
@@ -41,6 +44,17 @@ export class CategoriesController {
     );
     return await this.categoriesService.update(
       updateCategoryDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('batch')
+  async batchUpdate(
+    @Body(new ValidationPipe()) batchUpdateDto: BatchUpdateCategoryDto,
+    @Req() request: CustomRequest,
+  ) {
+    return await this.categoriesService.batchUpdate(
+      batchUpdateDto,
       request.userEmail,
     );
   }

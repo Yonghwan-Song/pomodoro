@@ -4,51 +4,38 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
   Validate,
+  IsOptional,
+  IsBoolean,
+  IsArray,
+  ArrayMinSize,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-//#region Original
-// export class UpdateCategoryDto {
-//   @IsString()
-//   // @IsNotEmpty()
-//   name: string;
-
-//   // option 1
-//   // data: Data;
-
-//   // option 2
-//   // data:
-//   //   | {
-//   //       name: string;
-//   //     }
-//   //   | { color: string }
-//   //   | { isCurrent: boolean }
-//   //   | { isOnStat: boolean };
-//   data: {
-//     name?: string;
-//     color?: string;
-//     isCurrent?: boolean;
-//     isOnStat?: boolean;
-//   };
-// }
-//#endregion
-
-class CategoryData {
+export class CategoryData {
+  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   name?: string;
 
+  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   color?: string;
 
+  @IsOptional()
+  @IsBoolean()
   isCurrent?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
   isOnStat?: boolean;
 }
 
 @ValidatorConstraint({ name: 'atLeastOneProperty', async: false })
 class AtLeastOnePropertyValidator implements ValidatorConstraintInterface {
   validate(data: CategoryData) {
-    if (!data || typeof data !== 'object') {
+    if (!data || typeof data !== 'object' || data === null) {
       return false;
     }
 
@@ -63,6 +50,7 @@ class AtLeastOnePropertyValidator implements ValidatorConstraintInterface {
   }
 }
 
+// Single category update DTO
 export class UpdateCategoryDto {
   @IsString()
   name: string;
@@ -71,4 +59,13 @@ export class UpdateCategoryDto {
   @Validate(AtLeastOnePropertyValidator)
   @Type(() => CategoryData)
   data: CategoryData;
+}
+
+// New batch update DTO
+export class BatchUpdateCategoryDto {
+  @IsArray()
+  @ArrayMinSize(1, { message: 'At least one category update is required' })
+  @ValidateNested({ each: true })
+  @Type(() => UpdateCategoryDto)
+  categories: UpdateCategoryDto[];
 }

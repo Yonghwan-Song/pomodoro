@@ -4,7 +4,10 @@ import { HydratedDocument, Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { User } from 'src/schemas/user.schema';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import {
+  BatchUpdateCategoryDto,
+  UpdateCategoryDto,
+} from './dto/update-category.dto';
 import { Pomodoro } from 'src/schemas/pomodoro.schema';
 
 @Injectable()
@@ -33,89 +36,47 @@ export class CategoriesService {
 
     return savedCategory;
   }
-  //#region New
+
   async update(updateCategoryDto: UpdateCategoryDto, userEmail: string) {
     const { name, data } = updateCategoryDto;
 
-    //#region These two should be in order
-    //1
-    if ('isCurrent' in data && data.isCurrent) {
-      // For example, if the previous session's category was "Biology" and
-      // updateCategoryDto is {name: "Math", data: {isCurrent: true}},
-      // We must first set "Biology"'s isCurrent to false before updating "Math".
-      const result = await setPreviousCurrentCategoryToFalse(
-        userEmail,
-        this.categoryModel,
-      );
-      console.log('setPreviousCurrentCategoryToFalse', result);
+    // This should come first because of the logic how the setPrev... function finds the current category
+    if ('isCurrent' in data) {
+      await setCurrentCategoryToFalse(userEmail, this.categoryModel);
     }
 
-    //2.
-    const updatedCategory = await this.categoryModel
+    const categoryUpdated = await this.categoryModel
       .findOneAndUpdate({ userEmail, name }, { $set: data }, { new: true })
       .exec();
-    //#endregion
 
-    //#region It doesn't happen all the time
-    if ('name' in data && data.name) {
+    if ('color' in data || 'name' in data) {
       const user = await this.userModel.findOne({ userEmail });
       if (!user) {
         throw new NotFoundException(`User with email ${userEmail} not found`);
       }
       user.categoryChangeInfoArray.forEach((info) => {
         if (info.categoryName === name) {
-          info.categoryName = data.name;
+          if ('color' in data) info.color = data.color;
+          if ('name' in data) info.categoryName = data.name;
         }
       });
       await user.save();
-      return {
-        updateCategoryDto,
-        updatedCategoryChangeInfoArray: user.categoryChangeInfoArray,
-      };
     }
 
-    if ('color' in data && data.color) {
-      const user = await this.userModel.findOne({ userEmail });
-      if (!user) {
-        throw new NotFoundException(`User with email ${userEmail} not found`);
-      }
-      user.categoryChangeInfoArray.forEach((info) => {
-        if (info.categoryName === name) {
-          info.color = data.color;
-        }
-      });
-      await user.save();
-      return {
-        updateCategoryDto,
-        updatedCategoryChangeInfoArray: user.categoryChangeInfoArray,
-      };
-    }
-    //#region
-
-    return { updatedCategory };
+    return {
+      categoryUpdated,
+    };
   }
-  //#endregion
 
-  //#region Original
-  // async update(updateCategoryDto: UpdateCategoryDto, userEmail: string) {
-  //   const { name, data } = updateCategoryDto;
+  async batchUpdate(batchUpdateDto: BatchUpdateCategoryDto, userEmail: string) {
+    const results = await Promise.all(
+      batchUpdateDto.categories.map((categoryDto) =>
+        this.update(categoryDto, userEmail),
+      ),
+    );
 
-  //   if ('isCurrent' in data && data.isCurrent) {
-  //     // For example, if the previous session's category was "Biology" and
-  //     // updateCategoryDto is {name: "Math", data: {isCurrent: true}},
-  //     // We must first set "Biology"'s isCurrent to false before updating "Math".
-  //     const result = await setPreviousCurrentCategoryToFalse(
-  //       userEmail,
-  //       this.categoryModel,
-  //     );
-  //     console.log('setPreviousCurrentCategoryToFalse', result);
-  //   }
-
-  //   return this.categoryModel
-  //     .findOneAndUpdate({ userEmail, name }, { $set: data }, { new: true })
-  //     .exec();
-  // }
-  //#endregion
+    return results;
+  }
 
   async delete(name: string, userEmail: string) {
     const deletedDoc = await this.categoryModel
@@ -141,11 +102,20 @@ export class CategoriesService {
   }
 }
 
-async function setPreviousCurrentCategoryToFalse(
+/**
+ * For example, if the previous session's category was "Biology" and
+ * updateCategoryDto is {name: "Math", data: {isCurrent: true}},
+ * We must first set "Biology"'s isCurrent to false before updating "Math".
+ */
+async function setCurrentCategoryToFalse(
   userEmail: string,
   categoryModel: Model<Category>,
 ) {
   return categoryModel
-    .updateOne({ userEmail, isCurrent: true }, { $set: { isCurrent: false } })
+    .findOneAndUpdate(
+      { userEmail, isCurrent: true },
+      { $set: { isCurrent: false } },
+      { new: true },
+    )
     .exec();
 }
