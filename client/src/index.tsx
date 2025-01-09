@@ -180,7 +180,10 @@ BC.addEventListener("message", async (ev) => {
 
     case "fetchCallFailed_Network_Error":
       // console.log("A Payload of FetchCallFailed_Network_Error");
-      // console.log(payload);
+      // console.log(
+      //   "Payload in BC event handler for fetchCallFailed_Network_Error",
+      //   payload
+      // );
       errController.registerFailedReqInfo(payload as AxiosRequestConfig);
       break;
 
@@ -192,26 +195,34 @@ BC.addEventListener("message", async (ev) => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // console.log("ev handler for DOMContentLoaded is called");
   try {
     registerServiceWorker();
     defineInterceptorsForAxiosInstance();
     DB = await openIndexedDB();
     await deleteRecordsBeforeTodayInIDB();
     DynamicCache = await openCache(CacheName);
+
+    //IMPT 로그아웃할때 unsub해야하는거 아니냐... -> //! 안해도 된다 왜냐하면, 로그아웃하고 앱 reload해서 어차피 다 사라짐.
     pubsub.subscribe("connectionIsUp", async () => {
       // I did not call unsub function of this subscription.
       let userEmail = await getUserEmail(); //TODO: 그런데 이거 중복이네 hanldeFailedReqs에서 userEmail을 arg로 받아서 사용할 수 있는 방법을 찾아보든가
       // console.log("userEmail from subscribe to connectionIsUp", userEmail);
+      // console.log("errController", errController);
       if (
         userEmail &&
         (errController.failedReqInfo.POST.length !== 0 ||
-          errController.failedReqInfo.PATCH.size !== 0 ||
-          errController.failedReqInfo.DELETE.length !== 0)
+          errController.failedReqInfo.PATCH.size !== 0)
       ) {
-        errController.handleFailedReqs();
+        errController.resendFailedReqs();
       }
     });
-    await errController.getFailedReqsFromIDB();
+    // If we really need to call this, why not refresh the app right afterward?
+    //이게 로그인하고 call되는게 아닌 것 같은데 그러면 이거 왜 필요하지?... 앱 닫고, 인터넷 연결, 다시 열기 ... 이때 용인가?
+    if (await errController.getAndResendFailedReqsFromIDB()) {
+      // console.log("right before reload() at DOMContentLoaded");
+      window.location.reload();
+    }
   } catch (error) {
     console.error(error);
   }

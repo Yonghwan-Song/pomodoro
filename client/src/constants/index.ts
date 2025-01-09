@@ -36,7 +36,6 @@ export const SUB_SET = {
   AUTO_START_SETTING: "/auto-start-setting",
   TIMERS_STATES: "/timers-states",
   DEMO_DATA: "/demo-data",
-  CATEGORIES: "/categories",
   IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
   COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
   CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",

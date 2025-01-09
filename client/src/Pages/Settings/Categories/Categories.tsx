@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { ReactComponent as TrashBinIcon } from "../../../Icons/trash-bin-trash-svgrepo-com.svg";
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
@@ -17,6 +17,9 @@ import {
 } from "../../..";
 import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+import { AxiosRequestConfig } from "axios";
+import { errController } from "../../../axios-and-error-handling/errorController";
+import { insert_UUID_to_reqConfig } from "../../../utils/anything";
 
 const customModalStyles = {
   content: {
@@ -65,7 +68,7 @@ export default function Categories() {
   const [
     debouncedColorInputForUnCategorized,
     setDebouncedColorInputForUnCategorized,
-  ] = useState<string | null>(null);
+  ] = useState<string>(colorForUnCategorized);
 
   const [categoriesInputs, setCategoriesInputs] =
     useState<Category[]>(categoriesFromServer);
@@ -226,6 +229,14 @@ export default function Categories() {
     //          2. when deleting an item from the list => setPomoInfo()
     setCategoriesInputs(categoriesFromServer);
   }, [categoriesFromServer]);
+  useEffect(() => {
+    // console.log("[colorForUnCategorized, colorInputForUnCategorized]", [
+    //   colorForUnCategorized,
+    //   colorInputForUnCategorized,
+    // ]);
+    colorForUnCategorized !== colorInputForUnCategorized &&
+      setColorInputForUnCategorized(colorForUnCategorized); // 사실 중복이긴 한데.... `/settings`로 바로 접속하면, 주황색에서 안바뀌어서..
+  }, [colorForUnCategorized]);
   useEffect(debounceNameInputChange, [nameInput]);
   useEffect(debounceColorInputChangeOfCategorized, [colorInput]);
   useEffect(debounceColorInputChangeOfUnCategorized, [
@@ -244,33 +255,23 @@ export default function Categories() {
       const existingName =
         categoriesFromServer[parseInt(debouncedNameInput.index)].name;
       const newName = debouncedNameInput?.name;
-      axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name: existingName,
-        data: { name: newName },
-      });
+
+      axiosInstance
+        .patch(RESOURCE.CATEGORIES, {
+          name: existingName,
+          data: { name: newName },
+        })
+        .catch((reqConfig: AxiosRequestConfig<any>) => {
+          errController.registerFailedReqInfo(
+            insert_UUID_to_reqConfig(reqConfig, nameInput?._uuid)
+          );
+        });
       delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
 
       //* If what I want to rename is the current session's category, I need to rename the one in the session storage.
-      //#region Original
       if (sessionStorage.getItem(CURRENT_CATEGORY_NAME) === existingName) {
         sessionStorage.setItem(CURRENT_CATEGORY_NAME, newName);
       }
-      //#endregion
-      //#region Attempt
-      // const storedCategory = sessionStorage.getItem(CURRENT_CATEGORY_NAME);
-      // if (storedCategory !== null) {
-      //   const parsedStoredCategory = JSON.parse(storedCategory);
-
-      //   if (parsedStoredCategory.name === existingName) {
-      //     parsedStoredCategory.name = newName;
-      //     sessionStorage.setItem(
-      //       CURRENT_CATEGORY_NAME,
-      //       JSON.stringify(parsedStoredCategory)
-      //     );
-      //   }
-      // }
-      //#endregion
-
       const updatedCategoryChangeInfoArray = categoryChangeInfoArray.map(
         (info) => {
           let infoCloned = { ...info };
@@ -281,18 +282,22 @@ export default function Categories() {
         }
       );
       persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
-      // deleteCache(CacheName);
       updateCategories(categoriesInputs);
       updateCategoryChangeInfoArray(updatedCategoryChangeInfoArray);
-      // console.log("debouncedNameInput", debouncedNameInput);
     }
   }
   function handleDebouncedColorInputChange() {
     if (debouncedColorInput !== null) {
-      axiosInstance.patch(RESOURCE.CATEGORIES, {
-        name: categoriesFromServer[parseInt(debouncedColorInput.index)].name,
-        data: { color: debouncedColorInput?.color },
-      });
+      axiosInstance
+        .patch(RESOURCE.CATEGORIES, {
+          name: categoriesFromServer[parseInt(debouncedColorInput.index)].name,
+          data: { color: debouncedColorInput?.color },
+        })
+        .catch((reqConfig: AxiosRequestConfig<any>) => {
+          errController.registerFailedReqInfo(
+            insert_UUID_to_reqConfig(reqConfig, colorInput?._uuid)
+          );
+        });
       delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
       // deleteCache(CacheName);
       setDebouncedColorInput(null);
@@ -312,7 +317,7 @@ export default function Categories() {
     }
   }
   function handleDebouncedColorInputChangeForUncategorized() {
-    if (debouncedColorInputForUnCategorized !== null) {
+    if (debouncedColorInputForUnCategorized !== colorForUnCategorized) {
       // console.log(
       //   "debouncedColorInputForUnCategorized",
       //   debouncedColorInputForUnCategorized
@@ -335,7 +340,8 @@ export default function Categories() {
         colorForUnCategorized: debouncedColorInputForUnCategorized,
       });
 
-      setDebouncedColorInputForUnCategorized(null); // re-initialize
+      // uncomment한 이유: default값을 null이 아니라 globall state과 같은 값으로 해서
+      // setDebouncedColorInputForUnCategorized(null); // re-initialize
     }
   }
   function debounceNameInputChange() {
@@ -353,7 +359,7 @@ export default function Categories() {
           setIndexOfDuplication(-1);
         else setIndexOfDuplication(idxOfDup);
       }
-    }, 500);
+    }, 1000);
     return () => {
       clearTimeout(id);
     };
@@ -362,15 +368,16 @@ export default function Categories() {
     const id = setTimeout(() => {
       setDebouncedColorInput(colorInput);
       //? What if we could just make an HTTP request and update pomoInfo here?
-    }, 500);
+    }, 1000);
     return () => {
       clearTimeout(id);
     };
   }
   function debounceColorInputChangeOfUnCategorized() {
+    // console.log("Is this called? - debounceColorInputChangeOfUnCategorized");
     const id = setTimeout(() => {
       setDebouncedColorInputForUnCategorized(colorInputForUnCategorized);
-    }, 500);
+    }, 1000);
     return () => {
       clearTimeout(id);
     };

@@ -4,7 +4,6 @@ import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../src/firebase";
 import { CacheName, BASE_URL, RESOURCE, SUB_SET } from "./constants/index";
 import { IDB_VERSION } from "./constants/index";
-import { pubsub } from "./pubsub";
 
 let DB = null;
 let CACHE = null;
@@ -367,7 +366,7 @@ async function wrapUpSession({
     });
     persistCategoryChangeInfoArrayToIDB(infoArrAfterReset);
     fetchWrapper(
-      BASE_URL + RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+      RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
       "PATCH",
       {
         categoryChangeInfoArray: infoArrAfterReset.map((info) => {
@@ -747,11 +746,8 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
     }
     //#endregion
 
-    body = JSON.stringify({
-      pomodoroRecordArr: final,
-    });
-    fetchWrapper(
-      BASE_URL + RESOURCE.POMODOROS,
+    await fetchWrapper(
+      RESOURCE.POMODOROS,
       "POST",
       {
         pomodoroRecordArr: final,
@@ -759,21 +755,7 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
       idToken
     );
   } catch (error) {
-    if (
-      error instanceof TypeError &&
-      error.message.toLowerCase() === "failed to fetch"
-    ) {
-      BC.postMessage({
-        evName: "fetchCallFailed_Network_Error",
-        payload: {
-          url: "pomodoros",
-          method: "POST",
-          data: body,
-        },
-      });
-    } else {
-      console.warn(error);
-    }
+    console.warn(error);
   }
 }
 
@@ -798,37 +780,15 @@ async function updateTimersStates(states) {
         );
       }
 
-      body = JSON.stringify({ ...states });
-
-      const res = await fetch(
-        BASE_URL + RESOURCE.USERS + SUB_SET.TIMERS_STATES,
-        {
-          method: "PATCH",
-          body,
-          headers: {
-            Authorization: "Bearer " + idToken,
-            "Content-Type": "application/json",
-          },
-        }
+      await fetchWrapper(
+        RESOURCE.USERS + SUB_SET.TIMERS_STATES,
+        "PATCH",
+        { ...states },
+        idToken
       );
-      // console.log("res of updateTimersStates in sw: ", res);
     }
   } catch (error) {
-    if (
-      error instanceof TypeError &&
-      error.message.toLowerCase() === "failed to fetch"
-    ) {
-      BC.postMessage({
-        evName: "fetchCallFailed_Network_Error",
-        payload: {
-          url: "users/updateTimersStates",
-          method: "PATCH",
-          data: body,
-        },
-      });
-    } else {
-      console.warn(error);
-    }
+    console.warn(error);
   }
 }
 
@@ -838,7 +798,8 @@ async function persistRecOfTodayToServer(record) {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
       const { idToken, email } = idTokenAndEmail;
-      // caching
+
+      //#region caching
       let cache = CACHE || (await openCache(CacheName));
       let resOfRecordOfToday = await cache.match(
         BASE_URL + RESOURCE.TODAY_RECORDS
@@ -853,35 +814,20 @@ async function persistRecOfTodayToServer(record) {
           new Response(JSON.stringify(recordsOfToday))
         );
       }
+      //#endregion
 
-      body = JSON.stringify({
-        userEmail: email,
-        ...record,
-      });
-
-      // http requeset
-      const res = await fetch(BASE_URL + RESOURCE.TODAY_RECORDS, {
-        method: "POST",
-        body,
-        headers: {
-          Authorization: "Bearer " + idToken,
-          "Content-Type": "application/json",
+      await fetchWrapper(
+        RESOURCE.TODAY_RECORDS,
+        "POST",
+        {
+          userEmail: email,
+          ...record,
         },
-      });
-      // console.log("res of persistRecOfTodayToSever", res);
+        idToken
+      );
     }
   } catch (error) {
-    if (
-      error instanceof TypeError &&
-      error.message.toLowerCase() === "failed to fetch"
-    ) {
-      BC.postMessage({
-        evName: "fetchCallFailed_Network_Error",
-        payload: { url: "today-records", method: "POST", data: body },
-      });
-    } else {
-      console.warn(error);
-    }
+    console.warn(error);
   }
 }
 
@@ -902,7 +848,7 @@ function identifySession({ howManyCountdown, numOfPomo }) {
 
 /**
  *
- * @param {*} URL string
+ * @param {*} URL string that comes after BASE_URL
  * @param {*} METHOD "POST" | "GET" | "PATCH" | "DELETE"
  * @param {*} data this is going to be stringified
  * @param {*} idToken string
@@ -910,7 +856,7 @@ function identifySession({ howManyCountdown, numOfPomo }) {
  */
 async function fetchWrapper(URL, METHOD, data, idToken) {
   try {
-    const response = await fetch(URL, {
+    const response = await fetch(BASE_URL + URL, {
       method: METHOD,
       body: JSON.stringify(data),
       headers: {
@@ -920,8 +866,21 @@ async function fetchWrapper(URL, METHOD, data, idToken) {
     });
     return response;
   } catch (error) {
-    console.error("Fetch failed:", error);
-    throw error; // Rethrow to allow further handling
+    if (
+      error instanceof TypeError &&
+      error.message.toLowerCase() === "failed to fetch"
+    ) {
+      BC.postMessage({
+        evName: "fetchCallFailed_Network_Error",
+        payload: {
+          url: URL,
+          method: METHOD,
+          data: JSON.stringify(data),
+        },
+      });
+    } else {
+      console.warn(error);
+    }
   }
 }
 

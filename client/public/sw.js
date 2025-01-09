@@ -17,7 +17,7 @@
   function _objectSpread2(target) {
     for (var i = 1; i < arguments.length; i++) {
       var source = null != arguments[i] ? arguments[i] : {};
-      i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+      i % 2 ? ownKeys(Object(source), true).forEach(function (key) {
         _defineProperty(target, key, source[key]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
         Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
@@ -45,9 +45,9 @@
     function define(obj, key, value) {
       return Object.defineProperty(obj, key, {
         value: value,
-        enumerable: !0,
-        configurable: !0,
-        writable: !0
+        enumerable: true,
+        configurable: true,
+        writable: true
       }), obj[key];
     }
 
@@ -213,7 +213,7 @@
     function Context(tryLocsList) {
       this.tryEntries = [{
         tryLoc: "root"
-      }], tryLocsList.forEach(pushTryEntry, this), this.reset(!0);
+      }], tryLocsList.forEach(pushTryEntry, this), this.reset(true);
     }
 
     function values(iterable) {
@@ -225,9 +225,9 @@
         if (!isNaN(iterable.length)) {
           var i = -1,
               next = function next() {
-            for (; ++i < iterable.length;) if (hasOwn.call(iterable, i)) return next.value = iterable[i], next.done = !1, next;
+            for (; ++i < iterable.length;) if (hasOwn.call(iterable, i)) return next.value = iterable[i], next.done = false, next;
 
-            return next.value = undefined, next.done = !0, next;
+            return next.value = undefined, next.done = true, next;
           };
 
           return next.next = next;
@@ -242,7 +242,7 @@
     function doneResult() {
       return {
         value: undefined,
-        done: !0
+        done: true
       };
     }
 
@@ -258,7 +258,7 @@
     }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, asyncIteratorSymbol, function () {
       return this;
     }), exports.AsyncIterator = AsyncIterator, exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-      void 0 === PromiseImpl && (PromiseImpl = Promise);
+      undefined === PromiseImpl && (PromiseImpl = Promise);
       var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
       return exports.isGeneratorFunction(outerFn) ? iter : iter.next().then(function (result) {
         return result.done ? result.value : iter.next();
@@ -275,18 +275,18 @@
       return keys.reverse(), function next() {
         for (; keys.length;) {
           var key = keys.pop();
-          if (key in object) return next.value = key, next.done = !1, next;
+          if (key in object) return next.value = key, next.done = false, next;
         }
 
-        return next.done = !0, next;
+        return next.done = true, next;
       };
     }, exports.values = values, Context.prototype = {
       constructor: Context,
       reset: function (skipTempReset) {
-        if (this.prev = 0, this.next = 0, this.sent = this._sent = undefined, this.done = !1, this.delegate = null, this.method = "next", this.arg = undefined, this.tryEntries.forEach(resetTryEntry), !skipTempReset) for (var name in this) "t" === name.charAt(0) && hasOwn.call(this, name) && !isNaN(+name.slice(1)) && (this[name] = undefined);
+        if (this.prev = 0, this.next = 0, this.sent = this._sent = undefined, this.done = false, this.delegate = null, this.method = "next", this.arg = undefined, this.tryEntries.forEach(resetTryEntry), !skipTempReset) for (var name in this) "t" === name.charAt(0) && hasOwn.call(this, name) && !isNaN(+name.slice(1)) && (this[name] = undefined);
       },
       stop: function () {
-        this.done = !0;
+        this.done = true;
         var rootRecord = this.tryEntries[0].completion;
         if ("throw" === rootRecord.type) throw rootRecord.arg;
         return this.rval;
@@ -309,10 +309,10 @@
                 hasFinally = hasOwn.call(entry, "finallyLoc");
 
             if (hasCatch && hasFinally) {
-              if (this.prev < entry.catchLoc) return handle(entry.catchLoc, !0);
+              if (this.prev < entry.catchLoc) return handle(entry.catchLoc, true);
               if (this.prev < entry.finallyLoc) return handle(entry.finallyLoc);
             } else if (hasCatch) {
-              if (this.prev < entry.catchLoc) return handle(entry.catchLoc, !0);
+              if (this.prev < entry.catchLoc) return handle(entry.catchLoc, true);
             } else {
               if (!hasFinally) throw new Error("try statement without catch or finally");
               if (this.prev < entry.finallyLoc) return handle(entry.finallyLoc);
@@ -596,7 +596,7 @@
   }
 
   function _assertThisInitialized(self) {
-    if (self === void 0) {
+    if (self === undefined) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
     }
 
@@ -606,7 +606,7 @@
   function _possibleConstructorReturn(self, call) {
     if (call && (typeof call === "object" || typeof call === "function")) {
       return call;
-    } else if (call !== void 0) {
+    } else if (call !== undefined) {
       throw new TypeError("Derived constructors may only return object or undefined");
     }
 
@@ -2302,8 +2302,8 @@
         var _a; // if multipleInstances is not supported, use the default name
 
 
-        var normalizedIdentifier = this.normalizeInstanceIdentifier(options === null || options === void 0 ? void 0 : options.identifier);
-        var optional = (_a = options === null || options === void 0 ? void 0 : options.optional) !== null && _a !== void 0 ? _a : false;
+        var normalizedIdentifier = this.normalizeInstanceIdentifier(options === null || options === undefined ? undefined : options.identifier);
+        var optional = (_a = options === null || options === undefined ? undefined : options.optional) !== null && _a !== undefined ? _a : false;
 
         if (this.isInitialized(normalizedIdentifier) || this.shouldAutoInitialize()) {
           try {
@@ -2462,7 +2462,7 @@
       value: function initialize() {
         var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         var _opts$options = opts.options,
-            options = _opts$options === void 0 ? {} : _opts$options;
+            options = _opts$options === undefined ? {} : _opts$options;
         var normalizedIdentifier = this.normalizeInstanceIdentifier(opts.instanceIdentifier);
 
         if (this.isInitialized(normalizedIdentifier)) {
@@ -2516,7 +2516,7 @@
         var _a;
 
         var normalizedIdentifier = this.normalizeInstanceIdentifier(identifier);
-        var existingCallbacks = (_a = this.onInitCallbacks.get(normalizedIdentifier)) !== null && _a !== void 0 ? _a : new Set();
+        var existingCallbacks = (_a = this.onInitCallbacks.get(normalizedIdentifier)) !== null && _a !== undefined ? _a : new Set();
         existingCallbacks.add(callback);
         this.onInitCallbacks.set(normalizedIdentifier, existingCallbacks);
         var existingInstance = this.instances.get(normalizedIdentifier);
@@ -2566,7 +2566,7 @@
       value: function getOrInitializeService(_ref) {
         var instanceIdentifier = _ref.instanceIdentifier,
             _ref$options = _ref.options,
-            options = _ref$options === void 0 ? {} : _ref$options;
+            options = _ref$options === undefined ? {} : _ref$options;
         var instance = this.instances.get(instanceIdentifier);
 
         if (!instance && this.component) {
@@ -3307,7 +3307,7 @@
 
   function isVersionServiceProvider(provider) {
     var component = provider.getComponent();
-    return (component === null || component === void 0 ? void 0 : component.type) === "VERSION"
+    return (component === null || component === undefined ? undefined : component.type) === "VERSION"
     /* VERSION */
     ;
   }
@@ -3762,7 +3762,7 @@
     // a good whitelist system.
 
 
-    var library = (_a = PLATFORM_LOG_STRING[libraryKeyOrName]) !== null && _a !== void 0 ? _a : libraryKeyOrName;
+    var library = (_a = PLATFORM_LOG_STRING[libraryKeyOrName]) !== null && _a !== undefined ? _a : libraryKeyOrName;
 
     if (variant) {
       library += "-".concat(variant);
@@ -3874,7 +3874,7 @@
               throw ERROR_FACTORY.create("storage-get"
               /* STORAGE_GET */
               , {
-                originalErrorMessage: (_a = _context8.t0) === null || _a === void 0 ? void 0 : _a.message
+                originalErrorMessage: (_a = _context8.t0) === null || _a === undefined ? undefined : _a.message
               });
 
             case 10:
@@ -3919,7 +3919,7 @@
               throw ERROR_FACTORY.create("storage-set"
               /* STORAGE_WRITE */
               , {
-                originalErrorMessage: (_a = _context9.t0) === null || _a === void 0 ? void 0 : _a.message
+                originalErrorMessage: (_a = _context9.t0) === null || _a === undefined ? undefined : _a.message
               });
 
             case 14:
@@ -4343,7 +4343,7 @@
                 case 9:
                   existingHeartbeatsObject = _context5.sent;
                   return _context5.abrupt("return", writeHeartbeatsToIndexedDB(this.app, {
-                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== void 0 ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
+                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== undefined ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
                     heartbeats: heartbeatsObject.heartbeats
                   }));
 
@@ -4392,7 +4392,7 @@
                 case 9:
                   existingHeartbeatsObject = _context6.sent;
                   return _context6.abrupt("return", writeHeartbeatsToIndexedDB(this.app, {
-                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== void 0 ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
+                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== undefined ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
                     heartbeats: [].concat(_toConsumableArray(existingHeartbeatsObject.heartbeats), _toConsumableArray(heartbeatsObject.heartbeats))
                   }));
 
@@ -4562,7 +4562,7 @@
       rest[_key3 - 1] = arguments[_key3];
     }
 
-    throw createErrorInternal.apply(void 0, [authOrCode].concat(rest));
+    throw createErrorInternal.apply(undefined, [authOrCode].concat(rest));
   }
 
   function _createError(authOrCode) {
@@ -4570,7 +4570,7 @@
       rest[_key4 - 1] = arguments[_key4];
     }
 
-    return createErrorInternal.apply(void 0, [authOrCode].concat(rest));
+    return createErrorInternal.apply(undefined, [authOrCode].concat(rest));
   }
 
   function _errorWithCustomMessage(auth, code, message) {
@@ -4609,7 +4609,7 @@
         rest[_key6 - 2] = arguments[_key6];
       }
 
-      throw createErrorInternal.apply(void 0, [authOrCode].concat(rest));
+      throw createErrorInternal.apply(undefined, [authOrCode].concat(rest));
     }
   }
   /**
@@ -4731,7 +4731,7 @@
 
       var initialOptions = provider.getOptions();
 
-      if (deepEqual(initialOptions, deps !== null && deps !== void 0 ? deps : {})) {
+      if (deepEqual(initialOptions, deps !== null && deps !== undefined ? deps : {})) {
         return _auth2;
       } else {
         _fail(_auth2, "already-initialized"
@@ -4747,17 +4747,17 @@
   }
 
   function _initializeAuthInstance(auth, deps) {
-    var persistence = (deps === null || deps === void 0 ? void 0 : deps.persistence) || [];
+    var persistence = (deps === null || deps === undefined ? undefined : deps.persistence) || [];
     var hierarchy = (Array.isArray(persistence) ? persistence : [persistence]).map(_getInstance);
 
-    if (deps === null || deps === void 0 ? void 0 : deps.errorMap) {
+    if (deps === null || deps === undefined ? undefined : deps.errorMap) {
       auth._updateErrorMap(deps.errorMap);
     } // This promise is intended to float; auth initialization happens in the
     // background, meanwhile the auth object may be used by the app.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
 
 
-    auth._initializeWithPersistence(hierarchy, deps === null || deps === void 0 ? void 0 : deps.popupRedirectResolver);
+    auth._initializeWithPersistence(hierarchy, deps === null || deps === undefined ? undefined : deps.popupRedirectResolver);
   }
   /**
    * @license
@@ -4780,7 +4780,7 @@
   function _getCurrentUrl() {
     var _a;
 
-    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === void 0 ? void 0 : _a.href) || '';
+    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === undefined ? undefined : _a.href) || '';
   }
 
   function _isHttpOrHttps() {
@@ -4790,7 +4790,7 @@
   function _getCurrentScheme() {
     var _a;
 
-    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === void 0 ? void 0 : _a.protocol) || null;
+    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === undefined ? undefined : _a.protocol) || null;
   }
   /**
    * @license
@@ -5620,7 +5620,7 @@
               );
 
               firebase = _typeof(claims.firebase) === 'object' ? claims.firebase : undefined;
-              signInProvider = firebase === null || firebase === void 0 ? void 0 : firebase['sign_in_provider'];
+              signInProvider = firebase === null || firebase === undefined ? undefined : firebase['sign_in_provider'];
               return _context95.abrupt("return", {
                 claims: claims,
                 token: token,
@@ -5628,7 +5628,7 @@
                 issuedAtTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.iat)),
                 expirationTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.exp)),
                 signInProvider: signInProvider || null,
-                signInSecondFactor: (firebase === null || firebase === void 0 ? void 0 : firebase['sign_in_second_factor']) || null
+                signInSecondFactor: (firebase === null || firebase === undefined ? undefined : firebase['sign_in_second_factor']) || null
               });
 
             case 10:
@@ -5671,7 +5671,7 @@
 
       return JSON.parse(decoded);
     } catch (e) {
-      _logError('Caught error parsing JWT payload as JSON', (_a = e) === null || _a === void 0 ? void 0 : _a.toString());
+      _logError('Caught error parsing JWT payload as JSON', (_a = e) === null || _a === undefined ? undefined : _a.toString());
 
       return null;
     }
@@ -5856,7 +5856,7 @@
           this.errorBackoff = 30000
           /* RETRY_BACKOFF_MIN */
           ;
-          var expTime = (_a = this.user.stsTokenManager.expirationTime) !== null && _a !== void 0 ? _a : 0;
+          var expTime = (_a = this.user.stsTokenManager.expirationTime) !== null && _a !== undefined ? _a : 0;
 
           var _interval = expTime - Date.now() - 300000
           /* OFFSET */
@@ -5917,7 +5917,7 @@
                   _context2.t0 = _context2["catch"](0);
 
                   // Only retry on network errors
-                  if (((_a = _context2.t0) === null || _a === void 0 ? void 0 : _a.code) === "auth/".concat("network-request-failed"
+                  if (((_a = _context2.t0) === null || _a === undefined ? undefined : _a.code) === "auth/".concat("network-request-failed"
                   /* NETWORK_REQUEST_FAILED */
                   )) {
                     this.schedule(
@@ -6054,7 +6054,7 @@
             case 6:
               response = _context97.sent;
 
-              _assert(response === null || response === void 0 ? void 0 : response.users.length, auth, "internal-error"
+              _assert(response === null || response === undefined ? undefined : response.users.length, auth, "internal-error"
               /* INTERNAL_ERROR */
               );
 
@@ -6062,7 +6062,7 @@
 
               user._notifyReloadListener(coreAccount);
 
-              newProviderData = ((_a = coreAccount.providerUserInfo) === null || _a === void 0 ? void 0 : _a.length) ? extractProviderData(coreAccount.providerUserInfo) : [];
+              newProviderData = ((_a = coreAccount.providerUserInfo) === null || _a === undefined ? undefined : _a.length) ? extractProviderData(coreAccount.providerUserInfo) : [];
               providerData = mergeProviderData(user.providerData, newProviderData); // Preserves the non-nonymous status of the stored user, even if no more
               // credentials (federated or email/password) are linked to the user. If
               // the user was previously anonymous, then use provider data to update.
@@ -6070,7 +6070,7 @@
               // considered anonymous now.
 
               oldIsAnonymous = user.isAnonymous;
-              newIsAnonymous = !(user.email && coreAccount.passwordHash) && !(providerData === null || providerData === void 0 ? void 0 : providerData.length);
+              newIsAnonymous = !(user.email && coreAccount.passwordHash) && !(providerData === null || providerData === undefined ? undefined : providerData.length);
               isAnonymous = !oldIsAnonymous ? false : newIsAnonymous;
               updates = {
                 uid: coreAccount.localId,
@@ -6774,16 +6774,16 @@
       value: function _fromJSON(auth, object) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
 
-        var displayName = (_a = object.displayName) !== null && _a !== void 0 ? _a : undefined;
-        var email = (_b = object.email) !== null && _b !== void 0 ? _b : undefined;
-        var phoneNumber = (_c = object.phoneNumber) !== null && _c !== void 0 ? _c : undefined;
-        var photoURL = (_d = object.photoURL) !== null && _d !== void 0 ? _d : undefined;
-        var tenantId = (_e = object.tenantId) !== null && _e !== void 0 ? _e : undefined;
+        var displayName = (_a = object.displayName) !== null && _a !== undefined ? _a : undefined;
+        var email = (_b = object.email) !== null && _b !== undefined ? _b : undefined;
+        var phoneNumber = (_c = object.phoneNumber) !== null && _c !== undefined ? _c : undefined;
+        var photoURL = (_d = object.photoURL) !== null && _d !== undefined ? _d : undefined;
+        var tenantId = (_e = object.tenantId) !== null && _e !== undefined ? _e : undefined;
 
-        var _redirectEventId = (_f = object._redirectEventId) !== null && _f !== void 0 ? _f : undefined;
+        var _redirectEventId = (_f = object._redirectEventId) !== null && _f !== undefined ? _f : undefined;
 
-        var createdAt = (_g = object.createdAt) !== null && _g !== void 0 ? _g : undefined;
-        var lastLoginAt = (_h = object.lastLoginAt) !== null && _h !== void 0 ? _h : undefined;
+        var createdAt = (_g = object.createdAt) !== null && _g !== undefined ? _g : undefined;
+        var lastLoginAt = (_h = object.lastLoginAt) !== null && _h !== undefined ? _h : undefined;
         var uid = object.uid,
             emailVerified = object.emailVerified,
             isAnonymous = object.isAnonymous,
@@ -7491,7 +7491,7 @@
       var re = /([a-zA-Z\d\.]+)\/[a-zA-Z\d\.]*$/;
       var matches = userAgent.match(re);
 
-      if ((matches === null || matches === void 0 ? void 0 : matches.length) === 2) {
+      if ((matches === null || matches === undefined ? undefined : matches.length) === 2) {
         return matches[1];
       }
     }
@@ -7547,7 +7547,7 @@
 
     var _a;
 
-    return _isIOS(ua) && !!((_a = window.navigator) === null || _a === void 0 ? void 0 : _a.standalone);
+    return _isIOS(ua) && !!((_a = window.navigator) === null || _a === undefined ? undefined : _a.standalone);
   }
 
   function _isIE10() {
@@ -7777,7 +7777,7 @@
                   throw this.auth._errorFactory.create("login-blocked"
                   /* LOGIN_BLOCKED */
                   , {
-                    originalMessage: (_a = _context18.t1) === null || _a === void 0 ? void 0 : _a.message
+                    originalMessage: (_a = _context18.t1) === null || _a === undefined ? undefined : _a.message
                   });
 
                 case 30:
@@ -7893,7 +7893,7 @@
                   return _context19.abrupt("return");
 
                 case 7:
-                  if (!((_a = _this4._popupRedirectResolver) === null || _a === void 0 ? void 0 : _a._shouldInitProactively)) {
+                  if (!((_a = _this4._popupRedirectResolver) === null || _a === undefined ? undefined : _a._shouldInitProactively)) {
                     _context19.next = 15;
                     break;
                   }
@@ -7915,7 +7915,7 @@
                   return _this4.initializeCurrentUser(popupRedirectResolver);
 
                 case 17:
-                  _this4.lastNotifiedUid = ((_b = _this4.currentUser) === null || _b === void 0 ? void 0 : _b.uid) || null;
+                  _this4.lastNotifiedUid = ((_b = _this4.currentUser) === null || _b === undefined ? undefined : _b.uid) || null;
 
                   if (!_this4._deleted) {
                     _context19.next = 20;
@@ -8034,8 +8034,8 @@
                   return this.getOrInitRedirectPersistenceManager();
 
                 case 8:
-                  redirectUserEventId = (_a = this.redirectUser) === null || _a === void 0 ? void 0 : _a._redirectEventId;
-                  storedUserEventId = futureCurrentUser === null || futureCurrentUser === void 0 ? void 0 : futureCurrentUser._redirectEventId;
+                  redirectUserEventId = (_a = this.redirectUser) === null || _a === undefined ? undefined : _a._redirectEventId;
+                  storedUserEventId = futureCurrentUser === null || futureCurrentUser === undefined ? undefined : futureCurrentUser._redirectEventId;
                   _context21.next = 12;
                   return this.tryRedirectSignIn(popupRedirectResolver);
 
@@ -8046,7 +8046,7 @@
                   // matches the redirect user, then we want to initially sign in with the
                   // new user object from result.
                   // TODO(samgho): More thoroughly test all of this
-                  if ((!redirectUserEventId || redirectUserEventId === storedUserEventId) && (result === null || result === void 0 ? void 0 : result.user)) {
+                  if ((!redirectUserEventId || redirectUserEventId === storedUserEventId) && (result === null || result === undefined ? undefined : result.user)) {
                     futureCurrentUser = result.user;
                     needsTocheckMiddleware = true;
                   }
@@ -8211,7 +8211,7 @@
                   _context23.prev = 5;
                   _context23.t0 = _context23["catch"](0);
 
-                  if (!(((_a = _context23.t0) === null || _a === void 0 ? void 0 : _a.code) !== "auth/".concat("network-request-failed"
+                  if (!(((_a = _context23.t0) === null || _a === undefined ? undefined : _a.code) !== "auth/".concat("network-request-failed"
                   /* NETWORK_REQUEST_FAILED */
                   ))) {
                     _context23.next = 9;
@@ -8465,7 +8465,7 @@
           apiKey: this.config.apiKey,
           authDomain: this.config.authDomain,
           appName: this.name,
-          currentUser: (_a = this._currentUser) === null || _a === void 0 ? void 0 : _a.toJSON()
+          currentUser: (_a = this._currentUser) === null || _a === undefined ? undefined : _a.toJSON()
         };
       }
     }, {
@@ -8577,7 +8577,7 @@
                   })));
 
                 case 3:
-                  if (!(((_a = this._currentUser) === null || _a === void 0 ? void 0 : _a._redirectEventId) === id)) {
+                  if (!(((_a = this._currentUser) === null || _a === undefined ? undefined : _a._redirectEventId) === id)) {
                     _context33.next = 5;
                     break;
                   }
@@ -8585,7 +8585,7 @@
                   return _context33.abrupt("return", this._currentUser);
 
                 case 5:
-                  if (!(((_b = this.redirectUser) === null || _b === void 0 ? void 0 : _b._redirectEventId) === id)) {
+                  if (!(((_b = this.redirectUser) === null || _b === undefined ? undefined : _b._redirectEventId) === id)) {
                     _context33.next = 7;
                     break;
                   }
@@ -8702,7 +8702,7 @@
         }
 
         this.idTokenSubscription.next(this.currentUser);
-        var currentUid = (_b = (_a = this.currentUser) === null || _a === void 0 ? void 0 : _a.uid) !== null && _b !== void 0 ? _b : null;
+        var currentUid = (_b = (_a = this.currentUser) === null || _a === undefined ? undefined : _a.uid) !== null && _b !== undefined ? _b : null;
 
         if (this.lastNotifiedUid !== currentUid) {
           this.lastNotifiedUid = currentUid;
@@ -8851,7 +8851,7 @@
                   _context37.next = 4;
                   return (_a = this.heartbeatServiceProvider.getImmediate({
                     optional: true
-                  })) === null || _a === void 0 ? void 0 : _a.getHeartbeatsHeader();
+                  })) === null || _a === undefined ? undefined : _a.getHeartbeatsHeader();
 
                 case 4:
                   heartbeatsHeader = _context37.sent;
@@ -9357,7 +9357,7 @@
       Object.setPrototypeOf(_assertThisInitialized(_this16), MultiFactorError.prototype);
       _this16.customData = {
         appName: auth.name,
-        tenantId: (_a = auth.tenantId) !== null && _a !== void 0 ? _a : undefined,
+        tenantId: (_a = auth.tenantId) !== null && _a !== undefined ? _a : undefined,
         _serverResponse: error.customData._serverResponse,
         operationType: operationType
       };
@@ -9502,7 +9502,7 @@
               _context122.t0 = _context122["catch"](3);
 
               // Convert user deleted error into user mismatch
-              if (((_a = _context122.t0) === null || _a === void 0 ? void 0 : _a.code) === "auth/".concat("user-not-found"
+              if (((_a = _context122.t0) === null || _a === undefined ? undefined : _a.code) === "auth/".concat("user-not-found"
               /* USER_DELETED */
               )) {
                 _fail(auth, "user-mismatch"
@@ -10206,7 +10206,7 @@
                   _messageEvent$data = messageEvent.data, eventId = _messageEvent$data.eventId, eventType = _messageEvent$data.eventType, data = _messageEvent$data.data;
                   handlers = this.handlersMap[eventType];
 
-                  if (handlers === null || handlers === void 0 ? void 0 : handlers.size) {
+                  if (handlers === null || handlers === undefined ? undefined : handlers.size) {
                     _context52.next = 5;
                     break;
                   }
@@ -10602,7 +10602,7 @@
         while (1) {
           switch (_context145.prev = _context145.next) {
             case 0:
-              if (navigator === null || navigator === void 0 ? void 0 : navigator.serviceWorker) {
+              if (navigator === null || navigator === undefined ? undefined : navigator.serviceWorker) {
                 _context145.next = 2;
                 break;
               }
@@ -10636,7 +10636,7 @@
   function _getServiceWorkerController() {
     var _a;
 
-    return ((_a = navigator === null || navigator === void 0 ? void 0 : navigator.serviceWorker) === null || _a === void 0 ? void 0 : _a.controller) || null;
+    return ((_a = navigator === null || navigator === undefined ? undefined : navigator.serviceWorker) === null || _a === undefined ? undefined : _a.controller) || null;
   }
 
   function _getWorkerGlobalScope() {
@@ -11120,7 +11120,7 @@
                   return _context61.abrupt("return");
 
                 case 11:
-                  if (((_a = results[0]) === null || _a === void 0 ? void 0 : _a.fulfilled) && ((_b = results[0]) === null || _b === void 0 ? void 0 : _b.value.includes("keyChanged"
+                  if (((_a = results[0]) === null || _a === undefined ? undefined : _a.fulfilled) && ((_b = results[0]) === null || _b === undefined ? undefined : _b.value.includes("keyChanged"
                   /* KEY_CHANGED */
                   ))) {
                     this.serviceWorkerReceiverAvailable = true;
@@ -11584,7 +11584,7 @@
   function getScriptParentElement() {
     var _a, _b;
 
-    return (_b = (_a = document.getElementsByTagName('head')) === null || _a === void 0 ? void 0 : _a[0]) !== null && _b !== void 0 ? _b : document;
+    return (_b = (_a = document.getElementsByTagName('head')) === null || _a === undefined ? undefined : _a[0]) !== null && _b !== undefined ? _b : document;
   }
 
   function _loadJS(url) {
@@ -12418,7 +12418,7 @@
         var _a;
 
         if (event.error && !isNullRedirectEvent(event)) {
-          var code = ((_a = event.error.code) === null || _a === void 0 ? void 0 : _a.split('auth/')[1]) || "internal-error"
+          var code = ((_a = event.error.code) === null || _a === undefined ? undefined : _a.split('auth/')[1]) || "internal-error"
           /* INTERNAL_ERROR */
           ;
           consumer.onError(_createError(this.auth, code));
@@ -12463,7 +12463,7 @@
         error = _ref32.error;
     return type === "unknown"
     /* UNKNOWN */
-    && (error === null || error === void 0 ? void 0 : error.code) === "auth/".concat("no-auth-event"
+    && (error === null || error === undefined ? undefined : error.code) === "auth/".concat("no-auth-event"
     /* NO_AUTH_EVENT */
     );
   }
@@ -12715,7 +12715,7 @@
     var beacon = _window().___jsl; // Get current hint.
 
 
-    if (beacon === null || beacon === void 0 ? void 0 : beacon.H) {
+    if (beacon === null || beacon === undefined ? undefined : beacon.H) {
       // Get gapi hint.
       for (var _i5 = 0, _Object$keys3 = Object.keys(beacon.H); _i5 < _Object$keys3.length; _i5++) {
         var hint = _Object$keys3[_i5];
@@ -12765,10 +12765,10 @@
         });
       }
 
-      if ((_b = (_a = _window().gapi) === null || _a === void 0 ? void 0 : _a.iframes) === null || _b === void 0 ? void 0 : _b.Iframe) {
+      if ((_b = (_a = _window().gapi) === null || _a === undefined ? undefined : _a.iframes) === null || _b === undefined ? undefined : _b.Iframe) {
         // If gapi.iframes.Iframe available, resolve.
         resolve(gapi.iframes.getContext());
-      } else if (!!((_c = _window().gapi) === null || _c === void 0 ? void 0 : _c.load)) {
+      } else if (!!((_c = _window().gapi) === null || _c === undefined ? undefined : _c.load)) {
         // Gapi loader ready, load gapi.iframes.
         loadGapiIframe();
       } else {
@@ -13235,7 +13235,7 @@
             while (1) {
               switch (_context84.prev = _context84.next) {
                 case 0:
-                  debugAssert((_a = this.eventManagers[auth._key()]) === null || _a === void 0 ? void 0 : _a.manager, '_initialize() not called before _openPopup()');
+                  debugAssert((_a = this.eventManagers[auth._key()]) === null || _a === undefined ? undefined : _a.manager, '_initialize() not called before _openPopup()');
                   url = _getRedirectUrl(auth, provider, authType, _getCurrentUrl(), eventId);
                   return _context84.abrupt("return", _open(auth, url, _generateEventId()));
 
@@ -13330,7 +13330,7 @@
                   iframe = _context86.sent;
                   manager = new AuthEventManager(auth);
                   iframe.register('authEvent', function (iframeEvent) {
-                    _assert(iframeEvent === null || iframeEvent === void 0 ? void 0 : iframeEvent.authEvent, auth, "invalid-auth-event"
+                    _assert(iframeEvent === null || iframeEvent === undefined ? undefined : iframeEvent.authEvent, auth, "invalid-auth-event"
                     /* INVALID_AUTH_EVENT */
                     ); // TODO: Consider splitting redirect and popup events earlier on
 
@@ -13374,7 +13374,7 @@
         }, function (result) {
           var _a;
 
-          var isSupported = (_a = result === null || result === void 0 ? void 0 : result[0]) === null || _a === void 0 ? void 0 : _a[WEB_STORAGE_SUPPORT_KEY];
+          var isSupported = (_a = result === null || result === undefined ? undefined : result[0]) === null || _a === undefined ? undefined : _a[WEB_STORAGE_SUPPORT_KEY];
 
           if (isSupported !== undefined) {
             cb(!!isSupported);
@@ -13448,7 +13448,7 @@
         var _a;
 
         this.assertAuthConfigured();
-        return ((_a = this.auth.currentUser) === null || _a === void 0 ? void 0 : _a.uid) || null;
+        return ((_a = this.auth.currentUser) === null || _a === undefined ? undefined : _a.uid) || null;
       }
     }, {
       key: "getToken",
@@ -13507,7 +13507,7 @@
         var unsubscribe = this.auth.onIdTokenChanged(function (user) {
           var _a;
 
-          listener(((_a = user) === null || _a === void 0 ? void 0 : _a.stsTokenManager.accessToken) || null);
+          listener(((_a = user) === null || _a === undefined ? undefined : _a.stsTokenManager.accessToken) || null);
         });
         this.internalListeners.set(listener, unsubscribe);
         this.updateProactiveRefresh();
@@ -13611,7 +13611,7 @@
         }); // Auth domain is optional if IdP sign in isn't being used
 
 
-        _assert(!(authDomain === null || authDomain === void 0 ? void 0 : authDomain.includes(':')), "argument-error"
+        _assert(!(authDomain === null || authDomain === undefined ? undefined : authDomain.includes(':')), "argument-error"
         /* ARGUMENT_ERROR */
         , {
           appName: app.name
@@ -13785,7 +13785,6 @@
     AUTO_START_SETTING: "/auto-start-setting",
     TIMERS_STATES: "/timers-states",
     DEMO_DATA: "/demo-data",
-    CATEGORIES: "/categories",
     IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
     COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
     CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
@@ -14449,7 +14448,7 @@
                 payload: infoArrAfterReset
               });
               persistCategoryChangeInfoArrayToIDB(infoArrAfterReset);
-              fetchWrapper(BASE_URL + RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, "PATCH", {
+              fetchWrapper(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, "PATCH", {
                 categoryChangeInfoArray: infoArrAfterReset.map(function (info) {
                   return {
                     categoryName: info.categoryName,
@@ -14938,12 +14937,11 @@
 
   function _recordPomo() {
     _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee22(startTime, idTokenAndEmail, infoArray, sessionData) {
-      var body, idToken, email, today, LocaleDateString, final, cache, cacheUrl, statResponse, statData;
+      var idToken, email, today, LocaleDateString, final, cache, cacheUrl, statResponse, statData;
       return _regeneratorRuntime().wrap(function _callee22$(_context22) {
         while (1) {
           switch (_context22.prev = _context22.next) {
             case 0:
-              body = null; // console.log("info arr in recordPomo", infoArray);
 
               _context22.prev = 1;
               idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email;
@@ -15063,32 +15061,19 @@
               // console.log(await getCacheNames()); // real ones.
 
             case 33:
-              //#endregion
-              body = JSON.stringify({
-                pomodoroRecordArr: final
-              });
-              fetchWrapper(BASE_URL + RESOURCE.POMODOROS, "POST", {
+              _context22.next = 35;
+              return fetchWrapper(RESOURCE.POMODOROS, "POST", {
                 pomodoroRecordArr: final
               }, idToken);
+
+            case 35:
               _context22.next = 40;
               break;
 
             case 37:
               _context22.prev = 37;
               _context22.t2 = _context22["catch"](1);
-
-              if (_context22.t2 instanceof TypeError && _context22.t2.message.toLowerCase() === "failed to fetch") {
-                BC.postMessage({
-                  evName: "fetchCallFailed_Network_Error",
-                  payload: {
-                    url: "pomodoros",
-                    method: "POST",
-                    data: body
-                  }
-                });
-              } else {
-                console.warn(_context22.t2);
-              }
+              console.warn(_context22.t2);
 
             case 40:
             case "end":
@@ -15106,12 +15091,11 @@
 
   function _updateTimersStates() {
     _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee23(states) {
-      var body, idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates;
+      var idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates;
       return _regeneratorRuntime().wrap(function _callee23$(_context23) {
         while (1) {
           switch (_context23.prev = _context23.next) {
             case 0:
-              body = null;
               _context23.prev = 1;
               _context23.next = 4;
               return getIdTokenAndEmail();
@@ -15120,7 +15104,7 @@
               idTokenAndEmail = _context23.sent;
 
               if (!idTokenAndEmail) {
-                _context23.next = 27;
+                _context23.next = 25;
                 break;
               }
 
@@ -15162,47 +15146,24 @@
               return cache.put(BASE_URL + RESOURCE.USERS, new Response(JSON.stringify(pomoSettingAndTimersStates)));
 
             case 23:
-              body = JSON.stringify(_objectSpread2({}, states));
-              _context23.next = 26;
-              return fetch(BASE_URL + RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
-                method: "PATCH",
-                body: body,
-                headers: {
-                  Authorization: "Bearer " + idToken,
-                  "Content-Type": "application/json"
-                }
-              });
+              _context23.next = 25;
+              return fetchWrapper(RESOURCE.USERS + SUB_SET.TIMERS_STATES, "PATCH", _objectSpread2({}, states), idToken);
 
-            case 26:
-              _context23.sent;
-
-            case 27:
-              _context23.next = 32;
+            case 25:
+              _context23.next = 30;
               break;
 
-            case 29:
-              _context23.prev = 29;
+            case 27:
+              _context23.prev = 27;
               _context23.t1 = _context23["catch"](1);
+              console.warn(_context23.t1);
 
-              if (_context23.t1 instanceof TypeError && _context23.t1.message.toLowerCase() === "failed to fetch") {
-                BC.postMessage({
-                  evName: "fetchCallFailed_Network_Error",
-                  payload: {
-                    url: "users/updateTimersStates",
-                    method: "PATCH",
-                    data: body
-                  }
-                });
-              } else {
-                console.warn(_context23.t1);
-              }
-
-            case 32:
+            case 30:
             case "end":
               return _context23.stop();
           }
         }
-      }, _callee23, null, [[1, 29]]);
+      }, _callee23, null, [[1, 27]]);
     }));
     return _updateTimersStates.apply(this, arguments);
   }
@@ -15213,12 +15174,11 @@
 
   function _persistRecOfTodayToServer() {
     _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee24(record) {
-      var body, idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday;
+      var idTokenAndEmail, idToken, email, cache, resOfRecordOfToday, recordsOfToday;
       return _regeneratorRuntime().wrap(function _callee24$(_context24) {
         while (1) {
           switch (_context24.prev = _context24.next) {
             case 0:
-              body = null;
               _context24.prev = 1;
               _context24.next = 4;
               return getIdTokenAndEmail();
@@ -15227,11 +15187,11 @@
               idTokenAndEmail = _context24.sent;
 
               if (!idTokenAndEmail) {
-                _context24.next = 27;
+                _context24.next = 25;
                 break;
               }
 
-              idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email; // caching
+              idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email; //#region caching
 
               _context24.t0 = CACHE;
 
@@ -15271,50 +15231,26 @@
               return cache.put(BASE_URL + RESOURCE.TODAY_RECORDS, new Response(JSON.stringify(recordsOfToday)));
 
             case 23:
-              body = JSON.stringify(_objectSpread2({
+              _context24.next = 25;
+              return fetchWrapper(RESOURCE.TODAY_RECORDS, "POST", _objectSpread2({
                 userEmail: email
-              }, record)); // http requeset
+              }, record), idToken);
 
-              _context24.next = 26;
-              return fetch(BASE_URL + RESOURCE.TODAY_RECORDS, {
-                method: "POST",
-                body: body,
-                headers: {
-                  Authorization: "Bearer " + idToken,
-                  "Content-Type": "application/json"
-                }
-              });
-
-            case 26:
-              _context24.sent;
-
-            case 27:
-              _context24.next = 32;
+            case 25:
+              _context24.next = 30;
               break;
 
-            case 29:
-              _context24.prev = 29;
+            case 27:
+              _context24.prev = 27;
               _context24.t1 = _context24["catch"](1);
+              console.warn(_context24.t1);
 
-              if (_context24.t1 instanceof TypeError && _context24.t1.message.toLowerCase() === "failed to fetch") {
-                BC.postMessage({
-                  evName: "fetchCallFailed_Network_Error",
-                  payload: {
-                    url: "today-records",
-                    method: "POST",
-                    data: body
-                  }
-                });
-              } else {
-                console.warn(_context24.t1);
-              }
-
-            case 32:
+            case 30:
             case "end":
               return _context24.stop();
           }
         }
-      }, _callee24, null, [[1, 29]]);
+      }, _callee24, null, [[1, 27]]);
     }));
     return _persistRecOfTodayToServer.apply(this, arguments);
   }
@@ -15335,7 +15271,7 @@
   }
   /**
    *
-   * @param {*} URL string
+   * @param {*} URL string that comes after BASE_URL
    * @param {*} METHOD "POST" | "GET" | "PATCH" | "DELETE"
    * @param {*} data this is going to be stringified
    * @param {*} idToken string
@@ -15358,7 +15294,7 @@
             case 0:
               _context25.prev = 0;
               _context25.next = 3;
-              return fetch(URL, {
+              return fetch(BASE_URL + URL, {
                 method: METHOD,
                 body: JSON.stringify(data),
                 headers: {
@@ -15374,10 +15310,21 @@
             case 7:
               _context25.prev = 7;
               _context25.t0 = _context25["catch"](0);
-              console.error("Fetch failed:", _context25.t0);
-              throw _context25.t0;
 
-            case 11:
+              if (_context25.t0 instanceof TypeError && _context25.t0.message.toLowerCase() === "failed to fetch") {
+                BC.postMessage({
+                  evName: "fetchCallFailed_Network_Error",
+                  payload: {
+                    url: URL,
+                    method: METHOD,
+                    data: JSON.stringify(data)
+                  }
+                });
+              } else {
+                console.warn(_context25.t0);
+              }
+
+            case 10:
             case "end":
               return _context25.stop();
           }

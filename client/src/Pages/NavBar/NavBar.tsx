@@ -62,8 +62,8 @@ function Navbar() {
 
   function toggleSideBar() {
     if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
-      console.log(`inner width - ${window.innerWidth}
-      theme.mobile - ${theme.mobile}`);
+      // console.log(`inner width - ${window.innerWidth}
+      // theme.mobile - ${theme.mobile}`);
 
       // Toggle the ul element
       setIsActive(!isActive);
@@ -106,7 +106,7 @@ function Navbar() {
     if (user == null) return;
 
     const unsub = pubsub.subscribe("sessionEndBySW", (payload) => {
-      console.log("inside sessionEndBySW subscriber: user is", user);
+      // console.log("inside sessionEndBySW subscriber: user is", user);
       updateCategoryChangeInfoArray(payload);
     });
 

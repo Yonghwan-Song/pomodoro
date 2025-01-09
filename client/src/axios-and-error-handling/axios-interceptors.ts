@@ -3,6 +3,7 @@ import { axiosInstance } from "./axios-instances";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../firebase";
 import { errController } from "./errorController";
+import { RESOURCE } from "../constants";
 
 function obtainIdToken(): Promise<{ idToken: string } | null> {
   return new Promise((res, rej) => {
@@ -61,7 +62,20 @@ export function defineInterceptorsForAxiosInstance() {
       if (error.code === "ERR_NETWORK") {
         // console.log("axios req config is here");
         // console.log(error.config);
-        errController.registerFailedReqInfo(error.config);
+
+        if (
+          error.config.method?.toUpperCase() === "PATCH" &&
+          error.config.url === RESOURCE.CATEGORIES
+        ) {
+          return Promise.reject(error.config);
+        }
+
+        if (
+          error.config.method?.toUpperCase() !== "GET" &&
+          error.config.method?.toUpperCase() !== "DELETE"
+        )
+          // PATCH requests to any URL other than "/categories", All POST requests.
+          errController.registerFailedReqInfo(error.config);
       }
       return Promise.reject(error);
     }

@@ -383,11 +383,11 @@ export function Timer({
   //#region UseEffects
   useEffect(autoStartNextSession, [repetitionCount, durationInSeconds]);
 
-  useEffect(logPause, [
-    remainingDuration,
-    durationInSeconds,
-    timerState.running,
-  ]);
+  // useEffect(logPause, [
+  //   remainingDuration,
+  //   durationInSeconds,
+  //   timerState.running,
+  // ]);
 
   useEffect(setRemainingDurationAfterReset, [
     remainingDuration,

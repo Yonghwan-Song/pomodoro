@@ -14,7 +14,9 @@ function Signin() {
     try {
       await googleSignIn();
       await clearRecOfToday();
-      await errController.getFailedReqsFromIDB();
+      if (await errController.getAndResendFailedReqsFromIDB())
+        // console.log("right before reload() at handleGoogleSignIn");
+        window.location.reload();
     } catch (error) {
       console.log(error);
     }

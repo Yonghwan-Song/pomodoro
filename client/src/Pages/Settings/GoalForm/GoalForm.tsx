@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { BASE_URL, RESOURCE, SUB_SET } from "../../../constants";
+import { RESOURCE, SUB_SET } from "../../../constants";
 import { DailyGoals } from "../../../types/clientStatesType";
 
 import BlockNumberInput from "../../../ReusableComponents/Inputs/BlockNumberInput";
@@ -193,10 +193,7 @@ export default function GoalForm() {
       let clonedGoal = structuredClone({ weeklyGoal, dailyGoals });
       clonedGoal.dailyGoals = debouncedDailyGoalsInputs;
       //* 2. invoke patch call using axiosInstance
-      axiosInstance.patch(
-        BASE_URL + RESOURCE.USERS + SUB_SET.GOALS,
-        clonedGoal
-      );
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.GOALS, clonedGoal);
 
       setDebouncedDailyGoalsInputs(null);
     }
@@ -213,10 +210,7 @@ export default function GoalForm() {
       let clonedGoal = structuredClone({ weeklyGoal, dailyGoals });
       clonedGoal.weeklyGoal.minimum = debouncedWeeklyMinimumInput;
       //* 2. invoke patch call using axiosInstance
-      axiosInstance.patch(
-        BASE_URL + RESOURCE.USERS + SUB_SET.GOALS,
-        clonedGoal
-      );
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.GOALS, clonedGoal);
 
       setDebouncedWeeklyMinimumInput(null); // <-- not necessary
     }
@@ -233,10 +227,7 @@ export default function GoalForm() {
       let clonedGoal = structuredClone({ weeklyGoal, dailyGoals });
       clonedGoal.weeklyGoal.ideal = debouncedWeeklyIdealInput;
       //* 2. invoke patch call using axiosInstance
-      axiosInstance.patch(
-        BASE_URL + RESOURCE.USERS + SUB_SET.GOALS,
-        clonedGoal
-      );
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.GOALS, clonedGoal);
       setDebouncedWeeklyIdealInput(null);
     }
   }, [debouncedWeeklyIdealInput]);
