@@ -15311,7 +15311,7 @@
               _context25.prev = 7;
               _context25.t0 = _context25["catch"](0);
 
-              if (_context25.t0 instanceof TypeError && _context25.t0.message.toLowerCase() === "failed to fetch") {
+              if (_context25.t0 instanceof TypeError && _context25.t0.message.toLowerCase() === "failed to fetch" && !navigator.onLine) {
                 BC.postMessage({
                   evName: "fetchCallFailed_Network_Error",
                   payload: {

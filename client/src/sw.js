@@ -868,7 +868,8 @@ async function fetchWrapper(URL, METHOD, data, idToken) {
   } catch (error) {
     if (
       error instanceof TypeError &&
-      error.message.toLowerCase() === "failed to fetch"
+      error.message.toLowerCase() === "failed to fetch" &&
+      !navigator.onLine
     ) {
       BC.postMessage({
         evName: "fetchCallFailed_Network_Error",

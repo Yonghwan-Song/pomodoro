@@ -130,7 +130,16 @@ export const errController: ERR_CONTROLLER = {
         let batchUrl = url + "/batch";
         const existingEntry = this.failedReqInfo.PATCH.get(batchUrl);
         if (existingEntry) {
-          //#region New
+          if ("isCurrent" in parsedData.data) {
+            let currentCategoryDTO = existingEntry.data.categories.find(
+              (category: UpdateCategoryDTOWithUUID) =>
+                "isCurrent" in category.data && category.data.isCurrent
+            );
+            if (currentCategoryDTO) {
+              currentCategoryDTO.data.isCurrent = false;
+            }
+          }
+
           const matchingCategory = existingEntry.data.categories.find(
             (category: { _uuid: string }) => category._uuid === parsedData._uuid
           );
@@ -157,7 +166,6 @@ export const errController: ERR_CONTROLLER = {
               },
             });
           }
-          //#endregion
         } else {
           // set initial entry
           this.failedReqInfo.PATCH.set(batchUrl, {

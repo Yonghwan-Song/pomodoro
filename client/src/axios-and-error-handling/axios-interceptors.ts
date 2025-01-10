@@ -59,9 +59,10 @@ export function defineInterceptorsForAxiosInstance() {
     },
     function (error: AxiosError) {
       console.log("error message from the interceptor", error);
-      if (error.code === "ERR_NETWORK") {
+      if (error.code === "ERR_NETWORK" && !navigator.onLine) {
         // console.log("axios req config is here");
         // console.log(error.config);
+        // console.log("navigator.online", navigator.onLine);
 
         if (
           error.config.method?.toUpperCase() === "PATCH" &&
