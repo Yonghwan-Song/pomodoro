@@ -708,10 +708,15 @@ export function Timer({
     );
   //#endregion
 
-  let startMoment = "";
+  let range = "";
   if (timerState.startTime !== 0) {
-    const date = new Date(timerState.startTime);
-    startMoment = `${date.toLocaleTimeString()} | `;
+    const start = new Date(timerState.startTime);
+    const end = new Date(
+      timerState.startTime +
+        timerState.pause.totalLength +
+        durationInSeconds * 1000
+    );
+    range = `${start.toLocaleTimeString()} ~ ${end.toLocaleTimeString()}| `;
   }
 
   const sessionInfo = determinePatternTimerStates({
@@ -720,7 +725,7 @@ export function Timer({
   });
   const originalDuration = DURATIONS[sessionInfo.kind];
   const tooltipContent =
-    startMoment +
+    range +
     `${durationInSeconds / 60} = ${originalDuration} ${
       durationInSeconds / 60 - originalDuration >= 0
         ? "+ " + (durationInSeconds / 60 - originalDuration)
