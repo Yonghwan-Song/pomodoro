@@ -46,7 +46,6 @@ function Navbar() {
       await setStateStoreToDefault(); //TODO: index.tsx에서 unload할때는 clear하고 여기서는 default로 했음. 이유를 까먹었다. 왜 안적었지? //! issue 38
       await clearRecOfToday();
       await clearCategoryStore();
-      pubsub.publish("prepareTimerRelatedDBForUnloggedInUser", 1); //어차피 recOfToday도 이 시점에서는 clear되었기 때문에 따로 event를 만들어서 publish하지 않겠다.
       await deleteCache(CONSTANTS.CacheName);
       localStorage.setItem("user", "unAuthenticated");
       sessionStorage.removeItem(CONSTANTS.CURRENT_CATEGORY_NAME);

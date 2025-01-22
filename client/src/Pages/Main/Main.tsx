@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
@@ -9,7 +9,6 @@ import { useAuthContext } from "../../Context/AuthContext";
 import RecOfToday from "./Timeline-Related/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
 import { pubsub } from "../../pubsub";
-import TogglingTimer from "./Timer-Related/TogglingTimer";
 import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
 import { MINIMUMS, VH_RATIO } from "../../constants";
 import CategoryList from "./Category-Related/CategoryList";
@@ -17,6 +16,7 @@ import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
+import { TimerController } from "./Timer-Related/TimerController/TimerController";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -24,16 +24,11 @@ export default function Main() {
     TimersStatesType | {} | null
   >(null);
   const [records, setRecords] = useState<RecType[]>([]);
-  // When to use setToggle:
-  // 1. log-in - subscribeToSuccessOfPersistingTimerStatesToIDB, subscribeToSuccessOfPersistingRecordsOfTodayToIDB
-  // 2. log-out - subscribeToPrepareTimerRelatedDBForUnloggedInUser
-  const [toggle, setToggle] = useState(false);
   const areDataForRunningTimerFetched = useRef<[boolean, boolean]>(
     //[0] for the state `statesRelatedToTimer`.
     //[1] for the state `records`.
     deciderOfWhetherDataForRunningTimerFetched
   );
-  const toggleCounter = useRef(0);
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
 
   //#region UseEffects
@@ -47,7 +42,6 @@ export default function Main() {
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
   useEffect(setRecordsUsingDataFromIDB, []);
   useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
-  useEffect(subscribeToPrepareTimerRelatedDBForUnloggedInUser, []);
   useEffect(subscribeToSuccessOfPersistingRecordsOfTodayToIDB, []);
   useEffect(subscribeToRePersistingFailedRecOfToday, []);
   useEffect(endTimerInBackground, [statesRelatedToTimer]);
@@ -128,19 +122,7 @@ export default function Main() {
       "successOfPersistingTimersStatesToIDB",
       (data) => {
         setStatesRelatedToTimer(data);
-
-        //#region restriction on calling setToggle using a ref.
         areDataForRunningTimerFetched.current[0] = true;
-
-        // toggle timer only when both data are fetched
-        if (
-          areDataForRunningTimerFetched.current[0] &&
-          areDataForRunningTimerFetched.current[1]
-        ) {
-          setToggle((prev) => !prev);
-          toggleCounter.current += 1;
-        }
-        //#endregion
       }
     );
 
@@ -155,55 +137,13 @@ export default function Main() {
       "successOfPersistingRecordsOfTodayToIDB",
       (data) => {
         setRecords(data);
-
-        //#region restriction on calling setToggle using a ref.
         areDataForRunningTimerFetched.current[1] = true;
-
-        // toggle timer only when both data are fetched
-        if (
-          areDataForRunningTimerFetched.current[0] &&
-          areDataForRunningTimerFetched.current[1]
-        ) {
-          setToggle((prev) => !prev);
-          toggleCounter.current += 1;
-        }
-        //#endregion
       }
     );
 
     return () => {
       unsub();
     };
-  }
-
-  /**
-   * Purpose: to mount unlogged-in user's timer using default pomoSetting and timersStates.
-   *                                            not using the previous user's pomoSetting and timersStates.
-   *   User logs out -> recOfToday and stateStore are cleared.
-   */
-  function subscribeToPrepareTimerRelatedDBForUnloggedInUser() {
-    const getDataFromIDB = async () => {
-      const states = await obtainStatesFromIDB("withoutSettings");
-      const sessionsOfToday = await retrieveTodaySessionsFromIDB();
-      setStatesRelatedToTimer(states);
-      setRecords(sessionsOfToday);
-      setToggle((prev) => !prev);
-    };
-
-    const unsub = pubsub.subscribe(
-      "prepareTimerRelatedDBForUnloggedInUser",
-      (data) => {
-        getDataFromIDB();
-      }
-    );
-
-    return () => {
-      unsub();
-    };
-  }
-
-  function showToggleCount() {
-    console.log("toggleCount - ", toggleCounter.current);
   }
   //#endregion
 
@@ -256,8 +196,7 @@ export default function Main() {
                   >
                     <GridItem width="100%">
                       <BoxShadowWrapper>
-                        <TogglingTimer
-                          toggle={toggle}
+                        <TimerController
                           statesRelatedToTimer={statesRelatedToTimer}
                           pomoDuration={pomoSetting.pomoDuration}
                           shortBreakDuration={pomoSetting.shortBreakDuration}
@@ -285,8 +224,7 @@ export default function Main() {
             ) : (
               // When a user logs out,
               <BoxShadowWrapper>
-                <TogglingTimer
-                  toggle={toggle}
+                <TimerController
                   statesRelatedToTimer={statesRelatedToTimer}
                   pomoDuration={pomoSetting.pomoDuration}
                   shortBreakDuration={pomoSetting.shortBreakDuration}
