@@ -27,7 +27,7 @@ type Update = "start" | "pause" | "resume";
 type Reset = "reset";
 type Continue = "continue";
 
-export function reducerTimer(
+export function reducer(
   state: TimerStateType,
   action: TimerAction
 ): TimerStateType {
