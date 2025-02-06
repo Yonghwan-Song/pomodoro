@@ -4,7 +4,7 @@ import styles from "./circularProgressBar.module.css";
 import {
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
-  updateTimersStates,
+  persistTimersStatesToServer,
 } from "../../../..";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { CategoryChangeInfoForCircularProgressBar } from "../../../../types/clientStatesType";
@@ -129,7 +129,7 @@ const CircularProgressBar = ({
       duration: durationInSeconds / 60 + additionalMinutes,
     });
     if (user) {
-      await updateTimersStates({
+      await persistTimersStatesToServer({
         duration: durationInSeconds / 60 + additionalMinutes,
       });
     }
@@ -174,7 +174,7 @@ const CircularProgressBar = ({
         duration: durationInSeconds / 60 - subtractedMinutes,
       });
       if (user) {
-        await updateTimersStates({
+        await persistTimersStatesToServer({
           duration: durationInSeconds / 60 - subtractedMinutes,
         });
       }

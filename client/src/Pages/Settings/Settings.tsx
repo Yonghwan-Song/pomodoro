@@ -32,8 +32,8 @@ import {
   persistCategoryChangeInfoArrayToIDB,
   postMsgToSW,
   stopCountDownInBackground,
-  updateAutoStartSetting,
-  updateTimersStates,
+  persistAutoStartSettingToServer,
+  persistTimersStatesToServer,
 } from "../..";
 import ToggleSwitch from "../../ReusableComponents/ToggleSwitch/ToggleSwitch";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
@@ -84,6 +84,8 @@ function Settings() {
   );
   const [doesBreakStartAutomatically, setDoesBreakStartAutomatically] =
     useState(autoStartSetting.doesBreakStartAutomatically);
+  const [doesCycleStartAutomatically, setDoesCycleStartAutomatically] =
+    useState(autoStartSetting.doesCycleStartAutomatically);
 
   //#region To Observe LifeCycle
   // const mountCount = useRef(0);
@@ -120,6 +122,12 @@ function Settings() {
             numOfPomo: targetValue,
           });
           break;
+        case "numOfCycle":
+          setPomoSettingInputs({
+            ...pomoSettingInputs,
+            numOfCycle: targetValue,
+          });
+          break;
         default:
           break;
       }
@@ -137,6 +145,7 @@ function Settings() {
           value: {
             doesPomoStartAutomatically,
             doesBreakStartAutomatically,
+            doesCycleStartAutomatically,
           },
         },
         { name: "duration", value: pomoSettingInputs.pomoDuration },
@@ -170,10 +179,10 @@ function Settings() {
         categoryChangeInfoArray: infoArr,
       });
 
-      updatePomoSetting(user, pomoSettingInputs)
+      persistPomoSettingToServer(user, pomoSettingInputs)
         .then(() =>
           // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
-          updateTimersStates({
+          persistTimersStatesToServer({
             duration: pomoSettingInputs.pomoDuration,
             repetitionCount: 0,
             running: false,
@@ -182,9 +191,10 @@ function Settings() {
           })
         )
         .then(() =>
-          updateAutoStartSetting(user, {
+          persistAutoStartSettingToServer(user, {
             doesPomoStartAutomatically,
             doesBreakStartAutomatically,
+            doesCycleStartAutomatically,
           })
         );
 
@@ -192,6 +202,7 @@ function Settings() {
       setAutoStartSetting({
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
+        doesCycleStartAutomatically,
       });
       updateCategoryChangeInfoArray(infoArr);
     } else {
@@ -199,6 +210,7 @@ function Settings() {
       setAutoStartSetting({
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
+        doesCycleStartAutomatically,
       });
     }
   }
@@ -232,6 +244,9 @@ function Settings() {
     );
     setDoesBreakStartAutomatically(
       autoStartSettingMemoized.doesBreakStartAutomatically
+    );
+    setDoesCycleStartAutomatically(
+      autoStartSettingMemoized.doesCycleStartAutomatically
     );
   }, [autoStartSettingMemoized]);
 
@@ -310,6 +325,18 @@ function Settings() {
                     />
                   </div>
                 </label>
+                <label className={styles.arrangeLabel}>
+                  Number of Cycles
+                  <div className={styles.alignBoxes}>
+                    <input
+                      name="numOfCycle"
+                      type="number"
+                      className={styles.arrangeInput}
+                      value={pomoSettingInputs.numOfCycle || 0}
+                      onChange={handlePomoSettingChange}
+                    />
+                  </div>
+                </label>
                 <GridItem>
                   <ToggleSwitch
                     labelName="Auto Start Pomo"
@@ -335,6 +362,23 @@ function Settings() {
                     isHorizontal={true}
                     onChange={(e) => {
                       setDoesBreakStartAutomatically(e.target.checked);
+                    }}
+                    unitSize={25}
+                    xAxisEdgeWidth={2}
+                    borderWidth={2}
+                    backgroundColorForOn="#75BBAF"
+                    backgroundColorForOff="#bbc5c7"
+                    backgroundColorForSwitch="#f0f0f0"
+                  />
+                </GridItem>
+                <GridItem>
+                  <ToggleSwitch
+                    labelName="Auto Start Cycle"
+                    name="cycle"
+                    isSwitchOn={doesCycleStartAutomatically}
+                    isHorizontal={true}
+                    onChange={(e) => {
+                      setDoesCycleStartAutomatically(e.target.checked);
                     }}
                     unitSize={25}
                     xAxisEdgeWidth={2}
@@ -451,7 +495,10 @@ async function removeDemoData(user: User) {
 }
 
 //TODO: 1.변수명 바꾸기 pomoInfo나 뭐... requiredStatesToRunTimer로 2.
-async function updatePomoSetting(user: User, pomoSetting: PomoSettingType) {
+async function persistPomoSettingToServer(
+  user: User,
+  pomoSetting: PomoSettingType
+) {
   try {
     let cache = DynamicCache || (await openCache(CacheName));
     let pomoSettingAndTimersStatesResponse = await cache.match(

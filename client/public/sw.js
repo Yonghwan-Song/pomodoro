@@ -13791,7 +13791,7 @@
     GOALS: "/goals"
   }; //#endregion
 
-  var IDB_VERSION = 9;
+  var IDB_VERSION = 10;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
 
@@ -13803,7 +13803,8 @@
     POMO: 1,
     SHORT_BREAK: 2,
     LAST_POMO: 3,
-    LONG_BREAK: 4
+    LONG_BREAK: 4,
+    VERY_LAST_POMO: 5
   };
 
   var getIdTokenAndEmail = function getIdTokenAndEmail() {
@@ -14299,7 +14300,26 @@
 
   function goNext(_x7) {
     return _goNext.apply(this, arguments);
-  } // Purpose: 방금 종료된 세션의 종류에 따라 호출하는 함수와 그 함수의 argument들이 약간 다르다.
+  }
+  /**
+   * Purpose
+   * 1. 다음 세션을 진행하기 위해 `정보`를 변환 (TimersStatesType - client/src/types/clientStatesType.ts)
+   *    1. F. E - 1) 상태를 변환. 2) Indexed DB에 있는 정보 변환.
+   *    2. B. E - API를 통해 DB에 있는 데이터 변환 (sync를 맞춘다).
+   * 2. 세션을 마무리하면서 생기는 데이터를 persist
+   *    1. records of today ( <=> TodayRecords Collection in DB)
+   *      1. Database에
+   *      2. Indexed DB에 - unlogged-in user도 Timeline기능을 사용할 수 있게 하기 위해.
+   *    2. pomodoro records ( <=> Pomodoros Collection in DB)
+   *      1. Database에
+   *      2. Cache에 - Statistics component에서 불필요하게 HTTP request를 날리지 않게 하기 위해.
+   *
+   * @param {Object} param0
+   * @param {*} param0.session 방금 끝난 세션의 종류 - 맨 위에 `const SESSION = ...` 참고
+   * @param {*} param0.timersStates
+   * @param {*} param0.pomoSetting
+   * @param {*} param0.sessionData {pause: any; startTime: any; endTime: any; timeCountedDown: any;} - today record 계산하는데 필요함.
+   */
 
 
   function _goNext() {
@@ -14318,9 +14338,10 @@
                 timeCountedDown: duration
               };
               wrapUpSession({
-                session: identifySession({
+                session: identifyPrevSession({
                   howManyCountdown: repetitionCount + 1,
-                  numOfPomo: pomoSetting.numOfPomo
+                  numOfPomo: pomoSetting.numOfPomo,
+                  numOfCycle: pomoSetting.numOfCycle
                 }),
                 timersStates: timersStates,
                 pomoSetting: pomoSetting,
@@ -14344,7 +14365,7 @@
 
   function _wrapUpSession() {
     _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15(_ref7) {
-      var session, timersStates, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, infoArrayBeforeReset, infoArrAfterReset, payload, _payload, _payload2;
+      var session, timersStates, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, infoArrayBeforeReset, infoArrAfterReset, payload, _payload, _payload2, _payload3;
 
       return _regeneratorRuntime().wrap(function _callee15$(_context15) {
         while (1) {
@@ -14461,27 +14482,17 @@
 
             case 24:
               _context15.t0 = session;
-              _context15.next = _context15.t0 === SESSION.POMO ? 27 : _context15.t0 === SESSION.SHORT_BREAK ? 40 : _context15.t0 === SESSION.LAST_POMO ? 49 : _context15.t0 === SESSION.LONG_BREAK ? 62 : 72;
+              _context15.next = _context15.t0 === SESSION.POMO ? 27 : _context15.t0 === SESSION.SHORT_BREAK ? 40 : _context15.t0 === SESSION.LAST_POMO ? 49 : _context15.t0 === SESSION.VERY_LAST_POMO ? 62 : _context15.t0 === SESSION.LONG_BREAK ? 76 : 85;
               break;
 
             case 27:
               self.registration.showNotification("shortBreak", {
-                body: "time to take a short break",
+                body: "Time to take a short break",
                 silent: true
-              });
+              }); // 1. 정보 변환
+
               timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
-              _context15.t1 = idTokenAndEmail;
-
-              if (!_context15.t1) {
-                _context15.next = 33;
-                break;
-              }
-
-              _context15.next = 33;
-              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
-
-            case 33:
-              _context15.next = 35;
+              _context15.next = 31;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14490,6 +14501,17 @@
                 value: timersStatesForNextSession.duration
               }]));
 
+            case 31:
+              _context15.t1 = idTokenAndEmail;
+
+              if (!_context15.t1) {
+                _context15.next = 35;
+                break;
+              }
+
+              _context15.next = 35;
+              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
+
             case 35:
               _context15.next = 37;
               return persistSessionToIDB("pomo", sessionData);
@@ -14497,7 +14519,7 @@
             case 37:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
-                  updateTimersStates(timersStatesForNextSession);
+                  persistTimersStatesToServer(timersStatesForNextSession);
                 } else {
                   payload = {
                     timersStates: timersStatesForNextSession,
@@ -14505,7 +14527,7 @@
                     endTime: sessionData.endTime
                   };
                   BC.postMessage({
-                    evName: "autoStartNextSession",
+                    evName: "autoStartCurrentSession",
                     payload: payload
                   });
                 }
@@ -14516,11 +14538,11 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData));
-              return _context15.abrupt("break", 73);
+              return _context15.abrupt("break", 86);
 
             case 40:
               self.registration.showNotification("pomo", {
-                body: "time to focus",
+                body: "Time to focus",
                 silent: true
               });
               timersStatesForNextSession.duration = pomoSetting.pomoDuration;
@@ -14540,7 +14562,7 @@
             case 46:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesPomoStartAutomatically === false) {
-                  updateTimersStates(timersStatesForNextSession);
+                  persistTimersStatesToServer(timersStatesForNextSession);
                 } else {
                   _payload = {
                     timersStates: timersStatesForNextSession,
@@ -14548,7 +14570,7 @@
                     endTime: sessionData.endTime
                   };
                   BC.postMessage({
-                    evName: "autoStartNextSession",
+                    evName: "autoStartCurrentSession",
                     payload: _payload
                   });
                 }
@@ -14559,11 +14581,11 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData));
-              return _context15.abrupt("break", 73);
+              return _context15.abrupt("break", 86);
 
             case 49:
               self.registration.showNotification("longBreak", {
-                body: "time to take a long break",
+                body: "Time to take a long break",
                 silent: true
               });
               timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
@@ -14594,7 +14616,7 @@
             case 59:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
-                  updateTimersStates(timersStatesForNextSession);
+                  persistTimersStatesToServer(timersStatesForNextSession);
                 } else {
                   _payload2 = {
                     timersStates: timersStatesForNextSession,
@@ -14602,7 +14624,7 @@
                     endTime: sessionData.endTime
                   };
                   BC.postMessage({
-                    evName: "autoStartNextSession",
+                    evName: "autoStartCurrentSession",
                     payload: _payload2
                   });
                 }
@@ -14613,11 +14635,11 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData));
-              return _context15.abrupt("break", 73);
+              return _context15.abrupt("break", 86);
 
             case 62:
-              self.registration.showNotification("nextCycle", {
-                body: "time to do the next cycle of pomos",
+              self.registration.showNotification("cyclesCompleted", {
+                body: "All cycles of focus durations are done",
                 silent: true
               });
               timersStatesForNextSession.repetitionCount = 0;
@@ -14633,19 +14655,73 @@
 
             case 67:
               _context15.next = 69;
-              return persistSessionToIDB("break", sessionData);
+              return persistSessionToIDB("pomo", sessionData);
 
             case 69:
-              updateTimersStates(timersStatesForNextSession);
+              _context15.t3 = idTokenAndEmail;
+
+              if (!_context15.t3) {
+                _context15.next = 73;
+                break;
+              }
+
+              _context15.next = 73;
+              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
+
+            case 73:
+              persistTimersStatesToServer(timersStatesForNextSession);
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "pomo"
+              }, sessionData));
+              return _context15.abrupt("break", 86);
+
+            case 76:
+              self.registration.showNotification("nextCycle", {
+                body: "time to do the next cycle of pomos",
+                silent: true
+              });
+              timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+              _context15.next = 80;
+              return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
+                name: "repetitionCount",
+                value: timersStatesForNextSession.repetitionCount
+              }, {
+                name: "duration",
+                value: timersStatesForNextSession.duration
+              }]));
+
+            case 80:
+              _context15.next = 82;
+              return persistSessionToIDB("break", sessionData);
+
+            case 82:
+              if (autoStartSetting !== undefined) {
+                if (autoStartSetting.doesPomoStartAutomatically === false) {
+                  persistTimersStatesToServer(timersStatesForNextSession);
+                } else {
+                  _payload3 = {
+                    timersStates: timersStatesForNextSession,
+                    pomoSetting: pomoSetting,
+                    endTime: sessionData.endTime
+                  };
+                  BC.postMessage({
+                    evName: "autoStartCurrentSession",
+                    payload: _payload3
+                  });
+                }
+              } else {
+                console.warn("autoStartSetting is undefined");
+              }
+
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData));
-              return _context15.abrupt("break", 73);
+              return _context15.abrupt("break", 86);
 
-            case 72:
-              return _context15.abrupt("break", 73);
+            case 85:
+              return _context15.abrupt("break", 86);
 
-            case 73:
+            case 86:
             case "end":
               return _context15.stop();
           }
@@ -15085,26 +15161,26 @@
     return _recordPomo.apply(this, arguments);
   }
 
-  function updateTimersStates(_x17) {
-    return _updateTimersStates.apply(this, arguments);
+  function persistTimersStatesToServer(_x17) {
+    return _persistTimersStatesToServer.apply(this, arguments);
   }
 
-  function _updateTimersStates() {
-    _updateTimersStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee23(states) {
+  function _persistTimersStatesToServer() {
+    _persistTimersStatesToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee23(states) {
       var idTokenAndEmail, idToken, cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates;
       return _regeneratorRuntime().wrap(function _callee23$(_context23) {
         while (1) {
           switch (_context23.prev = _context23.next) {
             case 0:
-              _context23.prev = 1;
-              _context23.next = 4;
+              _context23.prev = 0;
+              _context23.next = 3;
               return getIdTokenAndEmail();
 
-            case 4:
+            case 3:
               idTokenAndEmail = _context23.sent;
 
               if (!idTokenAndEmail) {
-                _context23.next = 25;
+                _context23.next = 24;
                 break;
               }
 
@@ -15113,59 +15189,59 @@
               _context23.t0 = CACHE;
 
               if (_context23.t0) {
-                _context23.next = 12;
+                _context23.next = 11;
                 break;
               }
 
-              _context23.next = 11;
+              _context23.next = 10;
               return openCache(CacheName);
 
-            case 11:
+            case 10:
               _context23.t0 = _context23.sent;
 
-            case 12:
+            case 11:
               cache = _context23.t0;
-              _context23.next = 15;
+              _context23.next = 14;
               return cache.match(BASE_URL + RESOURCE.USERS);
 
-            case 15:
+            case 14:
               pomoSettingAndTimerStatesResponse = _context23.sent;
 
               if (!(pomoSettingAndTimerStatesResponse !== undefined)) {
-                _context23.next = 23;
+                _context23.next = 22;
                 break;
               }
 
-              _context23.next = 19;
+              _context23.next = 18;
               return pomoSettingAndTimerStatesResponse.json();
 
-            case 19:
+            case 18:
               pomoSettingAndTimersStates = _context23.sent;
               pomoSettingAndTimersStates.timersStates = states;
-              _context23.next = 23;
+              _context23.next = 22;
               return cache.put(BASE_URL + RESOURCE.USERS, new Response(JSON.stringify(pomoSettingAndTimersStates)));
 
-            case 23:
-              _context23.next = 25;
+            case 22:
+              _context23.next = 24;
               return fetchWrapper(RESOURCE.USERS + SUB_SET.TIMERS_STATES, "PATCH", _objectSpread2({}, states), idToken);
 
-            case 25:
-              _context23.next = 30;
+            case 24:
+              _context23.next = 29;
               break;
 
-            case 27:
-              _context23.prev = 27;
-              _context23.t1 = _context23["catch"](1);
+            case 26:
+              _context23.prev = 26;
+              _context23.t1 = _context23["catch"](0);
               console.warn(_context23.t1);
 
-            case 30:
+            case 29:
             case "end":
               return _context23.stop();
           }
         }
-      }, _callee23, null, [[1, 27]]);
+      }, _callee23, null, [[0, 26]]);
     }));
-    return _updateTimersStates.apply(this, arguments);
+    return _persistTimersStatesToServer.apply(this, arguments);
   }
 
   function persistRecOfTodayToServer(_x18) {
@@ -15179,15 +15255,15 @@
         while (1) {
           switch (_context24.prev = _context24.next) {
             case 0:
-              _context24.prev = 1;
-              _context24.next = 4;
+              _context24.prev = 0;
+              _context24.next = 3;
               return getIdTokenAndEmail();
 
-            case 4:
+            case 3:
               idTokenAndEmail = _context24.sent;
 
               if (!idTokenAndEmail) {
-                _context24.next = 25;
+                _context24.next = 24;
                 break;
               }
 
@@ -15196,78 +15272,138 @@
               _context24.t0 = CACHE;
 
               if (_context24.t0) {
-                _context24.next = 12;
+                _context24.next = 11;
                 break;
               }
 
-              _context24.next = 11;
+              _context24.next = 10;
               return openCache(CacheName);
 
-            case 11:
+            case 10:
               _context24.t0 = _context24.sent;
 
-            case 12:
+            case 11:
               cache = _context24.t0;
-              _context24.next = 15;
+              _context24.next = 14;
               return cache.match(BASE_URL + RESOURCE.TODAY_RECORDS);
 
-            case 15:
+            case 14:
               resOfRecordOfToday = _context24.sent;
 
               if (!(resOfRecordOfToday !== undefined)) {
-                _context24.next = 23;
+                _context24.next = 22;
                 break;
               }
 
-              _context24.next = 19;
+              _context24.next = 18;
               return resOfRecordOfToday.json();
 
-            case 19:
+            case 18:
               recordsOfToday = _context24.sent;
               recordsOfToday.push({
                 record: record
               });
-              _context24.next = 23;
+              _context24.next = 22;
               return cache.put(BASE_URL + RESOURCE.TODAY_RECORDS, new Response(JSON.stringify(recordsOfToday)));
 
-            case 23:
-              _context24.next = 25;
+            case 22:
+              _context24.next = 24;
               return fetchWrapper(RESOURCE.TODAY_RECORDS, "POST", _objectSpread2({
                 userEmail: email
               }, record), idToken);
 
-            case 25:
-              _context24.next = 30;
+            case 24:
+              _context24.next = 29;
               break;
 
-            case 27:
-              _context24.prev = 27;
-              _context24.t1 = _context24["catch"](1);
+            case 26:
+              _context24.prev = 26;
+              _context24.t1 = _context24["catch"](0);
               console.warn(_context24.t1);
 
-            case 30:
+            case 29:
             case "end":
               return _context24.stop();
           }
         }
-      }, _callee24, null, [[1, 27]]);
+      }, _callee24, null, [[0, 26]]);
     }));
     return _persistRecOfTodayToServer.apply(this, arguments);
   }
 
-  function identifySession(_ref8) {
+  function identifyPrevSession(_ref8) {
     var howManyCountdown = _ref8.howManyCountdown,
-        numOfPomo = _ref8.numOfPomo;
+        numOfPomo = _ref8.numOfPomo,
+        numOfCycle = _ref8.numOfCycle;
 
-    if (howManyCountdown < numOfPomo * 2 - 1 && howManyCountdown % 2 === 1) {
-      return SESSION.POMO;
-    } else if (howManyCountdown < numOfPomo * 2 - 1 && howManyCountdown % 2 === 0) {
-      return SESSION.SHORT_BREAK;
-    } else if (howManyCountdown === numOfPomo * 2 - 1) {
-      return SESSION.LAST_POMO;
-    } else {
-      return SESSION.LONG_BREAK;
+    if (howManyCountdown === 0) {
+      console.log("1");
+      return SESSION.VERY_LAST_POMO;
     }
+
+    if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
+      console.log("2");
+      return SESSION.VERY_LAST_POMO;
+    }
+
+    if (numOfCycle > 1) {
+      if (numOfPomo > 1) {
+        // (numOfPomo, numOfCycle) = (3, 2) -> PBPBPL|PBPBP
+        //                         = (2, 3) -> PBPL|PBPL|PBP
+        if (howManyCountdown % 2 === 0) {
+          if (howManyCountdown % (2 * numOfPomo) === 0) {
+            console.log("3");
+            return SESSION.LONG_BREAK;
+          }
+
+          console.log("4");
+          return SESSION.SHORT_BREAK;
+        }
+
+        if (howManyCountdown % 2 === 1) {
+          if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
+            console.log("5");
+            return SESSION.LAST_POMO;
+          }
+
+          console.log("6");
+          return SESSION.POMO;
+        }
+      } else if (numOfPomo === 1) {
+        // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
+        // Short break does not exist
+        if (howManyCountdown % 2 === 0) {
+          console.log("7");
+          return SESSION.LONG_BREAK;
+        }
+
+        if (howManyCountdown % 2 === 1) {
+          console.log("8");
+          return SESSION.LAST_POMO;
+        }
+      }
+    } else if (numOfCycle === 1) {
+      // Long break does not exist
+      if (numOfPomo > 1) {
+        // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
+        if (howManyCountdown % 2 === 1) {
+          console.log("9");
+          return SESSION.POMO;
+        }
+
+        if (howManyCountdown % 2 === 0) {
+          console.log("10");
+          return SESSION.SHORT_BREAK;
+        }
+      } else if (numOfPomo === 1) {
+        // P
+        console.log("11");
+        return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
+      }
+    }
+
+    console.log("12");
+    return SESSION.POMO; //dummy
   }
   /**
    *

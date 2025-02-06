@@ -167,10 +167,11 @@ BC.addEventListener("message", async (ev) => {
       makeSound();
       break;
 
-    case "autoStartNextSession":
+    case "autoStartCurrentSession":
       let { timersStates, pomoSetting, endTime, currentCategoryName } = payload;
 
-      autoStartNextSession({
+      // console.log("about to call autoStartCurrentSession in index.tsx");
+      autoStartCurrentSession({
         timersStates,
         pomoSetting,
         endTimeOfPrevSession: endTime,
@@ -282,7 +283,8 @@ export async function updateTimersStates_with_token({
  * whenever there is a change to the timersStates,
  * such as the start of a break session, or the pause of a pomodoro session.
  */
-export async function updateTimersStates(
+//TODO - 저 위에것도 이름 바꾸기 - 그런데 token 안쓰는데 왜 이름은 with token이지?
+export async function persistTimersStatesToServer(
   states: Partial<PatternTimerStatesType & TimerStateType>
 ) {
   try {
@@ -314,7 +316,7 @@ export async function updateTimersStates(
   }
 }
 
-export async function updateAutoStartSetting(
+export async function persistAutoStartSettingToServer(
   user: User,
   autoStartSetting: AutoStartSettingType
 ) {
@@ -438,6 +440,7 @@ export async function setStateStoreToDefault() {
           shortBreakDuration: 5,
           longBreakDuration: 15,
           numOfPomo: 4,
+          numOfCycle: 1,
         },
       }),
       tx.store.put({
@@ -445,6 +448,7 @@ export async function setStateStoreToDefault() {
         value: {
           doesPomoStartAutomatically: false,
           doesBreakStartAutomatically: false,
+          doesCycleStartAutomatically: false,
         },
       }),
       tx.done,
@@ -808,7 +812,10 @@ export async function countDown(setIntervalId: number | string | null) {
               (timersStates as dataCombinedFromIDB).pause.totalLength)) /
             1000
         );
-        // console.log("count down remaining duration", remainingDuration);
+        // console.log(
+        //   "count down remaining duration - by countDown()",
+        //   remainingDuration
+        // );
         if (remainingDuration <= 0) {
           // console.log("idOfSetInterval", idOfSetInterval);
           clearInterval(idOfSetInterval);
@@ -864,7 +871,7 @@ export async function makeSound() {
 // 이거를
 // 1. persist locally
 // 2. persist remotely
-async function autoStartNextSession({
+async function autoStartCurrentSession({
   timersStates,
   pomoSetting,
   endTimeOfPrevSession,
@@ -876,7 +883,7 @@ async function autoStartNextSession({
   currentCategoryName: string | undefined | null;
 }) {
   if (currentCategoryName === undefined) currentCategoryName = null;
-  // console.log("moment when autoStartNextSession starts", new Date());
+  // console.log("moment when autoStartCurrentSession starts", new Date());
   // timersStates.startTime = endTimeOfPrevSession; //? 이렇게하면... 말이 안되지 않나?.. '찰나' 라는 델타 값 정도는 더해줘야 하지 않나?
   //! 1초 ?.. 최소 1 millisecond
   timersStates.startTime = endTimeOfPrevSession + 1; // 이렇게 해도 초단위는 같아지잖아.. 걍 1초 차이는 나게 해줘야 ..
@@ -898,7 +905,7 @@ async function autoStartNextSession({
   // 1. start a session in "/timer"
   // 2. navigate to "/statistics"
   // 3. the session ends
-  // 4. move to "/timer" and you see the next session has started by the autoStartNextSession() in index.tsx
+  // 4. move to "/timer" and you see the next session has started by the autoStartCurrentSession() in index.tsx
   // 5. refresh
   // 6. the next session starts over.
   //
@@ -930,7 +937,10 @@ async function autoStartNextSession({
           (timersStates as dataCombinedFromIDB).pause.totalLength)) /
         1000
     );
-    // console.log("count down remaining duration", remainingDuration);
+    // console.log(
+    //   "count down remaining duration - by autoStartCurrentSession()",
+    //   remainingDuration
+    // );
     if (remainingDuration <= 0) {
       // console.log("idOfSetInterval", idOfSetInterval);
       clearInterval(idOfSetInterval);

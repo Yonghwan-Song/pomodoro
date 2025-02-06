@@ -57,7 +57,7 @@ export type DataFromServer = TimerSliceStates &
   GoalSliceStates;
 
 interface SharedSlice {
-  populateExisitingUserStates: (data: DataFromServer) => void;
+  populateExistingUserStates: (data: DataFromServer) => void;
 }
 
 const createTimerSlice: StateCreator<
@@ -71,10 +71,12 @@ const createTimerSlice: StateCreator<
     shortBreakDuration: 5,
     longBreakDuration: 15,
     numOfPomo: 4,
+    numOfCycle: 1,
   },
   autoStartSetting: {
     doesPomoStartAutomatically: false,
     doesBreakStartAutomatically: false,
+    doesCycleStartAutomatically: false,
   },
   timersStates: {
     duration: 25,
@@ -198,7 +200,7 @@ const createSharedSlice: StateCreator<
   [],
   SharedSlice
 > = (set) => ({
-  populateExisitingUserStates: (data) => {
+  populateExistingUserStates: (data) => {
     set(
       (state) => ({
         pomoSetting: data.pomoSetting,

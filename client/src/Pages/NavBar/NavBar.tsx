@@ -15,7 +15,7 @@ import {
   obtainStatesFromIDB,
   setStateStoreToDefault,
   stopCountDownInBackground,
-  updateTimersStates,
+  persistTimersStatesToServer,
 } from "../..";
 import { TimersStatesType } from "../../types/clientStatesType";
 import { errController } from "../../axios-and-error-handling/errorController";
@@ -40,7 +40,7 @@ function Navbar() {
       const statesFromIDB = await obtainStatesFromIDB("withoutSettings");
       if (Object.entries(statesFromIDB).length !== 0) {
         if (user !== null) {
-          await updateTimersStates(statesFromIDB as TimersStatesType);
+          await persistTimersStatesToServer(statesFromIDB as TimersStatesType);
         }
       }
       await setStateStoreToDefault(); //TODO: index.tsx에서 unload할때는 clear하고 여기서는 default로 했음. 이유를 까먹었다. 왜 안적었지? //! issue 38

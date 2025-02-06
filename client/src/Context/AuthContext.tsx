@@ -48,7 +48,7 @@ export function AuthContextProvider({
   const [isUserNewlyRegistered, setIsUserNewlyRegistered] = useState(false);
   const [isUserNew, setIsUserNew] = useState(false);
   const populate = useBoundedPomoInfoStore(
-    (state) => state.populateExisitingUserStates
+    (state) => state.populateExistingUserStates
   );
   const updatePomoSetting = useBoundedPomoInfoStore(
     (state) => state.setPomoSetting
@@ -152,7 +152,7 @@ export function AuthContextProvider({
         console.warn(error);
       }
     }
-    function isLoggedInUserExisiting() {
+    function isLoggedInUserExisting() {
       return user !== null && isUserNew === false;
     }
     function isLoggedInUserNew() {
@@ -168,11 +168,12 @@ export function AuthContextProvider({
     // 1. user is updated first followed by isUserNew - true && false -> again with isUserNew later
     // 2. isUserNew is updated first followed by user - false && whatever -> again with user later
     // 3. user and isUserNew is updated together becuase of batching states internally(???) - no problem
-    if (isLoggedInUserExisiting() || isLoggedInUserNew()) {
+    if (isLoggedInUserExisting() || isLoggedInUserNew()) {
       populateDataFromServer();
     }
   }, [user, isUserNew, isUserNewlyRegistered]);
 
+  // Purpose: to sync the pomoSetting of an unlogged-in user by updating it using data from IDB
   useEffect(() => {
     async function getPomoSettingFromIDB() {
       let states = await obtainStatesFromIDB("withSettings");
@@ -184,12 +185,14 @@ export function AuthContextProvider({
             shortBreakDuration: 5,
             longBreakDuration: 15,
             numOfPomo: 4,
+            numOfCycle: 1,
           };
       let autoStartSetting = doesAutoStartSettingExistInIDB()
         ? (states as dataCombinedFromIDB).autoStartSetting
         : {
             doesPomoStartAutomatically: false,
             doesBreakStartAutomatically: false,
+            doesCycleStartAutomatically: false,
           };
 
       postMsgToSW("saveStates", {

@@ -13,6 +13,7 @@ const SESSION = {
   SHORT_BREAK: 2,
   LAST_POMO: 3,
   LONG_BREAK: 4,
+  VERY_LAST_POMO: 5,
 };
 
 const getIdTokenAndEmail = () => {
@@ -262,9 +263,10 @@ async function goNext(payload) {
   };
 
   wrapUpSession({
-    session: identifySession({
+    session: identifyPrevSession({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: pomoSetting.numOfPomo,
+      numOfCycle: pomoSetting.numOfCycle,
     }),
     timersStates,
     pomoSetting,
@@ -272,7 +274,25 @@ async function goNext(payload) {
   });
 }
 
-// Purpose: 방금 종료된 세션의 종류에 따라 호출하는 함수와 그 함수의 argument들이 약간 다르다.
+/**
+ * Purpose
+ * 1. 다음 세션을 진행하기 위해 `정보`를 변환 (TimersStatesType - client/src/types/clientStatesType.ts)
+ *    1. F. E - 1) 상태를 변환. 2) Indexed DB에 있는 정보 변환.
+ *    2. B. E - API를 통해 DB에 있는 데이터 변환 (sync를 맞춘다).
+ * 2. 세션을 마무리하면서 생기는 데이터를 persist
+ *    1. records of today ( <=> TodayRecords Collection in DB)
+ *      1. Database에
+ *      2. Indexed DB에 - unlogged-in user도 Timeline기능을 사용할 수 있게 하기 위해.
+ *    2. pomodoro records ( <=> Pomodoros Collection in DB)
+ *      1. Database에
+ *      2. Cache에 - Statistics component에서 불필요하게 HTTP request를 날리지 않게 하기 위해.
+ *
+ * @param {Object} param0
+ * @param {*} param0.session 방금 끝난 세션의 종류 - 맨 위에 `const SESSION = ...` 참고
+ * @param {*} param0.timersStates
+ * @param {*} param0.pomoSetting
+ * @param {*} param0.sessionData {pause: any; startTime: any; endTime: any; timeCountedDown: any;} - today record 계산하는데 필요함.
+ */
 async function wrapUpSession({
   session,
   timersStates,
@@ -384,20 +404,12 @@ async function wrapUpSession({
   switch (session) {
     case SESSION.POMO:
       self.registration.showNotification("shortBreak", {
-        body: "time to take a short break",
+        body: "Time to take a short break",
         silent: true,
       });
 
+      // 1. 정보 변환
       timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
-
-      idTokenAndEmail &&
-        (await recordPomo(
-          timersStates.startTime,
-          idTokenAndEmail,
-          infoArrayBeforeReset,
-          sessionData
-        ));
-
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
         {
@@ -410,11 +422,19 @@ async function wrapUpSession({
         },
       ]);
 
+      // 2. 마무리 하면서 생기는 데이터 persist
+      idTokenAndEmail &&
+        (await recordPomo(
+          timersStates.startTime,
+          idTokenAndEmail,
+          infoArrayBeforeReset,
+          sessionData
+        ));
       await persistSessionToIDB("pomo", sessionData);
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
-          updateTimersStates(timersStatesForNextSession);
+          persistTimersStatesToServer(timersStatesForNextSession);
         } else {
           const payload = {
             timersStates: timersStatesForNextSession,
@@ -422,7 +442,7 @@ async function wrapUpSession({
             endTime: sessionData.endTime,
           };
           BC.postMessage({
-            evName: "autoStartNextSession",
+            evName: "autoStartCurrentSession",
             payload,
           });
         }
@@ -436,7 +456,7 @@ async function wrapUpSession({
 
     case SESSION.SHORT_BREAK:
       self.registration.showNotification("pomo", {
-        body: "time to focus",
+        body: "Time to focus",
         silent: true,
       });
 
@@ -458,7 +478,7 @@ async function wrapUpSession({
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesPomoStartAutomatically === false) {
-          updateTimersStates(timersStatesForNextSession);
+          persistTimersStatesToServer(timersStatesForNextSession);
         } else {
           const payload = {
             timersStates: timersStatesForNextSession,
@@ -466,7 +486,7 @@ async function wrapUpSession({
             endTime: sessionData.endTime,
           };
           BC.postMessage({
-            evName: "autoStartNextSession",
+            evName: "autoStartCurrentSession",
             payload,
           });
         }
@@ -480,7 +500,7 @@ async function wrapUpSession({
 
     case SESSION.LAST_POMO:
       self.registration.showNotification("longBreak", {
-        body: "time to take a long break",
+        body: "Time to take a long break",
         silent: true,
       });
 
@@ -509,7 +529,7 @@ async function wrapUpSession({
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
-          updateTimersStates(timersStatesForNextSession);
+          persistTimersStatesToServer(timersStatesForNextSession);
         } else {
           const payload = {
             timersStates: timersStatesForNextSession,
@@ -517,7 +537,7 @@ async function wrapUpSession({
             endTime: sessionData.endTime,
           };
           BC.postMessage({
-            evName: "autoStartNextSession",
+            evName: "autoStartCurrentSession",
             payload,
           });
         }
@@ -529,9 +549,9 @@ async function wrapUpSession({
 
       break;
 
-    case SESSION.LONG_BREAK:
-      self.registration.showNotification("nextCycle", {
-        body: "time to do the next cycle of pomos",
+    case SESSION.VERY_LAST_POMO:
+      self.registration.showNotification("cyclesCompleted", {
+        body: "All cycles of focus durations are done",
         silent: true,
       });
 
@@ -550,9 +570,61 @@ async function wrapUpSession({
         },
       ]);
 
+      await persistSessionToIDB("pomo", sessionData);
+
+      idTokenAndEmail &&
+        (await recordPomo(
+          timersStates.startTime,
+          idTokenAndEmail,
+          infoArrayBeforeReset,
+          sessionData
+        ));
+
+      persistTimersStatesToServer(timersStatesForNextSession);
+
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
+
+      break;
+
+    case SESSION.LONG_BREAK:
+      self.registration.showNotification("nextCycle", {
+        body: "time to do the next cycle of pomos",
+        silent: true,
+      });
+
+      timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+
+      await persistStatesToIDB([
+        ...arrOfStatesOfTimerReset,
+        {
+          name: "repetitionCount",
+          value: timersStatesForNextSession.repetitionCount,
+        },
+        {
+          name: "duration",
+          value: timersStatesForNextSession.duration,
+        },
+      ]);
+
       await persistSessionToIDB("break", sessionData);
 
-      updateTimersStates(timersStatesForNextSession);
+      if (autoStartSetting !== undefined) {
+        if (autoStartSetting.doesPomoStartAutomatically === false) {
+          persistTimersStatesToServer(timersStatesForNextSession);
+        } else {
+          const payload = {
+            timersStates: timersStatesForNextSession,
+            pomoSetting: pomoSetting,
+            endTime: sessionData.endTime,
+          };
+          BC.postMessage({
+            evName: "autoStartCurrentSession",
+            payload,
+          });
+        }
+      } else {
+        console.warn("autoStartSetting is undefined");
+      }
 
       persistRecOfTodayToServer({ kind: "break", ...sessionData });
 
@@ -759,8 +831,7 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
   }
 }
 
-async function updateTimersStates(states) {
-  let body = null;
+async function persistTimersStatesToServer(states) {
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
@@ -793,7 +864,6 @@ async function updateTimersStates(states) {
 }
 
 async function persistRecOfTodayToServer(record) {
-  let body = null;
   try {
     let idTokenAndEmail = await getIdTokenAndEmail();
     if (idTokenAndEmail) {
@@ -831,19 +901,70 @@ async function persistRecOfTodayToServer(record) {
   }
 }
 
-function identifySession({ howManyCountdown, numOfPomo }) {
-  if (howManyCountdown < numOfPomo * 2 - 1 && howManyCountdown % 2 === 1) {
-    return SESSION.POMO;
-  } else if (
-    howManyCountdown < numOfPomo * 2 - 1 &&
-    howManyCountdown % 2 === 0
-  ) {
-    return SESSION.SHORT_BREAK;
-  } else if (howManyCountdown === numOfPomo * 2 - 1) {
-    return SESSION.LAST_POMO;
-  } else {
-    return SESSION.LONG_BREAK;
+function identifyPrevSession({ howManyCountdown, numOfPomo, numOfCycle }) {
+  if (howManyCountdown === 0) {
+    console.log("1");
+    return SESSION.VERY_LAST_POMO;
   }
+
+  if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
+    console.log("2");
+    return SESSION.VERY_LAST_POMO;
+  }
+
+  if (numOfCycle > 1) {
+    if (numOfPomo > 1) {
+      // (numOfPomo, numOfCycle) = (3, 2) -> PBPBPL|PBPBP
+      //                         = (2, 3) -> PBPL|PBPL|PBP
+      if (howManyCountdown % 2 === 0) {
+        if (howManyCountdown % (2 * numOfPomo) === 0) {
+          console.log("3");
+          return SESSION.LONG_BREAK;
+        }
+        console.log("4");
+        return SESSION.SHORT_BREAK;
+      }
+      if (howManyCountdown % 2 === 1) {
+        if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
+          console.log("5");
+          return SESSION.LAST_POMO;
+        }
+        console.log("6");
+        return SESSION.POMO;
+      }
+    } else if (numOfPomo === 1) {
+      // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
+      // Short break does not exist
+      if (howManyCountdown % 2 === 0) {
+        console.log("7");
+        return SESSION.LONG_BREAK;
+      }
+      if (howManyCountdown % 2 === 1) {
+        console.log("8");
+        return SESSION.LAST_POMO;
+      }
+    }
+  } else if (numOfCycle === 1) {
+    // Long break does not exist
+    if (numOfPomo > 1) {
+      // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
+      if (howManyCountdown % 2 === 1) {
+        console.log("9");
+        return SESSION.POMO;
+      }
+      if (howManyCountdown % 2 === 0) {
+        console.log("10");
+        return SESSION.SHORT_BREAK;
+      }
+    } else if (numOfPomo === 1) {
+      // P
+      console.log("11");
+      return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
+    }
+  }
+
+  console.log("12");
+  return SESSION.POMO; //dummy
 }
 
 /**

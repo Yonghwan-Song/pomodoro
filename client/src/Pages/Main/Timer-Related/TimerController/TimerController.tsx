@@ -17,7 +17,7 @@ import {
   makeSound,
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
-  updateTimersStates,
+  persistTimersStatesToServer,
   openIndexedDB,
   DB,
 } from "../../../..";
@@ -38,7 +38,12 @@ import {
   M,
   convertMilliSecToMin,
 } from "./category-change-utility";
-import { getProgress } from "../utility-functions";
+import {
+  calculateCycleCount,
+  calculateNumOfRemainingPomoSessions,
+  calculateRepetitionCountWithinCycle,
+  getProgress,
+} from "../utility-functions";
 import { useBoundedPomoInfoStore } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
 import { Grid } from "../../../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../../../ReusableComponents/Layouts/GridItem";
@@ -56,6 +61,7 @@ type PatternTimerProps = {
   shortBreakDuration: number;
   longBreakDuration: number;
   numOfPomo: number;
+  numOfCycle: number;
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
 
@@ -64,6 +70,7 @@ enum SESSION {
   SHORT_BREAK,
   LAST_POMO,
   LONG_BREAK,
+  VERY_LAST_POMO,
 }
 
 export function TimerController({
@@ -72,8 +79,10 @@ export function TimerController({
   shortBreakDuration,
   longBreakDuration,
   numOfPomo,
+  numOfCycle,
   setRecords,
 }: PatternTimerProps) {
+  //#region global states
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.setCategoryChangeInfoArray
   );
@@ -89,9 +98,18 @@ export function TimerController({
   const doesItJustChangeCategory = useBoundedPomoInfoStore(
     (state) => state.doesItJustChangeCategory
   );
+  const autoStartSetting = useBoundedPomoInfoStore(
+    (state) => state.autoStartSetting
+  );
+  const { user } = useAuthContext()!;
+  //#endregion
+
+  //
   const currentCategory = useMemo(() => {
     return categoriesFromStore.find((c) => c.isCurrent) ?? null;
   }, [categoriesFromStore]);
+
+  //
   const [durationInMinutes, setDurationInMinutes] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       return (statesRelatedToTimer as TimersStatesType).duration;
@@ -99,9 +117,6 @@ export function TimerController({
       return pomoDuration;
     }
   }); // How long the timer is going to run next time.
-
-  const durationInSeconds = durationInMinutes * 60;
-
   const [repetitionCount, setRepetitionCount] = useState(() => {
     if (Object.keys(statesRelatedToTimer).length !== 0) {
       return (statesRelatedToTimer as TimersStatesType).repetitionCount;
@@ -111,10 +126,6 @@ export function TimerController({
   }); // How many times the timer used by this Pattern timer. Timer 몇번 돌아갔는지 여태까지.
   //Thus, e.g. if repetitionCount is 0 and duration is 20, the timer is going to run for 20 minutes when start buttion is clicked.
   //And also the timer actually has not run yet since repetitionCount is 0.
-
-  const { user } = useAuthContext()!;
-  const [isOnCycle, setIsOnCycle] = useState<boolean>(false); // If the isOnCycle is true, a cycle of pomos has started and not finished yet.
-
   const [timerState, dispatch] = useReducer<
     (state: TimerStateType, action: TimerAction) => TimerStateType,
     TimerStateType
@@ -127,22 +138,40 @@ export function TimerController({
     },
     initializeTimerState
   );
-
   const [remainingDuration, setRemainingDuration] = useState(
     initializeRemainingDuration
   );
-  const autoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.autoStartSetting
-  );
 
+  //
+  const isFirstRender = useRef(true);
+  const prevSessionType = useRef<number>(0);
+
+  //
+  const durationInSeconds = durationInMinutes * 60;
+  let isBeforeStartOfCycles =
+    repetitionCount === 0 && timerState.startTime === 0;
+  let cycleCount = calculateCycleCount(
+    isBeforeStartOfCycles,
+    numOfPomo,
+    numOfCycle,
+    repetitionCount
+  );
+  let repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
+    numOfPomo,
+    numOfCycle,
+    repetitionCount,
+    cycleCount
+  ) as number;
+
+  // console.log("numOfPomo", numOfPomo);
+  // console.log("repetitionCount", repetitionCount);
+  // console.log("repetitionCountWithinCycle", repetitionCountWithinCycle);
+  //
   const DURATIONS = {
     pomoDuration,
     shortBreakDuration,
     longBreakDuration,
   };
-
-  const isFirstRender = useRef(true);
-  const prevSessionType = useRef<number>(0);
 
   //#region Initializers
   function initializeTimerState(initialVal: TimerStateType): TimerStateType {
@@ -244,15 +273,18 @@ export function TimerController({
       timeCountedDown: timeCountedDownInMilliSeconds,
     };
 
-    const session = identifyPrevSession({
+    // console.log("howManyCountdown", howManyCountdown);
+    // console.log("numOfPomo", numOfPomo);
+    const prevSession = identifyPrevSession({
       howManyCountdown,
       numOfPomo,
     });
-    const currentSessionType = +session % 2 === 0 ? "pomo" : "break";
+    // console.log("prevSession", SESSION[prevSession]);
+    const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
 
     wrapUpSession({
-      session,
+      prevSession: prevSession,
       data: {
         state,
         timeCountedDownInMilliSeconds,
@@ -275,37 +307,98 @@ export function TimerController({
     numOfPomo: number;
   }): SESSION {
     if (howManyCountdown === 0) {
-      // Timer component말고 여기서 re-fresh했을 때, repetitionCount가 0인 경우에 call되면, 계속 short-break이라고 나와서.
-      return SESSION.LONG_BREAK;
+      console.log("1");
+      return SESSION.VERY_LAST_POMO;
     }
-    // console.log("howManyCountdown:", howManyCountdown);
-    // console.log("numOfPomo", numOfPomo);
 
-    if (howManyCountdown < numOfPomo! * 2 - 1 && howManyCountdown % 2 === 1) {
-      return SESSION.POMO;
-    } else if (
-      howManyCountdown < numOfPomo! * 2 - 1 &&
-      howManyCountdown % 2 === 0
-    ) {
-      return SESSION.SHORT_BREAK;
-    } else if (howManyCountdown === numOfPomo * 2 - 1) {
-      return SESSION.LAST_POMO;
-    } else {
-      return SESSION.LONG_BREAK;
+    if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
+      console.log("2");
+      return SESSION.VERY_LAST_POMO;
     }
+
+    if (numOfCycle > 1) {
+      if (numOfPomo > 1) {
+        // (numOfPomo, numOfCycle) = (3, 2) -> PBPBPL|PBPBP
+        //                         = (2, 3) -> PBPL|PBPL|PBP
+        if (howManyCountdown % 2 === 0) {
+          if (howManyCountdown % (2 * numOfPomo) === 0) {
+            console.log("3");
+            return SESSION.LONG_BREAK;
+          }
+          console.log("4");
+          return SESSION.SHORT_BREAK;
+        }
+        if (howManyCountdown % 2 === 1) {
+          if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
+            console.log("5");
+            return SESSION.LAST_POMO;
+          }
+          console.log("6");
+          return SESSION.POMO;
+        }
+      } else if (numOfPomo === 1) {
+        // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
+        // Short break does not exist
+        if (howManyCountdown % 2 === 0) {
+          console.log("7");
+          return SESSION.LONG_BREAK;
+        }
+        if (howManyCountdown % 2 === 1) {
+          console.log("8");
+          return SESSION.LAST_POMO;
+        }
+      }
+    } else if (numOfCycle === 1) {
+      // Long break does not exist
+      if (numOfPomo > 1) {
+        // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
+        if (howManyCountdown % 2 === 1) {
+          console.log("9");
+          return SESSION.POMO;
+        }
+        if (howManyCountdown % 2 === 0) {
+          console.log("10");
+          return SESSION.SHORT_BREAK;
+        }
+      } else if (numOfPomo === 1) {
+        // P
+        console.log("11");
+        return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
+      }
+    }
+
+    console.log("12");
+    return SESSION.POMO; //dummy
   }
+  //#endregion
 
+  /**
+   * Purpose
+   * A. 삼각. 다음 세션 진행하기 위한 정보의 변환 (TimersStatesType - client/src/types/clientStatesType.ts)
+   *    1. F. E - 1) 상태를 변환 2) Indexed DB에 있는 해당 데이터의 sync를 맞춘다. --> (startTime, running, pause는 reducer에서 1), 2)를 모두 담당.
+   *    2. B. E - API를 통해 DB에 있는 데이터 변환.
+   * B. 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
+   *    1. pomodoro records ( <=> Pomodoros Collection in DB)
+   *      1) DB에 persist
+   *      2) Cache에 - Statistics component에서 불필요하게 HTTP request를 날리지 않게 하기 위해.
+   *    2. 삼각. records of today (either pomo or break) ( <=> TodayRecords Collection in DB) - For the Timeline component
+   *      1) setState
+   *      2) DB에 persist
+   *      3) Indexed DB에 - unlogged-in user도 Timeline기능을 사용할 수 있게 하기 위해.
+   */
   async function wrapUpSession({
-    session,
+    prevSession,
     data,
   }: {
-    session: SESSION;
+    prevSession: SESSION;
     data: {
       state: TimerStateType;
       timeCountedDownInMilliSeconds: number;
       sessionData: Omit<RecType, "kind">;
     };
   }) {
+    // console.log("SESSION inside wrapUpSession", SESSION[prevSession]);
+
     let { state, timeCountedDownInMilliSeconds, sessionData } = data;
     if (user) {
       const infoArr = [
@@ -335,38 +428,17 @@ export function TimerController({
       });
     }
 
-    switch (session) {
-      case SESSION.POMO:
-        prevSessionType.current = session;
-        if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
-          );
-          copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-            sessionData.startTime;
+    prevSessionType.current = prevSession;
 
-          await recordPomo(
-            user,
-            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
-            state.startTime,
-            currentCategory,
-            copiedCategoryChangeInfoArray,
-            sessionData
-          );
-          if (!autoStartSetting.doesBreakStartAutomatically)
-            updateTimersStates({
-              running: false,
-              startTime: 0,
-              pause: { totalLength: 0, record: [] },
-              duration: shortBreakDuration,
-              repetitionCount: repetitionCount + 1,
-            });
-        } else {
-          // console.log("user is not ready", user);
-        }
+    switch (prevSession) {
+      case SESSION.POMO:
         notify("shortBreak");
+        //#region A
+        // A - 1: F.E
+        // 1)
         setDurationInMinutes(shortBreakDuration!);
         setRepetitionCount(repetitionCount + 1);
+        // 2)
         postMsgToSW("saveStates", {
           stateArr: [
             { name: "duration", value: shortBreakDuration },
@@ -376,36 +448,66 @@ export function TimerController({
             },
           ],
         });
-
-        // for timeline
+        // A - 2: B.E
+        // 자동시작 - 근본적으로  //!TimerState (running, startTime, pause)만 바꿔주면 됨.
+        // duration은 이미 정해져 있는거 그게 무엇이 되었든 그걸 돌릴것이고,
+        // repetitionCount는 시작할 때는 별 문제가 되지 않아 (끝났을 때 신경 써줘야 할 것임).
+        if (!autoStartSetting.doesBreakStartAutomatically) {
+          user &&
+            persistTimersStatesToServer({
+              // 아래 TimerState도 사실, state update할 때, 그곳에서 이 API를 call하면 모양이 예쁜데,
+              // 아래 마지막 두개 PatternTimerStates도 같이 한번에 보내기 위해 이해하기 불편하지만 여기에 적었음.
+              //TimerStateType
+              running: false,
+              startTime: 0,
+              pause: { totalLength: 0, record: [] },
+              //PatternTimerStatesType
+              duration: shortBreakDuration,
+              repetitionCount: repetitionCount + 1,
+            });
+        }
+        //#endregion
+        //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
+        // B - 1: pomodoro records
+        if (user) {
+          let copiedCategoryChangeInfoArray = structuredClone(
+            categoryChangeInfoArray
+          );
+          copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
+            sessionData.startTime;
+          // 1) and 2) 모두 아래 함수에서 실행한다.
+          await recordPomo(
+            user,
+            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+            state.startTime,
+            currentCategory,
+            copiedCategoryChangeInfoArray,
+            sessionData
+          );
+        }
+        // B - 2: records of today
+        // 1)
         setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        // 2)
+        user &&
+          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+        // 3)
         await persistSingleTodaySessionToIDB({
           kind: "pomo",
           data: sessionData,
         });
-        user &&
-          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
-
+        //#endregion
         break;
 
       case SESSION.SHORT_BREAK:
-        prevSessionType.current = session;
         notify("pomo");
 
-        if (user) {
-          if (!autoStartSetting.doesPomoStartAutomatically)
-            updateTimersStates({
-              running: false,
-              startTime: 0,
-              pause: { totalLength: 0, record: [] },
-              duration: pomoDuration,
-              repetitionCount: repetitionCount + 1,
-            });
-          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
-        }
-
+        //#region A 다음 세션 진행하기 위한 정보의 변환
+        // A - 1: F.E
+        // 1)
         setDurationInMinutes(pomoDuration!);
         setRepetitionCount(repetitionCount + 1);
+        // 2)
         postMsgToSW("saveStates", {
           stateArr: [
             { name: "duration", value: pomoDuration },
@@ -415,46 +517,42 @@ export function TimerController({
             },
           ],
         });
+        // A - 2: B.E
+        if (!autoStartSetting.doesPomoStartAutomatically) {
+          user &&
+            persistTimersStatesToServer({
+              running: false,
+              startTime: 0,
+              pause: { totalLength: 0, record: [] },
+              duration: pomoDuration,
+              repetitionCount: repetitionCount + 1,
+            });
+        } //#endregion
 
-        // for timeline
+        //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
+        // B - 2: records of today
+        // 1)
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        // 2)
+        user &&
+          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+        // 3)
         await persistSingleTodaySessionToIDB({
           kind: "break",
           data: sessionData,
         });
+        //#endregion
         break;
 
       case SESSION.LAST_POMO:
-        prevSessionType.current = session;
         notify("longBreak");
 
-        if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
-          );
-          copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-            sessionData.startTime;
-
-          await recordPomo(
-            user,
-            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
-            state.startTime,
-            currentCategory,
-            copiedCategoryChangeInfoArray,
-            sessionData
-          );
-          if (!autoStartSetting.doesBreakStartAutomatically)
-            updateTimersStates({
-              running: false,
-              startTime: 0,
-              pause: { totalLength: 0, record: [] },
-              duration: longBreakDuration,
-              repetitionCount: repetitionCount + 1,
-            });
-        }
-
+        //#region A 다음 세션 진행하기 위한 정보의 변환
+        // A - 1: F.E
+        // 1)
         setDurationInMinutes(longBreakDuration!);
         setRepetitionCount(repetitionCount + 1);
+        // 2)
         postMsgToSW("saveStates", {
           stateArr: [
             { name: "duration", value: longBreakDuration },
@@ -464,36 +562,60 @@ export function TimerController({
             },
           ],
         });
+        // A - 2: B.E
+        if (!autoStartSetting.doesBreakStartAutomatically) {
+          user &&
+            persistTimersStatesToServer({
+              running: false,
+              startTime: 0,
+              pause: { totalLength: 0, record: [] },
+              duration: longBreakDuration,
+              repetitionCount: repetitionCount + 1,
+            });
+        } //#endregion
 
-        // for timeline
+        //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
+        // B - 1: pomodoro records
+        if (user) {
+          let copiedCategoryChangeInfoArray = structuredClone(
+            categoryChangeInfoArray
+          );
+          copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
+            sessionData.startTime;
+          // 1) and 2) 모두 아래 함수에서 실행한다.
+          await recordPomo(
+            user,
+            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+            state.startTime,
+            currentCategory,
+            copiedCategoryChangeInfoArray,
+            sessionData
+          );
+        }
+        // B - 2: records of today
+        // 1)
         setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        // 2)
+        user &&
+          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+        // 3)
         await persistSingleTodaySessionToIDB({
           kind: "pomo",
           data: sessionData,
         });
-        user &&
-          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+        //#endregion
+
         break;
 
-      case SESSION.LONG_BREAK:
-        prevSessionType.current = session;
-        notify("nextCycle");
+      case SESSION.VERY_LAST_POMO:
+        notify("cyclesCompleted");
 
-        if (user) {
-          await updateTimersStates({
-            running: false,
-            startTime: 0,
-            pause: { totalLength: 0, record: [] },
-            duration: pomoDuration,
-            repetitionCount: 0,
-          });
-          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
-        }
-
-        //setCycleCount((prev) => prev + 1);
-        setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
+        //#region A
+        // A - 1: F.E
+        // 1)
+        setDurationInMinutes(pomoDuration);
         setRepetitionCount(0);
-        setIsOnCycle(false);
+        // 2)
         postMsgToSW("saveStates", {
           stateArr: [
             { name: "duration", value: pomoDuration },
@@ -503,13 +625,94 @@ export function TimerController({
             },
           ],
         });
+        // A - 2: B.E
+        user &&
+          (await persistTimersStatesToServer({
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: pomoDuration,
+            repetitionCount: 0,
+          }));
+        //#endregion
 
-        // for timeline
+        //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
+        // B - 1: pomodoro records
+        if (user) {
+          let copiedCategoryChangeInfoArray = structuredClone(
+            categoryChangeInfoArray
+          );
+          copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
+            sessionData.startTime;
+          // 1) and 2) 모두 아래 함수에서 실행한다.
+          await recordPomo(
+            user,
+            Math.floor(timeCountedDownInMilliSeconds / (60 * 1000)),
+            state.startTime,
+            currentCategory,
+            copiedCategoryChangeInfoArray,
+            sessionData
+          );
+        }
+        // B - 2: records of today
+        // 1)
+        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        // 2)
+        user &&
+          persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+        // 3)
+        await persistSingleTodaySessionToIDB({
+          kind: "pomo",
+          data: sessionData,
+        });
+        //#endregion
+        break;
+
+      case SESSION.LONG_BREAK:
+        notify("nextCycle");
+
+        //#region A 다음 세션 진행하기 위한 정보의 변환
+        // A - 1: F.E
+        // 1)
+        setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
+        setRepetitionCount(repetitionCount + 1);
+        // 2)
+        postMsgToSW("saveStates", {
+          stateArr: [
+            { name: "duration", value: pomoDuration },
+            {
+              name: "repetitionCount",
+              value: repetitionCount + 1,
+            },
+          ],
+        });
+        // A - 2: B.E
+        if (!autoStartSetting.doesCycleStartAutomatically) {
+          user &&
+            (await persistTimersStatesToServer({
+              running: false,
+              startTime: 0,
+              pause: { totalLength: 0, record: [] },
+              duration: pomoDuration,
+              repetitionCount: repetitionCount + 1,
+            }));
+        }
+        //#endregion
+
+        //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
+        // B - 2: records of today
+        // 1)
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        // 2)
+        user &&
+          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+        // 3)
         await persistSingleTodaySessionToIDB({
           kind: "break",
           data: sessionData,
         });
+        //#endregion
+
         break;
 
       default:
@@ -537,7 +740,8 @@ export function TimerController({
 
         if (
           SESSION[prevSessionType.current] === "SHORT_BREAK" ||
-          SESSION[prevSessionType.current] === "LONG_BREAK"
+          SESSION[prevSessionType.current] === "LONG_BREAK" ||
+          SESSION[prevSessionType.current] === "VERY_LAST_POMO"
         ) {
           if (
             (states as TimersStatesType).running === false &&
@@ -701,10 +905,11 @@ export function TimerController({
       if (doesItJustChangeCategory) changeCategoryWithoutRecordingPrev();
       else changeCategoryWithRecordingPrev();
     }
-  }, [currentCategory?.name]);
+    // }, [currentCategory?.name]);
+  }, [currentCategory?.name, doesItJustChangeCategory]);
 
   useEffect(() => {
-    const prevSession = identifyPrevSession({
+    const prevSession = +identifyPrevSession({
       howManyCountdown: repetitionCount,
       numOfPomo,
     });
@@ -714,8 +919,14 @@ export function TimerController({
     // );
     prevSessionType.current = prevSession;
 
-    const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
-    sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
+    let currentSessionType = "";
+    if (prevSession === 5) {
+      currentSessionType = "pomo";
+    } else if (prevSession % 2 === 0) {
+      currentSessionType = "pomo";
+    } else currentSessionType = "break";
+    // const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
+    sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType); // CategoryList component에서 이 값이 필요함.
   }, []);
 
   // useEffect(() => {
@@ -724,7 +935,7 @@ export function TimerController({
   //#endregion
 
   //#region UseEffects from Timer.tsx
-  useEffect(autoStartNextSession, [repetitionCount, durationInSeconds]);
+  useEffect(autoStartCurrentSession, [repetitionCount, durationInSeconds]);
   useEffect(setRemainingDurationAfterReset, [
     remainingDuration,
     durationInSeconds,
@@ -839,46 +1050,47 @@ export function TimerController({
     }
   }
 
-  function autoStartNextSession() {
-    // Auto start all pomo sessions of a cycle
-    if (
-      autoStartSetting.doesPomoStartAutomatically &&
-      isNextSessionNew() &&
-      isNextSessionPomo() &&
-      !isNextSessionStartOfCycle()
-    ) {
-      startNext(pomoDuration, Date.now());
+  function autoStartCurrentSession() {
+    if (!isSessionNotStartedYet()) return;
+
+    const prevSessionType = identifyPrevSession({
+      howManyCountdown: repetitionCount,
+      numOfPomo,
+    });
+
+    switch (prevSessionType) {
+      case SESSION.SHORT_BREAK:
+        autoStartSetting.doesPomoStartAutomatically &&
+          startSession(pomoDuration, Date.now());
+        break;
+
+      case SESSION.POMO:
+        autoStartSetting.doesBreakStartAutomatically &&
+          startSession(shortBreakDuration, Date.now());
+        break;
+
+      case SESSION.LAST_POMO:
+        autoStartSetting.doesBreakStartAutomatically &&
+          startSession(longBreakDuration, Date.now());
+        break;
+
+      case SESSION.LONG_BREAK:
+        autoStartSetting.doesCycleStartAutomatically &&
+          startSession(pomoDuration, Date.now());
+        break;
+
+      default:
+        break;
     }
 
-    // Auto start all break sessions of a cycle
-    if (
-      autoStartSetting.doesBreakStartAutomatically &&
-      isNextSessionNew() &&
-      isNextSessionBreak() &&
-      !isNextSessionStartOfCycle()
-    ) {
-      if (repetitionCount === numOfPomo * 2 - 1)
-        startNext(longBreakDuration, Date.now());
-      else startNext(shortBreakDuration, Date.now());
-    }
-
-    // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
-    function isNextSessionNew() {
+    function isSessionNotStartedYet() {
+      // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
       return timerState.running === false && timerState.startTime === 0;
     }
-    function isNextSessionStartOfCycle() {
-      return repetitionCount === 0;
-    }
-    function isNextSessionPomo() {
-      return repetitionCount % 2 === 0;
-    }
-    function isNextSessionBreak() {
-      return repetitionCount % 2 !== 0;
-    }
-    function startNext(duration: number, startTime: number) {
+    function startSession(duration: number, startTime: number) {
       if (repetitionCount === 0) {
         user !== null &&
-          updateTimersStates({
+          persistTimersStatesToServer({
             startTime,
             running: true,
             pause: { totalLength: 0, record: [] },
@@ -889,11 +1101,10 @@ export function TimerController({
             { name: "duration", value: duration },
           ],
         });
-        setIsOnCycle(true);
       } else {
         dispatch({ type: ACTION.START, payload: startTime });
         user !== null &&
-          updateTimersStates({
+          persistTimersStatesToServer({
             startTime,
             running: true,
             pause: { totalLength: 0, record: [] },
@@ -915,7 +1126,7 @@ export function TimerController({
       if (repetitionCount === 0) {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
         user !== null &&
-          updateTimersStates({
+          persistTimersStatesToServer({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
@@ -926,13 +1137,12 @@ export function TimerController({
             { name: "duration", value: durationInSeconds / 60 },
           ],
         });
-        setIsOnCycle(true);
       }
 
       if (repetitionCount !== 0) {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
         user !== null &&
-          updateTimersStates({
+          persistTimersStatesToServer({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
@@ -944,7 +1154,7 @@ export function TimerController({
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       // to serveer
       user &&
-        updateTimersStates({
+        persistTimersStatesToServer({
           startTime: timerState.startTime,
           running: true,
           pause: {
@@ -969,7 +1179,7 @@ export function TimerController({
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
       user &&
-        updateTimersStates({
+        persistTimersStatesToServer({
           startTime: timerState.startTime,
           running: false,
           pause: {
@@ -1208,12 +1418,15 @@ export function TimerController({
       <GridItem>
         <h3 style={{ textAlign: "center" }}>
           Remaining Pomo Sessions -{" "}
-          {numOfPomo -
-            (repetitionCount === 0
-              ? 0
-              : repetitionCount % 2 === 0
-              ? repetitionCount / 2
-              : (repetitionCount + 1) / 2)}
+          {calculateNumOfRemainingPomoSessions(
+            numOfPomo,
+            repetitionCountWithinCycle
+          )}
+        </h3>
+      </GridItem>
+      <GridItem>
+        <h3 style={{ textAlign: "center" }}>
+          Cycle - {cycleCount} out of {numOfCycle}
         </h3>
       </GridItem>
     </Grid>
@@ -1398,16 +1611,19 @@ async function notify(which: string) {
   // eslint-disable-next-line default-case
   switch (which) {
     case "pomo":
-      body = "time to focus";
+      body = "Time to focus";
       break;
     case "shortBreak":
-      body = "time to take a short break";
+      body = "Time to take a short break";
       break;
     case "longBreak":
-      body = "time to take a long break";
+      body = "Time to take a long break";
       break;
     case "nextCycle":
-      body = "time to do the next cycle of pomos";
+      body = "Time to do the next cycle of pomos";
+      break;
+    case "cyclesCompleted":
+      body = "All cycles of focus durations are done";
       break;
   }
 

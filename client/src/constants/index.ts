@@ -44,7 +44,7 @@ export const SUB_SET = {
 
 //#endregion
 
-export const IDB_VERSION = 9;
+export const IDB_VERSION = 10;
 const cacheVersion = 1;
 export const CacheName = `statRelatedCache-${cacheVersion}`;
 //#endregion

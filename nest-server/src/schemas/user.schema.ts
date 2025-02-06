@@ -7,11 +7,13 @@ interface PomoSetting {
   shortBreakDuration: number;
   longBreakDuration: number;
   numOfPomo: number;
+  numOfCycle: number;
 }
 
 interface AutoStartSetting {
   doesPomoStartAutomatically: boolean;
   doesBreakStartAutomatically: boolean;
+  doesCycleStartAutomatically: boolean;
 }
 
 interface TimersStates {
@@ -51,6 +53,7 @@ export class User {
       shortBreakDuration: { type: Number, default: 5 },
       longBreakDuration: { type: Number, default: 15 },
       numOfPomo: { type: Number, default: 4 },
+      numOfCycle: { type: Number, default: 1 },
     }),
   )
   pomoSetting: PomoSetting;
@@ -59,6 +62,7 @@ export class User {
     raw({
       doesPomoStartAutomatically: { type: Boolean, default: false },
       doesBreakStartAutomatically: { type: Boolean, default: false },
+      doesCycleStartAutomatically: { type: Boolean, default: false },
     }),
   )
   autoStartSetting: AutoStartSetting;

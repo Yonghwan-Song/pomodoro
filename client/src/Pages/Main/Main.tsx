@@ -29,6 +29,7 @@ export default function Main() {
     //[1] for the state `records`.
     deciderOfWhetherDataForRunningTimerFetched
   );
+  //* At this point, it doesn't matter whether this setting comes from IDB or the server, as the AuthContextProvider handles it.
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
 
   //#region UseEffects
@@ -39,6 +40,7 @@ export default function Main() {
    * 3. subscribeToSuccessOfPersistingTimerStatesToIDB <-- (1)As soon as a user logs in. (2)By a callback to the "successOfPersistingTimersStatesToIDB" event.
    */
   // useEffect(logStates);
+  //* updating the pomoSetting from IDB is conditionally done in the AuthContextProvider.
   useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
   useEffect(setRecordsUsingDataFromIDB, []);
   useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
@@ -202,6 +204,7 @@ export default function Main() {
                           shortBreakDuration={pomoSetting.shortBreakDuration}
                           longBreakDuration={pomoSetting.longBreakDuration}
                           numOfPomo={pomoSetting.numOfPomo}
+                          numOfCycle={pomoSetting.numOfCycle}
                           setRecords={setRecords}
                         />
                       </BoxShadowWrapper>
@@ -230,6 +233,7 @@ export default function Main() {
                   shortBreakDuration={pomoSetting.shortBreakDuration}
                   longBreakDuration={pomoSetting.longBreakDuration}
                   numOfPomo={pomoSetting.numOfPomo}
+                  numOfCycle={pomoSetting.numOfCycle}
                   setRecords={setRecords}
                 />
               </BoxShadowWrapper>

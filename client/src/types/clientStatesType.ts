@@ -15,6 +15,7 @@ export type PomoSettingType = {
   shortBreakDuration: number;
   longBreakDuration: number;
   numOfPomo: number;
+  numOfCycle: number;
 };
 
 export type TimersStatesType = TimerStateType & PatternTimerStatesType;
@@ -37,6 +38,7 @@ export type PatternTimerStatesType = {
 export type AutoStartSettingType = {
   doesPomoStartAutomatically: boolean;
   doesBreakStartAutomatically: boolean;
+  doesCycleStartAutomatically: boolean;
 };
 //#endregion
 
@@ -60,10 +62,17 @@ export type NewCategory = Omit<Category, "_id">;
 
 /**
  * @prop progress - a number that represents how much progress has been made in the current session until this category starts.
- *           In other words, how much progress has been made by a previous category.
+ *           In other words, how much progress has been made by previous categories.
  *
  * @prop _uuid? - uncategorized -> no _uuid
  *
+ * 예를 들면, 카테고리를 C로 바꾼다고 할 때,
+ * categoryName === C
+ * categoryChangeTimestamp - 바뀐 순간의 timestamp
+ * progress - total progress that has been made until this category change.
+ * ;이전 카테고리가 A, B라고 하면 A와 B에 의해 세션이 진행된 값.
+ *     예를 들면, 1시간에서 처음 15분과 다음 15분을 각각 A와 B로 진행했다고 하면,
+ *    progress 는 0.5
  */
 export type CategoryChangeInfo = Pick<Category, "color" | "_uuid"> & {
   categoryName: string;
@@ -73,7 +82,12 @@ export type CategoryChangeInfo = Pick<Category, "color" | "_uuid"> & {
 
 /**
  * segmentProgress -
- * This represents the progress made by a category. It is calculated when switching from one category to another—for example, from category A to category B. Category B becomes the current category, and we need to display how much progress was made by category A during the current session. I named this 'segment progress' because it represents the progress made by category A, which is only a segment of the entire session.
+ * This represents the progress made by a category.
+ * It is calculated when switching from one category to another.
+ * For example, when the current category changes from category A to category B,
+ * we need to display how much progress was made by the category A.
+ * I named the progress 'segment progress'
+ * because the progress made by category A is only a part of the entire progress which includes A and B.
  */
 export type CategoryChangeInfoForCircularProgressBar = CategoryChangeInfo & {
   segmentProgress: number;

@@ -55,3 +55,53 @@ export function getProgress(statesRelatedToTimer: TimersStatesType) {
 
   return progress;
 }
+
+export function calculateCycleCount(
+  isBeforeStartOfCycle: boolean,
+  numOfPomo: number,
+  numOfCycle: number,
+  repetitionCount: number
+) {
+  if (isBeforeStartOfCycle) return 0;
+
+  if (numOfCycle === 1) return 1;
+
+  //!     P B P B P L | P B P B P  L  | P  B  P  B  P
+  //! y   0 1 2 3 4 5 | 6 7 8 9 10 11 | 12 13 14 15 16
+  //! x-1     0              1               2
+  //! y = a(x-1) + b; 모두 음이 아닌 정수; 나머지 정리
+  let y = repetitionCount;
+  let a = 2 * numOfPomo;
+  let b = y % a;
+  let x = (y + (a - b)) / a; //! x - 몇번재 사이클인지 - 그냥 cycleCount라고 부르기로 함.
+
+  return x;
+}
+
+export function calculateRepetitionCountWithinCycle(
+  numOfPomo: number,
+  numOfCycle: number,
+  repetitionCount: number,
+  cycleCount: number
+) {
+  if (cycleCount === 0) return 0;
+
+  if (numOfCycle > 1) return repetitionCount - 2 * numOfPomo * (cycleCount - 1);
+  if (numOfCycle === 1) return repetitionCount;
+}
+
+export function calculateNumOfRemainingPomoSessions(
+  numOfPomo: number,
+  repetitionCountWithinCycle: number
+) {
+  let numOfRemainingPomoSessions =
+    numOfPomo -
+    (repetitionCountWithinCycle === 0
+      ? 0
+      : repetitionCountWithinCycle % 2 === 0
+      ? repetitionCountWithinCycle / 2
+      : (repetitionCountWithinCycle + 1) / 2);
+  // console.log("numOfRemainingPomoSessions", numOfRemainingPomoSessions);
+
+  return numOfRemainingPomoSessions;
+}

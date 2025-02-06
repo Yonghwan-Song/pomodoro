@@ -107,12 +107,14 @@ export function UserInfoContextProvider({
               shortBreakDuration: 5,
               longBreakDuration: 15,
               numOfPomo: 4,
+              numOfCycle: 1,
             };
         let autoStartSetting = doesAutoStartSettingExistInIDB()
           ? (states as dataCombinedFromIDB).autoStartSetting
           : {
               doesPomoStartAutomatically: false,
               doesBreakStartAutomatically: false,
+              doesCycleStartAutomatically: false,
             };
 
         setPomoInfo((prev) => {
@@ -189,10 +191,12 @@ export function UserInfoContextProvider({
             shortBreakDuration: 5,
             longBreakDuration: 15,
             numOfPomo: 4,
+            numOfCycle: 1,
           },
           autoStartSetting: {
             doesPomoStartAutomatically: false,
             doesBreakStartAutomatically: false,
+            doesCycleStartAutomatically: false,
           },
         };
       });
