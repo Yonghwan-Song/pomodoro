@@ -7,4 +7,7 @@ export class UpdateAutoStartSettingDto {
 
   @IsBoolean()
   doesBreakStartAutomatically: boolean;
+
+  @IsBoolean()
+  doesCycleStartAutomatically: boolean;
 }

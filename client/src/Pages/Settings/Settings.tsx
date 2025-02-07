@@ -96,37 +96,44 @@ function Settings() {
   //TODO: 결국 여기에서 case "userOptionForAutoStart" 해서 한번에 보내는 형식으로 하면 걍 되기는 될 듯.
   function handlePomoSettingChange(event: React.ChangeEvent<HTMLInputElement>) {
     let targetValue = +event.target.value;
-    if (targetValue >= 0) {
+    // duration >= 1 && duration <= 1000, num >= 1 && num <= 100
+    if (targetValue >= 1) {
+      // for min values
       switch (event.target.name) {
         case "pomoDuration":
-          setPomoSettingInputs({
-            ...pomoSettingInputs,
-            pomoDuration: targetValue,
-          });
+          targetValue <= 1000 &&
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              pomoDuration: targetValue,
+            });
           break;
         case "shortBreakDuration":
-          setPomoSettingInputs({
-            ...pomoSettingInputs,
-            shortBreakDuration: targetValue,
-          });
+          targetValue <= 1000 &&
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              shortBreakDuration: targetValue,
+            });
           break;
         case "longBreakDuration":
-          setPomoSettingInputs({
-            ...pomoSettingInputs,
-            longBreakDuration: targetValue,
-          });
+          targetValue <= 1000 &&
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              longBreakDuration: targetValue,
+            });
           break;
         case "numOfPomo":
-          setPomoSettingInputs({
-            ...pomoSettingInputs,
-            numOfPomo: targetValue,
-          });
+          targetValue <= 100 &&
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              numOfPomo: targetValue,
+            });
           break;
         case "numOfCycle":
-          setPomoSettingInputs({
-            ...pomoSettingInputs,
-            numOfCycle: targetValue,
-          });
+          targetValue <= 100 &&
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              numOfCycle: targetValue,
+            });
           break;
         default:
           break;
