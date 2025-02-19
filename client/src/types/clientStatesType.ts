@@ -3,6 +3,7 @@ export type RequiredStatesToRunTimerType = {
   pomoSetting: PomoSettingType;
   autoStartSetting: AutoStartSettingType;
   timersStates: TimersStatesType;
+  currentCycleInfo: CycleInfoType;
   categories: Category[];
   isUnCategorizedOnStat: boolean;
   colorForUnCategorized: string;
@@ -19,6 +20,9 @@ export type PomoSettingType = {
 };
 
 export type TimersStatesType = TimerStateType & PatternTimerStatesType;
+export type TimersStatesTypeWithCurrentCycleInfo = TimersStatesType & {
+  currentCycleInfo: CycleInfoType;
+};
 
 export type TimerStateType = {
   running: boolean;
@@ -39,6 +43,11 @@ export type AutoStartSettingType = {
   doesPomoStartAutomatically: boolean;
   doesBreakStartAutomatically: boolean;
   doesCycleStartAutomatically: boolean;
+};
+
+export type CycleInfoType = {
+  totalFocusDuration: number;
+  cycleDuration: number;
 };
 //#endregion
 
@@ -125,8 +134,8 @@ export type DurationType = {
   duration: number;
 };
 /**
- * For example, a pomodoro session can consist of one pomo, one pause, and one pomo in order
- * if a user pauses the timer once.
+ * For example, if a user pauses the timer once, a pomodoro session can consist of
+ * some durations such as, one pomo, one pause, and one pomo in order.
  */
 export type SessionType = DurationType[];
 //#endregion

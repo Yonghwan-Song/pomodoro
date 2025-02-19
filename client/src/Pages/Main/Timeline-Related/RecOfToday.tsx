@@ -15,8 +15,14 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
   //! a single session of SessionType is created using a single record of RecType.
   const [arrOfSessions, setArrOfSessions] = useState<SessionType[]>([]);
 
+  // useEffect(() => {
+  //   console.log("Duration[][]", arrOfSessions);
+  // }, [arrOfSessions]);
+
   useEffect(() => {
     setArrOfSessions(
+      //* RecType의 데이터로부터 SessionType을 만들어 낸다. SessionType은 DurationType[]
+      //* records는 RecType데이터의 배열.
       records
         .filter((rec) => {
           return rec.startTime !== 0;

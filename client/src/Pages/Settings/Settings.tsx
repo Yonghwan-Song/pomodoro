@@ -78,14 +78,33 @@ function Settings() {
     // both non-sign-in users and a sign-in user who hasn't created categories.
     return categories.find((c) => c.isCurrent) ?? null;
   }, [categories]);
-  const [pomoSettingInputs, setPomoSettingInputs] = useState(pomoSetting);
+  const [pomoSettingInputs, setPomoSettingInputs] = useState(() => {
+    if (pomoSetting === null)
+      return {
+        pomoDuration: 25,
+        shortBreakDuration: 5,
+        longBreakDuration: 15,
+        numOfPomo: 4,
+        numOfCycle: 1,
+      };
+    else return pomoSetting;
+  });
   const [doesPomoStartAutomatically, setDoesPomoStartAutomatically] = useState(
-    autoStartSetting.doesPomoStartAutomatically
+    () => {
+      if (autoStartSetting === null) return false;
+      else return autoStartSetting.doesPomoStartAutomatically;
+    }
   );
   const [doesBreakStartAutomatically, setDoesBreakStartAutomatically] =
-    useState(autoStartSetting.doesBreakStartAutomatically);
+    useState(() => {
+      if (autoStartSetting === null) return false;
+      else return autoStartSetting.doesBreakStartAutomatically;
+    });
   const [doesCycleStartAutomatically, setDoesCycleStartAutomatically] =
-    useState(autoStartSetting.doesCycleStartAutomatically);
+    useState(() => {
+      if (autoStartSetting === null) return false;
+      else return autoStartSetting.doesCycleStartAutomatically;
+    });
 
   //#region To Observe LifeCycle
   // const mountCount = useRef(0);
@@ -144,6 +163,15 @@ function Settings() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const { numOfPomo, pomoDuration, shortBreakDuration, longBreakDuration } =
+      pomoSettingInputs;
+
+    let totalFocusDuration = numOfPomo * pomoDuration * 60;
+    let cycleDuration =
+      totalFocusDuration +
+      (numOfPomo - 1) * shortBreakDuration * 60 +
+      longBreakDuration * 60;
+
     postMsgToSW("saveStates", {
       stateArr: [
         { name: "pomoSetting", value: pomoSettingInputs },
@@ -155,11 +183,15 @@ function Settings() {
             doesCycleStartAutomatically,
           },
         },
-        { name: "duration", value: pomoSettingInputs.pomoDuration },
+        { name: "duration", value: pomoDuration },
         { name: "repetitionCount", value: 0 },
         { name: "running", value: false },
         { name: "startTime", value: 0 },
         { name: "pause", value: { totalLength: 0, record: [] } },
+        {
+          name: "currentCycleInfo",
+          value: { totalFocusDuration, cycleDuration },
+        },
       ],
     });
 
@@ -184,6 +216,10 @@ function Settings() {
 
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
         categoryChangeInfoArray: infoArr,
+      });
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration,
+        cycleDuration,
       });
 
       persistPomoSettingToServer(user, pomoSettingInputs)
@@ -225,36 +261,26 @@ function Settings() {
 
   //#region Side Effects
 
-  useEffect(() => {
-    if (user !== null && Object.entries(user).length !== 0) {
-      // console.log(user);
-    }
-    // console.log(pomoSetting);
-
-    if (Object.entries(pomoSettingInputs).length === 0) {
-      setPomoSettingInputs(pomoSettingMemoized);
-    }
-    // console.log("POMO SETTING INPUTS", pomoSettingInputs);
-  }, [user, pomoSettingMemoized, pomoSettingInputs]);
-
   // To set pomoSettingInputs to default when a user logs out.
   useEffect(() => {
-    setPomoSettingInputs(pomoSettingMemoized);
+    if (pomoSettingMemoized !== null) setPomoSettingInputs(pomoSettingMemoized);
   }, [pomoSettingMemoized]);
 
   //TODO:
   // What if only one of the autostart settings has changed? e.g. pomo start?
   // If it does, setDoesBreakStartAutomatically should've not called.
   useEffect(() => {
-    setDoesPomoStartAutomatically(
-      autoStartSettingMemoized.doesPomoStartAutomatically
-    );
-    setDoesBreakStartAutomatically(
-      autoStartSettingMemoized.doesBreakStartAutomatically
-    );
-    setDoesCycleStartAutomatically(
-      autoStartSettingMemoized.doesCycleStartAutomatically
-    );
+    if (autoStartSettingMemoized !== null) {
+      setDoesPomoStartAutomatically(
+        autoStartSettingMemoized.doesPomoStartAutomatically
+      );
+      setDoesBreakStartAutomatically(
+        autoStartSettingMemoized.doesBreakStartAutomatically
+      );
+      setDoesCycleStartAutomatically(
+        autoStartSettingMemoized.doesCycleStartAutomatically
+      );
+    }
   }, [autoStartSettingMemoized]);
 
   useEffect(() => {

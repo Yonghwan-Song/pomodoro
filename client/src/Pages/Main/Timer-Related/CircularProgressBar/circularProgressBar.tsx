@@ -10,14 +10,20 @@ import { useAuthContext } from "../../../../Context/AuthContext";
 import { CategoryChangeInfoForCircularProgressBar } from "../../../../types/clientStatesType";
 import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
 import { useBoundedPomoInfoStore } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
+import { isThisFocusSession } from "../utility-functions";
 
 type CircularProgressBarProps = {
   progress: number;
   startTime: number;
   durationInSeconds: number;
+  repetitionCount: number;
   remainingDuration: number;
   setRemainingDuration: React.Dispatch<React.SetStateAction<number>>;
   setDurationInMinutes: React.Dispatch<React.SetStateAction<number>>;
+  totalFocusDurationInSec: number;
+  setTotalFocusDurationInSec: React.Dispatch<React.SetStateAction<number>>;
+  cycleDurationInSec: number;
+  setCycleDurationInSec: React.Dispatch<React.SetStateAction<number>>;
 };
 
 /**
@@ -43,9 +49,14 @@ const CircularProgressBar = ({
   progress,
   startTime,
   durationInSeconds,
+  repetitionCount,
   remainingDuration,
   setRemainingDuration,
   setDurationInMinutes,
+  totalFocusDurationInSec,
+  cycleDurationInSec,
+  setTotalFocusDurationInSec,
+  setCycleDurationInSec,
 }: CircularProgressBarProps) => {
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.categoryChangeInfoArray
@@ -124,17 +135,49 @@ const CircularProgressBar = ({
   }, [categoryChangeInfoArray, user]);
 
   async function addFiveMinutes(addCount: number) {
-    const additionalMinutes = 5 * addCount;
+    const timeToAddInMinutes = 5 * addCount;
+    const timeToAddInSeconds = timeToAddInMinutes * 60;
     await persistStatesToIDB({
-      duration: durationInSeconds / 60 + additionalMinutes,
+      duration: durationInSeconds / 60 + timeToAddInMinutes,
     });
     if (user) {
       await persistTimersStatesToServer({
-        duration: durationInSeconds / 60 + additionalMinutes,
+        duration: durationInSeconds / 60 + timeToAddInMinutes,
       });
     }
-    setDurationInMinutes((prev) => prev + additionalMinutes);
-    setRemainingDuration((prev) => prev + additionalMinutes * 60);
+    setDurationInMinutes((prev) => prev + timeToAddInMinutes);
+    setRemainingDuration((prev) => prev + timeToAddInSeconds);
+
+    if (isThisFocusSession(repetitionCount)) {
+      const newTotalFocusDuration =
+        totalFocusDurationInSec + timeToAddInSeconds;
+      const newCycleDuration = cycleDurationInSec + timeToAddInSeconds;
+      setTotalFocusDurationInSec(newTotalFocusDuration);
+      setCycleDurationInSec(newCycleDuration);
+      axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration: newTotalFocusDuration,
+        cycleDuration: newCycleDuration,
+      });
+      persistStatesToIDB({
+        currentCycleInfo: {
+          totalFocusDuration: newTotalFocusDuration,
+          cycleDuration: newCycleDuration,
+        },
+      });
+    } else {
+      const newCycleDuration = cycleDurationInSec + timeToAddInSeconds;
+      setCycleDurationInSec(newCycleDuration);
+      axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration: totalFocusDurationInSec,
+        cycleDuration: newCycleDuration,
+      });
+      persistStatesToIDB({
+        currentCycleInfo: {
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleDuration: newCycleDuration,
+        },
+      });
+    }
 
     //TODO I'm going to change categoryChangeInfoArray here. But I am not sure if this is good since it will re-calculate
     //     `infoArrayOfPrevCategories` and hopefully `currentCategoryInfo` kind of
@@ -149,7 +192,7 @@ const CircularProgressBar = ({
         // (1 - r0/d0) * x = 1 - (r0 - 5)/(d0 - 5)
         // x = d0/(d0 - 5)
         info.progress *
-        (durationInSeconds / (durationInSeconds + additionalMinutes * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
+        (durationInSeconds / (durationInSeconds + timeToAddInMinutes * 60)); // info.progress * (1 - (5 * 60) / (durationInSeconds + 5 * 60));
 
       return { ...info, progress: newProgress };
     });
@@ -158,33 +201,66 @@ const CircularProgressBar = ({
       updateCategoryChangeInfoArray(infoArray_upgraded);
       // console.log("Entered upgradeInfoArray if block.");
       persistCategoryChangeInfoArrayToIDB(infoArray_upgraded);
-      axiosInstance.patch(
-        C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-        {
-          categoryChangeInfoArray: infoArray_upgraded,
-        }
-      );
+      user &&
+        axiosInstance.patch(
+          C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+          {
+            categoryChangeInfoArray: infoArray_upgraded,
+          }
+        );
     }
   }
 
   async function subtractFiveMinutes(subtractCount: number) {
-    const subtractedMinutes = 5 * subtractCount;
-    if (remainingDuration - subtractedMinutes * 60 > 0) {
+    const timeToSubtractInMinutes = 5 * subtractCount;
+    const timeToSubtractInSeconds = timeToSubtractInMinutes * 60;
+    if (remainingDuration - timeToSubtractInSeconds > 0) {
       await persistStatesToIDB({
-        duration: durationInSeconds / 60 - subtractedMinutes,
+        duration: durationInSeconds / 60 - timeToSubtractInMinutes,
       });
       if (user) {
         await persistTimersStatesToServer({
-          duration: durationInSeconds / 60 - subtractedMinutes,
+          duration: durationInSeconds / 60 - timeToSubtractInMinutes,
         });
       }
-      setDurationInMinutes((prev) => prev - subtractedMinutes);
-      setRemainingDuration((prev) => prev - subtractedMinutes * 60);
+      setDurationInMinutes((prev) => prev - timeToSubtractInMinutes);
+      setRemainingDuration((prev) => prev - timeToSubtractInSeconds);
+
+      if (isThisFocusSession(repetitionCount)) {
+        const newTotalFocusDuration =
+          totalFocusDurationInSec - timeToSubtractInSeconds;
+        const newCycleDuration = cycleDurationInSec - timeToSubtractInSeconds;
+        setTotalFocusDurationInSec(newTotalFocusDuration);
+        setCycleDurationInSec(newCycleDuration);
+        axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration: newTotalFocusDuration,
+          cycleDuration: newCycleDuration,
+        });
+        persistStatesToIDB({
+          currentCycleInfo: {
+            totalFocusDuration: newTotalFocusDuration,
+            cycleDuration: newCycleDuration,
+          },
+        });
+      } else {
+        const newCycleDuration = cycleDurationInSec - timeToSubtractInSeconds;
+        setCycleDurationInSec(newCycleDuration);
+        axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleDuration: newCycleDuration,
+        });
+        persistStatesToIDB({
+          currentCycleInfo: {
+            totalFocusDuration: totalFocusDurationInSec,
+            cycleDuration: newCycleDuration,
+          },
+        });
+      }
 
       const upgradedInfoArray = categoryChangeInfoArray.map((info) => {
         const newProgress =
           info.progress *
-          (durationInSeconds / (durationInSeconds - subtractedMinutes * 60));
+          (durationInSeconds / (durationInSeconds - timeToSubtractInSeconds));
 
         return { ...info, progress: newProgress };
       });
@@ -192,12 +268,13 @@ const CircularProgressBar = ({
       if (upgradedInfoArray) {
         updateCategoryChangeInfoArray(upgradedInfoArray);
         persistCategoryChangeInfoArrayToIDB(upgradedInfoArray);
-        axiosInstance.patch(
-          C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-          {
-            categoryChangeInfoArray: upgradedInfoArray,
-          }
-        );
+        user &&
+          axiosInstance.patch(
+            C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+            {
+              categoryChangeInfoArray: upgradedInfoArray,
+            }
+          );
       }
     }
   }

@@ -4,13 +4,21 @@ import {
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
 } from "../..";
-import { TimersStatesType } from "../../types/clientStatesType";
+import {
+  CycleInfoType,
+  TimersStatesType,
+  TimersStatesTypeWithCurrentCycleInfo,
+} from "../../types/clientStatesType";
 import { useAuthContext } from "../../Context/AuthContext";
 import RecOfToday from "./Timeline-Related/RecOfToday";
 import { RecType } from "../../types/clientStatesType";
 import { pubsub } from "../../pubsub";
 import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
-import { MINIMUMS, VH_RATIO } from "../../constants";
+import {
+  MINIMUMS,
+  SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
+  VH_RATIO,
+} from "../../constants";
 import CategoryList from "./Category-Related/CategoryList";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
@@ -23,6 +31,9 @@ export default function Main() {
   const [statesRelatedToTimer, setStatesRelatedToTimer] = useState<
     TimersStatesType | {} | null
   >(null);
+  const [currentCycleInfo, setCurrentCycleInfo] = useState<
+    CycleInfoType | {} | null
+  >(null);
   const [records, setRecords] = useState<RecType[]>([]);
   const areDataForRunningTimerFetched = useRef<[boolean, boolean]>(
     //[0] for the state `statesRelatedToTimer`.
@@ -31,6 +42,9 @@ export default function Main() {
   );
   //* At this point, it doesn't matter whether this setting comes from IDB or the server, as the AuthContextProvider handles it.
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
+  const autoStartSetting = useBoundedPomoInfoStore(
+    (state) => state.autoStartSetting
+  );
 
   //#region UseEffects
   /**
@@ -41,9 +55,12 @@ export default function Main() {
    */
   // useEffect(logStates);
   //* updating the pomoSetting from IDB is conditionally done in the AuthContextProvider.
-  useEffect(setStatesRelatedToTimerUsingDataFromIDB, []);
+  useEffect(setStatesRelatedToTimerAndCurrentCycleInfoUsingDataFromIDB, []);
   useEffect(setRecordsUsingDataFromIDB, []);
-  useEffect(subscribeToSuccessOfPersistingTimerStatesToIDB, []);
+  useEffect(
+    subscribeToSuccessOfPersistingTimerStatesWithCurrentCycleInfoToIDB,
+    []
+  );
   useEffect(subscribeToSuccessOfPersistingRecordsOfTodayToIDB, []);
   useEffect(subscribeToRePersistingFailedRecOfToday, []);
   useEffect(endTimerInBackground, [statesRelatedToTimer]);
@@ -79,10 +96,34 @@ export default function Main() {
       stopCountDownInBackground();
   }
 
-  function setStatesRelatedToTimerUsingDataFromIDB() {
+  //? 특이점 - //TODO 이거 들어내려면 조금 오래 걸릴 듯!
+  //? IDB에 이미 값이 있는 경우에 즉, AuthContextProvider의 `getAndSetStatesFromIDBForNonSignedInUsers()`의
+  //? 첫번째 if block의 경우에만 이 함수가 의미가 있다.
+  //? 두번재 if block의 경우, `setStateStoreToDefault()`가 작업을 끝내기 전에 이 함수가 호출되므로,
+  //? 아래 두 state 모두 {}값을 갖게되고, 이 경우 TimerController의 state init함수들이 이 경우를
+  //? Object.entries(state).length === 0를 이용해서 걸러 낸 후 default값들을 상정해서 그 state들을 init한다.
+  //! 그러니까 결과적으로는 IDB와 TC에서 state값들은 default값으로 씽크가 맞게 되긴 한다.
+  //* 그래서 우선... 이 구조를 개선하기 전에는 currentCycleInfo도 같은 방식으로 default값을 TC에서 설정해보자 ㅠㅠ
+  function setStatesRelatedToTimerAndCurrentCycleInfoUsingDataFromIDB() {
     const getStatesFromIDB = async () => {
       let states = await obtainStatesFromIDB("withoutSettings");
-      setStatesRelatedToTimer(states);
+      //! IMPT
+      //! How can we guarantee that the states is not undefined?
+      //! IDB must already be filled with the data fetched from server before this setup function is called.
+      //* However, this works when navigating back from other pages to `/timer`.
+      //TODO - check if... there are duplications.
+      if (Object.entries(states).length !== 0) {
+        //! IMPT - 이 부분이 언제 작동하는지: 1)unAuth와 auth유저 모두에게 해당->다른 페이지에서 이 페이지로 돌아올 때.
+        //!                               2)unAuth user가 앱을 열었을 때 (이전에 사용했던 데이터를 가져오는 것)
+        let { currentCycleInfo, ...timersStates } =
+          states as TimersStatesTypeWithCurrentCycleInfo;
+
+        setStatesRelatedToTimer(timersStates);
+        setCurrentCycleInfo(currentCycleInfo);
+      } else {
+        setStatesRelatedToTimer({});
+        setCurrentCycleInfo({});
+      }
     };
     getStatesFromIDB();
   }
@@ -117,13 +158,14 @@ export default function Main() {
     };
   }
 
-  //! This event is published in the `persistTimersStatesToIDB()` defined in UserContext.tsx
-  function subscribeToSuccessOfPersistingTimerStatesToIDB() {
+  //TODO 왜 이거 만들었었는지 기억이 안난다. 그런데 이제 필요 없는 것 같다. 걍 zustand가 다 알아서 해주는 것 같은데?
+  function subscribeToSuccessOfPersistingTimerStatesWithCurrentCycleInfoToIDB() {
     // Since UserContext component is rendered after this Main component is rendered when signing in.
     const unsub = pubsub.subscribe(
-      "successOfPersistingTimersStatesToIDB",
+      SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
       (data) => {
-        setStatesRelatedToTimer(data);
+        setStatesRelatedToTimer(data.timersStates);
+        setCurrentCycleInfo(data.currentCycleInfo);
         areDataForRunningTimerFetched.current[0] = true;
       }
     );
@@ -158,8 +200,10 @@ export default function Main() {
   // 왜냐하면 이것은 애초에 remote server에서 가져오는 데이터이기 때문이다(비록 cache를 하더라도).
   // statesRelatedToTimer는 user가 사용하는 브라우저에 저장되기 때문에 준비하는 데 걸리는 시간은 유의미한 영향을 주지 않는다.
   // TODO: I think this becomes always true after we apply the zustand store (because of initial value is never an empty object)
-  const isPomoSettingReady = !!Object.entries(pomoSetting).length;
+  const isPomoSettingReady = pomoSetting !== null;
+  const isAutoStartSettingReady = autoStartSetting !== null;
   const isStatesRelatedToTimerReady = statesRelatedToTimer !== null;
+  const isCurrentCycleInfoReady = currentCycleInfo !== null;
   const isUserAuthReady = user !== null;
   const areDataForRunningTimerFetchedCompletely =
     areDataForRunningTimerFetched.current[0] &&
@@ -185,7 +229,8 @@ export default function Main() {
         }}
       >
         {isStatesRelatedToTimerReady &&
-          (isPomoSettingReady ? (
+          isCurrentCycleInfoReady &&
+          (isPomoSettingReady && isAutoStartSettingReady ? (
             localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
               isUserAuthReady ? (
                 // Though the user auth is ready, user's data needed to run a timer might not be ready.
@@ -200,11 +245,10 @@ export default function Main() {
                       <BoxShadowWrapper>
                         <TimerController
                           statesRelatedToTimer={statesRelatedToTimer}
-                          pomoDuration={pomoSetting.pomoDuration}
-                          shortBreakDuration={pomoSetting.shortBreakDuration}
-                          longBreakDuration={pomoSetting.longBreakDuration}
-                          numOfPomo={pomoSetting.numOfPomo}
-                          numOfCycle={pomoSetting.numOfCycle}
+                          currentCycleInfo={currentCycleInfo}
+                          pomoSetting={pomoSetting}
+                          autoStartSetting={autoStartSetting}
+                          records={records}
                           setRecords={setRecords}
                         />
                       </BoxShadowWrapper>
@@ -229,11 +273,10 @@ export default function Main() {
               <BoxShadowWrapper>
                 <TimerController
                   statesRelatedToTimer={statesRelatedToTimer}
-                  pomoDuration={pomoSetting.pomoDuration}
-                  shortBreakDuration={pomoSetting.shortBreakDuration}
-                  longBreakDuration={pomoSetting.longBreakDuration}
-                  numOfPomo={pomoSetting.numOfPomo}
-                  numOfCycle={pomoSetting.numOfCycle}
+                  currentCycleInfo={currentCycleInfo}
+                  pomoSetting={pomoSetting}
+                  autoStartSetting={autoStartSetting}
+                  records={records}
                   setRecords={setRecords}
                 />
               </BoxShadowWrapper>

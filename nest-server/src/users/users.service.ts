@@ -13,6 +13,7 @@ import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on
 import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 import { UpdateGoalsDto } from './dto/update-goals.dto';
+import { UpdateCurrentCycleInfoDto } from './dto/update-current-cycle-info.dto';
 
 @Injectable()
 export class UsersService {
@@ -103,6 +104,23 @@ export class UsersService {
     const updatedUser = await currentUser.save();
 
     return updatedUser;
+  }
+
+  updateCurrentCycleInfo(
+    updateCurrentCycleInfoDto: UpdateCurrentCycleInfoDto,
+    userEmail: string,
+  ) {
+    return this.userModel
+      .findOneAndUpdate(
+        {
+          userEmail,
+        },
+        {
+          currentCycleInfo: updateCurrentCycleInfoDto,
+        },
+        { new: true },
+      )
+      .exec();
   }
 
   updateIsUnCategorizedOnStat(

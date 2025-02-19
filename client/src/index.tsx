@@ -13,6 +13,8 @@ import {
   AutoStartSettingType,
   TimersStatesType,
   CategoryChangeInfo,
+  CycleInfoType,
+  TimersStatesTypeWithCurrentCycleInfo,
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
@@ -23,6 +25,7 @@ import {
   SUB_SET,
   BASE_URL,
   CURRENT_CATEGORY_NAME,
+  SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
 } from "./constants";
 import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
@@ -34,6 +37,7 @@ import {
   errController,
 } from "./axios-and-error-handling/errorController";
 import { AxiosRequestConfig } from "axios";
+import { msToSec } from "./Pages/Main/Timer-Related/utility-functions";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -45,7 +49,8 @@ interface TimerRelatedDB extends DBSchema {
         | boolean
         | PauseType
         | PomoSettingType
-        | AutoStartSettingType;
+        | AutoStartSettingType
+        | CycleInfoType;
     };
     key: string;
   };
@@ -93,6 +98,7 @@ export type dataCombinedFromIDB = {
   repetitionCount: number;
   pomoSetting: PomoSettingType;
   autoStartSetting: AutoStartSettingType;
+  currentCycleInfo: CycleInfoType;
 };
 //#endregion
 
@@ -108,7 +114,7 @@ export let deciderOfWhetherDataForRunningTimerFetched: [boolean, boolean] = [
   false, // for persisting timersStates to idb
   false, // for persisting recordsOfToday to idb
 ];
-pubsub.subscribe("successOfPersistingTimersStatesToIDB", (data) => {
+pubsub.subscribe(SUCCESS_PersistingTimersStatesWithCycleInfoToIDB, (data) => {
   deciderOfWhetherDataForRunningTimerFetched[0] = true;
 });
 pubsub.subscribe("successOfPersistingRecordsOfTodayToIDB", (data) => {
@@ -168,13 +174,24 @@ BC.addEventListener("message", async (ev) => {
       break;
 
     case "autoStartCurrentSession":
-      let { timersStates, pomoSetting, endTime, currentCategoryName } = payload;
+      let {
+        timersStates,
+        currentCycleInfo,
+        pomoSetting,
+        endTime,
+        prevSessionType,
+        currentCategoryName,
+      } = payload; // sw.js의 BC에 의해...
+
+      console.log("payload is not including currentCategoryName", payload);
 
       // console.log("about to call autoStartCurrentSession in index.tsx");
       autoStartCurrentSession({
         timersStates,
+        currentCycleInfo,
         pomoSetting,
         endTimeOfPrevSession: endTime,
+        prevSessionType,
         currentCategoryName,
       });
       break;
@@ -434,6 +451,13 @@ export async function setStateStoreToDefault() {
       tx.store.put({ name: "startTime", value: 0 }),
       tx.store.put({ name: "pause", value: { totalLength: 0, record: [] } }),
       tx.store.put({
+        name: "currentCycleInfo",
+        value: {
+          totalFocusDuration: 100 * 60,
+          cycleDuration: 130 * 60,
+        },
+      }),
+      tx.store.put({
         name: "pomoSetting",
         value: {
           pomoDuration: 25,
@@ -539,7 +563,7 @@ export async function openIndexedDB() {
 
 export async function obtainStatesFromIDB(
   opt: "withoutSettings"
-): Promise<TimersStatesType | {}>;
+): Promise<TimersStatesTypeWithCurrentCycleInfo | {}>;
 export async function obtainStatesFromIDB(
   opt: "withSettings"
 ): Promise<dataCombinedFromIDB | {}>;
@@ -555,9 +579,12 @@ export async function obtainStatesFromIDB(
   }, {});
   if (Object.keys(states).length !== 0) {
     if (opt === "withoutSettings") {
-      const { pomoSetting, autoStartSetting, ...timersStates } =
-        states as dataCombinedFromIDB;
-      return timersStates;
+      const {
+        pomoSetting,
+        autoStartSetting,
+        ...timersStatesWithCurrentCycleInfo
+      } = states as dataCombinedFromIDB;
+      return timersStatesWithCurrentCycleInfo;
     } else {
       return states;
     }
@@ -660,7 +687,13 @@ export async function persistManyTodaySessionsToIDB(records: RecType[]) {
 }
 
 export async function persistStatesToIDB(
-  states: Partial<TimerStateType & PatternTimerStatesType>
+  states: Partial<
+    TimerStateType &
+      PatternTimerStatesType & {
+        currentCycleInfo: CycleInfoType;
+      } & PomoSettingType &
+      AutoStartSettingType
+  >
 ) {
   let db = DB || (await openIndexedDB());
   const store = db
@@ -795,21 +828,31 @@ export async function countDown(setIntervalId: number | string | null) {
   // console.log("states in countDown()", statesFromIDB);
 
   if (Object.entries(statesFromIDB).length !== 0) {
-    let { pomoSetting, autoStartSetting, ...timersStates } =
+    let { pomoSetting, autoStartSetting, ...timersStatesWithCurrentCycleInfo } =
       statesFromIDB as dataCombinedFromIDB;
     //* 1. 만약 Main과 그 children들에 의해 한 session이 시작되었고,
     //* 2. backbround에서 돌아가고 있지 않으면
     //*   (사실.. background는 아님.. 원래는 sw.js에서 돌려서 background가 맞았는데 이게 몇초 이내에 지맘대로 꺼져서.. 결국 main thread(index.tsx파일에서..?)돌리게 되었기 때문)
     if (
-      DoesTimerStarted(timersStates as dataCombinedFromIDB) && //* 1.
+      DoesTimerStarted(
+        timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
+      ) && //* 1.
       timerIsNotRunningInBackground() //* 2.
     ) {
       let idOfSetInterval = setInterval(() => {
         let remainingDuration = Math.floor(
-          ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
+          ((
+            timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
+          ).duration *
+            60 *
+            1000 -
             (Date.now() -
-              (timersStates as dataCombinedFromIDB).startTime -
-              (timersStates as dataCombinedFromIDB).pause.totalLength)) /
+              (
+                timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
+              ).startTime -
+              (
+                timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
+              ).pause.totalLength)) /
             1000
         );
         // console.log(
@@ -825,7 +868,7 @@ export async function countDown(setIntervalId: number | string | null) {
           // );
           postMsgToSW("endTimer", {
             pomoSetting,
-            ...timersStates,
+            ...timersStatesWithCurrentCycleInfo,
           });
         }
       }, 500);
@@ -840,11 +883,14 @@ export async function countDown(setIntervalId: number | string | null) {
    * 2)에서 countDown한번 call되고, 3)에서 한번 더 call된다.
    * 이 때 중복으로 run 하지 않게 하려고.
    */
+  // TODO: 이거 authenticated user가 앱을 다시 열었을 때는 무조건 null이잖아.
   function timerIsNotRunningInBackground() {
     return setIntervalId === null;
   }
 
-  function DoesTimerStarted(timersStates: dataCombinedFromIDB) {
+  function DoesTimerStarted(
+    timersStates: TimersStatesTypeWithCurrentCycleInfo
+  ) {
     return timersStates.running;
   }
 }
@@ -867,105 +913,144 @@ export async function makeSound() {
   }
 }
 
+const SESSION = {
+  POMO: 1,
+  SHORT_BREAK: 2,
+  LAST_POMO: 3,
+  LONG_BREAK: 4,
+  VERY_LAST_POMO: 5,
+};
 // 시작한다는 의미 <=> 결국 TimersStates를 update한다음에
 // 이거를
 // 1. persist locally
 // 2. persist remotely
 async function autoStartCurrentSession({
   timersStates,
+  currentCycleInfo,
   pomoSetting,
   endTimeOfPrevSession,
-  currentCategoryName,
+  prevSessionType,
 }: {
   timersStates: TimerStateType & PatternTimerStatesType;
+  currentCycleInfo: CycleInfoType;
   pomoSetting: PomoSettingType;
   endTimeOfPrevSession: number;
+  prevSessionType: number;
   currentCategoryName: string | undefined | null;
 }) {
-  if (currentCategoryName === undefined) currentCategoryName = null;
-  // console.log("moment when autoStartCurrentSession starts", new Date());
-  // timersStates.startTime = endTimeOfPrevSession; //? 이렇게하면... 말이 안되지 않나?.. '찰나' 라는 델타 값 정도는 더해줘야 하지 않나?
-  //! 1초 ?.. 최소 1 millisecond
-  timersStates.startTime = endTimeOfPrevSession + 1; // 이렇게 해도 초단위는 같아지잖아.. 걍 1초 차이는 나게 해줘야 ..
-  timersStates.running = true;
+  try {
+    timersStates.startTime = Date.now();
+    timersStates.running = true;
+    // console.log("endTimeOfPrevSession", endTimeOfPrevSession);
+    //#region Countdown
+    let idOfSetInterval = setInterval(() => {
+      let remainingDuration = Math.floor(
+        ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
+          (Date.now() -
+            (timersStates as dataCombinedFromIDB).startTime -
+            (timersStates as dataCombinedFromIDB).pause.totalLength)) /
+          1000
+      );
+      // console.log(
+      //   "count down remaining duration - by autoStartCurrentSession()",
+      //   remainingDuration
+      // );
+      if (remainingDuration <= 0) {
+        // console.log("idOfSetInterval", idOfSetInterval);
+        clearInterval(idOfSetInterval);
+        localStorage.removeItem("idOfSetInterval");
+        // console.log(
+        //   "-------------------------------------About To Call EndTimer()-------------------------------------"
+        // );
 
-  // 1. persist locally.
-  // Problem:  We don't need to do assign this job to SW.
-  // It might be not enough fast since there are some steps to be done
-  // before the APIs of indexed db are actually called.
-  postMsgToSW("saveStates", {
-    stateArr: [
+        postMsgToSW("endTimer", {
+          // currentCategoryName,
+          //* 그러니까 만약에 한 세션이 `/timer`이외의 다른 페이지에서 "자동시작"되었다고 가정하자.
+          //* 이때, 그 current session의 category에 대한 변동을 위의 `currentCategoryName`은 반영할 수 없다.
+          //* 왜냐하면, 딱 이 세션이 시작했을 때라는 과거의 데이터이기 때문.
+          //* category를 지우거나 이름을 변경할 때 만약에 그게 current session의 category이면, 즉각 session storage에 반영하고 있다.
+          //* 그러면 endTimer는 항상 거기에서 직접 가져와서 써야 하는 것임.
+          // currentCategory: sessionStorage.getItem(CURRENT_CATEGORY_NAME),
+          //? 만약에 user가 currentCategory를 지우는 버튼을 클릭하는 시각이 이 object argument를 만들기 시작하는 시각과 같거나 그 언저리면 어떻게 되는거야?
+          // 눌러서 remove item하기 전에 sessionStorage에서 null값이 아닌 유의미한 값을 가져왔으면... 걍 네가 더 빨리 remove 버튼을 눌렀어야하는거임... 걍 신경 끄면 될 듯...:::
+          pomoSetting,
+          ...timersStates,
+        });
+      }
+    }, 500);
+    localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+    //#endregion
+
+    let stateArr: {
+      name: string;
+      value:
+        | number
+        | boolean
+        | PauseType
+        | PomoSettingType
+        | AutoStartSettingType
+        | CycleInfoType;
+    }[] = [
       { name: "startTime", value: timersStates.startTime },
       { name: "running", value: timersStates.running },
       { name: "pause", value: timersStates.pause },
-    ],
-  });
+    ];
 
-  // The Issue that currently is occuring
-  // 1. start a session in "/timer"
-  // 2. navigate to "/statistics"
-  // 3. the session ends
-  // 4. move to "/timer" and you see the next session has started by the autoStartCurrentSession() in index.tsx
-  // 5. refresh
-  // 6. the next session starts over.
-  //
-  // What it menas:
-  // the timersStates fetched from server is not same as the timersStates stored in idb before refreshing.
+    let gapInSec = msToSec(timersStates.startTime - endTimeOfPrevSession);
 
-  // 2. persist remotely.
-  let idTokenAndEmail = await obtainIdToken();
-  if (idTokenAndEmail) {
-    const { idToken } = idTokenAndEmail;
-    updateTimersStates_with_token({
-      idToken: idToken,
-      states: {
-        startTime: timersStates.startTime,
-        running: timersStates.running,
-        pause: timersStates.pause,
-        repetitionCount: timersStates.repetitionCount,
-        duration: timersStates.duration,
-      },
+    //앱 닫았다가 나중에 열었을 때 다른 페이지에서 바로 시작하는 경우.
+    // unAuth user의 경우 - ~/settings로 바로 접속하는 경우, auth user의 경우 - ~/statistics or ~/settings로 접속하는 경우.
+    if (gapInSec > 0 && prevSessionType !== SESSION.LONG_BREAK) {
+      // === VERY_LAST_POMO인 경우도 자동시작 하면 안되는데, 여기서 체크하지 않은 이유는 그 경우에는 애초에 sw.js에는 BC message를 보내지 않는다.
+      console.log("gapInSec", gapInSec);
+      currentCycleInfo.cycleDuration += gapInSec;
+      stateArr.push({ name: "currentCycleInfo", value: currentCycleInfo });
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        ...currentCycleInfo,
+      });
+    } else {
+      //바로시작 앱 닫지 않고
+      console.log("gapInSec is zero", gapInSec);
+    }
+    //TODO - sw.js에서 cycleDuration payload에 포함시키기
+
+    // 1. persist locally.
+    // Problem:  We don't need to do assign this job to SW.
+    // It might be not enough fast since there are some steps to be done
+    // before the APIs of indexed db are actually called.
+    postMsgToSW("saveStates", {
+      stateArr,
     });
-  }
 
-  // countdown
-  let idOfSetInterval = setInterval(() => {
-    let remainingDuration = Math.floor(
-      ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
-        (Date.now() -
-          (timersStates as dataCombinedFromIDB).startTime -
-          (timersStates as dataCombinedFromIDB).pause.totalLength)) /
-        1000
-    );
-    // console.log(
-    //   "count down remaining duration - by autoStartCurrentSession()",
-    //   remainingDuration
-    // );
-    if (remainingDuration <= 0) {
-      // console.log("idOfSetInterval", idOfSetInterval);
-      clearInterval(idOfSetInterval);
-      localStorage.removeItem("idOfSetInterval");
-      // console.log(
-      //   "-------------------------------------About To Call EndTimer()-------------------------------------"
-      // );
+    // The Issue that currently is occuring
+    // 1. start a session in "/timer"
+    // 2. navigate to "/statistics"
+    // 3. the session ends
+    // 4. move to "/timer" and you see the next session has started by the autoStartCurrentSession() in index.tsx
+    // 5. refresh
+    // 6. the next session starts over.
+    //
+    // What it menas:
+    // the timersStates fetched from server is not same as the timersStates stored in idb before refreshing.
 
-      postMsgToSW("endTimer", {
-        // currentCategoryName,
-        //* 그러니까 만약에 한 세션이 `/timer`이외의 다른 페이지에서 "자동시작"되었다고 가정하자.
-        //* 이때, 그 current session의 category에 대한 변동을 위의 `currentCategoryName`은 반영할 수 없다.
-        //* 왜냐하면, 딱 이 세션이 시작했을 때라는 과거의 데이터이기 때문.
-        //* category를 지우거나 이름을 변경할 때 만약에 그게 current session의 category이면, 즉각 session storage에 반영하고 있다.
-        //* 그러면 endTimer는 항상 거기에서 직접 가져와서 써야 하는 것임.
-        // currentCategory: sessionStorage.getItem(CURRENT_CATEGORY_NAME),
-        //? 만약에 user가 currentCategory를 지우는 버튼을 클릭하는 시각이 이 object argument를 만들기 시작하는 시각과 같거나 그 언저리면 어떻게 되는거야?
-        // 눌러서 remove item하기 전에 sessionStorage에서 null값이 아닌 유의미한 값을 가져왔으면... 걍 네가 더 빨리 remove 버튼을 눌렀어야하는거임... 걍 신경 끄면 될 듯...:::
-        pomoSetting,
-        ...timersStates,
+    // 2. persist remotely.
+    let idTokenAndEmail = await obtainIdToken();
+    if (idTokenAndEmail) {
+      const { idToken } = idTokenAndEmail;
+      updateTimersStates_with_token({
+        idToken: idToken,
+        states: {
+          startTime: timersStates.startTime,
+          running: timersStates.running,
+          pause: timersStates.pause,
+          repetitionCount: timersStates.repetitionCount,
+          duration: timersStates.duration,
+        },
       });
     }
-  }, 500);
-
-  localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 export function obtainIdToken(): Promise<{ idToken: string } | null> {

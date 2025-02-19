@@ -252,8 +252,9 @@ async function emptyStateStore(clientId) {
  * @param {*} payload timersStates and pomoSetting of the session that was just finished.
  */
 async function goNext(payload) {
-  let { pomoSetting, ...timersStates } = payload;
-  let { duration, repetitionCount, pause, startTime } = timersStates;
+  let { pomoSetting, ...timersStatesWithCurrentCycleInfo } = payload; //? autoStartSetting은 왜 빼고 보냈지 payload에..?... -> retrieveAutoStartSettingFromIDB()를 wrapUpSession()에서 call하는데 다 이유가 있을듯.
+  let { currentCycleInfo, ...timersStates } = timersStatesWithCurrentCycleInfo;
+  let { duration, repetitionCount, pause, startTime } = timersStates; //! info about the session just finished
 
   const sessionData = {
     pause,
@@ -269,6 +270,7 @@ async function goNext(payload) {
       numOfCycle: pomoSetting.numOfCycle,
     }),
     timersStates,
+    currentCycleInfo,
     pomoSetting,
     sessionData,
   });
@@ -296,6 +298,7 @@ async function goNext(payload) {
 async function wrapUpSession({
   session,
   timersStates,
+  currentCycleInfo,
   pomoSetting,
   sessionData,
 }) {
@@ -328,8 +331,10 @@ async function wrapUpSession({
 
   //? getIdTokenAndEmail -> error -> res(null) is not what I considered here...
   let idTokenAndEmail = await getIdTokenAndEmail();
+  let idToken;
   let infoArrayBeforeReset = null;
   if (idTokenAndEmail) {
+    idToken = idTokenAndEmail.idToken;
     infoArrayBeforeReset = (await getCategoryChangeInfoArrayFromIDB()).value;
 
     // console.log("infoArrayBeforeReset", infoArrayBeforeReset);
@@ -398,9 +403,26 @@ async function wrapUpSession({
           };
         }),
       },
-      idTokenAndEmail.idToken
+      idToken
     );
   }
+
+  const {
+    pomoDuration,
+    shortBreakDuration,
+    longBreakDuration,
+    numOfPomo,
+    numOfCycle,
+  } = pomoSetting;
+  const newCurrentCycleInfo = {
+    totalFocusDuration: 60 * pomoDuration * numOfPomo,
+    cycleDuration:
+      60 *
+      (pomoDuration * numOfPomo +
+        shortBreakDuration * (numOfPomo - 1) +
+        longBreakDuration),
+  };
+
   switch (session) {
     case SESSION.POMO:
       self.registration.showNotification("shortBreak", {
@@ -409,7 +431,7 @@ async function wrapUpSession({
       });
 
       // 1. 정보 변환
-      timersStatesForNextSession.duration = pomoSetting.shortBreakDuration;
+      timersStatesForNextSession.duration = shortBreakDuration;
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
         {
@@ -434,12 +456,14 @@ async function wrapUpSession({
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
-          persistTimersStatesToServer(timersStatesForNextSession);
+          persistTimersStatesToServer(timersStatesForNextSession, idToken);
         } else {
           const payload = {
             timersStates: timersStatesForNextSession,
+            currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
+            prevSessionType: session,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -450,7 +474,7 @@ async function wrapUpSession({
         console.warn("autoStartSetting is undefined");
       }
 
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
 
       break;
 
@@ -460,7 +484,7 @@ async function wrapUpSession({
         silent: true,
       });
 
-      timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+      timersStatesForNextSession.duration = pomoDuration;
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -478,12 +502,14 @@ async function wrapUpSession({
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesPomoStartAutomatically === false) {
-          persistTimersStatesToServer(timersStatesForNextSession);
+          persistTimersStatesToServer(timersStatesForNextSession, idToken);
         } else {
           const payload = {
             timersStates: timersStatesForNextSession,
+            currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
+            prevSessionType: session,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -494,7 +520,7 @@ async function wrapUpSession({
         console.warn("autoStartSetting is undefined");
       }
 
-      persistRecOfTodayToServer({ kind: "break", ...sessionData });
+      persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
 
       break;
 
@@ -504,7 +530,7 @@ async function wrapUpSession({
         silent: true,
       });
 
-      timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
+      timersStatesForNextSession.duration = longBreakDuration;
       idTokenAndEmail &&
         (await recordPomo(
           timersStates.startTime,
@@ -529,12 +555,14 @@ async function wrapUpSession({
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
-          persistTimersStatesToServer(timersStatesForNextSession);
+          persistTimersStatesToServer(timersStatesForNextSession, idToken);
         } else {
           const payload = {
             timersStates: timersStatesForNextSession,
+            currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
+            prevSessionType: session,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -545,7 +573,7 @@ async function wrapUpSession({
         console.warn("autoStartSetting is undefined");
       }
 
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
 
       break;
 
@@ -556,8 +584,7 @@ async function wrapUpSession({
       });
 
       timersStatesForNextSession.repetitionCount = 0;
-      timersStatesForNextSession.duration = pomoSetting.pomoDuration;
-
+      timersStatesForNextSession.duration = pomoDuration;
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
         {
@@ -567,6 +594,10 @@ async function wrapUpSession({
         {
           name: "duration",
           value: timersStatesForNextSession.duration,
+        },
+        {
+          name: "currentCycleInfo",
+          value: newCurrentCycleInfo,
         },
       ]);
 
@@ -580,9 +611,14 @@ async function wrapUpSession({
           sessionData
         ));
 
-      persistTimersStatesToServer(timersStatesForNextSession);
-
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData });
+      persistTimersStatesToServer(timersStatesForNextSession, idToken);
+      fetchWrapper(
+        RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO,
+        "PATCH",
+        newCurrentCycleInfo,
+        idToken
+      );
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
 
       break;
 
@@ -592,7 +628,7 @@ async function wrapUpSession({
         silent: true,
       });
 
-      timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+      timersStatesForNextSession.duration = pomoDuration;
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -604,29 +640,41 @@ async function wrapUpSession({
           name: "duration",
           value: timersStatesForNextSession.duration,
         },
+        {
+          name: "currentCycleInfo",
+          value: newCurrentCycleInfo,
+        },
       ]);
 
       await persistSessionToIDB("break", sessionData);
 
       if (autoStartSetting !== undefined) {
-        if (autoStartSetting.doesPomoStartAutomatically === false) {
-          persistTimersStatesToServer(timersStatesForNextSession);
-        } else {
+        if (autoStartSetting.doesCycleStartAutomatically) {
           const payload = {
             timersStates: timersStatesForNextSession,
+            currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
+            prevSessionType: session,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
             payload,
           });
+        } else {
+          persistTimersStatesToServer(timersStatesForNextSession, idToken);
         }
       } else {
         console.warn("autoStartSetting is undefined");
       }
 
-      persistRecOfTodayToServer({ kind: "break", ...sessionData });
+      persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+      fetchWrapper(
+        RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO,
+        "PATCH",
+        newCurrentCycleInfo,
+        idToken
+      );
 
       break;
 
@@ -831,11 +879,9 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
   }
 }
 
-async function persistTimersStatesToServer(states) {
+async function persistTimersStatesToServer(states, idToken) {
   try {
-    let idTokenAndEmail = await getIdTokenAndEmail();
-    if (idTokenAndEmail) {
-      const { idToken, email } = idTokenAndEmail;
+    if (idToken) {
       // caching
       let cache = CACHE || (await openCache(CacheName));
       let pomoSettingAndTimerStatesResponse = await cache.match(
@@ -863,12 +909,9 @@ async function persistTimersStatesToServer(states) {
   }
 }
 
-async function persistRecOfTodayToServer(record) {
+async function persistRecOfTodayToServer(record, idToken) {
   try {
-    let idTokenAndEmail = await getIdTokenAndEmail();
-    if (idTokenAndEmail) {
-      const { idToken, email } = idTokenAndEmail;
-
+    if (idToken) {
       //#region caching
       let cache = CACHE || (await openCache(CacheName));
       let resOfRecordOfToday = await cache.match(
@@ -890,7 +933,6 @@ async function persistRecOfTodayToServer(record) {
         RESOURCE.TODAY_RECORDS,
         "POST",
         {
-          userEmail: email,
           ...record,
         },
         idToken

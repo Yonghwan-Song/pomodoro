@@ -27,6 +27,11 @@ interface TimersStates {
   startTime: number;
 }
 
+interface CycleInfo {
+  totalFocusDuration: number;
+  cycleDuration: number;
+}
+
 interface Goal {
   minimum: number;
   ideal: number;
@@ -105,6 +110,14 @@ export class User {
     }),
   )
   timersStates: TimersStates;
+
+  @Prop(
+    raw({
+      totalFocusDuration: { type: Number, default: 100 * 60 },
+      cycleDuration: { type: Number, default: 130 * 60 },
+    }),
+  )
+  currentCycleInfo: CycleInfo;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }] })
   categories: ObjectId[];

@@ -105,3 +105,15 @@ export function calculateNumOfRemainingPomoSessions(
 
   return numOfRemainingPomoSessions;
 }
+
+export function msToMin(ms: number) {
+  return Math.floor(ms / (1000 * 60));
+}
+
+export function msToSec(ms: number) {
+  return Math.floor(ms / 1000);
+}
+
+export function isThisFocusSession(repetitionCount: number) {
+  return repetitionCount % 2 === 0 ? true : false;
+}

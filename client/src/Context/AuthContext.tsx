@@ -10,7 +10,11 @@ import {
 
 import { auth } from "../firebase";
 import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { CURRENT_CATEGORY_NAME, RESOURCE } from "../constants";
+import {
+  CURRENT_CATEGORY_NAME,
+  RESOURCE,
+  SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
+} from "../constants";
 import {
   DataFromServer,
   useBoundedPomoInfoStore,
@@ -21,6 +25,7 @@ import {
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
   postMsgToSW,
+  setStateStoreToDefault,
 } from "..";
 import { RequiredStatesToRunTimerType } from "../types/clientStatesType";
 import { pubsub } from "../pubsub";
@@ -47,8 +52,11 @@ export function AuthContextProvider({
   const [isNewUserRegistered, setIsNewUserRegistered] = useState(false);
   const [isUserNewlyRegistered, setIsUserNewlyRegistered] = useState(false);
   const [isUserNew, setIsUserNew] = useState(false);
-  const populate = useBoundedPomoInfoStore(
+  const populateExistingUserStates = useBoundedPomoInfoStore(
     (state) => state.populateExistingUserStates
+  );
+  const populateNonSignInUserStates = useBoundedPomoInfoStore(
+    (state) => state.populateNonSignInUserStates
   );
   const updatePomoSetting = useBoundedPomoInfoStore(
     (state) => state.setPomoSetting
@@ -119,6 +127,7 @@ export function AuthContextProvider({
           stateArr: [
             { name: "pomoSetting", value: states.pomoSetting },
             { name: "autoStartSetting", value: states.autoStartSetting },
+            { name: "currentCycleInfo", value: states.currentCycleInfo },
           ],
         });
         //2.
@@ -128,16 +137,16 @@ export function AuthContextProvider({
         await addUUIDToCategory(states);
 
         //4. assign states to the zustand store
-        populate(states);
+        populateExistingUserStates(states);
 
         //
         await persistCategoryChangeInfoArrayToIDB(
           states.categoryChangeInfoArray
         );
-        pubsub.publish(
-          "successOfPersistingTimersStatesToIDB",
-          states.timersStates
-        );
+        pubsub.publish(SUCCESS_PersistingTimersStatesWithCycleInfoToIDB, {
+          timersStates: states.timersStates,
+          currentCycleInfo: states.currentCycleInfo,
+        });
 
         //
         const currentCategory = states.categories.find(
@@ -173,57 +182,53 @@ export function AuthContextProvider({
     }
   }, [user, isUserNew, isUserNewlyRegistered]);
 
-  // Purpose: to sync the pomoSetting of an unlogged-in user by updating it using data from IDB
+  //
+  /**
+   * Purpose:
+   *  1. to sync the pomoSetting and autoStartSetting of an unlogged-in user by updating it with data from IDB
+   *  2. if there are no data in IDB, populate the stateStore with default states.
+   */
+  //#region For non signed-in users
   useEffect(() => {
-    async function getPomoSettingFromIDB() {
+    /**
+     * This function also pushes default values of the states if IDB does not have existing values for them.
+     * ! 이렇게 하면 Main에서 statesRelatedToTimer와 currentCycleInfo가 {}값을 가질 수 없다.
+     * ! 그래서 TimerController에서 값 initialize할 때 복잡한 init함수들 적용하지 않아도 될 듯. :::...
+     */
+
+    async function getAndSetStatesFromIDBForNonSignedInUsers() {
       let states = await obtainStatesFromIDB("withSettings");
 
-      let pomoSetting = doesPomoSettingExistInIDB()
-        ? (states as dataCombinedFromIDB).pomoSetting
-        : {
-            pomoDuration: 25,
-            shortBreakDuration: 5,
-            longBreakDuration: 15,
-            numOfPomo: 4,
-            numOfCycle: 1,
-          };
-      let autoStartSetting = doesAutoStartSettingExistInIDB()
-        ? (states as dataCombinedFromIDB).autoStartSetting
-        : {
-            doesPomoStartAutomatically: false,
-            doesBreakStartAutomatically: false,
-            doesCycleStartAutomatically: false,
-          };
-
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "pomoSetting", value: pomoSetting },
-          {
-            name: "autoStartSetting",
-            value: {
-              doesPomoStartAutomatically:
-                autoStartSetting.doesPomoStartAutomatically,
-              doesBreakStartAutomatically:
-                autoStartSetting.doesBreakStartAutomatically,
-            },
-          },
-        ],
-      });
-
-      updatePomoSetting(pomoSetting);
-      updateAutoStartSetting(autoStartSetting);
-
-      function doesPomoSettingExistInIDB() {
-        return (
-          Object.entries(states).length !== 0 &&
-          (states as dataCombinedFromIDB).pomoSetting
-        );
-      }
-      function doesAutoStartSettingExistInIDB() {
-        return (
-          Object.entries(states).length !== 0 &&
-          (states as dataCombinedFromIDB).autoStartSetting
-        );
+      // 1. non-signed-in user가 이전에 사용하던 정보가 Indexed DB에 존재하는 경우.
+      if (Object.entries(states).length !== 0) {
+        const {
+          pomoSetting,
+          autoStartSetting,
+          currentCycleInfo,
+          ...timersStates
+        } = states as dataCombinedFromIDB;
+        populateNonSignInUserStates({
+          pomoSetting,
+          autoStartSetting,
+          currentCycleInfo,
+          timersStates,
+        });
+      } else {
+        //2. non-signed-in user가 app을 처음 사용하는 경우.
+        setStateStoreToDefault();
+        // globalState은 아래 두 경우를 제외하고는 앱 열때 default값으로 먼저 설정되서 상관 없음.
+        updatePomoSetting({
+          pomoDuration: 25,
+          shortBreakDuration: 5,
+          longBreakDuration: 15,
+          numOfPomo: 4,
+          numOfCycle: 1,
+        });
+        updateAutoStartSetting({
+          doesPomoStartAutomatically: false,
+          doesBreakStartAutomatically: false,
+          doesCycleStartAutomatically: false,
+        });
       }
     }
 
@@ -232,9 +237,10 @@ export function AuthContextProvider({
     }
 
     if (isNonSignInUser()) {
-      getPomoSettingFromIDB();
+      getAndSetStatesFromIDBForNonSignedInUsers();
     }
   }, []);
+  //#endregion
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (incomingUser) => {

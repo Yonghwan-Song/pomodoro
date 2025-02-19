@@ -40,6 +40,7 @@ export const SUB_SET = {
   COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
   CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
   GOALS: "/goals",
+  CURRENT_CYCLE_INFO: "/current-cycle-info",
 };
 
 //#endregion
@@ -114,3 +115,8 @@ export const dayOfWeekArr: readonly string[] = [
 ];
 
 export const _24h = 24 * 60 * 60 * 1000;
+
+//#region pubsub event names
+export const SUCCESS_PersistingTimersStatesWithCycleInfoToIDB =
+  "successOfPersistingTimersStatesWithCycleInfoToIDB";
+//#endregion

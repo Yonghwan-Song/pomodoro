@@ -11,12 +11,24 @@ import {
   TimersStatesType,
 } from "../types/clientStatesType";
 
-// This is required for both signed-in and non-signed-in users.
+/**
+ * These states are required to run a timer; in other words, to run a session either it is a focus or a break.
+ * Thus, both signed-in and non-signed-in users need them.
+ */
 interface TimerSliceStates {
   timersStates: TimersStatesType;
-  pomoSetting: PomoSettingType;
-  autoStartSetting: AutoStartSettingType;
+  pomoSetting: PomoSettingType | null;
+  autoStartSetting: AutoStartSettingType | null;
 }
+
+interface CycleInfoSliceStates {
+  currentCycleInfo: {
+    totalFocusDuration: number;
+    cycleDuration: number;
+  };
+}
+
+interface CycleInfoSlice extends CycleInfoSliceStates {}
 
 interface CategorySliceStates {
   categories: Category[];
@@ -37,9 +49,8 @@ interface GoalSlice extends GoalSliceStates {
 }
 
 interface TimerSlice extends TimerSliceStates {
-  setPomoSetting: (pomoSetting: PomoSettingType) => void;
-  setAutoStartSetting: (autoStartSetting: AutoStartSettingType) => void;
-  populateNonSignInUserStates: (data: TimerSliceStates) => void;
+  setPomoSetting: (pomoSetting: PomoSettingType | null) => void;
+  setAutoStartSetting: (autoStartSetting: AutoStartSettingType | null) => void;
 }
 
 interface CategorySlice extends CategorySliceStates {
@@ -52,32 +63,29 @@ interface CategorySlice extends CategorySliceStates {
   setDoesItJustChangeCategory: (doesItJustChangeCategory: boolean) => void;
 }
 
-export type DataFromServer = TimerSliceStates &
+export type DataFromServer = {
+  timersStates: TimersStatesType;
+  pomoSetting: PomoSettingType;
+  autoStartSetting: AutoStartSettingType;
+} & CycleInfoSliceStates &
   Omit<CategorySliceStates, "doesItJustChangeCategory"> &
   GoalSliceStates;
 
 interface SharedSlice {
   populateExistingUserStates: (data: DataFromServer) => void;
+  populateNonSignInUserStates: (
+    data: TimerSliceStates & CycleInfoSliceStates
+  ) => void;
 }
 
 const createTimerSlice: StateCreator<
-  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
+  TimerSlice & CycleInfoSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   TimerSlice
 > = (set) => ({
-  pomoSetting: {
-    pomoDuration: 25,
-    shortBreakDuration: 5,
-    longBreakDuration: 15,
-    numOfPomo: 4,
-    numOfCycle: 1,
-  },
-  autoStartSetting: {
-    doesPomoStartAutomatically: false,
-    doesBreakStartAutomatically: false,
-    doesCycleStartAutomatically: false,
-  },
+  pomoSetting: null,
+  autoStartSetting: null,
   timersStates: {
     duration: 25,
     pause: {
@@ -96,21 +104,22 @@ const createTimerSlice: StateCreator<
       undefined,
       "timer/setAutoStartSetting"
     ),
-  populateNonSignInUserStates: (data) => {
-    set(
-      (state) => ({
-        pomoSetting: data.pomoSetting,
-        autoStartSetting: data.autoStartSetting,
-        timersStates: data.timersStates,
-      }),
-      undefined,
-      "timer/populateNonSignInUserStates"
-    );
+});
+
+const createCycleInfoSlice: StateCreator<
+  TimerSlice & CycleInfoSlice & CategorySlice & GoalSlice & SharedSlice,
+  [["zustand/devtools", never], ["zustand/immer", never]],
+  [],
+  CycleInfoSlice
+> = (set) => ({
+  currentCycleInfo: {
+    totalFocusDuration: 100 * 60,
+    cycleDuration: 130 * 60,
   },
 });
 
 const createCategorySlice: StateCreator<
-  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
+  TimerSlice & CycleInfoSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   CategorySlice
@@ -149,7 +158,7 @@ const createCategorySlice: StateCreator<
 });
 
 const createGoalSlice: StateCreator<
-  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
+  TimerSlice & CycleInfoSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   GoalSlice
@@ -195,7 +204,7 @@ const createGoalSlice: StateCreator<
     ),
 });
 const createSharedSlice: StateCreator<
-  TimerSlice & CategorySlice & GoalSlice & SharedSlice,
+  TimerSlice & CycleInfoSlice & CategorySlice & GoalSlice & SharedSlice,
   [["zustand/devtools", never], ["zustand/immer", never]],
   [],
   SharedSlice
@@ -207,6 +216,7 @@ const createSharedSlice: StateCreator<
         autoStartSetting: data.autoStartSetting,
         goals: data.goals,
         timersStates: data.timersStates,
+        currentCycleInfo: data.currentCycleInfo,
         categories: data.categories,
         isUnCategorizedOnStat: data.isUnCategorizedOnStat,
         colorForUnCategorized: data.colorForUnCategorized,
@@ -216,14 +226,27 @@ const createSharedSlice: StateCreator<
       "shared/populate"
     );
   },
+  populateNonSignInUserStates: (data) => {
+    set(
+      (state) => ({
+        pomoSetting: data.pomoSetting,
+        autoStartSetting: data.autoStartSetting,
+        timersStates: data.timersStates,
+        currentCycleInfo: data.currentCycleInfo,
+      }),
+      undefined,
+      "timer/populateNonSignInUserStates"
+    );
+  },
 });
 
 export const useBoundedPomoInfoStore = create<
-  TimerSlice & CategorySlice & GoalSlice & SharedSlice
+  TimerSlice & CycleInfoSlice & CategorySlice & GoalSlice & SharedSlice
 >()(
   devtools(
     immer((...a) => ({
       ...createTimerSlice(...a),
+      ...createCycleInfoSlice(...a),
       ...createCategorySlice(...a),
       ...createGoalSlice(...a),
       ...createSharedSlice(...a),

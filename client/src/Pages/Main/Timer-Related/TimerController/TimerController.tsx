@@ -20,13 +20,18 @@ import {
   persistTimersStatesToServer,
   openIndexedDB,
   DB,
+  persistStatesToIDB,
 } from "../../../..";
 import {
+  AutoStartSettingType,
   Category,
   CategoryChangeInfo,
+  CycleInfoType,
+  PomoSettingType,
   RecType,
   TimerStateType,
   TimersStatesType,
+  TimersStatesTypeWithCurrentCycleInfo,
 } from "../../../../types/clientStatesType";
 import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
 import { PomodoroSessionDocument } from "../../../Statistics/statRelatedTypes";
@@ -43,7 +48,10 @@ import {
   calculateNumOfRemainingPomoSessions,
   calculateRepetitionCountWithinCycle,
   getProgress,
+  msToSec,
+  isThisFocusSession,
 } from "../utility-functions";
+import { roundTo_X_DecimalPoints } from "../../../../utils/number-related-utils";
 import { useBoundedPomoInfoStore } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
 import { Grid } from "../../../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../../../ReusableComponents/Layouts/GridItem";
@@ -55,13 +63,12 @@ import { Button } from "../../../../ReusableComponents/Buttons/Button";
 import { ACTION, reducer, TimerAction } from "../reducers";
 import Time from "../Time/Time";
 
-type PatternTimerProps = {
+type TimerControllerProps = {
   statesRelatedToTimer: TimersStatesType | {};
-  pomoDuration: number;
-  shortBreakDuration: number;
-  longBreakDuration: number;
-  numOfPomo: number;
-  numOfCycle: number;
+  currentCycleInfo: CycleInfoType | {};
+  pomoSetting: PomoSettingType;
+  autoStartSetting: AutoStartSettingType;
+  records: RecType[];
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
 };
 
@@ -75,13 +82,12 @@ enum SESSION {
 
 export function TimerController({
   statesRelatedToTimer,
-  pomoDuration,
-  shortBreakDuration,
-  longBreakDuration,
-  numOfPomo,
-  numOfCycle,
+  currentCycleInfo,
+  pomoSetting,
+  autoStartSetting,
+  records,
   setRecords,
-}: PatternTimerProps) {
+}: TimerControllerProps) {
   //#region global states
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.setCategoryChangeInfoArray
@@ -98,11 +104,16 @@ export function TimerController({
   const doesItJustChangeCategory = useBoundedPomoInfoStore(
     (state) => state.doesItJustChangeCategory
   );
-  const autoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.autoStartSetting
-  );
   const { user } = useAuthContext()!;
   //#endregion
+
+  const {
+    pomoDuration,
+    shortBreakDuration,
+    longBreakDuration,
+    numOfPomo,
+    numOfCycle,
+  } = pomoSetting;
 
   //
   const currentCategory = useMemo(() => {
@@ -141,6 +152,67 @@ export function TimerController({
   const [remainingDuration, setRemainingDuration] = useState(
     initializeRemainingDuration
   );
+
+  //#region Ratios and adherenceRate
+  const totalFocusDurationTargetedInSec = 60 * pomoDuration * numOfPomo;
+  const cycleDurationTargetedInSec =
+    60 *
+    (pomoDuration * numOfPomo +
+      shortBreakDuration * (numOfPomo - 1) +
+      longBreakDuration);
+  const [totalFocusDurationInSec, setTotalFocusDurationInSec] = useState(() => {
+    if (Object.entries(currentCycleInfo).length !== 0) {
+      return (currentCycleInfo as CycleInfoType).totalFocusDuration;
+    } else {
+      return totalFocusDurationTargetedInSec;
+    }
+  });
+  const [cycleDurationInSec, setCycleDurationInSec] = useState(() => {
+    if (Object.entries(currentCycleInfo).length !== 0) {
+      return (currentCycleInfo as CycleInfoType).cycleDuration;
+    } else {
+      return cycleDurationTargetedInSec;
+    }
+  });
+
+  const ratioTargeted = roundTo_X_DecimalPoints(
+    totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+    2
+  );
+  const currentRatio = roundTo_X_DecimalPoints(
+    totalFocusDurationInSec / cycleDurationInSec,
+    2
+  );
+  const adherenceRateInPercent = roundTo_X_DecimalPoints(
+    (currentRatio / ratioTargeted) * 100,
+    2
+  );
+  //#endregion
+
+  /**
+   * !IMPT
+   * 사이클이 결국에는 focus duration setting이 결정적인 요소이고 다시 말하면,
+   * 한 사이클이 목표하는 총 focus duration을 수행하는데 필요한 총 시간이 있을것이고,
+   * 그렇다면 총 focus duration과 그것을 수행하는데 필요한 총 시간의 비를 사이클의 강도를 나타내는 하나의 척도로 사용할 수 있다.
+   *
+   * 그런데 실제로 작업을 하다보면, 생각했던/설정했던 정도만큼 시간을 활용하지/보내지 못하는 경우가 발생한다. (물론 강도값에 따라 다르지만...)
+   *
+   * 그래서 원래 목표로 했던/설정했던 structure대로 완벽하게 시간을 보냈다면, 100% 목표를 달성했다 할 수 있다.
+   * 그런데 만약 화장실을 가든 뭐를 사먹으로 매점을 가던지 한다면, 현재 사이클이 그것들에 의해 얼마나 영향을 받았는지 숫자로 표현.
+   * 자극도 되고 아주 조금이라도 더 시간을 잘 보내는데 도움이 되지 않을까 하는 마음에 adherenceRate이라는 값을 생각해봄.
+   *
+   * * 계산 방법 - actualRatio / targetRatio
+   * ? Why? - 이런식으로 생각하면 된다.
+   * ?      --> 같은 시간을 준다고 가정했을 때,
+   * ?          actualRatio에 의해 뽑아낼 수 있는 작업량이
+   * *          targetRatio값으로 뽑아야 했던 작업량에 비해 어느정도 인지... 알고 싶다는 거니까.
+   * *          나누겠다는 거다...
+   *
+   * TODO - 변수명좀..
+   */
+  // We assume that a user is perfectly going to carry out current cycle.
+  // And if an inccident occurs that either negatively or positively affect the assumption, we need to reflect it.
+  // Based on my experience, it will mostly decrease the rate.
 
   //
   const isFirstRender = useRef(true);
@@ -311,6 +383,15 @@ export function TimerController({
       return SESSION.VERY_LAST_POMO;
     }
 
+    // E.g) no matter what, we always add one to the repetitionCount and pass it to this function as the howManyCountdown arg.
+    // NP = 2, NC = 2 -> PBPLPBP
+    //                   01234567
+    //        7 is caught by this conditional statement and repetitionCount set to zero again by wrapUpSession()
+    //        to start new cycles of sessions. 실제로 repetitionCount 상태값이 7로 되지는 않고, 그냥 판단상 그렇게 하는거고
+    //        wrapUpSession()에서 setRepetitionCount(0)를 call함.
+    //! 그래서 mount됬을 때 currentSessionType확인 하는 setUp 함수에서 실제 repetitionCount를 arg로 보내기 때문에 (여기처럼 방금 끝난 세션이 뭔지 확인하기 위해 가상으로 1더하는게 아니고)
+    //! 그 setUp함수에서 이 conditional block으로 오는 경우는 없다. :::...
+    //! 그러므로 그냥 %2값만 가지고도 Pomo인지 Break인지 판단해도 괜찮다. :::...
     if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
       console.log("2");
       return SESSION.VERY_LAST_POMO;
@@ -610,6 +691,8 @@ export function TimerController({
       case SESSION.VERY_LAST_POMO:
         notify("cyclesCompleted");
 
+        setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
+        setCycleDurationInSec(cycleDurationTargetedInSec);
         //#region A
         // A - 1: F.E
         // 1)
@@ -623,17 +706,30 @@ export function TimerController({
               name: "repetitionCount",
               value: 0,
             },
+            {
+              name: "currentCycleInfo",
+              value: {
+                totalFocusDuration: totalFocusDurationTargetedInSec,
+                cycleDuration: cycleDurationTargetedInSec,
+              },
+            },
           ],
         });
         // A - 2: B.E
-        user &&
-          (await persistTimersStatesToServer({
+        if (user) {
+          await persistTimersStatesToServer({
             running: false,
             startTime: 0,
             pause: { totalLength: 0, record: [] },
             duration: pomoDuration,
             repetitionCount: 0,
-          }));
+          });
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            totalFocusDuration: totalFocusDurationTargetedInSec,
+            cycleDuration: cycleDurationTargetedInSec,
+          });
+        }
+
         //#endregion
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
@@ -671,6 +767,8 @@ export function TimerController({
       case SESSION.LONG_BREAK:
         notify("nextCycle");
 
+        setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
+        setCycleDurationInSec(cycleDurationTargetedInSec);
         //#region A 다음 세션 진행하기 위한 정보의 변환
         // A - 1: F.E
         // 1)
@@ -684,8 +782,22 @@ export function TimerController({
               name: "repetitionCount",
               value: repetitionCount + 1,
             },
+            {
+              name: "currentCycleInfo",
+              value: {
+                totalFocusDuration: totalFocusDurationTargetedInSec,
+                cycleDuration: cycleDurationTargetedInSec,
+              },
+            },
           ],
         });
+
+        if (user)
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            totalFocusDuration: totalFocusDurationTargetedInSec,
+            cycleDuration: cycleDurationTargetedInSec,
+          });
+
         // A - 2: B.E
         if (!autoStartSetting.doesCycleStartAutomatically) {
           user &&
@@ -721,13 +833,6 @@ export function TimerController({
   }
   //#endregion
 
-  // useEffect(() => {
-  //   console.log("Pattern Timer was mounted");
-  //   return () => {
-  //     console.log("Pattern Timer was unmounted");
-  //   };
-  // }, []);
-
   //#region Revised
   useEffect(() => {
     async function changeCategoryWithRecordingPrev() {
@@ -744,8 +849,9 @@ export function TimerController({
           SESSION[prevSessionType.current] === "VERY_LAST_POMO"
         ) {
           if (
-            (states as TimersStatesType).running === false &&
-            (states as TimersStatesType).startTime === 0
+            (states as TimersStatesTypeWithCurrentCycleInfo).running ===
+              false &&
+            (states as TimersStatesTypeWithCurrentCycleInfo).startTime === 0
           ) {
             // console.log("pomo session but not started yet");
             const infoObj: CategoryChangeInfo = {
@@ -929,11 +1035,6 @@ export function TimerController({
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType); // CategoryList component에서 이 값이 필요함.
   }, []);
 
-  // useEffect(() => {
-  //   console.log("categoryChangeInfoArray", categoryChangeInfoArray);
-  // });
-  //#endregion
-
   //#region UseEffects from Timer.tsx
   useEffect(autoStartCurrentSession, [repetitionCount, durationInSeconds]);
   useEffect(setRemainingDurationAfterReset, [
@@ -1103,6 +1204,39 @@ export function TimerController({
         });
       } else {
         dispatch({ type: ACTION.START, payload: startTime });
+
+        if (records.length !== 0 && prevSessionType !== SESSION.LONG_BREAK) {
+          let lastSessionEndTime = records[records.length - 1].endTime;
+          // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
+          let gapInMs = startTime - lastSessionEndTime;
+          if (gapInMs < 0) gapInMs = 0;
+
+          // 여기서부터의 gap값은 틀린 값이 없다.
+          let gapInSec = msToSec(gapInMs);
+          //* Whether the current session is a focus session or break session does not matter.
+          //* In both cases, what only changes is the cycleDuration.
+          if (gapInSec > 0) {
+            // 한 세션이 끝난 후 곧바로 자동시작 하는 경우 말고, 사실상 이전 세션이 종료된 이후의 시점에 앱을 다시 여는 경우
+            // 이전에 진행 중에 앱을 종료했었기 때문에, 그것을 먼저 끝내고 다음 세션을 자동으로 시작하게 된다.
+            // 이 경우, endTime of previous session과 current session의 startTime간의 간극이 생긴다.
+            const newCycleDuration = cycleDurationInSec + gapInSec;
+            setCycleDurationInSec(newCycleDuration);
+            postMsgToSW("saveStates", {
+              name: "currentCycleInfo",
+              value: {
+                totalFocusDuration: totalFocusDurationInSec,
+                cycleDuration: newCycleDuration,
+              },
+            });
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              totalFocusDuration: totalFocusDurationInSec,
+              cycleDuration: newCycleDuration,
+            });
+          }
+        } else {
+          //TODO
+        }
+
         user !== null &&
           persistTimersStatesToServer({
             startTime,
@@ -1141,6 +1275,44 @@ export function TimerController({
 
       if (repetitionCount !== 0) {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
+        if (
+          records.length !== 0 &&
+          identifyPrevSession({
+            howManyCountdown: repetitionCount,
+            numOfPomo,
+          }) !== SESSION.LONG_BREAK
+        ) {
+          let lastSessionEndTime = records[records.length - 1].endTime;
+          // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
+          let gapInMs = momentTimerIsToggled - lastSessionEndTime;
+          if (gapInMs < 0) gapInMs = 0;
+
+          // 여기서부터의 gap값은 틀린 값이 없다.
+          let gapInSec = msToSec(gapInMs);
+          //* Whether the current session is a focus session or break session does not matter.
+          //* In both cases, what only changes is the cycleDuration.
+          if (gapInSec > 0) {
+            const newCycleDuration = cycleDurationInSec + gapInSec;
+            setCycleDurationInSec(newCycleDuration);
+            postMsgToSW("saveStates", {
+              stateArr: [
+                {
+                  name: "currentCycleInfo",
+                  value: {
+                    totalFocusDuration: totalFocusDurationInSec,
+                    cycleDuration: newCycleDuration,
+                  },
+                },
+              ],
+            });
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              totalFocusDuration: totalFocusDurationInSec,
+              cycleDuration: newCycleDuration,
+            });
+          }
+        } else {
+          //TODO
+        }
         user !== null &&
           persistTimersStatesToServer({
             startTime: momentTimerIsToggled,
@@ -1152,29 +1324,44 @@ export function TimerController({
       }
     } else if (doWeResumeTimer()) {
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
+      let pause = {
+        record: timerState.pause!.record.map((obj) => {
+          if (obj.end === undefined) {
+            return {
+              ...obj,
+              end: momentTimerIsToggled,
+            };
+          } else {
+            return obj;
+          }
+        }),
+        totalLength:
+          timerState.pause!.totalLength +
+          (momentTimerIsToggled -
+            timerState.pause!.record[timerState.pause!.record.length - 1]
+              .start),
+      };
       // to serveer
       user &&
         persistTimersStatesToServer({
           startTime: timerState.startTime,
           running: true,
-          pause: {
-            record: timerState.pause!.record.map((obj) => {
-              if (obj.end === undefined) {
-                return {
-                  ...obj,
-                  end: momentTimerIsToggled,
-                };
-              } else {
-                return obj;
-              }
-            }),
-            totalLength:
-              timerState.pause!.totalLength +
-              (momentTimerIsToggled -
-                timerState.pause!.record[timerState.pause!.record.length - 1]
-                  .start),
-          },
+          pause,
         });
+
+      // calculate the ratio affected
+      const newCycleDuration = cycleDurationInSec + msToSec(pause.totalLength);
+      setCycleDurationInSec(newCycleDuration);
+      persistStatesToIDB({
+        currentCycleInfo: {
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleDuration: newCycleDuration,
+        },
+      });
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration: totalFocusDurationInSec,
+        cycleDuration: newCycleDuration,
+      });
     } else if (doWePauseTimer()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       // to serveer
@@ -1220,6 +1407,36 @@ export function TimerController({
   async function endTimer(now: number) {
     const timeCountedDownInMilliSeconds =
       (durationInSeconds - remainingDuration) * 1000;
+
+    if (isThisFocusSession(repetitionCount)) {
+      const newTotalFocusDuration = totalFocusDurationInSec - remainingDuration;
+      const newCycleDuration = cycleDurationInSec - remainingDuration;
+      setTotalFocusDurationInSec(newTotalFocusDuration);
+      setCycleDurationInSec(newCycleDuration);
+      persistStatesToIDB({
+        currentCycleInfo: {
+          totalFocusDuration: newTotalFocusDuration,
+          cycleDuration: newCycleDuration,
+        },
+      });
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration: newTotalFocusDuration,
+        cycleDuration: newCycleDuration,
+      });
+    } else {
+      const newCycleDuration = cycleDurationInSec - remainingDuration;
+      setCycleDurationInSec(newCycleDuration);
+      persistStatesToIDB({
+        currentCycleInfo: {
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleDuration: newCycleDuration,
+        },
+      });
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration: totalFocusDurationInSec,
+        cycleDuration: newCycleDuration,
+      });
+    }
 
     if (isThisSessionPaused()) {
       let stateCloned = { ...timerState };
@@ -1358,7 +1575,7 @@ export function TimerController({
     <Grid column={2} alignItems={"center"} columnGap="23px" padding="0px">
       <GridItem>
         <FlexBox justifyContent="space-evenly">
-          <h1>{repetitionCount % 2 === 0 ? "POMO" : "BREAK"}</h1>
+          <h1>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h1>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
         <Tooltip id="session-info" content={tooltipContent} place="top" />
@@ -1374,9 +1591,14 @@ export function TimerController({
           }
           startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
+          repetitionCount={repetitionCount}
           remainingDuration={remainingDuration}
           setRemainingDuration={setRemainingDuration}
           setDurationInMinutes={setDurationInMinutes}
+          totalFocusDurationInSec={totalFocusDurationInSec}
+          setTotalFocusDurationInSec={setTotalFocusDurationInSec}
+          cycleDurationInSec={cycleDurationInSec}
+          setCycleDurationInSec={setCycleDurationInSec}
         />
       </GridItem>
       <GridItem>
@@ -1428,6 +1650,11 @@ export function TimerController({
         <h3 style={{ textAlign: "center" }}>
           Cycle - {cycleCount} out of {numOfCycle}
         </h3>
+      </GridItem>
+      <GridItem>
+        <span>current ratio - {currentRatio}</span>{" "}
+        <span>targeted ratio - {ratioTargeted}</span>
+        <p>adherence rate - {adherenceRateInPercent}%</p>
       </GridItem>
     </Grid>
   );
@@ -1514,7 +1741,7 @@ async function recordPomo(
     //?     }
     // }
     const final: {
-      userEmail: string;
+      userEmail: string; //TODO: 이거 없어도 bearer token에서 뽑아내잖아.
       duration: number;
       startTime: number;
       date: string;

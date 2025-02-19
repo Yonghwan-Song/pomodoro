@@ -18,6 +18,7 @@ import { UpdateIsUnCategorizedOnStatDto } from './dto/update-is-uncategorized-on
 import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategorized.dto';
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 import { UpdateGoalsDto } from './dto/update-goals.dto';
+import { UpdateCurrentCycleInfoDto } from './dto/update-current-cycle-info.dto';
 
 @Controller('users')
 export class UsersController {
@@ -59,6 +60,23 @@ export class UsersController {
     console.log(updateAutoStartSettingDto);
     return await this.usersService.updateAutoStartSetting(
       updateAutoStartSettingDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('current-cycle-info')
+  async updateCurrentCycleInfo(
+    @Body(new ValidationPipe())
+    updateCurrentCycleInfoDto: UpdateCurrentCycleInfoDto,
+    @Req() request: CustomRequest,
+  ) {
+    console.log(
+      'updateCurrentCycleInfoDto at the user controller',
+      updateCurrentCycleInfoDto,
+    );
+
+    return await this.usersService.updateCurrentCycleInfo(
+      updateCurrentCycleInfoDto,
       request.userEmail,
     );
   }
