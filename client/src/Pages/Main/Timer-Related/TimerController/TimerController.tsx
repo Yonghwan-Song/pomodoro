@@ -149,6 +149,7 @@ export function TimerController({
     },
     initializeTimerState
   );
+  const endTimeRefForAutoStart = useRef(0);
   const [remainingDuration, setRemainingDuration] = useState(
     initializeRemainingDuration
   );
@@ -338,6 +339,7 @@ export function TimerController({
     const endTime =
       endForced ||
       state.startTime + state.pause.totalLength + timeCountedDownInMilliSeconds;
+    endTimeRefForAutoStart.current = endTime;
 
     const sessionData = {
       ...withoutRunning,
@@ -1208,14 +1210,17 @@ export function TimerController({
         if (records.length !== 0 && prevSessionType !== SESSION.LONG_BREAK) {
           let lastSessionEndTime = records[records.length - 1].endTime;
           // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
-          let gapInMs = startTime - lastSessionEndTime;
+          let gapInMs = startTime - endTimeRefForAutoStart.current;
           if (gapInMs < 0) gapInMs = 0;
 
           // 여기서부터의 gap값은 틀린 값이 없다.
           let gapInSec = msToSec(gapInMs);
           //* Whether the current session is a focus session or break session does not matter.
           //* In both cases, what only changes is the cycleDuration.
-          if (gapInSec > 0) {
+          if (
+            gapInSec > 0 &&
+            endTimeRefForAutoStart.current !== 0 // just in case
+          ) {
             // 한 세션이 끝난 후 곧바로 자동시작 하는 경우 말고, 사실상 이전 세션이 종료된 이후의 시점에 앱을 다시 여는 경우
             // 이전에 진행 중에 앱을 종료했었기 때문에, 그것을 먼저 끝내고 다음 세션을 자동으로 시작하게 된다.
             // 이 경우, endTime of previous session과 current session의 startTime간의 간극이 생긴다.
