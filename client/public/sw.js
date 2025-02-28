@@ -14372,7 +14372,7 @@
 
   function _wrapUpSession() {
     _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15(_ref7) {
-      var session, timersStates, currentCycleInfo, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, idToken, infoArrayBeforeReset, infoArrAfterReset, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, newCurrentCycleInfo, payload, _payload, _payload2, _payload3;
+      var session, timersStates, currentCycleInfo, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, idToken, infoArrayBeforeReset, infoArrAfterReset, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, numOfCycle, totalFocusDurationTargeted, cycleDurationTargeted, totalDurationOfSetOfCyclesTargeted, payload, _payload, _payload2, _payload3;
 
       return _regeneratorRuntime().wrap(function _callee15$(_context15) {
         while (1) {
@@ -14489,23 +14489,25 @@
               }, idToken);
 
             case 25:
-              pomoDuration = pomoSetting.pomoDuration, shortBreakDuration = pomoSetting.shortBreakDuration, longBreakDuration = pomoSetting.longBreakDuration, numOfPomo = pomoSetting.numOfPomo, pomoSetting.numOfCycle;
-              newCurrentCycleInfo = {
-                totalFocusDuration: 60 * pomoDuration * numOfPomo,
-                cycleDuration: 60 * (pomoDuration * numOfPomo + shortBreakDuration * (numOfPomo - 1) + longBreakDuration)
-              };
+              pomoDuration = pomoSetting.pomoDuration, shortBreakDuration = pomoSetting.shortBreakDuration, longBreakDuration = pomoSetting.longBreakDuration, numOfPomo = pomoSetting.numOfPomo, numOfCycle = pomoSetting.numOfCycle; // LongBreak과 VeryLastPomo 모든 케이스에 이 값을 적용할 수 있는가?.
+              // 우선 두 경우 이후에 모두 cycle은 reset되는게 자명하기 때문에 결국 default 값으로 돌려야 한다.
+              // 그러므로 이 두 값은 그대로 둬도 문제 없다. 그런데, 새롭게 도입하는 두 변수가 문제이다.
+
+              totalFocusDurationTargeted = 60 * pomoDuration * numOfPomo;
+              cycleDurationTargeted = 60 * (pomoDuration * numOfPomo + shortBreakDuration * (numOfPomo - 1) + longBreakDuration);
+              totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
               _context15.t0 = session;
-              _context15.next = _context15.t0 === SESSION.POMO ? 30 : _context15.t0 === SESSION.SHORT_BREAK ? 43 : _context15.t0 === SESSION.LAST_POMO ? 52 : _context15.t0 === SESSION.VERY_LAST_POMO ? 65 : _context15.t0 === SESSION.LONG_BREAK ? 80 : 90;
+              _context15.next = _context15.t0 === SESSION.POMO ? 32 : _context15.t0 === SESSION.SHORT_BREAK ? 45 : _context15.t0 === SESSION.LAST_POMO ? 54 : _context15.t0 === SESSION.VERY_LAST_POMO ? 67 : _context15.t0 === SESSION.LONG_BREAK ? 82 : 91;
               break;
 
-            case 30:
+            case 32:
               self.registration.showNotification("shortBreak", {
                 body: "Time to take a short break",
                 silent: true
               }); // 1. 정보 변환
 
               timersStatesForNextSession.duration = shortBreakDuration;
-              _context15.next = 34;
+              _context15.next = 36;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14514,22 +14516,22 @@
                 value: timersStatesForNextSession.duration
               }]));
 
-            case 34:
+            case 36:
               _context15.t1 = idTokenAndEmail;
 
               if (!_context15.t1) {
-                _context15.next = 38;
+                _context15.next = 40;
                 break;
               }
 
-              _context15.next = 38;
+              _context15.next = 40;
               return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
 
-            case 38:
-              _context15.next = 40;
+            case 40:
+              _context15.next = 42;
               return persistSessionToIDB("pomo", sessionData);
 
-            case 40:
+            case 42:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14553,15 +14555,15 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 91);
+              return _context15.abrupt("break", 92);
 
-            case 43:
+            case 45:
               self.registration.showNotification("pomo", {
                 body: "Time to focus",
                 silent: true
               });
               timersStatesForNextSession.duration = pomoDuration;
-              _context15.next = 47;
+              _context15.next = 49;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14570,11 +14572,11 @@
                 value: timersStatesForNextSession.duration
               }]));
 
-            case 47:
-              _context15.next = 49;
+            case 49:
+              _context15.next = 51;
               return persistSessionToIDB("break", sessionData);
 
-            case 49:
+            case 51:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesPomoStartAutomatically === false) {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14598,9 +14600,9 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 91);
+              return _context15.abrupt("break", 92);
 
-            case 52:
+            case 54:
               self.registration.showNotification("longBreak", {
                 body: "Time to take a long break",
                 silent: true
@@ -14609,15 +14611,15 @@
               _context15.t2 = idTokenAndEmail;
 
               if (!_context15.t2) {
-                _context15.next = 58;
+                _context15.next = 60;
                 break;
               }
 
-              _context15.next = 58;
+              _context15.next = 60;
               return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
 
-            case 58:
-              _context15.next = 60;
+            case 60:
+              _context15.next = 62;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14626,11 +14628,11 @@
                 value: timersStatesForNextSession.duration
               }]));
 
-            case 60:
-              _context15.next = 62;
+            case 62:
+              _context15.next = 64;
               return persistSessionToIDB("pomo", sessionData);
 
-            case 62:
+            case 64:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14654,16 +14656,19 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 91);
+              return _context15.abrupt("break", 92);
 
-            case 65:
+            case 67:
               self.registration.showNotification("cyclesCompleted", {
                 body: "All cycles of focus durations are done",
                 silent: true
-              });
+              }); // TODO a)set 3,4 to zero, b)set 1,2,5 to the targeted one
+              //? triangle: 1)state variables - not applicable 2)idb 3)server
+
               timersStatesForNextSession.repetitionCount = 0;
-              timersStatesForNextSession.duration = pomoDuration;
-              _context15.next = 70;
+              timersStatesForNextSession.duration = pomoDuration; //? 2)
+
+              _context15.next = 72;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14672,39 +14677,52 @@
                 value: timersStatesForNextSession.duration
               }, {
                 name: "currentCycleInfo",
-                value: newCurrentCycleInfo
+                value: {
+                  totalFocusDuration: totalFocusDurationTargeted,
+                  cycleDuration: cycleDurationTargeted,
+                  cycleStartTimestamp: 0,
+                  veryFirstCycleStartTimestamp: 0,
+                  totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted
+                }
               }]));
 
-            case 70:
-              _context15.next = 72;
+            case 72:
+              _context15.next = 74;
               return persistSessionToIDB("pomo", sessionData);
 
-            case 72:
-              _context15.t3 = idTokenAndEmail;
-
-              if (!_context15.t3) {
-                _context15.next = 76;
-                break;
-              }
-
-              _context15.next = 76;
-              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
-
-            case 76:
+            case 74:
+              //? 3)
               persistTimersStatesToServer(timersStatesForNextSession, idToken);
-              fetchWrapper(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, "PATCH", newCurrentCycleInfo, idToken);
+              fetchWrapper(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, "PATCH", {
+                totalFocusDuration: totalFocusDurationTargeted,
+                cycleDuration: cycleDurationTargeted,
+                cycleStartTimestamp: 0,
+                veryFirstCycleStartTimestamp: 0,
+                totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted
+              }, idToken);
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 91);
+              _context15.t3 = idTokenAndEmail;
 
-            case 80:
+              if (!_context15.t3) {
+                _context15.next = 81;
+                break;
+              }
+
+              _context15.next = 81;
+              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
+
+            case 81:
+              return _context15.abrupt("break", 92);
+
+            case 82:
               self.registration.showNotification("nextCycle", {
                 body: "time to do the next cycle of pomos",
                 silent: true
               });
               timersStatesForNextSession.duration = pomoDuration;
-              _context15.next = 84;
+              _context15.next = 86;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14713,19 +14731,32 @@
                 value: timersStatesForNextSession.duration
               }, {
                 name: "currentCycleInfo",
-                value: newCurrentCycleInfo
+                value: {
+                  totalFocusDuration: totalFocusDurationTargeted,
+                  cycleDuration: cycleDurationTargeted,
+                  cycleStartTimestamp: 0,
+                  veryFirstCycleStartTimestamp: currentCycleInfo.veryFirstCycleStartTimestamp,
+                  totalDurationOfSetOfCycles: currentCycleInfo.totalDurationOfSetOfCycles
+                }
               }]));
 
-            case 84:
-              _context15.next = 86;
+            case 86:
+              _context15.next = 88;
               return persistSessionToIDB("break", sessionData);
 
-            case 86:
+            case 88:
+              // console.log("autoStartSetting at wrapUpSession()", autoStartSetting);
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesCycleStartAutomatically) {
                   _payload3 = {
                     timersStates: timersStatesForNextSession,
-                    currentCycleInfo: currentCycleInfo,
+                    currentCycleInfo: {
+                      totalFocusDuration: totalFocusDurationTargeted,
+                      cycleDuration: cycleDurationTargeted,
+                      cycleStartTimestamp: 0,
+                      veryFirstCycleStartTimestamp: currentCycleInfo.veryFirstCycleStartTimestamp,
+                      totalDurationOfSetOfCycles: currentCycleInfo.totalDurationOfSetOfCycles
+                    },
                     pomoSetting: pomoSetting,
                     endTime: sessionData.endTime,
                     prevSessionType: session
@@ -14736,6 +14767,11 @@
                   });
                 } else {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
+                  fetchWrapper(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, "PATCH", {
+                    totalFocusDuration: totalFocusDurationTargeted,
+                    cycleDuration: cycleDurationTargeted,
+                    cycleStartTimestamp: 0
+                  }, idToken);
                 }
               } else {
                 console.warn("autoStartSetting is undefined");
@@ -14744,13 +14780,12 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData), idToken);
-              fetchWrapper(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, "PATCH", newCurrentCycleInfo, idToken);
-              return _context15.abrupt("break", 91);
-
-            case 90:
-              return _context15.abrupt("break", 91);
+              return _context15.abrupt("break", 92);
 
             case 91:
+              return _context15.abrupt("break", 92);
+
+            case 92:
             case "end":
               return _context15.stop();
           }

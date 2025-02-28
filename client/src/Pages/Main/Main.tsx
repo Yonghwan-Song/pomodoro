@@ -158,7 +158,7 @@ export default function Main() {
     };
   }
 
-  //TODO 왜 이거 만들었었는지 기억이 안난다. 그런데 이제 필요 없는 것 같다. 걍 zustand가 다 알아서 해주는 것 같은데?
+  // 이전에 zustand 도입하기 전에, idb에 데이터를 push한 후 그 데이터들을 이런식으로 받아야 했던 적이 있음.
   function subscribeToSuccessOfPersistingTimerStatesWithCurrentCycleInfoToIDB() {
     // Since UserContext component is rendered after this Main component is rendered when signing in.
     const unsub = pubsub.subscribe(

@@ -25,6 +25,9 @@ interface CycleInfoSliceStates {
   currentCycleInfo: {
     totalFocusDuration: number;
     cycleDuration: number;
+    cycleStartTimestamp: number;
+    veryFirstCycleStartTimestamp: number;
+    totalDurationOfSetOfCycles: number;
   };
 }
 
@@ -115,6 +118,9 @@ const createCycleInfoSlice: StateCreator<
   currentCycleInfo: {
     totalFocusDuration: 100 * 60,
     cycleDuration: 130 * 60,
+    cycleStartTimestamp: 0,
+    veryFirstCycleStartTimestamp: 0,
+    totalDurationOfSetOfCycles: 130 * 60,
   },
 });
 

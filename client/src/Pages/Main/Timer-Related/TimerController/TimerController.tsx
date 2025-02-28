@@ -149,7 +149,7 @@ export function TimerController({
     },
     initializeTimerState
   );
-  const endTimeRefForAutoStart = useRef(0);
+  const endTimeRef = useRef(0);
   const [remainingDuration, setRemainingDuration] = useState(
     initializeRemainingDuration
   );
@@ -162,19 +162,35 @@ export function TimerController({
       shortBreakDuration * (numOfPomo - 1) +
       longBreakDuration);
   const [totalFocusDurationInSec, setTotalFocusDurationInSec] = useState(() => {
-    if (Object.entries(currentCycleInfo).length !== 0) {
+    if (Object.entries(currentCycleInfo).length !== 0)
       return (currentCycleInfo as CycleInfoType).totalFocusDuration;
-    } else {
-      return totalFocusDurationTargetedInSec;
-    }
+    else return totalFocusDurationTargetedInSec;
   });
   const [cycleDurationInSec, setCycleDurationInSec] = useState(() => {
-    if (Object.entries(currentCycleInfo).length !== 0) {
+    if (Object.entries(currentCycleInfo).length !== 0)
       return (currentCycleInfo as CycleInfoType).cycleDuration;
-    } else {
-      return cycleDurationTargetedInSec;
-    }
+    else return cycleDurationTargetedInSec;
   });
+  // timerState의 startTime설정하는 것처럼 하면 된다고 생각한다. 그래서 그렇게 해보겠다.
+  const [cycleStartTimestamp, setCycleStartTimestamp] = useState(() => {
+    if (Object.entries(currentCycleInfo).length !== 0)
+      return (currentCycleInfo as CycleInfoType).cycleStartTimestamp;
+    else return 0;
+  });
+  const [veryFirstCycleStartTimestamp, setVeryFirstCycleStartTimestamp] =
+    useState(() => {
+      if (Object.entries(currentCycleInfo).length !== 0)
+        return (currentCycleInfo as CycleInfoType).veryFirstCycleStartTimestamp;
+      else return 0;
+    });
+  const [totalDurationOfSetOfCyclesInSec, setTotalDurationOfSetOfCyclesInSec] =
+    useState(() => {
+      if (Object.entries(currentCycleInfo).length !== 0)
+        return (currentCycleInfo as CycleInfoType).totalDurationOfSetOfCycles;
+      else return numOfCycle * cycleDurationTargetedInSec; //? 맞겠지?
+    });
+
+  // console.log("cycleStartTimestamp at TC", cycleStartTimestamp);
 
   const ratioTargeted = roundTo_X_DecimalPoints(
     totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
@@ -189,6 +205,11 @@ export function TimerController({
     2
   );
   //#endregion
+
+  //
+  const [tooltipText, setTooltipText] = useState<
+    [string, string, string, string]
+  >(["", "", "", ""]);
 
   /**
    * !IMPT
@@ -339,7 +360,7 @@ export function TimerController({
     const endTime =
       endForced ||
       state.startTime + state.pause.totalLength + timeCountedDownInMilliSeconds;
-    endTimeRefForAutoStart.current = endTime;
+    endTimeRef.current = endTime;
 
     const sessionData = {
       ...withoutRunning,
@@ -695,6 +716,11 @@ export function TimerController({
 
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
         setCycleDurationInSec(cycleDurationTargetedInSec);
+        setCycleStartTimestamp(0);
+        setVeryFirstCycleStartTimestamp(0);
+        setTotalDurationOfSetOfCyclesInSec(
+          cycleDurationTargetedInSec * numOfCycle
+        );
         //#region A
         // A - 1: F.E
         // 1)
@@ -713,6 +739,10 @@ export function TimerController({
               value: {
                 totalFocusDuration: totalFocusDurationTargetedInSec,
                 cycleDuration: cycleDurationTargetedInSec,
+                cycleStartTimestamp: 0,
+                veryFirstCycleStartTimestamp: 0,
+                totalDurationOfSetOfCycles:
+                  cycleDurationTargetedInSec * numOfCycle,
               },
             },
           ],
@@ -729,6 +759,9 @@ export function TimerController({
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
             totalFocusDuration: totalFocusDurationTargetedInSec,
             cycleDuration: cycleDurationTargetedInSec,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp: 0,
+            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle,
           });
         }
 
@@ -769,6 +802,7 @@ export function TimerController({
       case SESSION.LONG_BREAK:
         notify("nextCycle");
 
+        setCycleStartTimestamp(0);
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
         setCycleDurationInSec(cycleDurationTargetedInSec);
         //#region A 다음 세션 진행하기 위한 정보의 변환
@@ -787,6 +821,7 @@ export function TimerController({
             {
               name: "currentCycleInfo",
               value: {
+                cycleStartTimestamp: 0,
                 totalFocusDuration: totalFocusDurationTargetedInSec,
                 cycleDuration: cycleDurationTargetedInSec,
               },
@@ -794,23 +829,24 @@ export function TimerController({
           ],
         });
 
-        if (user)
+        //#region New
+        // A - 2: B.E
+        if (!autoStartSetting.doesCycleStartAutomatically && user) {
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            cycleStartTimestamp: 0,
             totalFocusDuration: totalFocusDurationTargetedInSec,
             cycleDuration: cycleDurationTargetedInSec,
           });
-
-        // A - 2: B.E
-        if (!autoStartSetting.doesCycleStartAutomatically) {
-          user &&
-            (await persistTimersStatesToServer({
-              running: false,
-              startTime: 0,
-              pause: { totalLength: 0, record: [] },
-              duration: pomoDuration,
-              repetitionCount: repetitionCount + 1,
-            }));
+          await persistTimersStatesToServer({
+            running: false,
+            startTime: 0,
+            pause: { totalLength: 0, record: [] },
+            duration: pomoDuration,
+            repetitionCount: repetitionCount + 1,
+          });
         }
+        //#endregion New
+
         //#endregion
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
@@ -1035,9 +1071,25 @@ export function TimerController({
     } else currentSessionType = "break";
     // const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType); // CategoryList component에서 이 값이 필요함.
-  }, []);
+  }, [repetitionCount, numOfPomo]);
+  // }, []);
 
   //#region UseEffects from Timer.tsx
+  //? session 끝나면, 혹은 강제 종료시키면?..
+  //? wrapUpSession에서 repetitionCount와 records 모두 update하는데,
+  //? repetitionCount가 먼저 update 되어서 re-render를 유발하고 그다음에 records가 한번 더
+  //? 하는... 그런 느낌인 것 같은데?
+  // 그런데 이거 왜 따지고 앉아있냐?.. 면, 같이 한번에 update된다면, 이런 문제는 없을 것이기 때문에.. 그냥 behaviour도 궁금하고..
+  // useRef에 그냥 넣어도 되겠다.
+  // useEffect(() => {
+  //   console.log("<-------------------------------------");
+  //   console.log("repetitionCount", repetitionCount);
+  //   console.log("durationInSeconds", durationInSeconds);
+  //   console.log("records.length", records.length);
+  //   console.log("records", records);
+  //   console.log("endTimeRef.current", endTimeRef.current);
+  //   console.log("------------------------------------->");
+  // }, [repetitionCount, durationInSeconds, records]);
   useEffect(autoStartCurrentSession, [repetitionCount, durationInSeconds]);
   useEffect(setRemainingDurationAfterReset, [
     remainingDuration,
@@ -1156,12 +1208,12 @@ export function TimerController({
   function autoStartCurrentSession() {
     if (!isSessionNotStartedYet()) return;
 
-    const prevSessionType = identifyPrevSession({
+    const typeOfPrevSession = identifyPrevSession({
       howManyCountdown: repetitionCount,
       numOfPomo,
     });
 
-    switch (prevSessionType) {
+    switch (typeOfPrevSession) {
       case SESSION.SHORT_BREAK:
         autoStartSetting.doesPomoStartAutomatically &&
           startSession(pomoDuration, Date.now());
@@ -1190,66 +1242,123 @@ export function TimerController({
       // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
       return timerState.running === false && timerState.startTime === 0;
     }
+    /**
+     * Purpose: 1. start a session
+     *          2. calculate the gap between the end of previous session and the start of this session in order to check if this session starts late.
+     *          3. late start of a cycle:   set totalDuratoinOfSetOfCycles and cycleStartTimestamp
+     *          4. late start of a session: set cycleDuration and totalDuratoinOfSetOfCycles
+     * @param duration
+     * @param startTime
+     */
     function startSession(duration: number, startTime: number) {
-      if (repetitionCount === 0) {
-        user !== null &&
-          persistTimersStatesToServer({
-            startTime,
-            running: true,
-            pause: { totalLength: 0, record: [] },
-          });
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "repetitionCount", value: 0 },
-            { name: "duration", value: duration },
-          ],
+      // 1.
+      dispatch({ type: ACTION.START, payload: startTime });
+      user !== null &&
+        persistTimersStatesToServer({
+          startTime,
+          running: true,
+          pause: { totalLength: 0, record: [] },
+          repetitionCount,
+          duration,
         });
-      } else {
-        dispatch({ type: ACTION.START, payload: startTime });
 
-        if (records.length !== 0 && prevSessionType !== SESSION.LONG_BREAK) {
-          let lastSessionEndTime = records[records.length - 1].endTime;
-          // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
-          let gapInMs = startTime - endTimeRefForAutoStart.current;
-          if (gapInMs < 0) gapInMs = 0;
+      // 2.
+      let gapForLateStartInMs = startTime - endTimeRef.current; // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
+      if (gapForLateStartInMs < 0) gapForLateStartInMs = 0;
+      let gapForLateStartInSec = msToSec(gapForLateStartInMs);
+      // console.log(
+      //   "[gapForLateStartInMs, gapForLateStartInSec] at autoStartCurrentSession()",
+      //   [gapForLateStartInMs, gapForLateStartInSec]
+      // );
 
-          // 여기서부터의 gap값은 틀린 값이 없다.
-          let gapInSec = msToSec(gapInMs);
-          //* Whether the current session is a focus session or break session does not matter.
-          //* In both cases, what only changes is the cycleDuration.
-          if (
-            gapInSec > 0 &&
-            endTimeRefForAutoStart.current !== 0 // just in case
-          ) {
-            // 한 세션이 끝난 후 곧바로 자동시작 하는 경우 말고, 사실상 이전 세션이 종료된 이후의 시점에 앱을 다시 여는 경우
-            // 이전에 진행 중에 앱을 종료했었기 때문에, 그것을 먼저 끝내고 다음 세션을 자동으로 시작하게 된다.
-            // 이 경우, endTime of previous session과 current session의 startTime간의 간극이 생긴다.
-            const newCycleDuration = cycleDurationInSec + gapInSec;
-            setCycleDurationInSec(newCycleDuration);
-            postMsgToSW("saveStates", {
-              name: "currentCycleInfo",
-              value: {
-                totalFocusDuration: totalFocusDurationInSec,
-                cycleDuration: newCycleDuration,
+      // 3과 4는 서로 배반 (SESSION.VERY_LAST_POMO는 auto-start의 대상이 아니다)
+      // 3.
+      if (typeOfPrevSession === SESSION.LONG_BREAK) {
+        if (gapForLateStartInSec > 0) {
+          // && endTimeRef.current !== 0
+          const newTotalDurationOfSetOfCycles =
+            totalDurationOfSetOfCyclesInSec + gapForLateStartInSec;
+          setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
+          setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
+          setCycleDurationInSec(cycleDurationTargetedInSec);
+          setCycleStartTimestamp(startTime);
+          postMsgToSW("saveStates", {
+            stateArr: [
+              {
+                name: "currentCycleInfo",
+                value: {
+                  totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+                  cycleStartTimestamp: startTime,
+                  //
+                  totalFocusDuration: totalFocusDurationInSec,
+                  cycleDuration: cycleDurationTargetedInSec,
+                  veryFirstCycleStartTimestamp,
+                },
               },
-            });
-            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-              totalFocusDuration: totalFocusDurationInSec,
-              cycleDuration: newCycleDuration,
-            });
-          }
-        } else {
-          //TODO
-        }
-
-        user !== null &&
-          persistTimersStatesToServer({
-            startTime,
-            running: true,
-            pause: { totalLength: 0, record: [] },
-            repetitionCount,
-            duration,
+            ],
           });
+          user &&
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+              cycleStartTimestamp: startTime,
+              totalFocusDuration: totalFocusDurationTargetedInSec,
+              cycleDuration: cycleDurationTargetedInSec,
+            });
+        } else {
+          setCycleStartTimestamp(startTime);
+          postMsgToSW("saveStates", {
+            stateArr: [
+              {
+                name: "currentCycleInfo",
+                value: {
+                  cycleStartTimestamp: startTime,
+                  //
+                  totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+                  totalFocusDuration: totalFocusDurationInSec,
+                  cycleDuration: cycleDurationTargetedInSec,
+                  veryFirstCycleStartTimestamp,
+                },
+              },
+            ],
+          });
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            cycleStartTimestamp: startTime,
+            totalFocusDuration: totalFocusDurationTargetedInSec,
+            cycleDuration: cycleDurationTargetedInSec,
+          });
+        }
+      }
+
+      // 4.
+      if (typeOfPrevSession !== SESSION.LONG_BREAK) {
+        if (gapForLateStartInSec > 0) {
+          // && endTimeRef.current !== 0
+          const newCycleDuration = cycleDurationInSec + gapForLateStartInSec;
+          const newTotalDurationOfSetOfCycles =
+            totalDurationOfSetOfCyclesInSec + gapForLateStartInSec;
+          setCycleDurationInSec(newCycleDuration);
+          setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
+          postMsgToSW("saveStates", {
+            stateArr: [
+              {
+                name: "currentCycleInfo",
+                value: {
+                  cycleDuration: newCycleDuration,
+                  totalFocusDurationTargeted: newTotalDurationOfSetOfCycles,
+                  //
+                  totalFocusDuration: totalFocusDurationInSec,
+                  cycleStartTimestamp,
+                  veryFirstCycleStartTimestamp,
+                },
+              },
+            ],
+          });
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          });
+        } else {
+        }
       }
     }
   }
@@ -1259,65 +1368,48 @@ export function TimerController({
   //문제점: toggle이 나타내는 case들 중 분명 resume이라는게 존재하는데 조건식에서 resume이라는 단어는 코빼기도 보이지 않는다.
   async function toggleTimer(momentTimerIsToggled: number) {
     if (doWeStartTimer()) {
-      // dispatch({ type: ACTION.START, payload: momentTimerIsToggled }); //TODO 이거 아래 안쪽으로 들어가야하는거 아니야?
-
-      //* A new cycle begins.
-      if (repetitionCount === 0) {
+      // if (repetitionCount === 0) {
+      if (SESSION[prevSessionType.current] === "VERY_LAST_POMO") {
+        // console.log(
+        //   "prevSessionType.current",
+        //   SESSION[prevSessionType.current]
+        // );
+        // console.log("repetitionCount === 0 ?", repetitionCount);
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
-        user !== null &&
+        setCycleStartTimestamp(momentTimerIsToggled);
+        setVeryFirstCycleStartTimestamp(momentTimerIsToggled);
+        postMsgToSW("saveStates", {
+          stateArr: [
+            { name: "repetitionCount", value: 0 },
+            { name: "duration", value: durationInSeconds / 60 },
+            {
+              name: "currentCycleInfo",
+              value: {
+                cycleStartTimestamp: momentTimerIsToggled,
+                veryFirstCycleStartTimestamp: momentTimerIsToggled,
+                //
+                totalFocusDuration: totalFocusDurationInSec,
+                cycleDuration: cycleDurationInSec,
+                totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+              },
+            },
+          ],
+        });
+        if (user !== null) {
           persistTimersStatesToServer({
             startTime: momentTimerIsToggled,
             running: true,
             pause: { totalLength: 0, record: [] },
           });
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "repetitionCount", value: 0 },
-            { name: "duration", value: durationInSeconds / 60 },
-          ],
-        });
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            cycleStartTimestamp: momentTimerIsToggled,
+            veryFirstCycleStartTimestamp: momentTimerIsToggled,
+          });
+        }
       }
 
       if (repetitionCount !== 0) {
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
-        if (
-          records.length !== 0 &&
-          identifyPrevSession({
-            howManyCountdown: repetitionCount,
-            numOfPomo,
-          }) !== SESSION.LONG_BREAK
-        ) {
-          let lastSessionEndTime = records[records.length - 1].endTime;
-          // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
-          let gapInMs = momentTimerIsToggled - lastSessionEndTime;
-          if (gapInMs < 0) gapInMs = 0;
-
-          // 여기서부터의 gap값은 틀린 값이 없다.
-          let gapInSec = msToSec(gapInMs);
-          //* Whether the current session is a focus session or break session does not matter.
-          //* In both cases, what only changes is the cycleDuration.
-          if (gapInSec > 0) {
-            const newCycleDuration = cycleDurationInSec + gapInSec;
-            setCycleDurationInSec(newCycleDuration);
-            postMsgToSW("saveStates", {
-              stateArr: [
-                {
-                  name: "currentCycleInfo",
-                  value: {
-                    totalFocusDuration: totalFocusDurationInSec,
-                    cycleDuration: newCycleDuration,
-                  },
-                },
-              ],
-            });
-            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-              totalFocusDuration: totalFocusDurationInSec,
-              cycleDuration: newCycleDuration,
-            });
-          }
-        } else {
-          //TODO
-        }
         user !== null &&
           persistTimersStatesToServer({
             startTime: momentTimerIsToggled,
@@ -1326,6 +1418,106 @@ export function TimerController({
             repetitionCount,
             duration: durationInSeconds / 60,
           });
+
+        //TODO - if a user clicks the start button as soon as a break ends, the same problem we had when it comes to auto-start will occur.
+        //* 그래서 뭐 어떻게 해야하는데? 간단하게 endTimeRef를 가져다 쓰고싶긴 한데, 여기에 일괄적으로 적용하면 발생하는 문제가 뭐냐하면,
+        //* 다른 페이지로 갔다가 다시 돌아오면 endTimeRef는 0으로 초기화 된다는 것. 그런데 신기한점은, 어차피 다른 페이지 갔다오면 endTimeRef가 필요한 경우가 아니게 된다.
+        //* 그만큼 늦게 시작할 수 밖에 없기 때문에, records가 이미 최근에 종료된 session을 반영한 이후일 것임. 그래서 둘다 사용하자.
+        //! 만약 endTimeRef가 0이 아니면, 그냥 그거 쓰면 되고 0이면 records의 마지막 값 이용하면 된다.
+        let lastSessionEndTime =
+          endTimeRef.current !== 0
+            ? endTimeRef.current
+            : records[records.length - 1].endTime;
+        let gapForLateStartInMs = momentTimerIsToggled - lastSessionEndTime; // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
+        if (gapForLateStartInMs < 0) gapForLateStartInMs = 0;
+        let gapForLateStartInSec = msToSec(gapForLateStartInMs); //* Whether the current session is a focus session or break session does not matter. In both cases, what only changes is the cycleDuration.
+
+        // console.log(
+        //   "[gapForLateStartInMs, gapForLateStartInSec] at toggleTimer()",
+        //   [gapForLateStartInMs, gapForLateStartInSec]
+        // );
+
+        // start of a cycle
+        if (SESSION[prevSessionType.current] === "LONG_BREAK") {
+          if (gapForLateStartInSec > 0) {
+            // late start -> increases totalDurationOfSetOfCycles
+            const newTotalDurationOfSetOfCycles =
+              totalDurationOfSetOfCyclesInSec + gapForLateStartInSec;
+            setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
+            setCycleStartTimestamp(momentTimerIsToggled);
+            postMsgToSW("saveStates", {
+              stateArr: [
+                {
+                  name: "currentCycleInfo",
+                  value: {
+                    totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+                    cycleStartTimestamp: momentTimerIsToggled,
+                    //
+                    totalFocusDuration: totalFocusDurationInSec,
+                    cycleDuration: cycleDurationInSec,
+                    veryFirstCycleStartTimestamp,
+                  },
+                },
+              ],
+            });
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+              cycleStartTimestamp: momentTimerIsToggled,
+            });
+          } else {
+            setCycleStartTimestamp(momentTimerIsToggled);
+            postMsgToSW("saveStates", {
+              stateArr: [
+                {
+                  name: "currentCycleInfo",
+                  value: {
+                    cycleStartTimestamp: momentTimerIsToggled,
+                    //
+                    totalFocusDuration: totalFocusDurationInSec,
+                    cycleDuration: cycleDurationInSec,
+                    veryFirstCycleStartTimestamp,
+                    totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+                  },
+                },
+              ],
+            });
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              cycleStartTimestamp: momentTimerIsToggled,
+            });
+          }
+        }
+
+        // start of a session
+        if (SESSION[prevSessionType.current] !== "LONG_BREAK") {
+          if (gapForLateStartInSec > 0) {
+            const newCycleDuration = cycleDurationInSec + gapForLateStartInSec;
+            const newTotalDurationOfSetOfCycles =
+              totalDurationOfSetOfCyclesInSec + gapForLateStartInSec;
+
+            setCycleDurationInSec(newCycleDuration);
+            setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
+            postMsgToSW("saveStates", {
+              stateArr: [
+                {
+                  name: "currentCycleInfo",
+                  value: {
+                    cycleDuration: newCycleDuration,
+                    totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+                    //
+                    totalFocusDuration: totalFocusDurationInSec,
+                    cycleStartTimestamp,
+                    veryFirstCycleStartTimestamp,
+                  },
+                },
+              ],
+            });
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              cycleDuration: newCycleDuration,
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+            });
+          } else {
+          }
+        }
       }
     } else if (doWeResumeTimer()) {
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
@@ -1355,17 +1547,25 @@ export function TimerController({
         });
 
       // calculate the ratio affected
-      const newCycleDuration = cycleDurationInSec + msToSec(pause.totalLength);
+      const pauseLenghtInSec = msToSec(pause.totalLength);
+      const newCycleDuration = cycleDurationInSec + pauseLenghtInSec;
+      const newTotalDurationOfSetOfCycles =
+        totalDurationOfSetOfCyclesInSec + pauseLenghtInSec;
       setCycleDurationInSec(newCycleDuration);
+      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
       persistStatesToIDB({
         currentCycleInfo: {
-          totalFocusDuration: totalFocusDurationInSec,
           cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          //
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleStartTimestamp,
+          veryFirstCycleStartTimestamp,
         },
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        totalFocusDuration: totalFocusDurationInSec,
         cycleDuration: newCycleDuration,
+        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
       });
     } else if (doWePauseTimer()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
@@ -1413,33 +1613,46 @@ export function TimerController({
     const timeCountedDownInMilliSeconds =
       (durationInSeconds - remainingDuration) * 1000;
 
+    const newCycleDuration = cycleDurationInSec - remainingDuration;
+    const newTotalDurationOfSetOfCycles =
+      totalDurationOfSetOfCyclesInSec - remainingDuration;
+
     if (isThisFocusSession(repetitionCount)) {
       const newTotalFocusDuration = totalFocusDurationInSec - remainingDuration;
-      const newCycleDuration = cycleDurationInSec - remainingDuration;
       setTotalFocusDurationInSec(newTotalFocusDuration);
       setCycleDurationInSec(newCycleDuration);
+      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
       persistStatesToIDB({
         currentCycleInfo: {
           totalFocusDuration: newTotalFocusDuration,
           cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          //
+          cycleStartTimestamp,
+          veryFirstCycleStartTimestamp,
         },
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration: newTotalFocusDuration,
         cycleDuration: newCycleDuration,
+        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
       });
     } else {
-      const newCycleDuration = cycleDurationInSec - remainingDuration;
       setCycleDurationInSec(newCycleDuration);
+      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
       persistStatesToIDB({
         currentCycleInfo: {
-          totalFocusDuration: totalFocusDurationInSec,
           cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          //
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleStartTimestamp,
+          veryFirstCycleStartTimestamp,
         },
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        totalFocusDuration: totalFocusDurationInSec,
         cycleDuration: newCycleDuration,
+        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
       });
     }
 
@@ -1531,12 +1744,148 @@ export function TimerController({
   }
   //#endregion
 
+  function calculateTooltipText(
+    ev: React.MouseEvent<HTMLHeadingElement>,
+    moment: number
+  ) {
+    // console.log("ev.timeStamp", ev.timeStamp);
+    // console.log("moment", moment);
+    let sessionRange,
+      cycleRange,
+      setOfCyclesRange = "";
+    let sessionStartString,
+      sessionEndString,
+      cycleStartString,
+      cycleEndString,
+      setOfCyclesStartString,
+      setOfCyclesEndString = "";
+    let sessionEndTimestamp,
+      cycleEndTimestamp,
+      setOfCyclesEndTimestamp = 0;
+
+    // 그러니까 네 말은, 애초에... cycleEndTimestamp도 여기서 딱히 계산할 필요가 없다는거 아니야?
+    // 왜 그렇게 생각하지? 딱히 어떤 변동성이란게 존재하지 않지 않나 이말이지 왜냐하면 cycleEndTimestamp는 그냥
+    // cycleStartTimestamp에 cycleDuration 더하는거고 cycleDuration은 변동성이 언제나 반영되어있는 최신의 상태의 것이고,
+    // cycleStartTimestamp는 처음에 딱 박아두면 한 사이클이 끝나기 전까지는 고정값이기 때문에,
+    // 한 사이클 내부의 관점에서 본다면, 전자는 아예 상수, 후자는 여기 이 mouse hover를 반영하는 함수 내에서 값이 변할 이유가 없다.
+    // 그러면 ... 뭐가 변하냐?..
+    // session은 뭔가 변화가 있으니까 여기서 조건도 걸고 하는거잖아.
+    // 1. 이미 시작한 세션이면 pause가 있기 까지는 뭐... 그냥 고정이고,
+    //      여기 아래에서는 그 pause마저 반영하고 있으니 아예 그냥 첫번째 conditional block에서는 값은 그냥 고정이라고 보면 되겠고.
+    // 2. 두번째 else block은 startTime이 0이므로 아직 시작을 안한거니까,
+    //!  hover할 때마다, 그 hover 시점을 시작점이라고 가정하고,
+    //!  sessionStart과 sessionEnd를 계산하는 것임.
+    //?  그런데 이 논리가 cycleStartTimestamp과 cycleEndTimestamp에도 똑같이 적용되어야 하는거지
+    //* cycle 자체를 아직 시작 안했다면, hover point가 cycleStartTimestamp가 되는 것이고,
+    //*       가 이미 시작된 후라면, hover만으로 cycleRange를 구성하는 변수들에 영향을 주진 않는다.
+    // 그러면 어떻게 해야하는데?... ->
+    cycleEndTimestamp = cycleStartTimestamp + cycleDurationInSec * 1000;
+    cycleEndString = new Date(cycleEndTimestamp).toLocaleTimeString();
+
+    if (timerState.startTime !== 0) {
+      //! <-- 세션이 이미 시작된 경우.
+      // 이 조건하에서는 무조건 cycleStartTimestamp값 존재
+      cycleStartString = new Date(cycleStartTimestamp).toLocaleTimeString();
+      sessionStartString = new Date(timerState.startTime).toLocaleTimeString();
+      sessionEndTimestamp =
+        timerState.startTime +
+        timerState.pause.totalLength +
+        durationInSeconds * 1000;
+      sessionEndString = new Date(sessionEndTimestamp).toLocaleTimeString();
+    } else {
+      //! timerState.startTime !== 0    <-- 세션 아직 시작 안한 경우.
+      // 이 조건은 지금 세션이 종류가 무엇이든 그리고 몇번째 세션이든 시작을 안한 것이다.
+      // 이때 repetitionCount가 0이면 cycle들을 아예 시작조차 하지 않은 것이기 때문에
+      // cycleStartTimetsamp은 존재하지 않음.
+      // 그리고 prevSessoinType === SESSION[LB]이면, 두번째 이상 사이클의 첫번째 세션이므로
+      // 아직 cycleStartTimestamp값은 존재하지 않는다. 그러므로, 두가지 경우에만, 따로 cycleStart계산해준다.
+      sessionStartString = new Date(moment).toLocaleTimeString();
+      sessionEndTimestamp = moment + durationInSeconds * 1000;
+      sessionEndString = new Date(sessionEndTimestamp).toLocaleTimeString();
+    }
+
+    // The current cycle has already started.
+    if (cycleStartTimestamp !== 0) {
+      if (timerState.startTime !== 0) {
+        cycleStartString = new Date(cycleStartTimestamp).toLocaleTimeString();
+        cycleEndTimestamp = cycleStartTimestamp + cycleDurationInSec * 1000;
+        cycleEndString = new Date(cycleEndTimestamp).toLocaleTimeString();
+      } else {
+        const delayCalculatedOnMouseHoverInMs = moment - endTimeRef.current;
+        cycleStartString = new Date(cycleStartTimestamp).toLocaleTimeString();
+        cycleEndTimestamp =
+          cycleStartTimestamp +
+          (delayCalculatedOnMouseHoverInMs + cycleDurationInSec * 1000);
+        cycleEndString = new Date(cycleEndTimestamp).toLocaleTimeString();
+      }
+    } else {
+      cycleStartString = new Date(moment).toLocaleTimeString();
+      cycleEndTimestamp = moment + cycleDurationInSec * 1000;
+      cycleEndString = new Date(cycleEndTimestamp).toLocaleTimeString();
+    }
+
+    // A set of cycles has already started.
+    if (veryFirstCycleStartTimestamp !== 0) {
+      if (timerState.startTime !== 0) {
+        // delayted start이 totalDurationOfSetOfCyclesInSec에 반영되어 있음.
+        setOfCyclesStartString = new Date(
+          veryFirstCycleStartTimestamp
+        ).toLocaleTimeString();
+        setOfCyclesEndTimestamp =
+          veryFirstCycleStartTimestamp + totalDurationOfSetOfCyclesInSec * 1000;
+        setOfCyclesEndString = new Date(
+          setOfCyclesEndTimestamp
+        ).toLocaleTimeString();
+      } else {
+        // delayted start이 totalDurationOfSetOfCyclesInSec에 아직 반영되어있지 않음.
+        const delayCalculatedOnMouseHoverInMs = moment - endTimeRef.current;
+        setOfCyclesStartString = new Date(
+          veryFirstCycleStartTimestamp
+        ).toLocaleTimeString();
+        setOfCyclesEndTimestamp =
+          veryFirstCycleStartTimestamp +
+          (delayCalculatedOnMouseHoverInMs +
+            totalDurationOfSetOfCyclesInSec * 1000);
+        setOfCyclesEndString = new Date(
+          setOfCyclesEndTimestamp
+        ).toLocaleTimeString();
+      }
+    } else {
+      // 아예 시작 자체를 하기 전이라, totalDurationOfSetOfCycles가 _어떤 영향도 받지 않았기 때문에_, 그냥 moment값에 더해주기만 하면 된다.
+      setOfCyclesStartString = new Date(moment).toLocaleTimeString();
+      setOfCyclesEndTimestamp = moment + totalDurationOfSetOfCyclesInSec * 1000;
+      setOfCyclesEndString = new Date(
+        setOfCyclesEndTimestamp
+      ).toLocaleTimeString();
+    }
+
+    sessionRange = `${sessionStartString} ~ ${sessionEndString}`;
+    cycleRange = `${cycleStartString} ~ ${cycleEndString}`;
+    setOfCyclesRange = `${setOfCyclesStartString} ~ ${setOfCyclesEndString}`;
+
+    const sessionInfo = determinePatternTimerStates({
+      howManyCountdown: repetitionCount,
+      numOfPomo: numOfPomo,
+    });
+    const originalDuration = DURATIONS[sessionInfo.kind];
+    const durationInfo = `${durationInSeconds / 60} = ${originalDuration} ${
+      durationInSeconds / 60 - originalDuration >= 0
+        ? "+ " + (durationInSeconds / 60 - originalDuration)
+        : "- " + Math.abs(durationInSeconds / 60 - originalDuration)
+    }`;
+    setTooltipText([sessionRange, cycleRange, setOfCyclesRange, durationInfo]);
+  }
+
   //#region from CountDownTimer
   let durationRemaining =
     remainingDuration < 0 ? (
       <h2>ending session...</h2>
     ) : (
-      <h2 data-tooltip-id="session-info" style={{ cursor: "pointer" }}>
+      <h2
+        data-tooltip-id="session-info"
+        style={{ cursor: "pointer" }}
+        onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
+      >
         <Time seconds={remainingDuration} />
       </h2>
     );
@@ -1544,36 +1893,14 @@ export function TimerController({
     !!(durationInSeconds / 60) === false ? (
       <h2>"loading data..."</h2>
     ) : (
-      <h2 data-tooltip-id="session-info" style={{ cursor: "pointer" }}>
+      <h2
+        data-tooltip-id="session-info"
+        style={{ cursor: "pointer" }}
+        onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
+      >
         <Time seconds={durationInSeconds} />
       </h2>
     );
-  //#endregion
-
-  //#region For Tooltip
-  let range = "";
-  if (timerState.startTime !== 0) {
-    const start = new Date(timerState.startTime);
-    const end = new Date(
-      timerState.startTime +
-        timerState.pause.totalLength +
-        durationInSeconds * 1000
-    );
-    range = `${start.toLocaleTimeString()} ~ ${end.toLocaleTimeString()} | `;
-  }
-
-  const sessionInfo = determinePatternTimerStates({
-    howManyCountdown: repetitionCount,
-    numOfPomo: numOfPomo,
-  });
-  const originalDuration = DURATIONS[sessionInfo.kind];
-  const tooltipContent =
-    range +
-    `${durationInSeconds / 60} = ${originalDuration} ${
-      durationInSeconds / 60 - originalDuration >= 0
-        ? "+ " + (durationInSeconds / 60 - originalDuration)
-        : "- " + Math.abs(durationInSeconds / 60 - originalDuration)
-    }`;
   //#endregion
 
   return (
@@ -1583,7 +1910,29 @@ export function TimerController({
           <h1>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h1>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
-        <Tooltip id="session-info" content={tooltipContent} place="top" />
+        <Tooltip id="session-info" place="top">
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              fontFamily: "monospace",
+            }}
+          >
+            <h3>
+              {"Session\u00A0range"}:{"\u00A0\u00A0"}
+              {tooltipText[0]}
+            </h3>
+            <h3>
+              {"Cycle\u00A0\u00A0\u00A0range"}:{"\u00A0\u00A0"}
+              {tooltipText[1]}
+            </h3>
+            <h3>
+              {"Cycles\u00A0\u00A0range"}:{"\u00A0\u00A0"}
+              {tooltipText[2]}
+            </h3>
+            <h3>{tooltipText[3]}</h3>
+          </div>
+        </Tooltip>
       </GridItem>
       <GridItem rowStart={1} rowEnd={5} columnStart={2} columnEnd={3}>
         <CircularProgressBar
@@ -1604,6 +1953,12 @@ export function TimerController({
           setTotalFocusDurationInSec={setTotalFocusDurationInSec}
           cycleDurationInSec={cycleDurationInSec}
           setCycleDurationInSec={setCycleDurationInSec}
+          cycleStartTimestamp={cycleStartTimestamp}
+          veryFirstCycleStartTimestamp={veryFirstCycleStartTimestamp}
+          totalDurationOfSetOfCyclesInSec={totalDurationOfSetOfCyclesInSec}
+          setTotalDurationOfSetOfCyclesInSec={
+            setTotalDurationOfSetOfCyclesInSec
+          }
         />
       </GridItem>
       <GridItem>

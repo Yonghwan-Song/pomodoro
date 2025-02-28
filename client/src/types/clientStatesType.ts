@@ -48,6 +48,9 @@ export type AutoStartSettingType = {
 export type CycleInfoType = {
   totalFocusDuration: number;
   cycleDuration: number;
+  cycleStartTimestamp: number;
+  veryFirstCycleStartTimestamp: number;
+  totalDurationOfSetOfCycles: number;
 };
 //#endregion
 

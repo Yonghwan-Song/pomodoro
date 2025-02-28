@@ -24,6 +24,12 @@ type CircularProgressBarProps = {
   setTotalFocusDurationInSec: React.Dispatch<React.SetStateAction<number>>;
   cycleDurationInSec: number;
   setCycleDurationInSec: React.Dispatch<React.SetStateAction<number>>;
+  cycleStartTimestamp: number;
+  veryFirstCycleStartTimestamp: number;
+  totalDurationOfSetOfCyclesInSec: number;
+  setTotalDurationOfSetOfCyclesInSec: React.Dispatch<
+    React.SetStateAction<number>
+  >;
 };
 
 /**
@@ -55,8 +61,12 @@ const CircularProgressBar = ({
   setDurationInMinutes,
   totalFocusDurationInSec,
   cycleDurationInSec,
+  cycleStartTimestamp,
+  veryFirstCycleStartTimestamp,
+  totalDurationOfSetOfCyclesInSec,
   setTotalFocusDurationInSec,
   setCycleDurationInSec,
+  setTotalDurationOfSetOfCyclesInSec,
 }: CircularProgressBarProps) => {
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.categoryChangeInfoArray
@@ -152,29 +162,43 @@ const CircularProgressBar = ({
       const newTotalFocusDuration =
         totalFocusDurationInSec + timeToAddInSeconds;
       const newCycleDuration = cycleDurationInSec + timeToAddInSeconds;
+      const newTotalDurationOfSetOfCyclesInSec =
+        totalDurationOfSetOfCyclesInSec + timeToAddInSeconds;
       setTotalFocusDurationInSec(newTotalFocusDuration);
       setCycleDurationInSec(newCycleDuration);
+      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCyclesInSec);
       axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration: newTotalFocusDuration,
         cycleDuration: newCycleDuration,
+        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
       });
       persistStatesToIDB({
         currentCycleInfo: {
           totalFocusDuration: newTotalFocusDuration,
           cycleDuration: newCycleDuration,
+          cycleStartTimestamp,
+          veryFirstCycleStartTimestamp,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
         },
       });
     } else {
       const newCycleDuration = cycleDurationInSec + timeToAddInSeconds;
+      const newTotalDurationOfSetOfCyclesInSec =
+        totalDurationOfSetOfCyclesInSec + timeToAddInSeconds;
       setCycleDurationInSec(newCycleDuration);
+      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCyclesInSec);
       axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration: totalFocusDurationInSec,
         cycleDuration: newCycleDuration,
+        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
       });
       persistStatesToIDB({
         currentCycleInfo: {
           totalFocusDuration: totalFocusDurationInSec,
           cycleDuration: newCycleDuration,
+          cycleStartTimestamp,
+          veryFirstCycleStartTimestamp,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
         },
       });
     }
@@ -230,29 +254,43 @@ const CircularProgressBar = ({
         const newTotalFocusDuration =
           totalFocusDurationInSec - timeToSubtractInSeconds;
         const newCycleDuration = cycleDurationInSec - timeToSubtractInSeconds;
+        const newTotalDurationOfSetOfCycles =
+          totalDurationOfSetOfCyclesInSec - timeToSubtractInSeconds;
         setTotalFocusDurationInSec(newTotalFocusDuration);
         setCycleDurationInSec(newCycleDuration);
+        setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
         axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
           totalFocusDuration: newTotalFocusDuration,
           cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
         });
         persistStatesToIDB({
           currentCycleInfo: {
             totalFocusDuration: newTotalFocusDuration,
             cycleDuration: newCycleDuration,
+            cycleStartTimestamp,
+            veryFirstCycleStartTimestamp,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
           },
         });
       } else {
         const newCycleDuration = cycleDurationInSec - timeToSubtractInSeconds;
+        const newTotalDurationOfSetOfCycles =
+          totalDurationOfSetOfCyclesInSec - timeToSubtractInSeconds;
         setCycleDurationInSec(newCycleDuration);
+        setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
         axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
           totalFocusDuration: totalFocusDurationInSec,
           cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
         });
         persistStatesToIDB({
           currentCycleInfo: {
             totalFocusDuration: totalFocusDurationInSec,
             cycleDuration: newCycleDuration,
+            cycleStartTimestamp,
+            veryFirstCycleStartTimestamp,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
           },
         });
       }

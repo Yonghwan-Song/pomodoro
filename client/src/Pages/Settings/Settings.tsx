@@ -163,8 +163,13 @@ function Settings() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const { numOfPomo, pomoDuration, shortBreakDuration, longBreakDuration } =
-      pomoSettingInputs;
+    const {
+      numOfPomo,
+      numOfCycle,
+      pomoDuration,
+      shortBreakDuration,
+      longBreakDuration,
+    } = pomoSettingInputs;
 
     let totalFocusDuration = numOfPomo * pomoDuration * 60;
     let cycleDuration =
@@ -190,7 +195,13 @@ function Settings() {
         { name: "pause", value: { totalLength: 0, record: [] } },
         {
           name: "currentCycleInfo",
-          value: { totalFocusDuration, cycleDuration },
+          value: {
+            totalFocusDuration,
+            cycleDuration,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp: 0,
+            totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+          },
         },
       ],
     });
@@ -220,6 +231,9 @@ function Settings() {
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration,
         cycleDuration,
+        cycleStartTimestamp: 0,
+        veryFirstCycleStartTimestamp: 0,
+        totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
       });
 
       persistPomoSettingToServer(user, pomoSettingInputs)

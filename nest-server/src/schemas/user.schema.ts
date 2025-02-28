@@ -30,6 +30,9 @@ interface TimersStates {
 interface CycleInfo {
   totalFocusDuration: number;
   cycleDuration: number;
+  cycleStartTimestamp: number;
+  veryFirstCycleStartTimestamp: number;
+  totalDurationOfSetOfCycles: number;
 }
 
 interface Goal {
@@ -115,6 +118,9 @@ export class User {
     raw({
       totalFocusDuration: { type: Number, default: 100 * 60 },
       cycleDuration: { type: Number, default: 130 * 60 },
+      cycleStartTimestamp: { type: Number, default: 0 },
+      veryFirstCycleStartTimestamp: { type: Number, default: 0 },
+      totalDurationOfSetOfCycles: { type: Number, default: 130 * 60 }, // because the default value of numOfCycle is one.
     }),
   )
   currentCycleInfo: CycleInfo;

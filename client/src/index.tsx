@@ -455,6 +455,9 @@ export async function setStateStoreToDefault() {
         value: {
           totalFocusDuration: 100 * 60,
           cycleDuration: 130 * 60,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: 130 * 60,
         },
       }),
       tx.store.put({
@@ -860,7 +863,7 @@ export async function countDown(setIntervalId: number | string | null) {
         //   remainingDuration
         // );
         if (remainingDuration <= 0) {
-          // console.log("idOfSetInterval", idOfSetInterval);
+          // console.log("idOfSetInterval by countDown()", idOfSetInterval);
           clearInterval(idOfSetInterval);
           localStorage.removeItem("idOfSetInterval");
           // console.log(
@@ -920,10 +923,12 @@ const SESSION = {
   LONG_BREAK: 4,
   VERY_LAST_POMO: 5,
 };
-// 시작한다는 의미 <=> 결국 TimersStates를 update한다음에
-// 이거를
-// 1. persist locally
-// 2. persist remotely
+// 1. 시작한다는 의미:
+// 결국 TimersStates를 update한다음에 이것을 1)persist locally 2)persist remotely
+//
+// 2.언제 작용하는지:
+// 앱 닫았다가 나중에 열었을 때 다른 페이지에서 바로 시작하는 경우.
+// unAuth user의 경우 - ~/settings로 바로 접속하는 경우, auth user의 경우 - ~/statistics or ~/settings로 접속하는 경우.
 async function autoStartCurrentSession({
   timersStates,
   currentCycleInfo,
@@ -939,7 +944,13 @@ async function autoStartCurrentSession({
   currentCategoryName: string | undefined | null;
 }) {
   try {
-    timersStates.startTime = Date.now();
+    //? IMPT 여기가지 도달하는데 endTime보다 1초 이상 늦으면, cycle종료시점이 ... 거시기 해지잖아. 아니 도달하는데 까지 걸리는 시간에
+    // 공부 안해? 그시간은 그냥 없어야 하는 시간인데 왜 Date.now()를 조지냐고 이게 엄밀하게 startTime이 아니잖아.
+    // 어차피 이 autoStart함수에서는 delay가 나올 수 없는 구조라고..(앱 닫을 때 localStorage에 있는 interval_id 지우기 때문에).
+    // 그러니까 endTimeOfPreSession이랑 startTime이랑 그냥 같게 해버려.
+    // timersStates.startTime = Date.now();
+    timersStates.startTime = endTimeOfPrevSession + 500; //? 몇을 더해야하지?..
+    currentCycleInfo.cycleStartTimestamp = timersStates.startTime;
     timersStates.running = true;
     // console.log("endTimeOfPrevSession", endTimeOfPrevSession);
     //#region Countdown
@@ -956,13 +967,16 @@ async function autoStartCurrentSession({
       //   remainingDuration
       // );
       if (remainingDuration <= 0) {
-        // console.log("idOfSetInterval", idOfSetInterval);
+        // console.log(
+        //   "idOfSetInterval by autoStartCurrentSession()",
+        //   idOfSetInterval
+        // );
         clearInterval(idOfSetInterval);
         localStorage.removeItem("idOfSetInterval");
+
         // console.log(
         //   "-------------------------------------About To Call EndTimer()-------------------------------------"
         // );
-
         postMsgToSW("endTimer", {
           // currentCategoryName,
           //* 그러니까 만약에 한 세션이 `/timer`이외의 다른 페이지에서 "자동시작"되었다고 가정하자.
@@ -974,7 +988,7 @@ async function autoStartCurrentSession({
           //? 만약에 user가 currentCategory를 지우는 버튼을 클릭하는 시각이 이 object argument를 만들기 시작하는 시각과 같거나 그 언저리면 어떻게 되는거야?
           // 눌러서 remove item하기 전에 sessionStorage에서 null값이 아닌 유의미한 값을 가져왔으면... 걍 네가 더 빨리 remove 버튼을 눌렀어야하는거임... 걍 신경 끄면 될 듯...:::
           pomoSetting,
-          ...timersStates,
+          ...{ ...timersStates, currentCycleInfo },
         });
       }
     }, 500);
@@ -996,23 +1010,20 @@ async function autoStartCurrentSession({
       { name: "pause", value: timersStates.pause },
     ];
 
-    let gapInSec = msToSec(timersStates.startTime - endTimeOfPrevSession);
-
-    //앱 닫았다가 나중에 열었을 때 다른 페이지에서 바로 시작하는 경우.
-    // unAuth user의 경우 - ~/settings로 바로 접속하는 경우, auth user의 경우 - ~/statistics or ~/settings로 접속하는 경우.
-    if (gapInSec > 0 && prevSessionType !== SESSION.LONG_BREAK) {
-      // === VERY_LAST_POMO인 경우도 자동시작 하면 안되는데, 여기서 체크하지 않은 이유는 그 경우에는 애초에 sw.js에는 BC message를 보내지 않는다.
-      console.log("gapInSec", gapInSec);
-      currentCycleInfo.cycleDuration += gapInSec;
-      stateArr.push({ name: "currentCycleInfo", value: currentCycleInfo });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        ...currentCycleInfo,
+    if (prevSessionType === SESSION.LONG_BREAK) {
+      // a new cycle starts
+      stateArr.push({
+        name: "currentCycleInfo",
+        value: {
+          ...currentCycleInfo,
+        },
       });
-    } else {
-      //바로시작 앱 닫지 않고
-      console.log("gapInSec is zero", gapInSec);
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        cycleStartTimestamp: currentCycleInfo.cycleStartTimestamp,
+        totalFocusDuration: currentCycleInfo.totalFocusDuration,
+        cycleDuration: currentCycleInfo.cycleDuration,
+      });
     }
-    //TODO - sw.js에서 cycleDuration payload에 포함시키기
 
     // 1. persist locally.
     // Problem:  We don't need to do assign this job to SW.

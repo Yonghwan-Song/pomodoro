@@ -106,21 +106,22 @@ export class UsersService {
     return updatedUser;
   }
 
-  updateCurrentCycleInfo(
+  async updateCurrentCycleInfo(
     updateCurrentCycleInfoDto: UpdateCurrentCycleInfoDto,
     userEmail: string,
   ) {
-    return this.userModel
-      .findOneAndUpdate(
-        {
-          userEmail,
-        },
-        {
-          currentCycleInfo: updateCurrentCycleInfoDto,
-        },
-        { new: true },
-      )
-      .exec();
+    const currentUser = await this.userModel.findOne({ userEmail });
+
+    const newCurrentCycleInfo = {
+      ...currentUser.currentCycleInfo,
+      ...updateCurrentCycleInfoDto,
+    };
+
+    currentUser.currentCycleInfo = newCurrentCycleInfo;
+
+    const updatedUser = await currentUser.save();
+
+    return updatedUser;
   }
 
   updateIsUnCategorizedOnStat(

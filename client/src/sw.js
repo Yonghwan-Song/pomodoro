@@ -81,6 +81,7 @@ self.addEventListener("message", async (ev) => {
         break;
 
       case "endTimer":
+        // console.log("payload at the case endTimer at sw.js", payload);
         await goNext(payload);
         break;
 
@@ -414,14 +415,18 @@ async function wrapUpSession({
     numOfPomo,
     numOfCycle,
   } = pomoSetting;
-  const newCurrentCycleInfo = {
-    totalFocusDuration: 60 * pomoDuration * numOfPomo,
-    cycleDuration:
-      60 *
-      (pomoDuration * numOfPomo +
-        shortBreakDuration * (numOfPomo - 1) +
-        longBreakDuration),
-  };
+
+  // LongBreak과 VeryLastPomo 모든 케이스에 이 값을 적용할 수 있는가?.
+  // 우선 두 경우 이후에 모두 cycle은 reset되는게 자명하기 때문에 결국 default 값으로 돌려야 한다.
+  // 그러므로 이 두 값은 그대로 둬도 문제 없다. 그런데, 새롭게 도입하는 두 변수가 문제이다.
+
+  const totalFocusDurationTargeted = 60 * pomoDuration * numOfPomo;
+  const cycleDurationTargeted =
+    60 *
+    (pomoDuration * numOfPomo +
+      shortBreakDuration * (numOfPomo - 1) +
+      longBreakDuration);
+  const totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
 
   switch (session) {
     case SESSION.POMO:
@@ -582,9 +587,12 @@ async function wrapUpSession({
         body: "All cycles of focus durations are done",
         silent: true,
       });
+      // TODO a)set 3,4 to zero, b)set 1,2,5 to the targeted one
+      //? triangle: 1)state variables - not applicable 2)idb 3)server
 
       timersStatesForNextSession.repetitionCount = 0;
       timersStatesForNextSession.duration = pomoDuration;
+      //? 2)
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
         {
@@ -597,12 +605,32 @@ async function wrapUpSession({
         },
         {
           name: "currentCycleInfo",
-          value: newCurrentCycleInfo,
+          value: {
+            totalFocusDuration: totalFocusDurationTargeted,
+            cycleDuration: cycleDurationTargeted,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp: 0,
+            totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
+          },
         },
       ]);
-
       await persistSessionToIDB("pomo", sessionData);
 
+      //? 3)
+      persistTimersStatesToServer(timersStatesForNextSession, idToken);
+      fetchWrapper(
+        RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO,
+        "PATCH",
+        {
+          totalFocusDuration: totalFocusDurationTargeted,
+          cycleDuration: cycleDurationTargeted,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
+        },
+        idToken
+      );
+      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
       idTokenAndEmail &&
         (await recordPomo(
           timersStates.startTime,
@@ -611,17 +639,10 @@ async function wrapUpSession({
           sessionData
         ));
 
-      persistTimersStatesToServer(timersStatesForNextSession, idToken);
-      fetchWrapper(
-        RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO,
-        "PATCH",
-        newCurrentCycleInfo,
-        idToken
-      );
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
-
       break;
 
+    //* 아직 cycles가 모두 끝나지는 않았다. 그러나 한 cycle은 끝났다.
+    //TODO 그러므로, 1) set 1,2 to the targeted ones. 2) set 3 to zero. 3) 4 and 5 are not to be changed.
     case SESSION.LONG_BREAK:
       self.registration.showNotification("nextCycle", {
         body: "time to do the next cycle of pomos",
@@ -642,17 +663,35 @@ async function wrapUpSession({
         },
         {
           name: "currentCycleInfo",
-          value: newCurrentCycleInfo,
+          value: {
+            totalFocusDuration: totalFocusDurationTargeted,
+            cycleDuration: cycleDurationTargeted,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp:
+              currentCycleInfo.veryFirstCycleStartTimestamp,
+            totalDurationOfSetOfCycles:
+              currentCycleInfo.totalDurationOfSetOfCycles,
+          },
         },
       ]);
 
       await persistSessionToIDB("break", sessionData);
 
+      // console.log("autoStartSetting at wrapUpSession()", autoStartSetting);
+
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesCycleStartAutomatically) {
           const payload = {
             timersStates: timersStatesForNextSession,
-            currentCycleInfo,
+            currentCycleInfo: {
+              totalFocusDuration: totalFocusDurationTargeted,
+              cycleDuration: cycleDurationTargeted,
+              cycleStartTimestamp: 0,
+              veryFirstCycleStartTimestamp:
+                currentCycleInfo.veryFirstCycleStartTimestamp,
+              totalDurationOfSetOfCycles:
+                currentCycleInfo.totalDurationOfSetOfCycles,
+            },
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
             prevSessionType: session,
@@ -663,18 +702,22 @@ async function wrapUpSession({
           });
         } else {
           persistTimersStatesToServer(timersStatesForNextSession, idToken);
+          fetchWrapper(
+            RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO,
+            "PATCH",
+            {
+              totalFocusDuration: totalFocusDurationTargeted,
+              cycleDuration: cycleDurationTargeted,
+              cycleStartTimestamp: 0,
+            },
+            idToken
+          );
         }
       } else {
         console.warn("autoStartSetting is undefined");
       }
 
       persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
-      fetchWrapper(
-        RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO,
-        "PATCH",
-        newCurrentCycleInfo,
-        idToken
-      );
 
       break;
 
