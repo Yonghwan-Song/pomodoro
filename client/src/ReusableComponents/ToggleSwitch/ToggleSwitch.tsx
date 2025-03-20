@@ -15,6 +15,7 @@ type ToggleSwitchPropsType = {
   backgroundColorForOn: string;
   backgroundColorForOff: string;
   backgroundColorForSwitch: string;
+  isWithBorder?: boolean;
   onChange: React.ChangeEventHandler<HTMLInputElement>;
 };
 
@@ -33,10 +34,16 @@ export default function ToggleSwitch({
   backgroundColorForOn,
   backgroundColorForOff,
   backgroundColorForSwitch,
+  isWithBorder = false,
   onChange,
 }: ToggleSwitchPropsType) {
   return (
-    <div>
+    <div
+      style={{
+        border: isWithBorder ? "1px solid black" : "none",
+        borderRadius: "0.5em",
+      }}
+    >
       <input
         type="checkbox"
         // id="checkbox"

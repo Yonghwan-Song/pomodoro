@@ -14,6 +14,7 @@ import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategor
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 import { UpdateGoalsDto } from './dto/update-goals.dto';
 import { UpdateCurrentCycleInfoDto } from './dto/update-current-cycle-info.dto';
+import { CycleSetting } from 'src/schemas/cycleSetting.schema';
 
 @Injectable()
 export class UsersService {
@@ -22,20 +23,39 @@ export class UsersService {
     @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
     @InjectModel(TodayRecord.name) private todayRecordModel: Model<TodayRecord>,
     @InjectModel(Category.name) private categoryModel: Model<Category>,
+    @InjectModel(CycleSetting.name)
+    private cycleSettingModel: Model<CycleSetting>,
   ) {}
 
-  create(createUserDto: CreateUserDto, userEmail: string) {
-    const newUser = new this.userModel({ ...createUserDto, userEmail });
-    return newUser.save();
+  async create(createUserDto: CreateUserDto, userEmail: string) {
+    const defaultCycleSettingForANewUser = new this.cycleSettingModel({
+      userEmail,
+      name: 'Default cycle setting',
+      isCurrent: true,
+    });
+
+    const settingSaved = await defaultCycleSettingForANewUser.save();
+
+    console.log('settingSaved', settingSaved);
+
+    const newUser = new this.userModel({
+      ...createUserDto,
+      userEmail,
+      cycleSettings: [defaultCycleSettingForANewUser._id],
+    });
+
+    await newUser.save();
+
+    return newUser;
   }
 
   async getUserInfo(userEmail: string) {
     const doc = await this.userModel
       .findOne({ userEmail })
-      .populate(['categories'])
+      .populate(['categories', 'cycleSettings'])
       .exec();
 
-    console.log(doc);
+    console.log('A user doc by getUserInfo() in the UsersService class', doc);
     return doc;
   }
 
@@ -177,18 +197,22 @@ export class UsersService {
     updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
     userEmail: string,
   ) {
-    return this.userModel
-      .findOneAndUpdate(
-        { userEmail },
-        {
-          $set: {
-            categoryChangeInfoArray:
-              updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
+    try {
+      return this.userModel
+        .findOneAndUpdate(
+          { userEmail },
+          {
+            $set: {
+              categoryChangeInfoArray:
+                updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
+            },
           },
-        },
-        { new: true, upsert: true },
-      )
-      .exec(); // I read that .exec() is not neccessary when using findByIdAnd_____ ... but cannot remember where I read it..
+          { new: true, upsert: true },
+        )
+        .exec(); // I read that .exec() is not neccessary when using findByIdAnd_____ ... but cannot remember where I read it..
+    } catch (error) {
+      console.log('error at updateCategoryChangeInfoArray', error);
+    }
   }
 
   //TODO: test
@@ -232,6 +256,10 @@ export class UsersService {
       .deleteMany({ userEmail })
       .exec();
 
+    const deletedCycleSettings = await this.cycleSettingModel
+      .deleteMany({ userEmail })
+      .exec();
+
     const deletedUser = await this.userModel
       .findOneAndDelete({ userEmail })
       .exec();
@@ -244,6 +272,7 @@ export class UsersService {
       deletedUser,
       deletedPomodoroRecords,
       deletedTodayRecords,
+      deletedCycleSettings,
       deletedCategories,
     };
   }

@@ -40,6 +40,7 @@ export type StyledBoxProps = {
   paddingTop?: string;
   paddingBottom?: string;
   borderRadius?: string;
+  boxShadowColor?: string; // Add this line
 };
 
 export const StyledBox = styled.div<StyledBoxProps>`
@@ -69,13 +70,13 @@ export const StyledBox = styled.div<StyledBoxProps>`
     border-radius: ${borderRadius};
   `}
 
-  ${({ inset }) =>
+  ${({ inset, boxShadowColor = "rgba(0,0,0,0.7)" }) =>
     inset
       ? css`
-          box-shadow: inset 0px 0px 10px 0px rgba(0, 0, 0, 0.7);
+          box-shadow: inset 0px 0px 10px 0px ${boxShadowColor};
         `
       : css`
-          box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.7);
+          box-shadow: 0px 0px 10px 0px ${boxShadowColor};
         `}
   ${({ fontSize }) =>
     fontSize &&

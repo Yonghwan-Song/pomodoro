@@ -381,11 +381,11 @@ const CircularProgressBar = ({
               const segDurationInSec = Math.floor(
                 info.segmentProgress * durationInSeconds
               );
-              console.log(`${segDurationInSec}sec`);
+              // console.log(`${segDurationInSec}sec`);
               const dur = `${Math.floor(segDurationInSec / 60)}min ${
                 segDurationInSec % 60
               }sec`;
-              console.log(dur);
+              // console.log(dur);
             }}
             onMouseLeave={() => console.log("leave")}
           ></circle>

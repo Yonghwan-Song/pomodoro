@@ -27,7 +27,7 @@ import {
   postMsgToSW,
   setStateStoreToDefault,
 } from "..";
-import { RequiredStatesToRunTimerType } from "../types/clientStatesType";
+import { Category, CategoryChangeInfo } from "../types/clientStatesType";
 import { pubsub } from "../pubsub";
 
 type AuthContextType = {
@@ -120,12 +120,15 @@ export function AuthContextProvider({
       try {
         const response = await axiosInstance.get(RESOURCE.USERS);
         const states = response.data as DataFromServer;
+        const pomoSetting = states.cycleSettings.find(
+          (setting) => setting.isCurrent
+        )?.pomoSetting;
 
         //1. persist TimerSliceStates to Indexed DB
         await persistStatesToIDB(states.timersStates);
         postMsgToSW("saveStates", {
           stateArr: [
-            { name: "pomoSetting", value: states.pomoSetting },
+            { name: "pomoSetting", value: pomoSetting },
             { name: "autoStartSetting", value: states.autoStartSetting },
             { name: "currentCycleInfo", value: states.currentCycleInfo },
           ],
@@ -134,10 +137,25 @@ export function AuthContextProvider({
         localStorage.setItem("user", "authenticated");
 
         //3. to ensure that categories are uniquely identified on the client side.
-        await addUUIDToCategory(states);
+        await addUUIDToCategory(
+          states.categories,
+          states.categoryChangeInfoArray
+        );
 
         //4. assign states to the zustand store
-        populateExistingUserStates(states);
+        // 이렇게 안하고 그냥 non-null assertion operator 쓰면 되긴 하는데 그냥 쓰기 싫어서 이렇게 했음.
+        if (pomoSetting) populateExistingUserStates({ ...states, pomoSetting });
+        else
+          populateExistingUserStates({
+            ...states,
+            pomoSetting: {
+              pomoDuration: 25,
+              shortBreakDuration: 5,
+              longBreakDuration: 15,
+              numOfPomo: 4,
+              numOfCycle: 1,
+            },
+          });
 
         //
         await persistCategoryChangeInfoArrayToIDB(
@@ -276,13 +294,16 @@ export const useAuthContext = () => {
   return useContext(AuthContext);
 };
 
-async function addUUIDToCategory(states: RequiredStatesToRunTimerType) {
-  states.categories.forEach((category) => {
+async function addUUIDToCategory(
+  categories: Category[],
+  categoryChangeInfoArray: CategoryChangeInfo[]
+) {
+  categories.forEach((category) => {
     category._uuid = window.crypto.randomUUID();
   });
 
-  for (const info of states.categoryChangeInfoArray) {
-    const matchingCategory = states.categories.find(
+  for (const info of categoryChangeInfoArray) {
+    const matchingCategory = categories.find(
       (category) => category.name === info.categoryName
     );
     info._uuid = matchingCategory?._uuid;

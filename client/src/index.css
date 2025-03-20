@@ -51,6 +51,16 @@ body {
   background-color: rgb(117, 187, 175);
 }
 
+.btn-blue {
+  /* #96b2f3 */
+  background-color: rgb(150, 178, 243);
+}
+
+.btn-blue:hover {
+  /* #7997dc */
+  background-color: rgb(121, 151, 220);
+}
+
 /* Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {

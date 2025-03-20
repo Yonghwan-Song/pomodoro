@@ -1,7 +1,7 @@
 type ButtonProps = {
   // color?: string;
   handleClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  color?: "primary" | undefined;
+  color?: "primary" | "blue" | undefined;
   children: string;
 } & Omit<React.ComponentProps<"button">, "children">;
 

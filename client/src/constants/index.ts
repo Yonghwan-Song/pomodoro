@@ -30,6 +30,7 @@ export const RESOURCE = {
   POMODOROS: "/pomodoros",
   TODAY_RECORDS: "/today-records",
   CATEGORIES: "/categories",
+  CYCLE_SETTINGS: "/cycle-settings",
 };
 export const SUB_SET = {
   POMODORO_SETTING: "/pomodoro-setting",
@@ -120,3 +121,13 @@ export const _24h = 24 * 60 * 60 * 1000;
 export const SUCCESS_PersistingTimersStatesWithCycleInfoToIDB =
   "successOfPersistingTimersStatesWithCycleInfoToIDB";
 //#endregion
+
+//#region Color related
+export const COLOR_FOR_CURRENT_STH = "#ff8522";
+export const COLOR_FOR_SAVE_NEW_CYCLE_SETTING = "#96b2f3";
+export const COLOR_FOR_SELECTED_SETTING = "#57a194"; // 이거는 primary보다 약간 진한 것.
+// export const COLOR_FOR_SELECTED_SETTING = "#75BBAF"; // 이거는 완전 버튼 primary color와 같은 것.
+// export const COLOR_FOR_CURRENT_STH = "#e04f5d";
+// export const COLOR_FOR_SELECTED_SETTING = "#e04f5d";
+// export const COLOR_FOR_SELECTED_SETTING = "#f5737f";
+//#endregion Color related

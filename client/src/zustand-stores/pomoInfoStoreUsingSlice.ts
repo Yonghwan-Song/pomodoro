@@ -5,6 +5,7 @@ import {
   AutoStartSettingType,
   Category,
   CategoryChangeInfo,
+  CycleSetting,
   DailyGoals,
   Goals,
   PomoSettingType,
@@ -13,12 +14,13 @@ import {
 
 /**
  * These states are required to run a timer; in other words, to run a session either it is a focus or a break.
- * Thus, both signed-in and non-signed-in users need them.
+ *! Thus, both signed-in and non-signed-in users need these states. (cycleSettings are not required for non-signed-in users)
  */
 interface TimerSliceStates {
   timersStates: TimersStatesType;
   pomoSetting: PomoSettingType | null;
   autoStartSetting: AutoStartSettingType | null;
+  cycleSettings: Array<CycleSetting>;
 }
 
 interface CycleInfoSliceStates {
@@ -54,6 +56,7 @@ interface GoalSlice extends GoalSliceStates {
 interface TimerSlice extends TimerSliceStates {
   setPomoSetting: (pomoSetting: PomoSettingType | null) => void;
   setAutoStartSetting: (autoStartSetting: AutoStartSettingType | null) => void;
+  setCycleSettings: (cycleSettings: Array<CycleSetting>) => void;
 }
 
 interface CategorySlice extends CategorySliceStates {
@@ -70,6 +73,7 @@ export type DataFromServer = {
   timersStates: TimersStatesType;
   pomoSetting: PomoSettingType;
   autoStartSetting: AutoStartSettingType;
+  cycleSettings: Array<CycleSetting>;
 } & CycleInfoSliceStates &
   Omit<CategorySliceStates, "doesItJustChangeCategory"> &
   GoalSliceStates;
@@ -77,7 +81,8 @@ export type DataFromServer = {
 interface SharedSlice {
   populateExistingUserStates: (data: DataFromServer) => void;
   populateNonSignInUserStates: (
-    data: TimerSliceStates & CycleInfoSliceStates
+    // data: TimerSliceStates & CycleInfoSliceStates
+    data: Omit<TimerSliceStates, "cycleSettings"> & CycleInfoSliceStates
   ) => void;
 }
 
@@ -99,6 +104,7 @@ const createTimerSlice: StateCreator<
     running: false,
     startTime: 0,
   },
+  cycleSettings: [],
   setPomoSetting: (pomoSetting) =>
     set((state) => ({ pomoSetting }), undefined, "timer/setPomoSetting"),
   setAutoStartSetting: (autoStartSetting) =>
@@ -107,6 +113,8 @@ const createTimerSlice: StateCreator<
       undefined,
       "timer/setAutoStartSetting"
     ),
+  setCycleSettings: (cycleSettings) =>
+    set((state) => ({ cycleSettings }), undefined, "timer/setCycleSettings"),
 });
 
 const createCycleInfoSlice: StateCreator<
@@ -218,6 +226,7 @@ const createSharedSlice: StateCreator<
   populateExistingUserStates: (data) => {
     set(
       (state) => ({
+        cycleSettings: data.cycleSettings,
         pomoSetting: data.pomoSetting,
         autoStartSetting: data.autoStartSetting,
         goals: data.goals,
@@ -259,3 +268,6 @@ export const useBoundedPomoInfoStore = create<
     }))
   )
 );
+
+// Export store API separately
+export const boundedPomoInfoStore = useBoundedPomoInfoStore;

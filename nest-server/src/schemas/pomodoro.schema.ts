@@ -24,3 +24,10 @@ export class Pomodoro {
 }
 
 export const PomodoroSchema = SchemaFactory.createForClass(Pomodoro);
+
+// 뭔가 미묘하게 맛 가게 하는 듯 constructor관련해서.
+// export const PomodoroSchema = Pomodoro.schema;
+//   static schema = SchemaFactory.createForClass(Pomodoro).index(
+//     { userEmail: 1, startTime: 1 },
+//     { unique: true },
+//   );

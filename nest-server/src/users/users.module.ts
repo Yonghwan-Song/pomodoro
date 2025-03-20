@@ -6,6 +6,10 @@ import { User, UserSchema } from 'src/schemas/user.schema';
 import { Pomodoro, PomodoroSchema } from 'src/schemas/pomodoro.schema';
 import { TodayRecord, TodayRecordSchema } from 'src/schemas/todayRecord.schema';
 import { Category, CategorySchema } from 'src/schemas/category.schema';
+import {
+  CycleSetting,
+  CycleSettingSchema,
+} from 'src/schemas/cycleSetting.schema';
 
 @Module({
   imports: [
@@ -14,6 +18,7 @@ import { Category, CategorySchema } from 'src/schemas/category.schema';
       { name: Pomodoro.name, schema: PomodoroSchema },
       { name: TodayRecord.name, schema: TodayRecordSchema },
       { name: Category.name, schema: CategorySchema },
+      { name: CycleSetting.name, schema: CycleSettingSchema },
     ]),
   ],
   controllers: [UsersController],

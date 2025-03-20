@@ -13778,7 +13778,8 @@
     USERS: "/users",
     POMODOROS: "/pomodoros",
     TODAY_RECORDS: "/today-records",
-    CATEGORIES: "/categories"
+    CATEGORIES: "/categories",
+    CYCLE_SETTINGS: "/cycle-settings"
   };
   var SUB_SET = {
     POMODORO_SETTING: "/pomodoro-setting",
@@ -13795,7 +13796,11 @@
   var IDB_VERSION = 10;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
-   //#endregion
+  // export const COLOR_FOR_SELECTED_SETTING = "#75BBAF"; // 이거는 완전 버튼 primary color와 같은 것.
+  // export const COLOR_FOR_CURRENT_STH = "#e04f5d";
+  // export const COLOR_FOR_SELECTED_SETTING = "#e04f5d";
+  // export const COLOR_FOR_SELECTED_SETTING = "#f5737f";
+  //#endregion Color related
 
   var _excluded = ["pomoSetting"],
       _excluded2 = ["currentCycleInfo"];
@@ -14367,12 +14372,21 @@
 
   function wrapUpSession(_x8) {
     return _wrapUpSession.apply(this, arguments);
-  } // same as the one in the src/index.tsx
+  }
+  /**
+   *
+   * @param {*} cycleDurationInSec to calculate currentRatio
+   * @param {*} totalFocusDurationInSec to calculate currentRatio
+   * @param {*} ratioTargeted
+   * @param {*} end
+   *
+   * @returns a cycleRecord object
+   */
 
 
   function _wrapUpSession() {
     _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15(_ref7) {
-      var session, timersStates, currentCycleInfo, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, idToken, infoArrayBeforeReset, infoArrAfterReset, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, numOfCycle, totalFocusDurationTargeted, cycleDurationTargeted, totalDurationOfSetOfCyclesTargeted, payload, _payload, _payload2, _payload3;
+      var session, timersStates, currentCycleInfo, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, idToken, infoArrayBeforeReset, infoArrAfterReset, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, numOfCycle, totalFocusDurationTargeted, cycleDurationTargeted, totalDurationOfSetOfCyclesTargeted, payload, _payload, _payload2, cycleRecordVeryLastPomo, cycleRecordLongBreak, _payload3;
 
       return _regeneratorRuntime().wrap(function _callee15$(_context15) {
         while (1) {
@@ -14497,7 +14511,7 @@
               cycleDurationTargeted = 60 * (pomoDuration * numOfPomo + shortBreakDuration * (numOfPomo - 1) + longBreakDuration);
               totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
               _context15.t0 = session;
-              _context15.next = _context15.t0 === SESSION.POMO ? 32 : _context15.t0 === SESSION.SHORT_BREAK ? 45 : _context15.t0 === SESSION.LAST_POMO ? 54 : _context15.t0 === SESSION.VERY_LAST_POMO ? 67 : _context15.t0 === SESSION.LONG_BREAK ? 82 : 91;
+              _context15.next = _context15.t0 === SESSION.POMO ? 32 : _context15.t0 === SESSION.SHORT_BREAK ? 45 : _context15.t0 === SESSION.LAST_POMO ? 54 : _context15.t0 === SESSION.VERY_LAST_POMO ? 67 : _context15.t0 === SESSION.LONG_BREAK ? 84 : 95;
               break;
 
             case 32:
@@ -14555,7 +14569,7 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 92);
+              return _context15.abrupt("break", 96);
 
             case 45:
               self.registration.showNotification("pomo", {
@@ -14600,7 +14614,7 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 92);
+              return _context15.abrupt("break", 96);
 
             case 54:
               self.registration.showNotification("longBreak", {
@@ -14656,19 +14670,22 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "pomo"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 92);
+              return _context15.abrupt("break", 96);
 
             case 67:
               self.registration.showNotification("cyclesCompleted", {
                 body: "All cycles of focus durations are done",
                 silent: true
-              }); // TODO a)set 3,4 to zero, b)set 1,2,5 to the targeted one
-              //? triangle: 1)state variables - not applicable 2)idb 3)server
-
+              });
+              cycleRecordVeryLastPomo = getCycleRecord(currentCycleInfo.cycleDuration, currentCycleInfo.totalFocusDuration, roundTo_X_DecimalPoints(totalFocusDurationTargeted / cycleDurationTargeted, 2), sessionData.endTime);
+              BC.postMessage({
+                evName: "endOfCycle",
+                payload: cycleRecordVeryLastPomo
+              });
               timersStatesForNextSession.repetitionCount = 0;
               timersStatesForNextSession.duration = pomoDuration; //? 2)
 
-              _context15.next = 72;
+              _context15.next = 74;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14686,11 +14703,11 @@
                 }
               }]));
 
-            case 72:
-              _context15.next = 74;
+            case 74:
+              _context15.next = 76;
               return persistSessionToIDB("pomo", sessionData);
 
-            case 74:
+            case 76:
               //? 3)
               persistTimersStatesToServer(timersStatesForNextSession, idToken);
               fetchWrapper(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, "PATCH", {
@@ -14706,23 +14723,28 @@
               _context15.t3 = idTokenAndEmail;
 
               if (!_context15.t3) {
-                _context15.next = 81;
+                _context15.next = 83;
                 break;
               }
 
-              _context15.next = 81;
+              _context15.next = 83;
               return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
 
-            case 81:
-              return _context15.abrupt("break", 92);
+            case 83:
+              return _context15.abrupt("break", 96);
 
-            case 82:
+            case 84:
               self.registration.showNotification("nextCycle", {
                 body: "time to do the next cycle of pomos",
                 silent: true
               });
+              cycleRecordLongBreak = getCycleRecord(currentCycleInfo.cycleDuration, currentCycleInfo.totalFocusDuration, roundTo_X_DecimalPoints(totalFocusDurationTargeted / cycleDurationTargeted, 2), sessionData.endTime);
+              BC.postMessage({
+                evName: "endOfCycle",
+                payload: cycleRecordLongBreak
+              });
               timersStatesForNextSession.duration = pomoDuration;
-              _context15.next = 86;
+              _context15.next = 90;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14740,11 +14762,11 @@
                 }
               }]));
 
-            case 86:
-              _context15.next = 88;
+            case 90:
+              _context15.next = 92;
               return persistSessionToIDB("break", sessionData);
 
-            case 88:
+            case 92:
               // console.log("autoStartSetting at wrapUpSession()", autoStartSetting);
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesCycleStartAutomatically) {
@@ -14780,12 +14802,12 @@
               persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 92);
+              return _context15.abrupt("break", 96);
 
-            case 91:
-              return _context15.abrupt("break", 92);
+            case 95:
+              return _context15.abrupt("break", 96);
 
-            case 92:
+            case 96:
             case "end":
               return _context15.stop();
           }
@@ -14794,6 +14816,18 @@
     }));
     return _wrapUpSession.apply(this, arguments);
   }
+
+  function getCycleRecord(cycleDurationInSec, totalFocusDurationInSec, ratioTargeted, end) {
+    var currentRatio = roundTo_X_DecimalPoints(totalFocusDurationInSec / cycleDurationInSec, 2);
+    return {
+      ratio: currentRatio,
+      cycleAdherenceRate: roundTo_X_DecimalPoints(currentRatio / ratioTargeted, 2),
+      start: end - cycleDurationInSec * 1000,
+      end: end,
+      date: new Date()
+    };
+  } // same as the one in the src/index.tsx
+
 
   function retrieveAutoStartSettingFromIDB() {
     return _retrieveAutoStartSettingFromIDB.apply(this, arguments);
@@ -15585,7 +15619,7 @@
             owner: acc.currentOwner,
             duration: duration_in_ms,
             type: acc.currentType,
-            startTime: acc.currentStartTime
+            startTime: val.timestamp
           });
           acc.currentType = "focus";
           acc.currentStartTime = val.timestamp;
@@ -15662,6 +15696,10 @@
         duration: Math.floor(val.duration / (60 * 1000))
       });
     });
+  }
+
+  function roundTo_X_DecimalPoints(num, X) {
+    return Math.round(num * Math.pow(10, X)) / Math.pow(10, X);
   } //#endregion
   //#endregion
 

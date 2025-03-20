@@ -52,6 +52,22 @@ export type CycleInfoType = {
   veryFirstCycleStartTimestamp: number;
   totalDurationOfSetOfCycles: number;
 };
+
+export type CycleRecord = {
+  ratio: number; // 실제 달성한 ratio
+  cycleAdherenceRate: number;
+  start: number;
+  end: number;
+  date: Date;
+};
+
+export interface CycleSetting {
+  name: string;
+  isCurrent: boolean;
+  pomoSetting: PomoSettingType;
+  cycleStat: CycleRecord[];
+  averageAdherenceRate: number;
+}
 //#endregion
 
 //#region Category-Related
@@ -61,7 +77,8 @@ export interface Category {
   _id?: string;
   isCurrent: boolean;
   isOnStat: boolean;
-  _uuid?: string;
+  _uuid?: string; //! 이게 정말 없으면 안되었던 경우는 errController에서 patch request body를 merge할 때, name을 여러번 바꾸는 경우에 필요했음.
+  //! 그 외에도 뭔가 name을 바꾸는 경우에 한계가 있어서 이게 필요했는데... 뭔가 더 생각해봐야할듯.
 }
 
 /**

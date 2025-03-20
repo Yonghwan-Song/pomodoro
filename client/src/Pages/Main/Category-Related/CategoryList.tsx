@@ -190,7 +190,7 @@ export default function CategoryList() {
   }
 
   return (
-    <FlexBox justifyContent="space-around" flexWrap="wrap" gap="10px">
+    <FlexBox justifyContent="space-around" flexWrap="wrap" rowGap="0.65rem">
       {categories.map((category, index) => {
         return (
           <div

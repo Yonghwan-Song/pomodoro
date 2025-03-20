@@ -1,14 +1,5 @@
 import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { ObjectId } from 'mongoose';
-// import { Category } from 'src/schemas/category.schema';
-
-interface PomoSetting {
-  pomoDuration: number;
-  shortBreakDuration: number;
-  longBreakDuration: number;
-  numOfPomo: number;
-  numOfCycle: number;
-}
 
 interface AutoStartSetting {
   doesPomoStartAutomatically: boolean;
@@ -55,16 +46,10 @@ export class User {
   @Prop({ unique: true })
   userEmail: string;
 
-  @Prop(
-    raw({
-      pomoDuration: { type: Number, default: 25, min: 1, max: 1000 },
-      shortBreakDuration: { type: Number, default: 5, min: 1, max: 1000 },
-      longBreakDuration: { type: Number, default: 15, min: 1, max: 1000 },
-      numOfPomo: { type: Number, default: 4, min: 1, max: 100 },
-      numOfCycle: { type: Number, default: 1, min: 1, max: 100 },
-    }),
-  )
-  pomoSetting: PomoSetting;
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CycleSetting' }],
+  })
+  cycleSettings: ObjectId[];
 
   @Prop(
     raw({
@@ -127,7 +112,6 @@ export class User {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }] })
   categories: ObjectId[];
-  // categories: Category[];
 
   @Prop({ default: true })
   isUnCategorizedOnStat: boolean;

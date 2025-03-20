@@ -6,6 +6,7 @@ import { PomodorosModule } from './pomodoros/pomodoros.module';
 import { TodayRecordsModule } from './today-records/today-records.module';
 import { FireBase_Admin_Middleware } from './common/middlewares/firebase.middleware';
 import { CategoriesModule } from './categories/categories.module';
+import { CycleSettingModule } from './cycle-setting/cycle-setting.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CategoriesModule } from './categories/categories.module';
     PomodorosModule,
     TodayRecordsModule,
     CategoriesModule,
+    CycleSettingModule,
   ],
   controllers: [],
   providers: [],
@@ -24,6 +26,12 @@ export class AppModule implements NestModule {
     consumer
       // .apply(FirebaseMiddleware)
       .apply(FireBase_Admin_Middleware)
-      .forRoutes('users', 'pomodoros', 'today-records', 'categories');
+      .forRoutes(
+        'users',
+        'pomodoros',
+        'today-records',
+        'categories',
+        'cycle-settings',
+      );
   }
 }

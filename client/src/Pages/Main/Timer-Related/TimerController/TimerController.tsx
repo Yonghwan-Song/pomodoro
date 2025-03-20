@@ -27,6 +27,7 @@ import {
   Category,
   CategoryChangeInfo,
   CycleInfoType,
+  CycleRecord,
   PomoSettingType,
   RecType,
   TimerStateType,
@@ -62,6 +63,7 @@ import PauseTimer from "../PauseTimer";
 import { Button } from "../../../../ReusableComponents/Buttons/Button";
 import { ACTION, reducer, TimerAction } from "../reducers";
 import Time from "../Time/Time";
+import { getAverage } from "../../../../utils/anything";
 
 type TimerControllerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -104,8 +106,14 @@ export function TimerController({
   const doesItJustChangeCategory = useBoundedPomoInfoStore(
     (state) => state.doesItJustChangeCategory
   );
+  const cycleSettings = useBoundedPomoInfoStore((state) => state.cycleSettings);
+  const updateCycleSettings = useBoundedPomoInfoStore(
+    (state) => state.setCycleSettings
+  );
   const { user } = useAuthContext()!;
   //#endregion
+
+  // console.log("pomoSetting - ", pomoSetting);
 
   const {
     pomoDuration,
@@ -150,7 +158,7 @@ export function TimerController({
     initializeTimerState
   );
   const endTimeRef = useRef(0);
-  const [remainingDuration, setRemainingDuration] = useState(
+  const [remainingDurationInSec, setRemainingDurationInSec] = useState(
     initializeRemainingDuration
   );
 
@@ -323,6 +331,66 @@ export function TimerController({
   }
   //#endregion
 
+  // 이 함수를 호출할 때 불변하는 것들은 그냥 이 함수 바깥 scope (이름 까먹음)에서 가져오는 것으로 해보자.
+  /**
+   * Purpose: to update the global state, cycleSettings and persist the change to the remote server.
+   *
+   */
+  function generateAndPushCycleRecord(
+    end: number,
+    cycleDurationInSec: number,
+    totalFocusDurationInSec: number,
+    caller: string = "omitted"
+  ) {
+    const currentRatio = roundTo_X_DecimalPoints(
+      totalFocusDurationInSec / cycleDurationInSec,
+      2
+    );
+    const cycleRecord = {
+      ratio: currentRatio,
+      cycleAdherenceRate: roundTo_X_DecimalPoints(
+        currentRatio / ratioTargeted,
+        2
+      ),
+      start: end - cycleDurationInSec * 1000,
+      end,
+      date: new Date(),
+    };
+    // console.log("cycleRecord from " + caller, cycleRecord);
+    const cycleSettingsCloned = structuredClone(cycleSettings);
+    let name = "";
+    let cycleStatPayload: CycleRecord[] = [];
+    let averageAdherenceRatePayload = 1;
+    for (let i = 0; i < cycleSettingsCloned.length; i++) {
+      if (cycleSettingsCloned[i].isCurrent) {
+        name = cycleSettingsCloned[i].name;
+        if (cycleSettingsCloned[i].cycleStat.length >= 10) {
+          cycleSettingsCloned[i].cycleStat.shift();
+        }
+        cycleSettingsCloned[i].cycleStat.push(cycleRecord);
+        const adherenceRateArr = cycleSettingsCloned[i].cycleStat.map(
+          (record) => record.cycleAdherenceRate
+        );
+        const averageAdherenceRate = roundTo_X_DecimalPoints(
+          getAverage(adherenceRateArr),
+          2
+        );
+        cycleSettingsCloned[i].averageAdherenceRate = averageAdherenceRate;
+        averageAdherenceRatePayload = averageAdherenceRate;
+        cycleStatPayload = cycleSettingsCloned[i].cycleStat;
+      }
+    }
+
+    // console.log("cycleStatPayload", cycleStatPayload);
+    updateCycleSettings(cycleSettingsCloned);
+    axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
+      name,
+      data: {
+        cycleStat: cycleStatPayload,
+        averageAdherenceRate: averageAdherenceRatePayload,
+      },
+    });
+  }
   /**
    * Decide this time rendering is whether a pomo duration or a break
    * and decide how many pomo durations or breaks are left.
@@ -714,6 +782,12 @@ export function TimerController({
       case SESSION.VERY_LAST_POMO:
         notify("cyclesCompleted");
 
+        generateAndPushCycleRecord(
+          endTimeRef.current,
+          cycleDurationInSec - longBreakDuration * 60,
+          totalFocusDurationInSec,
+          "VERY_LAST_POMO"
+        );
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
         setCycleDurationInSec(cycleDurationTargetedInSec);
         setCycleStartTimestamp(0);
@@ -802,6 +876,12 @@ export function TimerController({
       case SESSION.LONG_BREAK:
         notify("nextCycle");
 
+        generateAndPushCycleRecord(
+          endTimeRef.current,
+          cycleDurationInSec,
+          totalFocusDurationInSec,
+          "LONG_BREAK"
+        );
         setCycleStartTimestamp(0);
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
         setCycleDurationInSec(cycleDurationTargetedInSec);
@@ -1092,22 +1172,22 @@ export function TimerController({
   // }, [repetitionCount, durationInSeconds, records]);
   useEffect(autoStartCurrentSession, [repetitionCount, durationInSeconds]);
   useEffect(setRemainingDurationAfterReset, [
-    remainingDuration,
+    remainingDurationInSec,
     durationInSeconds,
     timerState.running,
   ]);
   useEffect(setRemainingDurationAfterMount, [
-    remainingDuration,
+    remainingDurationInSec,
     durationInSeconds,
     timerState.running,
   ]);
   useEffect(countDown, [
-    remainingDuration,
+    remainingDurationInSec,
     durationInSeconds,
     timerState.running,
   ]);
   useEffect(checkIfSessionShouldBeFinished, [
-    remainingDuration,
+    remainingDurationInSec,
     durationInSeconds,
     timerState.running,
   ]);
@@ -1120,22 +1200,22 @@ export function TimerController({
 
   //#region Side Effect Callbacks from Timer.tsx
   function logPause() {
-    remainingDuration !== 0 &&
+    remainingDurationInSec !== 0 &&
       timerState.startTime !== 0 &&
       timerState.running === false &&
       console.log(timerState.pause);
   }
   function setRemainingDurationAfterReset() {
     // set remaining duration to the one newly passed in from the PatternTimer.
-    remainingDuration === 0 &&
+    remainingDurationInSec === 0 &&
       timerState.startTime === 0 &&
-      setRemainingDuration(durationInSeconds);
+      setRemainingDurationInSec(durationInSeconds);
   }
   function setRemainingDurationAfterMount() {
     // as soon as this component is mounted:
-    remainingDuration !== 0 &&
+    remainingDurationInSec !== 0 &&
       timerState.startTime === 0 &&
-      setRemainingDuration(durationInSeconds);
+      setRemainingDurationInSec(durationInSeconds);
   }
   function countDown() {
     /**
@@ -1145,9 +1225,9 @@ export function TimerController({
      * timerState.startTime에 영향을 주는 ACTION은 START과 RESET.
      * RESET은 starTime을 0으로 만들고 START은 0이 아닌 값을 갖게 한다.
      */
-    if (timerState.running && remainingDuration > 0) {
+    if (timerState.running && remainingDurationInSec > 0) {
       const id = setInterval(() => {
-        setRemainingDuration(
+        setRemainingDurationInSec(
           Math.floor(
             (durationInSeconds * 1000 -
               (Date.now() -
@@ -1192,8 +1272,8 @@ export function TimerController({
       if (startTime !== 0) {
         let flag = await doesFailedReqInfoExistInIDB();
         if (
-          remainingDuration === 0 ||
-          (remainingDuration < 0 && flag === false) //! 앱 다시 열자마자 이 함수가 호출되니까... 만약 failedReq이 있다면.. 그것을 처리하고 판이 다시 짜지기 때문에..
+          remainingDurationInSec === 0 ||
+          (remainingDurationInSec < 0 && flag === false) //! 앱 다시 열자마자 이 함수가 호출되니까... 만약 failedReq이 있다면.. 그것을 처리하고 판이 다시 짜지기 때문에..
         ) {
           next({
             howManyCountdown: repetitionCount + 1,
@@ -1611,14 +1691,28 @@ export function TimerController({
    */
   async function endTimer(now: number) {
     const timeCountedDownInMilliSeconds =
-      (durationInSeconds - remainingDuration) * 1000;
+      (durationInSeconds - remainingDurationInSec) * 1000;
 
-    const newCycleDuration = cycleDurationInSec - remainingDuration;
+    const newCycleDuration = cycleDurationInSec - remainingDurationInSec;
     const newTotalDurationOfSetOfCycles =
-      totalDurationOfSetOfCyclesInSec - remainingDuration;
+      totalDurationOfSetOfCyclesInSec - remainingDurationInSec;
 
     if (isThisFocusSession(repetitionCount)) {
-      const newTotalFocusDuration = totalFocusDurationInSec - remainingDuration;
+      const newTotalFocusDuration =
+        totalFocusDurationInSec - remainingDurationInSec;
+      if (
+        identifyPrevSession({
+          howManyCountdown: repetitionCount + 1,
+          numOfPomo,
+        }) === SESSION.VERY_LAST_POMO
+      ) {
+        generateAndPushCycleRecord(
+          now,
+          newCycleDuration,
+          newTotalFocusDuration,
+          "endTimer - focus session"
+        );
+      }
       setTotalFocusDurationInSec(newTotalFocusDuration);
       setCycleDurationInSec(newCycleDuration);
       setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
@@ -1638,6 +1732,19 @@ export function TimerController({
         totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
       });
     } else {
+      if (
+        identifyPrevSession({
+          howManyCountdown: repetitionCount + 1,
+          numOfPomo,
+        }) === SESSION.LONG_BREAK
+      ) {
+        generateAndPushCycleRecord(
+          now,
+          newCycleDuration,
+          totalFocusDurationInSec,
+          "endTimer - break session"
+        );
+      }
       setCycleDurationInSec(newCycleDuration);
       setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
       persistStatesToIDB({
@@ -1678,7 +1785,7 @@ export function TimerController({
     }
 
     dispatch({ type: ACTION.RESET });
-    setRemainingDuration(0);
+    setRemainingDurationInSec(0);
 
     function isThisSessionPaused() {
       return (
@@ -1878,7 +1985,7 @@ export function TimerController({
 
   //#region from CountDownTimer
   let durationRemaining =
-    remainingDuration < 0 ? (
+    remainingDurationInSec < 0 ? (
       <h2>ending session...</h2>
     ) : (
       <h2
@@ -1886,7 +1993,7 @@ export function TimerController({
         style={{ cursor: "pointer" }}
         onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
       >
-        <Time seconds={remainingDuration} />
+        <Time seconds={remainingDurationInSec} />
       </h2>
     );
   let durationBeforeStart =
@@ -1939,15 +2046,15 @@ export function TimerController({
           progress={
             durationInSeconds === 0
               ? 0
-              : remainingDuration < 0
+              : remainingDurationInSec < 0
               ? 1
-              : 1 - remainingDuration / durationInSeconds
+              : 1 - remainingDurationInSec / durationInSeconds
           }
           startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
           repetitionCount={repetitionCount}
-          remainingDuration={remainingDuration}
-          setRemainingDuration={setRemainingDuration}
+          remainingDuration={remainingDurationInSec}
+          setRemainingDuration={setRemainingDurationInSec}
           setDurationInMinutes={setDurationInMinutes}
           totalFocusDurationInSec={totalFocusDurationInSec}
           setTotalFocusDurationInSec={setTotalFocusDurationInSec}

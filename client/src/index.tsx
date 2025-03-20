@@ -15,6 +15,7 @@ import {
   CategoryChangeInfo,
   CycleInfoType,
   TimersStatesTypeWithCurrentCycleInfo,
+  CycleRecord,
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
@@ -37,7 +38,9 @@ import {
   errController,
 } from "./axios-and-error-handling/errorController";
 import { AxiosRequestConfig } from "axios";
-import { msToSec } from "./Pages/Main/Timer-Related/utility-functions";
+import { boundedPomoInfoStore } from "./zustand-stores/pomoInfoStoreUsingSlice";
+import { roundTo_X_DecimalPoints } from "./utils/number-related-utils";
+import { getAverage } from "./utils/anything";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -163,6 +166,54 @@ BC.addEventListener("message", async (ev) => {
       //   };
       // }[]
       pubsub.publish(evName, payload);
+      break;
+    case "endOfCycle": // payload is a cycleRecord
+      console.log(
+        "cycleRecord at the endOfCycle case of BC message event handler",
+        payload
+      );
+      //  {
+      //     "ratio": 0.39,
+      //     "cycleAdherenceRate": 1.34,
+      //     "start": 1741940763818,
+      //     "end": 1741941072818,
+      //     "date": "2025-03-14T08:32:54.045Z"
+      // }
+      const zustandStates = boundedPomoInfoStore.getState();
+      const cycleSettingsCloned = structuredClone(zustandStates.cycleSettings);
+      let name = "";
+      let cycleStatPayload: CycleRecord[] = [];
+      let averageAdherenceRatePayload = 1;
+      for (let i = 0; i < cycleSettingsCloned.length; i++) {
+        if (cycleSettingsCloned[i].isCurrent) {
+          name = cycleSettingsCloned[i].name;
+          if (cycleSettingsCloned[i].cycleStat.length >= 10) {
+            cycleSettingsCloned[i].cycleStat.shift();
+          }
+          cycleSettingsCloned[i].cycleStat.push(payload);
+          const adherenceRateArr = cycleSettingsCloned[i].cycleStat.map(
+            (record) => record.cycleAdherenceRate
+          );
+          const averageAdherenceRate = roundTo_X_DecimalPoints(
+            getAverage(adherenceRateArr),
+            2
+          );
+          cycleSettingsCloned[i].averageAdherenceRate = averageAdherenceRate;
+          averageAdherenceRatePayload = averageAdherenceRate;
+          cycleStatPayload = cycleSettingsCloned[i].cycleStat;
+        }
+      }
+
+      boundedPomoInfoStore.setState({ cycleSettings: cycleSettingsCloned });
+      console.log("cycleStatPayload at the BC event handler", cycleStatPayload);
+      axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
+        name,
+        data: {
+          cycleStat: cycleStatPayload,
+          averageAdherenceRate: averageAdherenceRatePayload,
+        },
+      });
+
       break;
 
     case "sessionEndBySW":
@@ -393,7 +444,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
         (err) => {
           console.warn("Service worker registration failed:", err);
           prompt(
-            "An unexpected problem happened. Please refresh the current page"
+            "An unexpected problem happened while registering a service worker script. Please refresh the current page"
           );
         }
       );

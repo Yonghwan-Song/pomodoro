@@ -587,8 +587,21 @@ async function wrapUpSession({
         body: "All cycles of focus durations are done",
         silent: true,
       });
-      // TODO a)set 3,4 to zero, b)set 1,2,5 to the targeted one
-      //? triangle: 1)state variables - not applicable 2)idb 3)server
+
+      const cycleRecordVeryLastPomo = getCycleRecord(
+        currentCycleInfo.cycleDuration,
+        currentCycleInfo.totalFocusDuration,
+        roundTo_X_DecimalPoints(
+          totalFocusDurationTargeted / cycleDurationTargeted,
+          2
+        ),
+        sessionData.endTime
+      );
+
+      BC.postMessage({
+        evName: "endOfCycle",
+        payload: cycleRecordVeryLastPomo,
+      });
 
       timersStatesForNextSession.repetitionCount = 0;
       timersStatesForNextSession.duration = pomoDuration;
@@ -647,6 +660,21 @@ async function wrapUpSession({
       self.registration.showNotification("nextCycle", {
         body: "time to do the next cycle of pomos",
         silent: true,
+      });
+
+      const cycleRecordLongBreak = getCycleRecord(
+        currentCycleInfo.cycleDuration,
+        currentCycleInfo.totalFocusDuration,
+        roundTo_X_DecimalPoints(
+          totalFocusDurationTargeted / cycleDurationTargeted,
+          2
+        ),
+        sessionData.endTime
+      );
+
+      BC.postMessage({
+        evName: "endOfCycle",
+        payload: cycleRecordLongBreak,
       });
 
       timersStatesForNextSession.duration = pomoDuration;
@@ -724,6 +752,38 @@ async function wrapUpSession({
     default:
       break;
   }
+}
+
+/**
+ *
+ * @param {*} cycleDurationInSec to calculate currentRatio
+ * @param {*} totalFocusDurationInSec to calculate currentRatio
+ * @param {*} ratioTargeted
+ * @param {*} end
+ *
+ * @returns a cycleRecord object
+ */
+function getCycleRecord(
+  cycleDurationInSec,
+  totalFocusDurationInSec,
+  ratioTargeted,
+  end
+) {
+  const currentRatio = roundTo_X_DecimalPoints(
+    totalFocusDurationInSec / cycleDurationInSec,
+    2
+  );
+
+  return {
+    ratio: currentRatio,
+    cycleAdherenceRate: roundTo_X_DecimalPoints(
+      currentRatio / ratioTargeted,
+      2
+    ),
+    start: end - cycleDurationInSec * 1000,
+    end,
+    date: new Date(),
+  };
 }
 
 // same as the one in the src/index.tsx
@@ -1149,7 +1209,7 @@ function calculateDurationForEveryCategory(acc, val, idx, _array) {
           owner: acc.currentOwner,
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: val.timestamp,
         });
         acc.currentType = "focus";
         acc.currentStartTime = val.timestamp;
@@ -1224,6 +1284,9 @@ function convertMilliSecToMin(durationByCategoryArr) {
     // console.log(val);
     return { ...val, duration: Math.floor(val.duration / (60 * 1000)) };
   });
+}
+function roundTo_X_DecimalPoints(num, X) {
+  return Math.round(num * 10 ** X) / 10 ** X;
 }
 //#endregion
 //#endregion

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
-import { PomoSettingType } from "../../types/clientStatesType";
+import { CycleSetting, PomoSettingType } from "../../types/clientStatesType";
 import { Button } from "../../ReusableComponents/Buttons/Button";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
@@ -21,7 +21,6 @@ import {
   reauthenticateWithPopup,
   User,
 } from "firebase/auth";
-import styles from "./Settings.module.css";
 import {
   DynamicCache,
   clear__StateStore_RecOfToday_CategoryStore,
@@ -29,17 +28,21 @@ import {
   deleteCache,
   emptyStateStore,
   openCache,
-  persistCategoryChangeInfoArrayToIDB,
   postMsgToSW,
   stopCountDownInBackground,
   persistAutoStartSettingToServer,
   persistTimersStatesToServer,
+  persistCategoryChangeInfoArrayToIDB,
 } from "../..";
-import ToggleSwitch from "../../ReusableComponents/ToggleSwitch/ToggleSwitch";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import Categories from "./Categories/Categories";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 import GoalForm from "./GoalForm/GoalForm";
+import { CycleSettingList } from "./CycleSettingList";
+import { roundTo_X_DecimalPoints } from "../../utils/number-related-utils";
+import { CycleSettingFrame } from "./CycleSettingFrame";
+import { AutoStartSettingsUI } from "./AutoStartSettingsUI";
+import { calculateTargetFocusRatio } from "../../utils/anything";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -48,10 +51,10 @@ function Settings() {
   const autoStartSetting = useBoundedPomoInfoStore(
     (state) => state.autoStartSetting
   );
-  const setPomoSetting = useBoundedPomoInfoStore(
+  const updatePomoSetting = useBoundedPomoInfoStore(
     (state) => state.setPomoSetting
   );
-  const setAutoStartSetting = useBoundedPomoInfoStore(
+  const updateAutoStartSetting = useBoundedPomoInfoStore(
     (state) => state.setAutoStartSetting
   );
   //
@@ -63,6 +66,39 @@ function Settings() {
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.setCategoryChangeInfoArray
   );
+
+  const cycleSettings = useBoundedPomoInfoStore((state) => state.cycleSettings);
+  const updateCycleSettings = useBoundedPomoInfoStore(
+    (state) => state.setCycleSettings
+  );
+
+  const [isUserCreatingNewCycleSetting, setIsUserCreatingNewCycleSetting] =
+    useState(false);
+  const [isInputLocked, setIsInputLocked] = useState(true);
+
+  const currentCycleSetting = useMemo(() => {
+    // I will not modify this object referenced.
+    return cycleSettings.find((setting) => setting.isCurrent);
+  }, [cycleSettings]);
+  console.log("currentCycleSetting at Settings", currentCycleSetting);
+  const [cycleSettingSelected, setCycleSettingSelected] =
+    useState<CycleSetting | null>(null);
+  const [flag, setFlag] = useState(true);
+  // useState<CycleSetting | null>(null);
+
+  //! Purpose: to set cycleSettingSelected's default value to currentCycleSetting
+  //! Failed: it is becuase as soon as this component is mounted, unfortunately the currentCycleSetting is still undefined.
+  ///? 어쩌지?
+  useEffect(() => {
+    if (currentCycleSetting && flag) {
+      setCycleSettingSelected(currentCycleSetting);
+      setCycleSettingNameInput(currentCycleSetting.name);
+      setTargetFocusRatio(
+        calculateTargetFocusRatio(currentCycleSetting.pomoSetting)
+      );
+      setFlag(false); // 딱 한번만 실행되도록 하기 위함. 그런데 그러면 이거 currentCycleSetting바뀔 때마다 불필요하게 실행되기는 함. 더 좋은 방법을 모르겠음.
+    }
+  }, [currentCycleSetting]);
 
   const pomoSettingMemoized = useMemo(() => {
     return pomoSetting;
@@ -78,17 +114,18 @@ function Settings() {
     // both non-sign-in users and a sign-in user who hasn't created categories.
     return categories.find((c) => c.isCurrent) ?? null;
   }, [categories]);
-  const [pomoSettingInputs, setPomoSettingInputs] = useState(() => {
-    if (pomoSetting === null)
-      return {
-        pomoDuration: 25,
-        shortBreakDuration: 5,
-        longBreakDuration: 15,
-        numOfPomo: 4,
-        numOfCycle: 1,
-      };
-    else return pomoSetting;
+  const [cycleSettingNameInput, setCycleSettingNameInput] = useState(
+    // "Default cycle setting"
+    ""
+  );
+  const [pomoSettingInputs, setPomoSettingInputs] = useState({
+    pomoDuration: 25,
+    shortBreakDuration: 5,
+    longBreakDuration: 15,
+    numOfPomo: 4,
+    numOfCycle: 1,
   });
+  const [targetFocusRatio, setTargetFocusRatio] = useState(0.77);
   const [doesPomoStartAutomatically, setDoesPomoStartAutomatically] = useState(
     () => {
       if (autoStartSetting === null) return false;
@@ -112,103 +149,77 @@ function Settings() {
   //#endregion
 
   //#region Event Handlers
-  //TODO: 결국 여기에서 case "userOptionForAutoStart" 해서 한번에 보내는 형식으로 하면 걍 되기는 될 듯.
-  function handlePomoSettingChange(event: React.ChangeEvent<HTMLInputElement>) {
-    let targetValue = +event.target.value;
-    // duration >= 1 && duration <= 1000, num >= 1 && num <= 100
-    if (targetValue >= 1) {
-      // for min values
-      switch (event.target.name) {
-        case "pomoDuration":
-          targetValue <= 1000 &&
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              pomoDuration: targetValue,
-            });
-          break;
-        case "shortBreakDuration":
-          targetValue <= 1000 &&
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              shortBreakDuration: targetValue,
-            });
-          break;
-        case "longBreakDuration":
-          targetValue <= 1000 &&
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              longBreakDuration: targetValue,
-            });
-          break;
-        case "numOfPomo":
-          targetValue <= 100 &&
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              numOfPomo: targetValue,
-            });
-          break;
-        case "numOfCycle":
-          targetValue <= 100 &&
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              numOfCycle: targetValue,
-            });
-          break;
-        default:
-          break;
-      }
+  /**
+   *  1. current setting을 지우면 -> cycleSettings array를 수정 -> useMemo()에 의해 currentCycleSetting 자동 수정됨.
+   *  2. 공통작업 - 지우는 것.
+   */
+  function deleteSelectedSetting(ev: React.MouseEvent<HTMLButtonElement>) {
+    if (!currentCycleSetting || !cycleSettingSelected) return;
+    if (cycleSettings.length === 1) {
+      alert("You can't delete the last cycle setting.");
+      return;
     }
-  }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    // 2. 공통 작업 - 선택된 세팅을 지우기.
+    const clonedCycleSettings = structuredClone(cycleSettings);
+    const index = clonedCycleSettings.findIndex(
+      (setting) => setting.name === cycleSettingSelected.name
+    );
+    if (index === -1) return;
+    clonedCycleSettings.splice(index, 1);
 
-    const {
-      numOfPomo,
-      numOfCycle,
-      pomoDuration,
-      shortBreakDuration,
-      longBreakDuration,
-    } = pomoSettingInputs;
+    if (cycleSettingSelected.isCurrent) {
+      clonedCycleSettings[clonedCycleSettings.length - 1].isCurrent = true;
+      setCycleSettingSelected(
+        clonedCycleSettings[clonedCycleSettings.length - 1]
+      );
+      const newPomoSetting =
+        clonedCycleSettings[clonedCycleSettings.length - 1].pomoSetting;
+      updatePomoSetting(newPomoSetting);
 
-    let totalFocusDuration = numOfPomo * pomoDuration * 60;
-    let cycleDuration =
-      totalFocusDuration +
-      (numOfPomo - 1) * shortBreakDuration * 60 +
-      longBreakDuration * 60;
+      // Frame에 나오는 데이터 바꾸기
+      setPomoSettingInputs(newPomoSetting);
+      setCycleSettingNameInput(
+        clonedCycleSettings[clonedCycleSettings.length - 1].name
+      );
+      setTargetFocusRatio(calculateTargetFocusRatio(newPomoSetting));
 
-    postMsgToSW("saveStates", {
-      stateArr: [
-        { name: "pomoSetting", value: pomoSettingInputs },
-        {
-          name: "autoStartSetting",
-          value: {
-            doesPomoStartAutomatically,
-            doesBreakStartAutomatically,
-            doesCycleStartAutomatically,
+      const {
+        pomoDuration,
+        shortBreakDuration,
+        longBreakDuration,
+        numOfPomo,
+        numOfCycle,
+      } = newPomoSetting;
+      let totalFocusDuration = numOfPomo * pomoDuration * 60;
+      let cycleDuration =
+        totalFocusDuration +
+        (numOfPomo - 1) * shortBreakDuration * 60 +
+        longBreakDuration * 60;
+
+      postMsgToSW("saveStates", {
+        stateArr: [
+          { name: "pomoSetting", value: newPomoSetting },
+          {
+            name: "duration",
+            value: pomoDuration,
           },
-        },
-        { name: "duration", value: pomoDuration },
-        { name: "repetitionCount", value: 0 },
-        { name: "running", value: false },
-        { name: "startTime", value: 0 },
-        { name: "pause", value: { totalLength: 0, record: [] } },
-        {
-          name: "currentCycleInfo",
-          value: {
-            totalFocusDuration,
-            cycleDuration,
-            cycleStartTimestamp: 0,
-            veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+          { name: "repetitionCount", value: 0 },
+          { name: "running", value: false },
+          { name: "startTime", value: 0 },
+          { name: "pause", value: { totalLength: 0, record: [] } },
+          {
+            name: "currentCycleInfo",
+            value: {
+              totalFocusDuration,
+              cycleDuration,
+              cycleStartTimestamp: 0,
+              veryFirstCycleStartTimestamp: 0,
+              totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+            },
           },
-        },
-      ],
-    });
-
-    stopCountDownInBackground();
-
-    if (user !== null) {
+        ],
+      });
       const infoArr = [
         {
           categoryName:
@@ -222,9 +233,17 @@ function Settings() {
           progress: 0,
         },
       ];
-
       persistCategoryChangeInfoArrayToIDB(infoArr);
+      stopCountDownInBackground();
 
+      updateCategoryChangeInfoArray(infoArr);
+      persistTimersStatesToServer({
+        duration: pomoDuration,
+        repetitionCount: 0,
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+      });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
         categoryChangeInfoArray: infoArr,
       });
@@ -235,36 +254,370 @@ function Settings() {
         veryFirstCycleStartTimestamp: 0,
         totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
       });
+    } else {
+      setCycleSettingSelected(currentCycleSetting);
+      setPomoSettingInputs(currentCycleSetting.pomoSetting);
+      setCycleSettingNameInput(currentCycleSetting.name);
+      setTargetFocusRatio(
+        calculateTargetFocusRatio(currentCycleSetting.pomoSetting)
+      );
+    }
 
-      persistPomoSettingToServer(user, pomoSettingInputs)
-        .then(() =>
-          // timersStates are reset so that a user can start a new cycle of sessions with the new pomoSetting.
-          persistTimersStatesToServer({
-            duration: pomoSettingInputs.pomoDuration,
-            repetitionCount: 0,
-            running: false,
-            startTime: 0,
-            pause: { totalLength: 0, record: [] },
-          })
-        )
-        .then(() =>
-          persistAutoStartSettingToServer(user, {
+    updateCycleSettings(clonedCycleSettings);
+
+    const encodedName = encodeURIComponent(cycleSettingSelected.name);
+    axiosInstance.delete(`${RESOURCE.CYCLE_SETTINGS}/${encodedName}`);
+  }
+
+  function handleCycleSettingNameChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    // console.log("CycleSettingNameInput", event.target.value);
+    setCycleSettingNameInput(event.target.value);
+  }
+
+  function handlePomoSettingChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
+      pomoSettingInputs;
+
+    let totalFocusDurationTargetedInSec = 60 * pomoDuration * numOfPomo;
+    let cycleDurationTargetedInSec =
+      60 *
+      (pomoDuration * numOfPomo +
+        shortBreakDuration * (numOfPomo - 1) +
+        longBreakDuration);
+    let ratioTargeted = roundTo_X_DecimalPoints(
+      totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+      2
+    );
+
+    let targetValue = +event.target.value;
+    // duration >= 1 && duration <= 1000, num >= 1 && num <= 100
+    if (targetValue >= 1) {
+      // for min values
+      switch (event.target.name) {
+        case "pomoDuration":
+          if (targetValue <= 1000) {
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              pomoDuration: targetValue,
+            });
+            totalFocusDurationTargetedInSec = 60 * targetValue * numOfPomo;
+            cycleDurationTargetedInSec =
+              60 *
+              (targetValue * numOfPomo +
+                shortBreakDuration * (numOfPomo - 1) +
+                longBreakDuration);
+            ratioTargeted = roundTo_X_DecimalPoints(
+              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+              2
+            );
+            setTargetFocusRatio(ratioTargeted);
+          }
+          break;
+        case "shortBreakDuration":
+          if (targetValue <= 1000) {
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              shortBreakDuration: targetValue,
+            });
+            cycleDurationTargetedInSec =
+              60 *
+              (pomoDuration * numOfPomo +
+                targetValue * (numOfPomo - 1) +
+                longBreakDuration);
+            ratioTargeted = roundTo_X_DecimalPoints(
+              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+              2
+            );
+            setTargetFocusRatio(ratioTargeted);
+          }
+          break;
+        case "longBreakDuration":
+          if (targetValue <= 1000) {
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              longBreakDuration: targetValue,
+            });
+            cycleDurationTargetedInSec =
+              60 *
+              (pomoDuration * numOfPomo +
+                shortBreakDuration * (numOfPomo - 1) +
+                targetValue);
+            ratioTargeted = roundTo_X_DecimalPoints(
+              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+              2
+            );
+            setTargetFocusRatio(ratioTargeted);
+          }
+          break;
+        case "numOfPomo":
+          if (targetValue <= 100) {
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              numOfPomo: targetValue,
+            });
+            totalFocusDurationTargetedInSec = 60 * pomoDuration * targetValue;
+            cycleDurationTargetedInSec =
+              60 *
+              (pomoDuration * targetValue +
+                shortBreakDuration * (targetValue - 1) +
+                longBreakDuration);
+            ratioTargeted = roundTo_X_DecimalPoints(
+              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+              2
+            );
+            setTargetFocusRatio(ratioTargeted);
+          }
+          break;
+        case "numOfCycle":
+          if (targetValue <= 100) {
+            setPomoSettingInputs({
+              ...pomoSettingInputs,
+              numOfCycle: targetValue,
+            });
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
+  function handleSubmitToSaveNewCycleSetting(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    if (
+      cycleSettings.find((setting) => setting.name === cycleSettingNameInput)
+    ) {
+      // console.log("isInputLocked", isInputLocked);
+      alert("The name already exists. Please choose another name.");
+    } else {
+      // set a new cycle settings array
+      const clonedCycleSettings = structuredClone(cycleSettings);
+
+      const newCycleSetting = {
+        name: cycleSettingNameInput,
+        isCurrent: false,
+        pomoSetting: structuredClone(pomoSettingInputs),
+        cycleStat: [],
+        averageAdherenceRate: 1,
+      };
+      clonedCycleSettings.push(newCycleSetting);
+      updateCycleSettings(clonedCycleSettings);
+      setCycleSettingSelected(newCycleSetting);
+      setIsUserCreatingNewCycleSetting(false);
+      setIsInputLocked(true);
+      axiosInstance.post(RESOURCE.CYCLE_SETTINGS, newCycleSetting);
+    }
+  }
+
+  // 1. state 2. IDB 3. Database
+  // 바꾸는 대상: 1)pomoSetting, 2)timersStates, 3)currentCycleInfo, 4)cycleSettings, 5)categoryChangeInfoArray
+  // non-signed-in user의 경우에는 1,2,3)만 바꾸면 됨.
+  //#region Combined
+  //TODO - 변한 값이 없으면 안보내도록 하기.
+  function handleSubmitToEditCycleSetting(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    if (
+      cycleSettingSelected?.name !== cycleSettingNameInput &&
+      cycleSettings.find((setting) => setting.name === cycleSettingNameInput)
+    ) {
+      alert("The name already exists. Please choose another name.");
+
+      cycleSettingSelected !== null &&
+        setCycleSettingNameInput(cycleSettingSelected.name);
+      return;
+    }
+
+    const {
+      pomoDuration,
+      shortBreakDuration,
+      longBreakDuration,
+      numOfPomo,
+      numOfCycle,
+    } = pomoSettingInputs;
+    const totalFocusDuration = numOfPomo * pomoDuration * 60;
+    const cycleDuration =
+      totalFocusDuration +
+      (numOfPomo - 1) * shortBreakDuration * 60 +
+      longBreakDuration * 60;
+
+    if (user !== null) {
+      if (!cycleSettingSelected) return;
+      //#region selected가 current이든 아니든 관계없이 항상 해줘야 하는 작업. 이라고 너는 생각하고 이렇게 만들고 있는것임.
+      // new cycleSettings 만들기
+      let nameBeforeChange = cycleSettingSelected.name; // 이름이 안바뀔 수도 있지만 그냥 이렇게 한다.
+      const clonedCycleSetting = structuredClone(cycleSettingSelected);
+      clonedCycleSetting.pomoSetting = structuredClone(pomoSettingInputs);
+      clonedCycleSetting.name = cycleSettingNameInput;
+      const clonedCycleSettingArr = structuredClone(cycleSettings);
+      for (let i = 0; i < clonedCycleSettingArr.length; i++) {
+        if (clonedCycleSettingArr[i].name === nameBeforeChange) {
+          clonedCycleSettingArr[i] = {
+            ...clonedCycleSettingArr[i],
+            ...clonedCycleSetting,
+          };
+        }
+      }
+
+      // update
+      updateCycleSettings(clonedCycleSettingArr);
+      setCycleSettingSelected(clonedCycleSetting);
+      axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
+        name: nameBeforeChange,
+        data: {
+          pomoSetting: pomoSettingInputs,
+          name: cycleSettingNameInput,
+        },
+      });
+      //#endregion edit
+      //#region selected가 current라면 해줘야할 //!추가 작업. <==> reset cycle.
+      if (cycleSettingSelected.isCurrent) {
+        // 우선 이름만 바뀌는 경우는 없다고 가정하고, 다 reset이 필요하다고 생각한다.
+        //? Warning 사인을 줘야하나?....
+        const infoArr = [
+          {
+            categoryName:
+              currentCategory === null ? "uncategorized" : currentCategory.name,
+            categoryChangeTimestamp: 0,
+            _uuid: currentCategory?._uuid,
+            color:
+              currentCategory !== null
+                ? currentCategory.color
+                : colorForUnCategorized,
+            progress: 0,
+          },
+        ];
+
+        // 새로운 설정으로 사이클을 시작해야 하므로.
+        updatePomoSetting(pomoSettingInputs);
+        updateCategoryChangeInfoArray(infoArr);
+        postMsgToSW("saveStates", {
+          stateArr: [
+            // 1)
+            { name: "pomoSetting", value: pomoSettingInputs },
+            // 2)
+            { name: "duration", value: pomoDuration },
+            { name: "repetitionCount", value: 0 },
+            { name: "running", value: false },
+            { name: "startTime", value: 0 },
+            { name: "pause", value: { totalLength: 0, record: [] } },
+            // 3)
+            {
+              name: "currentCycleInfo",
+              value: {
+                totalFocusDuration,
+                cycleDuration,
+                cycleStartTimestamp: 0,
+                veryFirstCycleStartTimestamp: 0,
+                totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+              },
+            },
+            // 5) stateStore가 아닌데?
+            // { name: "categoryChangeInfoArray", value: infoArr },
+          ],
+        });
+        persistCategoryChangeInfoArrayToIDB(infoArr);
+        stopCountDownInBackground();
+        //* timersStates와 currentCycleInfo는 global state 씽크 안맞춤. (그냥 idb에만 의존)
+        persistTimersStatesToServer({
+          duration: pomoSettingInputs.pomoDuration,
+          repetitionCount: 0,
+          running: false,
+          startTime: 0,
+          pause: { totalLength: 0, record: [] },
+        });
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration,
+          cycleDuration,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        });
+        axiosInstance.patch(
+          RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+          {
+            categoryChangeInfoArray: infoArr,
+          }
+        );
+      }
+      //#endregion reset
+    } else {
+      // reset작업
+      // 1 - 2)timersStates, 3)currentCycleInfo 은 global state이 존재하지만 실제로 import해서 사용하지는 않음. IDB에 똑같은 값을 sync하고 있고, 그것을 사용하고 있음 (zustand 도입 전에 하던 방식 아직 유지중)
+      updatePomoSetting(pomoSettingInputs); // 1)
+      // 2
+      postMsgToSW("saveStates", {
+        stateArr: [
+          // 1)
+          { name: "pomoSetting", value: pomoSettingInputs },
+          // 2)
+          { name: "duration", value: pomoDuration },
+          { name: "repetitionCount", value: 0 },
+          { name: "running", value: false },
+          { name: "startTime", value: 0 },
+          { name: "pause", value: { totalLength: 0, record: [] } },
+          // 3)
+          {
+            name: "currentCycleInfo",
+            value: {
+              totalFocusDuration,
+              cycleDuration,
+              cycleStartTimestamp: 0,
+              veryFirstCycleStartTimestamp: 0,
+              totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+            },
+          },
+        ],
+      });
+      stopCountDownInBackground();
+    }
+  }
+  //#endregion
+
+  function handleSubmitToChangeAutoStartSettings(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    postMsgToSW("saveStates", {
+      stateArr: [
+        {
+          name: "autoStartSetting",
+          value: {
             doesPomoStartAutomatically,
             doesBreakStartAutomatically,
             doesCycleStartAutomatically,
-          })
-        );
+          },
+        },
+      ],
+    });
 
-      setPomoSetting(pomoSettingInputs);
-      setAutoStartSetting({
+    // 세션 reset을 안해도 되는건가? - 결국 세션이 종료될 때, 1)sw.js에 있는 wrapUpSession()에서 최신 정보를 가져올 수 있고,
+    // 2)TimerController에서도 최신 정보를 받아올 수 있으면 되는 것인데, 1)의 경우 IDB에서 받아오고
+    // 2)의 경우 global state값을 받아오니까.. 그리고 어차피 `/timer`로 돌아가면 다시 다 render되니까 re-rendering에대해서 고민할 필요 없음.
+    //* 결론적으로 그냥 stopCountDown안해도 된다.
+    //? stopCountDownInBackground();
+
+    if (user !== null) {
+      persistAutoStartSettingToServer(user, {
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
         doesCycleStartAutomatically,
       });
-      updateCategoryChangeInfoArray(infoArr);
+      updateAutoStartSetting({
+        doesPomoStartAutomatically,
+        doesBreakStartAutomatically,
+        doesCycleStartAutomatically,
+      });
     } else {
-      setPomoSetting(pomoSettingInputs);
-      setAutoStartSetting({
+      updateAutoStartSetting({
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
         doesCycleStartAutomatically,
@@ -277,7 +630,24 @@ function Settings() {
 
   // To set pomoSettingInputs to default when a user logs out.
   useEffect(() => {
-    if (pomoSettingMemoized !== null) setPomoSettingInputs(pomoSettingMemoized);
+    if (isUserCreatingNewCycleSetting) {
+      setPomoSettingInputs({
+        pomoDuration: 25,
+        shortBreakDuration: 5,
+        longBreakDuration: 15,
+        numOfPomo: 4,
+        numOfCycle: 1,
+      });
+      setCycleSettingNameInput("create new cycle setting");
+      setTargetFocusRatio(0.77);
+    }
+  }, [isUserCreatingNewCycleSetting]);
+
+  useEffect(() => {
+    if (pomoSettingMemoized !== null) {
+      setPomoSettingInputs(pomoSettingMemoized); //이거 deleteSelectedSetting()에서 조지면 중복인데.. 중복 하고싶은데..
+      setTargetFocusRatio(calculateTargetFocusRatio(pomoSettingMemoized));
+    }
   }, [pomoSettingMemoized]);
 
   //TODO:
@@ -313,140 +683,64 @@ function Settings() {
     >
       <Grid maxWidth="634px" columnGap="25px" rowGap="25px">
         <GridItem>
-          <BoxShadowWrapper>
-            <form onSubmit={handleSubmit}>
-              <Grid
-                column={2}
-                row={2}
-                // autoRow={45}
-                columnGap={"38px"}
-                rowGap={"38px"}
-                justifyItems="center"
-                alignItems="center"
-              >
-                <label className={styles.arrangeLabel}>
-                  Pomo Duration
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="pomoDuration"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={pomoSettingInputs.pomoDuration || 0}
-                      onChange={handlePomoSettingChange}
-                    />
-                  </div>
-                </label>
-                <label className={styles.arrangeLabel}>
-                  Short Break Duration
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="shortBreakDuration"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={pomoSettingInputs.shortBreakDuration || 0}
-                      onChange={handlePomoSettingChange}
-                    />
-                  </div>
-                </label>
-                <label className={styles.arrangeLabel}>
-                  Long Break Duration
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="longBreakDuration"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={pomoSettingInputs.longBreakDuration || 0}
-                      onChange={handlePomoSettingChange}
-                    />
-                  </div>
-                </label>
-                <label className={styles.arrangeLabel}>
-                  Number of Pomos
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="numOfPomo"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={pomoSettingInputs.numOfPomo || 0}
-                      onChange={handlePomoSettingChange}
-                    />
-                  </div>
-                </label>
-                <label className={styles.arrangeLabel}>
-                  Number of Cycles
-                  <div className={styles.alignBoxes}>
-                    <input
-                      name="numOfCycle"
-                      type="number"
-                      className={styles.arrangeInput}
-                      value={pomoSettingInputs.numOfCycle || 0}
-                      onChange={handlePomoSettingChange}
-                    />
-                  </div>
-                </label>
-                <GridItem>
-                  <ToggleSwitch
-                    labelName="Auto Start Pomo"
-                    name="pomo"
-                    isSwitchOn={doesPomoStartAutomatically}
-                    isHorizontal={true}
-                    onChange={(e) => {
-                      setDoesPomoStartAutomatically(e.target.checked);
-                    }}
-                    unitSize={25}
-                    xAxisEdgeWidth={2}
-                    borderWidth={2}
-                    backgroundColorForOn="#75BBAF"
-                    backgroundColorForOff="#bbc5c7"
-                    backgroundColorForSwitch="#f0f0f0"
-                  />
-                </GridItem>
-                <GridItem>
-                  <ToggleSwitch
-                    labelName="Auto Start Break"
-                    name="break"
-                    isSwitchOn={doesBreakStartAutomatically}
-                    isHorizontal={true}
-                    onChange={(e) => {
-                      setDoesBreakStartAutomatically(e.target.checked);
-                    }}
-                    unitSize={25}
-                    xAxisEdgeWidth={2}
-                    borderWidth={2}
-                    backgroundColorForOn="#75BBAF"
-                    backgroundColorForOff="#bbc5c7"
-                    backgroundColorForSwitch="#f0f0f0"
-                  />
-                </GridItem>
-                <GridItem>
-                  <ToggleSwitch
-                    labelName="Auto Start Cycle"
-                    name="cycle"
-                    isSwitchOn={doesCycleStartAutomatically}
-                    isHorizontal={true}
-                    onChange={(e) => {
-                      setDoesCycleStartAutomatically(e.target.checked);
-                    }}
-                    unitSize={25}
-                    xAxisEdgeWidth={2}
-                    borderWidth={2}
-                    backgroundColorForOn="#75BBAF"
-                    backgroundColorForOff="#bbc5c7"
-                    backgroundColorForSwitch="#f0f0f0"
-                  />
-                </GridItem>
-                <GridItem columnStart={1} columnEnd={3}>
-                  {/* <GridItem columnStart={1} columnEnd={1}> */}
-                  <Button type={"submit"} color={"primary"}>
-                    SAVE and RESET
-                  </Button>
-                </GridItem>
-              </Grid>
-            </form>
-          </BoxShadowWrapper>
+          <CycleSettingFrame
+            isUserCreatingNewCycleSetting={isUserCreatingNewCycleSetting}
+            handleSubmitToEditCycleSetting={handleSubmitToEditCycleSetting}
+            handleCycleSettingNameChange={handleCycleSettingNameChange}
+            handlePomoSettingChange={handlePomoSettingChange}
+            pomoSettingInputs={pomoSettingInputs}
+            cycleSettingNameInput={cycleSettingNameInput}
+            ratioTargetedCalculated={targetFocusRatio}
+            handleSubmitToSaveNewCycleSetting={
+              handleSubmitToSaveNewCycleSetting
+            }
+            deleteSelectedSetting={deleteSelectedSetting}
+            cycleSettingSelected={cycleSettingSelected}
+            setCycleSettingSelected={setCycleSettingSelected}
+            currentCategory={currentCategory}
+            colorForUnCategorized={colorForUnCategorized}
+            setPomoSettingInputs={setPomoSettingInputs}
+            setCycleSettingNameInput={setCycleSettingNameInput}
+            currentCycleSetting={currentCycleSetting}
+            isInputLocked={isInputLocked}
+            setIsInputLocked={setIsInputLocked}
+            setTargetFocusRatio={setTargetFocusRatio}
+          />
+        </GridItem>
+        <GridItem>
+          <AutoStartSettingsUI
+            handleSubmitToChangeAutoStartSettings={
+              handleSubmitToChangeAutoStartSettings
+            }
+            doesPomoStartAutomatically={doesPomoStartAutomatically}
+            doesBreakStartAutomatically={doesBreakStartAutomatically}
+            doesCycleStartAutomatically={doesCycleStartAutomatically}
+            setDoesPomoStartAutomatically={setDoesPomoStartAutomatically}
+            setDoesBreakStartAutomatically={setDoesBreakStartAutomatically}
+            setDoesCycleStartAutomatically={setDoesCycleStartAutomatically}
+          />
         </GridItem>
         {user !== null && (
           <>
+            <GridItem>
+              <BoxShadowWrapper>
+                <CycleSettingList
+                  setPomoSettingInputs={setPomoSettingInputs}
+                  setCycleSettingNameInput={setCycleSettingNameInput}
+                  currentCategory={currentCategory}
+                  colorForUnCategorized={colorForUnCategorized}
+                  isUserCreatingNewCycleSetting={isUserCreatingNewCycleSetting}
+                  setIsUserCreatingNewCycleSetting={
+                    setIsUserCreatingNewCycleSetting
+                  }
+                  cycleSettingSelected={cycleSettingSelected}
+                  setCycleSettingSelected={setCycleSettingSelected}
+                  setTargetFocusRatio={setTargetFocusRatio}
+                  setIsInputLocked={setIsInputLocked}
+                  currentCycleSetting={currentCycleSetting}
+                />
+              </BoxShadowWrapper>
+            </GridItem>
             <GridItem>
               <BoxShadowWrapper>
                 <FlexBox justifyContent="space-between">
