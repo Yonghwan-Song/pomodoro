@@ -57,7 +57,11 @@ export class PomodorosService {
     }, []);
     const pomodoroDocs = await this.pomodoroModel
       .find({ userEmail })
-      .populate('category')
+      .populate({
+        path: 'category',
+        select: '-_id -userEmail -__v',
+      })
+      .select('-_id -userEmail -isDummy -__v')
       .exec();
 
     return pomodoroDocs;

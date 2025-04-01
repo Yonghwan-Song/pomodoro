@@ -54,6 +54,7 @@ type TimeRelated = {
  *
  * 예를 들면, 오늘이 화요일이면, 이번주의 나머지 5일에 대한 통계값은 그냥 0이라고 하기에 조금.. 애매하므로,
  * 그냥 아예 없애버리기로 했음. 그러면 그래프도 딱 화요일까지만 그려지고 average값을 계산하기에도 편함.
+ * type DayStatForGraph에서는 &Partial<DurationReltaed>임.
  */
 type DurationRelated = {
   total: number;
@@ -67,14 +68,11 @@ type DurationRelated = {
  * 타입을 똑같이 정의해서 받아오기만 하는거임. (타입스크립트 쓰고 있으니... 어쩔 수 없음:::...)
  */
 export type PomodoroSessionDocument = {
-  _id?: string;
   userEmail: string;
   duration: number;
   startTime: number;
   date: string;
-  isDummy: boolean;
   category?: CategoryForStat;
-  __v?: number;
 };
 
 /**
@@ -83,15 +81,11 @@ export type PomodoroSessionDocument = {
  */
 export type StatDataFromServer_PomoDocs = PomodoroSessionDocument[];
 
-//TODO Why some of the properties here are optional unlike the Category schema definition; for example, userEmail is required in the schema but it is optional here.
 export type CategoryForStat = {
-  userEmail?: string;
-  name: string; //<------------------
-  _id?: string;
+  name: string;
   color?: string;
   isCurrent?: boolean;
   isOnStat?: boolean;
-  __v?: number;
 };
 
 /**
