@@ -366,7 +366,9 @@ export function StackedGraph({
                   r: 3,
                   fill: "#ffffff",
                 }}
-                dataKey={`subtotalByCategory.${detail.name}.duration`}
+                dataKey={(entry) =>
+                  entry.subtotalByCategory[detail.name].duration
+                }
                 stroke={detail.color}
                 strokeWidth={1.5}
                 fillOpacity={0.3}
