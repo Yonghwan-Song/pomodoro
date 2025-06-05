@@ -55,13 +55,25 @@ function Navbar() {
       await clearRecOfToday();
       await clearCategoryStore();
       await deleteCache(CONSTANTS.CacheName);
+      //#region Original
+      // localStorage.setItem("user", "unAuthenticated");
+      // sessionStorage.removeItem(CONSTANTS.CURRENT_CATEGORY_NAME);
+      // sessionStorage.removeItem(CONSTANTS.CURRENT_TASK_ID);
+      // sessionStorage.removeItem(CONSTANTS.CURRENT_SESSION_TYPE); //? 이거 지워도 되나?... 다시 reset안되면 우짜지?
+      // deciderOfWhetherDataForRunningTimerFetched[0] = false;
+      // deciderOfWhetherDataForRunningTimerFetched[1] = false;
+      //#endregion
+      await logOut();
+      //#region New - 위치가 logOut()다음에 와야하는거 아닌가 싶어서. Error로 로그아웃 안되었을 때 저거 다 지워지면 제대로 뭐 못하잖아.
       localStorage.setItem("user", "unAuthenticated");
       sessionStorage.removeItem(CONSTANTS.CURRENT_CATEGORY_NAME);
+      sessionStorage.removeItem(CONSTANTS.CURRENT_TASK_ID);
+      sessionStorage.removeItem(CONSTANTS.CURRENT_SESSION_TYPE); // firefox, chromium 둘다 remove하고 TC가 다시 set하는 과정에 문제 없음.
       deciderOfWhetherDataForRunningTimerFetched[0] = false;
       deciderOfWhetherDataForRunningTimerFetched[1] = false;
-      await logOut();
+      //#endregion
       errController.emptyFailedReqInfo();
-      window.location.reload();
+      window.location.reload(); // beforeunload event handler doesn't work here.
     } catch (error) {
       console.warn(error);
     }
@@ -114,7 +126,7 @@ function Navbar() {
 
     const unsub = pubsub.subscribe("sessionEndBySW", (payload) => {
       // console.log("inside sessionEndBySW subscriber: user is", user);
-      updateCategoryChangeInfoArray(payload);
+      updateCategoryChangeInfoArray(payload); //? 이게 먼저 실행되고, autoStartCurrentSession의 changeTimestamp할당이 일어나겠지?
     });
 
     return () => {

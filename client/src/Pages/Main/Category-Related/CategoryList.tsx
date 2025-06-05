@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
 import {
+  COLOR_FOR_CURRENT_STH,
   CURRENT_CATEGORY_NAME,
   CURRENT_SESSION_TYPE,
   RESOURCE,
@@ -236,7 +237,7 @@ export default function CategoryList() {
             ></div>
             <div
               style={{
-                color: category.isCurrent ? "#ff8522" : "black",
+                color: category.isCurrent ? COLOR_FOR_CURRENT_STH : "black",
                 fontWeight: category.isCurrent ? "bold" : "normal",
               }}
             >

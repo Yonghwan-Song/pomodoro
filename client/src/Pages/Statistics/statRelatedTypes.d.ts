@@ -68,18 +68,16 @@ type DurationRelated = {
  * 타입을 똑같이 정의해서 받아오기만 하는거임. (타입스크립트 쓰고 있으니... 어쩔 수 없음:::...)
  */
 export type PomodoroSessionDocument = {
-  userEmail: string;
   duration: number;
   startTime: number;
   date: string;
+  isDummy: boolean;
   category?: CategoryForStat;
+  task?: {
+    id: string;
+    name?: string;
+  };
 };
-
-/**
- * 진짜 mongoDB에 있는 데에터를 가공 없이 직접 받아오기 위해
- * 타입을 똑같이 정의해서 받아오기만 하는거임. (타입스크립트 쓰고 있으니... 어쩔 수 없음:::...)
- */
-export type StatDataFromServer_PomoDocs = PomodoroSessionDocument[];
 
 export type CategoryForStat = {
   name: string;
@@ -109,6 +107,16 @@ export interface CategorySubtotal {
     isOnStat: boolean;
   };
 }
+// 이렇게도 할 수 있는데, pomodoro document를 만날 때 마다 매번 array를 search해야 하므로 비효율적이라고 생각.
+// 위에처럼 index signature를 이용해서 object형식으로 정의하면, 1)이름을 알 수 없기 때문에 일반적으로 정의해야 하는 것을 해결함과 동시에,
+// 2) 이름을 알면 search없이 곧바로 접근할 수 있다는 장점이 있다.
+//? 그런데 얼마나 차이가 나는거야?...
+type ArrOfCategorySubtotal = {
+  name: string;
+  _uuid: string;
+  duration: number;
+  isOnStat: boolean;
+}[];
 
 /**
  * 1. _uuid is not optional in F.E because it is used to distinguish different categories instead of _id in the mongodb.

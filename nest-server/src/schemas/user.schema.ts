@@ -43,6 +43,26 @@ export class User {
   @Prop({ unique: true })
   firebaseUid: string; // TODO: 이거 password처럼 생각해야하는거 아닌가 싶은데 흠..
 
+  @Prop({ type: String, default: null, required: false })
+  todoistAccessToken: string | null;
+
+  @Prop({ type: Boolean, default: false })
+  isTodoistIntegrationEnabled: boolean;
+
+  @Prop(
+    raw({
+      type: [{ id: String, taskChangeTimestamp: Number }],
+      default: [],
+    }),
+  )
+  taskChangeInfoArray: {
+    id: string;
+    taskChangeTimestamp: number;
+  }[];
+
+  @Prop({ type: String, default: '', required: false })
+  currentTaskId: string;
+
   @Prop({ unique: true })
   userEmail: string;
 

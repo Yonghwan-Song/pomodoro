@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from 'src/schemas/user.schema';
@@ -15,6 +19,10 @@ import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-i
 import { UpdateGoalsDto } from './dto/update-goals.dto';
 import { UpdateCurrentCycleInfoDto } from './dto/update-current-cycle-info.dto';
 import { CycleSetting } from 'src/schemas/cycleSetting.schema';
+import { Task, TodoistApi } from '@doist/todoist-api-typescript';
+import { UpdateCurrentTaskIdAndTaskChangeInfoArrayDto } from './dto/update-current-task-id';
+import { UpdateTaskChangeInfoArrayDto } from './dto/update-task-change-info-array.dto';
+import { TodoistTaskTracking } from 'src/schemas/todoistTaskTracking.schema';
 
 @Injectable()
 export class UsersService {
@@ -23,6 +31,8 @@ export class UsersService {
     @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
     @InjectModel(TodayRecord.name) private todayRecordModel: Model<TodayRecord>,
     @InjectModel(Category.name) private categoryModel: Model<Category>,
+    @InjectModel(TodoistTaskTracking.name)
+    private todoistTaskTrackingModel: Model<TodoistTaskTracking>,
     @InjectModel(CycleSetting.name)
     private cycleSettingModel: Model<CycleSetting>,
   ) {}
@@ -49,14 +59,58 @@ export class UsersService {
     return newUser;
   }
 
-  async getUserInfo(userEmail: string) {
-    const doc = await this.userModel
+  async getUserInfo(
+    userEmail: string,
+  ): Promise<Omit<User, 'todoistAccessToken'> & { todoistTasks: any[] }> {
+    const userInfo = await this.userModel
       .findOne({ userEmail })
+      .select('-__v -firebaseUid')
       .populate(['categories', 'cycleSettings'])
       .exec();
 
-    console.log('A user doc by getUserInfo() in the UsersService class', doc);
-    return doc;
+    if (!userInfo) {
+      throw new NotFoundException(`User with email ${userEmail} not found`);
+    }
+
+    const { todoistAccessToken, ...userInfoWithoutAccessToken } =
+      userInfo.toObject();
+    let todoistTasks: Array<Task & { taskFocusDuration: number }> = []; // 이게 당장 스키마에는 없지만, 나중에 Todoist와 통합할 때 사용될 예정입니다. 그런데 그래도 상관 없나?
+
+    if (
+      userInfoWithoutAccessToken.isTodoistIntegrationEnabled &&
+      todoistAccessToken
+    ) {
+      try {
+        const api = new TodoistApi(todoistAccessToken);
+        const incompleteTasks = (await api.getTasks()).results.filter(
+          (task) => task.isCompleted === false,
+        );
+
+        // trackingDocs 가져오기
+        const trackingDocs = await this.todoistTaskTrackingModel
+          .find({ userEmail })
+          .lean();
+        const trackingMap = new Map(
+          trackingDocs.map((doc) => [doc.taskId, doc.duration]),
+        );
+        todoistTasks = incompleteTasks.map((task) => ({
+          ...task,
+          taskFocusDuration: trackingMap.get(task.id) ?? 0,
+        }));
+      } catch (error) {
+        console.error('Error fetching Todoist tasks:', error);
+      }
+    }
+
+    console.log('A user doc by getUserInfo() in the UsersService class', {
+      ...userInfoWithoutAccessToken,
+      todoistTasks,
+    });
+
+    return {
+      ...userInfoWithoutAccessToken,
+      todoistTasks,
+    };
   }
 
   updatePomoSetting(
@@ -212,6 +266,86 @@ export class UsersService {
         .exec(); // I read that .exec() is not neccessary when using findByIdAnd_____ ... but cannot remember where I read it..
     } catch (error) {
       console.log('error at updateCategoryChangeInfoArray', error);
+    }
+  }
+
+  // Add this method in the UsersService class
+
+  async updateTaskChangeInfoArray(
+    updateTaskChangeInfoArrayDto: UpdateTaskChangeInfoArrayDto,
+    userEmail: string,
+  ) {
+    try {
+      const taskChangeInfoArray =
+        updateTaskChangeInfoArrayDto.taskChangeInfoArray;
+
+      if (!taskChangeInfoArray || taskChangeInfoArray.length === 0) {
+        throw new BadRequestException('taskChangeInfoArray cannot be empty');
+      }
+
+      const currentTaskId =
+        taskChangeInfoArray[taskChangeInfoArray.length - 1].id;
+
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        { userEmail },
+        {
+          $set: {
+            taskChangeInfoArray,
+            currentTaskId,
+          },
+        },
+        {
+          new: true, // return the updated document
+        },
+      );
+
+      if (!updatedUser) {
+        throw new NotFoundException(`User with email ${userEmail} not found`);
+      }
+
+      return {
+        currentTaskId: updatedUser.currentTaskId,
+        taskChangeInfoArray: updatedUser.taskChangeInfoArray,
+      };
+    } catch (error) {
+      console.log('error at updateTaskChangeInfoArray', error);
+      throw error;
+    }
+  }
+
+  async updateCurrentTaskIdAndTaskChangeInfoArray(
+    updateCurrentTaskIdDto: UpdateCurrentTaskIdAndTaskChangeInfoArrayDto,
+    userEmail: string,
+  ) {
+    try {
+      const user = await this.userModel.findOne({ userEmail });
+      if (!user) {
+        throw new NotFoundException(`User with email ${userEmail} not found`);
+      }
+      user.currentTaskId = updateCurrentTaskIdDto.currentTaskId;
+
+      if (updateCurrentTaskIdDto.doesItJustChangeTask) {
+        // []일 수도 있잖아.. - 아예 이 기능을 처음 사용하는 사용자가, Pomo에서 Task를 하나 선택하는데,
+        // 하필이면 just change option? 을 선택하면. []의 -1번째 element에 access할테니 error.
+        // 그러니까.. []이면 just change를 못하게 만들어야함. 그런데 그게 사용자에게 딱 한번 발생하는 현상인데,
+        // 그것 때문에 조건문을 매번 확인하는거는 매우 비효율적.//TODO 씨발 어쩌라고...그래서
+        user.taskChangeInfoArray[user.taskChangeInfoArray.length - 1].id =
+          updateCurrentTaskIdDto.currentTaskId;
+      } else {
+        user.taskChangeInfoArray.push({
+          id: updateCurrentTaskIdDto.currentTaskId,
+          taskChangeTimestamp: updateCurrentTaskIdDto.changeTimestamp,
+        });
+      }
+
+      user.save();
+
+      return {
+        currentTaskId: user.currentTaskId,
+        taskChangeInfoArray: user.taskChangeInfoArray,
+      };
+    } catch (error) {
+      console.log('error at updateCurrentTaskIdAndTaskChangeInfoArray', error);
     }
   }
 

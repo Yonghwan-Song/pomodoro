@@ -126,7 +126,7 @@ export default function Statistics() {
         (a: PomodoroSessionDocument, b: PomodoroSessionDocument) =>
           a.startTime - b.startTime // in ascending order
       )
-      .reduce<DayStat[]>((acc, curRec) => {
+      .reduce<DayStat[]>((acc: DayStat[], curRec: PomodoroSessionDocument) => {
         // 1. 첫번째 계산
         if (acc.length === 0) {
           const dayOfWeekIndex = new Date(curRec.date).getDay();
@@ -136,10 +136,10 @@ export default function Statistics() {
             date: curRec.date,
             timestamp,
             dayOfWeek: days[dayOfWeekIndex],
+            weekNumber: getISOWeek(timestamp),
             total: curRec.duration,
             subtotalByCategory: categorySubtotal,
             withoutCategory: 0,
-            weekNumber: getISOWeek(timestamp),
           };
           //* error occurred after making the `weekNumber` in the TimeRelated type required.
           //* Thus, I commented out the code below and instead initialize it in the object above.

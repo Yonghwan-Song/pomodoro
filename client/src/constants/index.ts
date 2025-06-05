@@ -31,6 +31,7 @@ export const RESOURCE = {
   TODAY_RECORDS: "/today-records",
   CATEGORIES: "/categories",
   CYCLE_SETTINGS: "/cycle-settings",
+  TODOIST: "/todoist",
 };
 export const SUB_SET = {
   POMODORO_SETTING: "/pomodoro-setting",
@@ -42,13 +43,28 @@ export const SUB_SET = {
   CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
   GOALS: "/goals",
   CURRENT_CYCLE_INFO: "/current-cycle-info",
+  OAUTH_START: "/oauth/start",
+  OAUTH_REVOKE: "/oauth/revoke",
+  OAUTH_REVOKE_SDK: "/oauth/revoke-sdk",
+  TASKS: "/tasks",
+  CURRENT_TASK_ID: "/current-task-id",
+  TASK_CHANGE_INFO_ARRAY: "/task-change-info-array",
 };
 
 //#endregion
 
-export const IDB_VERSION = 10;
 const cacheVersion = 1;
 export const CacheName = `statRelatedCache-${cacheVersion}`;
+//#endregion
+
+//#region IndexedDB related
+export const IDB_VERSION = 11;
+export const TIMER_RELATED_DB = "timerRelatedDB";
+export const STATE_STORE_NAME = "stateStore";
+export const RECORDS_OF_TODAY_STORE_NAME = "recOfToday";
+export const FAILED_REQUESTS_STORE_NAME = "failedReqInfo";
+export const CATEGORY_CHANGE_INFO_STORE_NAME = "categoryStore";
+export const TASK_DURATION_TRACKING_STORE_NAME = "taskDurationTracking";
 //#endregion
 
 export const BREAK_POINTS = {
@@ -102,6 +118,7 @@ export const MINIMUMS = {
 //#region Session storage item names
 export const CURRENT_CATEGORY_NAME = "currentCategoryName";
 export const CURRENT_SESSION_TYPE = "currentSessionType"; // This is not updated at sw.js. But as soon as the TimerController is mounted, it is updated. Why? - I just didn't update it at sw.js since a service worker doesn't have direct access to a session storage.
+export const CURRENT_TASK_ID = "currentTaskId";
 //#endregion
 
 //

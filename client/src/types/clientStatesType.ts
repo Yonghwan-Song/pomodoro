@@ -160,4 +160,87 @@ export type DurationType = {
 export type SessionType = DurationType[];
 //#endregion
 
+//#region Pomodoro Session을 persist하기 전에 형태를 변환하는 것에 관한 타입들
+// SessionState Change - pause, category change, and the end of session.
+
+//* kind와 name의 조합이 어떤 의미인지
+// 1. kind가 category일 때는 name이 categoryName.
+// 2. kind가 pause일 때는 name은 start과 end값 둘중 하나인데, pause의 시작과 끝을 의미한다.
+
+// Original
+// export type InfoOfSessionStateChange = {
+//   kind: "category" | "pause" | "endOfSession";
+//   name?: string | "start" | "end";
+//   timestamp: number;
+// };
+
+// New one that also combines the taskChangeInfoArray's elements
+export type InfoOfSessionStateChange = {
+  kind: "category" | "task" | "pause" | "endOfSession";
+  subKind?: string | "start" | "end";
+  timestamp: number;
+};
+export type CategoryDurationsAndHelperFields = {
+  categoryDurationArr: CategoryDuration[];
+  currentCategoryName: string;
+};
+export type CategoryDuration = {
+  categoryName: string;
+  duration: number;
+  startTime: number; // pause일때 시작되었을 수도 있다는 것을 잊으면 안됨.
+};
+
+export type DurationsOfCategoryTaskCombinationAndHelperFields = {
+  durationArrOfCategoryTaskCombination: DurationOfCategoryTaskCombination[];
+  currentCategoryTaskCombination: [string, string]; // [categoryName, taskId]
+};
+export type DurationOfCategoryTaskCombination = {
+  categoryName: string;
+  taskId: string;
+  duration: number;
+  startTime: number; // pause일때 시작되었을 수도 있다는 것을 잊으면 안됨.
+};
+
+export type SegmentDuration = {
+  owner: string; //! This is not optional since pause can also have its category. I mean we just can pause a session and the session has its category (including "uncategorized")
+  duration: number;
+  type: "pause" | "focus";
+  startTime: number;
+};
+
+export type SessionSegment = {
+  owner: [string, string]; // [taskId, categoryName]
+  duration: number;
+  type: "pause" | "focus";
+  startTime: number;
+};
+
+//! 이게 Session의 핵심 정보이고 활용가치가 가장 좋은 데이터 형태임.
+export type SegmentDurationsAndHelperFields = {
+  segmentDurationArr: SegmentDuration[];
+  // following three are used to help calculate duration for each segment.
+  currentOwner: string;
+  currentStartTime: number;
+  currentType: "pause" | "focus";
+};
+
+export type SegmentDurationsAndHelperFields2 = {
+  segmentDurationArr: SessionSegment[];
+  // following three are used to help calculate duration for each segment.
+  currentOwner: [string, string]; // [taskId, categoryName];
+  currentStartTime: number;
+  currentType: "pause" | "focus";
+};
+
+export type TaskDuration = {
+  // taskId: string; // Map의 key로 하기로 했음.
+  duration: number;
+};
+
+export type TaskTrackingDocument = {
+  taskId: string;
+  duration: number;
+};
+
+//#endregion
 export type BroadCastMessage = { evName: string; payload: any };

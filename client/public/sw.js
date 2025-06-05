@@ -1,4 +1,4 @@
-(function () {
+(function (exports) {
   'use strict';
 
   function ownKeys(object, enumerableOnly) {
@@ -258,7 +258,7 @@
     }, defineIteratorMethods(AsyncIterator.prototype), define(AsyncIterator.prototype, asyncIteratorSymbol, function () {
       return this;
     }), exports.AsyncIterator = AsyncIterator, exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-      undefined === PromiseImpl && (PromiseImpl = Promise);
+      void 0 === PromiseImpl && (PromiseImpl = Promise);
       var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
       return exports.isGeneratorFunction(outerFn) ? iter : iter.next().then(function (result) {
         return result.done ? result.value : iter.next();
@@ -596,7 +596,7 @@
   }
 
   function _assertThisInitialized(self) {
-    if (self === undefined) {
+    if (self === void 0) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
     }
 
@@ -606,7 +606,7 @@
   function _possibleConstructorReturn(self, call) {
     if (call && (typeof call === "object" || typeof call === "function")) {
       return call;
-    } else if (call !== undefined) {
+    } else if (call !== void 0) {
       throw new TypeError("Derived constructors may only return object or undefined");
     }
 
@@ -2302,8 +2302,8 @@
         var _a; // if multipleInstances is not supported, use the default name
 
 
-        var normalizedIdentifier = this.normalizeInstanceIdentifier(options === null || options === undefined ? undefined : options.identifier);
-        var optional = (_a = options === null || options === undefined ? undefined : options.optional) !== null && _a !== undefined ? _a : false;
+        var normalizedIdentifier = this.normalizeInstanceIdentifier(options === null || options === void 0 ? void 0 : options.identifier);
+        var optional = (_a = options === null || options === void 0 ? void 0 : options.optional) !== null && _a !== void 0 ? _a : false;
 
         if (this.isInitialized(normalizedIdentifier) || this.shouldAutoInitialize()) {
           try {
@@ -2462,7 +2462,7 @@
       value: function initialize() {
         var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         var _opts$options = opts.options,
-            options = _opts$options === undefined ? {} : _opts$options;
+            options = _opts$options === void 0 ? {} : _opts$options;
         var normalizedIdentifier = this.normalizeInstanceIdentifier(opts.instanceIdentifier);
 
         if (this.isInitialized(normalizedIdentifier)) {
@@ -2516,7 +2516,7 @@
         var _a;
 
         var normalizedIdentifier = this.normalizeInstanceIdentifier(identifier);
-        var existingCallbacks = (_a = this.onInitCallbacks.get(normalizedIdentifier)) !== null && _a !== undefined ? _a : new Set();
+        var existingCallbacks = (_a = this.onInitCallbacks.get(normalizedIdentifier)) !== null && _a !== void 0 ? _a : new Set();
         existingCallbacks.add(callback);
         this.onInitCallbacks.set(normalizedIdentifier, existingCallbacks);
         var existingInstance = this.instances.get(normalizedIdentifier);
@@ -2566,7 +2566,7 @@
       value: function getOrInitializeService(_ref) {
         var instanceIdentifier = _ref.instanceIdentifier,
             _ref$options = _ref.options,
-            options = _ref$options === undefined ? {} : _ref$options;
+            options = _ref$options === void 0 ? {} : _ref$options;
         var instance = this.instances.get(instanceIdentifier);
 
         if (!instance && this.component) {
@@ -3307,7 +3307,7 @@
 
   function isVersionServiceProvider(provider) {
     var component = provider.getComponent();
-    return (component === null || component === undefined ? undefined : component.type) === "VERSION"
+    return (component === null || component === void 0 ? void 0 : component.type) === "VERSION"
     /* VERSION */
     ;
   }
@@ -3762,7 +3762,7 @@
     // a good whitelist system.
 
 
-    var library = (_a = PLATFORM_LOG_STRING[libraryKeyOrName]) !== null && _a !== undefined ? _a : libraryKeyOrName;
+    var library = (_a = PLATFORM_LOG_STRING[libraryKeyOrName]) !== null && _a !== void 0 ? _a : libraryKeyOrName;
 
     if (variant) {
       library += "-".concat(variant);
@@ -3874,7 +3874,7 @@
               throw ERROR_FACTORY.create("storage-get"
               /* STORAGE_GET */
               , {
-                originalErrorMessage: (_a = _context8.t0) === null || _a === undefined ? undefined : _a.message
+                originalErrorMessage: (_a = _context8.t0) === null || _a === void 0 ? void 0 : _a.message
               });
 
             case 10:
@@ -3919,7 +3919,7 @@
               throw ERROR_FACTORY.create("storage-set"
               /* STORAGE_WRITE */
               , {
-                originalErrorMessage: (_a = _context9.t0) === null || _a === undefined ? undefined : _a.message
+                originalErrorMessage: (_a = _context9.t0) === null || _a === void 0 ? void 0 : _a.message
               });
 
             case 14:
@@ -4343,7 +4343,7 @@
                 case 9:
                   existingHeartbeatsObject = _context5.sent;
                   return _context5.abrupt("return", writeHeartbeatsToIndexedDB(this.app, {
-                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== undefined ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
+                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== void 0 ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
                     heartbeats: heartbeatsObject.heartbeats
                   }));
 
@@ -4392,7 +4392,7 @@
                 case 9:
                   existingHeartbeatsObject = _context6.sent;
                   return _context6.abrupt("return", writeHeartbeatsToIndexedDB(this.app, {
-                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== undefined ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
+                    lastSentHeartbeatDate: (_a = heartbeatsObject.lastSentHeartbeatDate) !== null && _a !== void 0 ? _a : existingHeartbeatsObject.lastSentHeartbeatDate,
                     heartbeats: [].concat(_toConsumableArray(existingHeartbeatsObject.heartbeats), _toConsumableArray(heartbeatsObject.heartbeats))
                   }));
 
@@ -4562,7 +4562,7 @@
       rest[_key3 - 1] = arguments[_key3];
     }
 
-    throw createErrorInternal.apply(undefined, [authOrCode].concat(rest));
+    throw createErrorInternal.apply(void 0, [authOrCode].concat(rest));
   }
 
   function _createError(authOrCode) {
@@ -4570,7 +4570,7 @@
       rest[_key4 - 1] = arguments[_key4];
     }
 
-    return createErrorInternal.apply(undefined, [authOrCode].concat(rest));
+    return createErrorInternal.apply(void 0, [authOrCode].concat(rest));
   }
 
   function _errorWithCustomMessage(auth, code, message) {
@@ -4609,7 +4609,7 @@
         rest[_key6 - 2] = arguments[_key6];
       }
 
-      throw createErrorInternal.apply(undefined, [authOrCode].concat(rest));
+      throw createErrorInternal.apply(void 0, [authOrCode].concat(rest));
     }
   }
   /**
@@ -4731,7 +4731,7 @@
 
       var initialOptions = provider.getOptions();
 
-      if (deepEqual(initialOptions, deps !== null && deps !== undefined ? deps : {})) {
+      if (deepEqual(initialOptions, deps !== null && deps !== void 0 ? deps : {})) {
         return _auth2;
       } else {
         _fail(_auth2, "already-initialized"
@@ -4747,17 +4747,17 @@
   }
 
   function _initializeAuthInstance(auth, deps) {
-    var persistence = (deps === null || deps === undefined ? undefined : deps.persistence) || [];
+    var persistence = (deps === null || deps === void 0 ? void 0 : deps.persistence) || [];
     var hierarchy = (Array.isArray(persistence) ? persistence : [persistence]).map(_getInstance);
 
-    if (deps === null || deps === undefined ? undefined : deps.errorMap) {
+    if (deps === null || deps === void 0 ? void 0 : deps.errorMap) {
       auth._updateErrorMap(deps.errorMap);
     } // This promise is intended to float; auth initialization happens in the
     // background, meanwhile the auth object may be used by the app.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
 
 
-    auth._initializeWithPersistence(hierarchy, deps === null || deps === undefined ? undefined : deps.popupRedirectResolver);
+    auth._initializeWithPersistence(hierarchy, deps === null || deps === void 0 ? void 0 : deps.popupRedirectResolver);
   }
   /**
    * @license
@@ -4780,7 +4780,7 @@
   function _getCurrentUrl() {
     var _a;
 
-    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === undefined ? undefined : _a.href) || '';
+    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === void 0 ? void 0 : _a.href) || '';
   }
 
   function _isHttpOrHttps() {
@@ -4790,7 +4790,7 @@
   function _getCurrentScheme() {
     var _a;
 
-    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === undefined ? undefined : _a.protocol) || null;
+    return typeof self !== 'undefined' && ((_a = self.location) === null || _a === void 0 ? void 0 : _a.protocol) || null;
   }
   /**
    * @license
@@ -5620,7 +5620,7 @@
               );
 
               firebase = _typeof(claims.firebase) === 'object' ? claims.firebase : undefined;
-              signInProvider = firebase === null || firebase === undefined ? undefined : firebase['sign_in_provider'];
+              signInProvider = firebase === null || firebase === void 0 ? void 0 : firebase['sign_in_provider'];
               return _context95.abrupt("return", {
                 claims: claims,
                 token: token,
@@ -5628,7 +5628,7 @@
                 issuedAtTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.iat)),
                 expirationTime: utcTimestampToDateString(secondsStringToMilliseconds(claims.exp)),
                 signInProvider: signInProvider || null,
-                signInSecondFactor: (firebase === null || firebase === undefined ? undefined : firebase['sign_in_second_factor']) || null
+                signInSecondFactor: (firebase === null || firebase === void 0 ? void 0 : firebase['sign_in_second_factor']) || null
               });
 
             case 10:
@@ -5671,7 +5671,7 @@
 
       return JSON.parse(decoded);
     } catch (e) {
-      _logError('Caught error parsing JWT payload as JSON', (_a = e) === null || _a === undefined ? undefined : _a.toString());
+      _logError('Caught error parsing JWT payload as JSON', (_a = e) === null || _a === void 0 ? void 0 : _a.toString());
 
       return null;
     }
@@ -5856,7 +5856,7 @@
           this.errorBackoff = 30000
           /* RETRY_BACKOFF_MIN */
           ;
-          var expTime = (_a = this.user.stsTokenManager.expirationTime) !== null && _a !== undefined ? _a : 0;
+          var expTime = (_a = this.user.stsTokenManager.expirationTime) !== null && _a !== void 0 ? _a : 0;
 
           var _interval = expTime - Date.now() - 300000
           /* OFFSET */
@@ -5917,7 +5917,7 @@
                   _context2.t0 = _context2["catch"](0);
 
                   // Only retry on network errors
-                  if (((_a = _context2.t0) === null || _a === undefined ? undefined : _a.code) === "auth/".concat("network-request-failed"
+                  if (((_a = _context2.t0) === null || _a === void 0 ? void 0 : _a.code) === "auth/".concat("network-request-failed"
                   /* NETWORK_REQUEST_FAILED */
                   )) {
                     this.schedule(
@@ -6054,7 +6054,7 @@
             case 6:
               response = _context97.sent;
 
-              _assert(response === null || response === undefined ? undefined : response.users.length, auth, "internal-error"
+              _assert(response === null || response === void 0 ? void 0 : response.users.length, auth, "internal-error"
               /* INTERNAL_ERROR */
               );
 
@@ -6062,7 +6062,7 @@
 
               user._notifyReloadListener(coreAccount);
 
-              newProviderData = ((_a = coreAccount.providerUserInfo) === null || _a === undefined ? undefined : _a.length) ? extractProviderData(coreAccount.providerUserInfo) : [];
+              newProviderData = ((_a = coreAccount.providerUserInfo) === null || _a === void 0 ? void 0 : _a.length) ? extractProviderData(coreAccount.providerUserInfo) : [];
               providerData = mergeProviderData(user.providerData, newProviderData); // Preserves the non-nonymous status of the stored user, even if no more
               // credentials (federated or email/password) are linked to the user. If
               // the user was previously anonymous, then use provider data to update.
@@ -6070,7 +6070,7 @@
               // considered anonymous now.
 
               oldIsAnonymous = user.isAnonymous;
-              newIsAnonymous = !(user.email && coreAccount.passwordHash) && !(providerData === null || providerData === undefined ? undefined : providerData.length);
+              newIsAnonymous = !(user.email && coreAccount.passwordHash) && !(providerData === null || providerData === void 0 ? void 0 : providerData.length);
               isAnonymous = !oldIsAnonymous ? false : newIsAnonymous;
               updates = {
                 uid: coreAccount.localId,
@@ -6774,16 +6774,16 @@
       value: function _fromJSON(auth, object) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
 
-        var displayName = (_a = object.displayName) !== null && _a !== undefined ? _a : undefined;
-        var email = (_b = object.email) !== null && _b !== undefined ? _b : undefined;
-        var phoneNumber = (_c = object.phoneNumber) !== null && _c !== undefined ? _c : undefined;
-        var photoURL = (_d = object.photoURL) !== null && _d !== undefined ? _d : undefined;
-        var tenantId = (_e = object.tenantId) !== null && _e !== undefined ? _e : undefined;
+        var displayName = (_a = object.displayName) !== null && _a !== void 0 ? _a : undefined;
+        var email = (_b = object.email) !== null && _b !== void 0 ? _b : undefined;
+        var phoneNumber = (_c = object.phoneNumber) !== null && _c !== void 0 ? _c : undefined;
+        var photoURL = (_d = object.photoURL) !== null && _d !== void 0 ? _d : undefined;
+        var tenantId = (_e = object.tenantId) !== null && _e !== void 0 ? _e : undefined;
 
-        var _redirectEventId = (_f = object._redirectEventId) !== null && _f !== undefined ? _f : undefined;
+        var _redirectEventId = (_f = object._redirectEventId) !== null && _f !== void 0 ? _f : undefined;
 
-        var createdAt = (_g = object.createdAt) !== null && _g !== undefined ? _g : undefined;
-        var lastLoginAt = (_h = object.lastLoginAt) !== null && _h !== undefined ? _h : undefined;
+        var createdAt = (_g = object.createdAt) !== null && _g !== void 0 ? _g : undefined;
+        var lastLoginAt = (_h = object.lastLoginAt) !== null && _h !== void 0 ? _h : undefined;
         var uid = object.uid,
             emailVerified = object.emailVerified,
             isAnonymous = object.isAnonymous,
@@ -7491,7 +7491,7 @@
       var re = /([a-zA-Z\d\.]+)\/[a-zA-Z\d\.]*$/;
       var matches = userAgent.match(re);
 
-      if ((matches === null || matches === undefined ? undefined : matches.length) === 2) {
+      if ((matches === null || matches === void 0 ? void 0 : matches.length) === 2) {
         return matches[1];
       }
     }
@@ -7547,7 +7547,7 @@
 
     var _a;
 
-    return _isIOS(ua) && !!((_a = window.navigator) === null || _a === undefined ? undefined : _a.standalone);
+    return _isIOS(ua) && !!((_a = window.navigator) === null || _a === void 0 ? void 0 : _a.standalone);
   }
 
   function _isIE10() {
@@ -7777,7 +7777,7 @@
                   throw this.auth._errorFactory.create("login-blocked"
                   /* LOGIN_BLOCKED */
                   , {
-                    originalMessage: (_a = _context18.t1) === null || _a === undefined ? undefined : _a.message
+                    originalMessage: (_a = _context18.t1) === null || _a === void 0 ? void 0 : _a.message
                   });
 
                 case 30:
@@ -7893,7 +7893,7 @@
                   return _context19.abrupt("return");
 
                 case 7:
-                  if (!((_a = _this4._popupRedirectResolver) === null || _a === undefined ? undefined : _a._shouldInitProactively)) {
+                  if (!((_a = _this4._popupRedirectResolver) === null || _a === void 0 ? void 0 : _a._shouldInitProactively)) {
                     _context19.next = 15;
                     break;
                   }
@@ -7915,7 +7915,7 @@
                   return _this4.initializeCurrentUser(popupRedirectResolver);
 
                 case 17:
-                  _this4.lastNotifiedUid = ((_b = _this4.currentUser) === null || _b === undefined ? undefined : _b.uid) || null;
+                  _this4.lastNotifiedUid = ((_b = _this4.currentUser) === null || _b === void 0 ? void 0 : _b.uid) || null;
 
                   if (!_this4._deleted) {
                     _context19.next = 20;
@@ -8034,8 +8034,8 @@
                   return this.getOrInitRedirectPersistenceManager();
 
                 case 8:
-                  redirectUserEventId = (_a = this.redirectUser) === null || _a === undefined ? undefined : _a._redirectEventId;
-                  storedUserEventId = futureCurrentUser === null || futureCurrentUser === undefined ? undefined : futureCurrentUser._redirectEventId;
+                  redirectUserEventId = (_a = this.redirectUser) === null || _a === void 0 ? void 0 : _a._redirectEventId;
+                  storedUserEventId = futureCurrentUser === null || futureCurrentUser === void 0 ? void 0 : futureCurrentUser._redirectEventId;
                   _context21.next = 12;
                   return this.tryRedirectSignIn(popupRedirectResolver);
 
@@ -8046,7 +8046,7 @@
                   // matches the redirect user, then we want to initially sign in with the
                   // new user object from result.
                   // TODO(samgho): More thoroughly test all of this
-                  if ((!redirectUserEventId || redirectUserEventId === storedUserEventId) && (result === null || result === undefined ? undefined : result.user)) {
+                  if ((!redirectUserEventId || redirectUserEventId === storedUserEventId) && (result === null || result === void 0 ? void 0 : result.user)) {
                     futureCurrentUser = result.user;
                     needsTocheckMiddleware = true;
                   }
@@ -8211,7 +8211,7 @@
                   _context23.prev = 5;
                   _context23.t0 = _context23["catch"](0);
 
-                  if (!(((_a = _context23.t0) === null || _a === undefined ? undefined : _a.code) !== "auth/".concat("network-request-failed"
+                  if (!(((_a = _context23.t0) === null || _a === void 0 ? void 0 : _a.code) !== "auth/".concat("network-request-failed"
                   /* NETWORK_REQUEST_FAILED */
                   ))) {
                     _context23.next = 9;
@@ -8465,7 +8465,7 @@
           apiKey: this.config.apiKey,
           authDomain: this.config.authDomain,
           appName: this.name,
-          currentUser: (_a = this._currentUser) === null || _a === undefined ? undefined : _a.toJSON()
+          currentUser: (_a = this._currentUser) === null || _a === void 0 ? void 0 : _a.toJSON()
         };
       }
     }, {
@@ -8577,7 +8577,7 @@
                   })));
 
                 case 3:
-                  if (!(((_a = this._currentUser) === null || _a === undefined ? undefined : _a._redirectEventId) === id)) {
+                  if (!(((_a = this._currentUser) === null || _a === void 0 ? void 0 : _a._redirectEventId) === id)) {
                     _context33.next = 5;
                     break;
                   }
@@ -8585,7 +8585,7 @@
                   return _context33.abrupt("return", this._currentUser);
 
                 case 5:
-                  if (!(((_b = this.redirectUser) === null || _b === undefined ? undefined : _b._redirectEventId) === id)) {
+                  if (!(((_b = this.redirectUser) === null || _b === void 0 ? void 0 : _b._redirectEventId) === id)) {
                     _context33.next = 7;
                     break;
                   }
@@ -8702,7 +8702,7 @@
         }
 
         this.idTokenSubscription.next(this.currentUser);
-        var currentUid = (_b = (_a = this.currentUser) === null || _a === undefined ? undefined : _a.uid) !== null && _b !== undefined ? _b : null;
+        var currentUid = (_b = (_a = this.currentUser) === null || _a === void 0 ? void 0 : _a.uid) !== null && _b !== void 0 ? _b : null;
 
         if (this.lastNotifiedUid !== currentUid) {
           this.lastNotifiedUid = currentUid;
@@ -8851,7 +8851,7 @@
                   _context37.next = 4;
                   return (_a = this.heartbeatServiceProvider.getImmediate({
                     optional: true
-                  })) === null || _a === undefined ? undefined : _a.getHeartbeatsHeader();
+                  })) === null || _a === void 0 ? void 0 : _a.getHeartbeatsHeader();
 
                 case 4:
                   heartbeatsHeader = _context37.sent;
@@ -9357,7 +9357,7 @@
       Object.setPrototypeOf(_assertThisInitialized(_this16), MultiFactorError.prototype);
       _this16.customData = {
         appName: auth.name,
-        tenantId: (_a = auth.tenantId) !== null && _a !== undefined ? _a : undefined,
+        tenantId: (_a = auth.tenantId) !== null && _a !== void 0 ? _a : undefined,
         _serverResponse: error.customData._serverResponse,
         operationType: operationType
       };
@@ -9502,7 +9502,7 @@
               _context122.t0 = _context122["catch"](3);
 
               // Convert user deleted error into user mismatch
-              if (((_a = _context122.t0) === null || _a === undefined ? undefined : _a.code) === "auth/".concat("user-not-found"
+              if (((_a = _context122.t0) === null || _a === void 0 ? void 0 : _a.code) === "auth/".concat("user-not-found"
               /* USER_DELETED */
               )) {
                 _fail(auth, "user-mismatch"
@@ -10206,7 +10206,7 @@
                   _messageEvent$data = messageEvent.data, eventId = _messageEvent$data.eventId, eventType = _messageEvent$data.eventType, data = _messageEvent$data.data;
                   handlers = this.handlersMap[eventType];
 
-                  if (handlers === null || handlers === undefined ? undefined : handlers.size) {
+                  if (handlers === null || handlers === void 0 ? void 0 : handlers.size) {
                     _context52.next = 5;
                     break;
                   }
@@ -10602,7 +10602,7 @@
         while (1) {
           switch (_context145.prev = _context145.next) {
             case 0:
-              if (navigator === null || navigator === undefined ? undefined : navigator.serviceWorker) {
+              if (navigator === null || navigator === void 0 ? void 0 : navigator.serviceWorker) {
                 _context145.next = 2;
                 break;
               }
@@ -10636,7 +10636,7 @@
   function _getServiceWorkerController() {
     var _a;
 
-    return ((_a = navigator === null || navigator === undefined ? undefined : navigator.serviceWorker) === null || _a === undefined ? undefined : _a.controller) || null;
+    return ((_a = navigator === null || navigator === void 0 ? void 0 : navigator.serviceWorker) === null || _a === void 0 ? void 0 : _a.controller) || null;
   }
 
   function _getWorkerGlobalScope() {
@@ -11120,7 +11120,7 @@
                   return _context61.abrupt("return");
 
                 case 11:
-                  if (((_a = results[0]) === null || _a === undefined ? undefined : _a.fulfilled) && ((_b = results[0]) === null || _b === undefined ? undefined : _b.value.includes("keyChanged"
+                  if (((_a = results[0]) === null || _a === void 0 ? void 0 : _a.fulfilled) && ((_b = results[0]) === null || _b === void 0 ? void 0 : _b.value.includes("keyChanged"
                   /* KEY_CHANGED */
                   ))) {
                     this.serviceWorkerReceiverAvailable = true;
@@ -11584,7 +11584,7 @@
   function getScriptParentElement() {
     var _a, _b;
 
-    return (_b = (_a = document.getElementsByTagName('head')) === null || _a === undefined ? undefined : _a[0]) !== null && _b !== undefined ? _b : document;
+    return (_b = (_a = document.getElementsByTagName('head')) === null || _a === void 0 ? void 0 : _a[0]) !== null && _b !== void 0 ? _b : document;
   }
 
   function _loadJS(url) {
@@ -12418,7 +12418,7 @@
         var _a;
 
         if (event.error && !isNullRedirectEvent(event)) {
-          var code = ((_a = event.error.code) === null || _a === undefined ? undefined : _a.split('auth/')[1]) || "internal-error"
+          var code = ((_a = event.error.code) === null || _a === void 0 ? void 0 : _a.split('auth/')[1]) || "internal-error"
           /* INTERNAL_ERROR */
           ;
           consumer.onError(_createError(this.auth, code));
@@ -12463,7 +12463,7 @@
         error = _ref32.error;
     return type === "unknown"
     /* UNKNOWN */
-    && (error === null || error === undefined ? undefined : error.code) === "auth/".concat("no-auth-event"
+    && (error === null || error === void 0 ? void 0 : error.code) === "auth/".concat("no-auth-event"
     /* NO_AUTH_EVENT */
     );
   }
@@ -12715,7 +12715,7 @@
     var beacon = _window().___jsl; // Get current hint.
 
 
-    if (beacon === null || beacon === undefined ? undefined : beacon.H) {
+    if (beacon === null || beacon === void 0 ? void 0 : beacon.H) {
       // Get gapi hint.
       for (var _i5 = 0, _Object$keys3 = Object.keys(beacon.H); _i5 < _Object$keys3.length; _i5++) {
         var hint = _Object$keys3[_i5];
@@ -12765,10 +12765,10 @@
         });
       }
 
-      if ((_b = (_a = _window().gapi) === null || _a === undefined ? undefined : _a.iframes) === null || _b === undefined ? undefined : _b.Iframe) {
+      if ((_b = (_a = _window().gapi) === null || _a === void 0 ? void 0 : _a.iframes) === null || _b === void 0 ? void 0 : _b.Iframe) {
         // If gapi.iframes.Iframe available, resolve.
         resolve(gapi.iframes.getContext());
-      } else if (!!((_c = _window().gapi) === null || _c === undefined ? undefined : _c.load)) {
+      } else if (!!((_c = _window().gapi) === null || _c === void 0 ? void 0 : _c.load)) {
         // Gapi loader ready, load gapi.iframes.
         loadGapiIframe();
       } else {
@@ -13235,7 +13235,7 @@
             while (1) {
               switch (_context84.prev = _context84.next) {
                 case 0:
-                  debugAssert((_a = this.eventManagers[auth._key()]) === null || _a === undefined ? undefined : _a.manager, '_initialize() not called before _openPopup()');
+                  debugAssert((_a = this.eventManagers[auth._key()]) === null || _a === void 0 ? void 0 : _a.manager, '_initialize() not called before _openPopup()');
                   url = _getRedirectUrl(auth, provider, authType, _getCurrentUrl(), eventId);
                   return _context84.abrupt("return", _open(auth, url, _generateEventId()));
 
@@ -13330,7 +13330,7 @@
                   iframe = _context86.sent;
                   manager = new AuthEventManager(auth);
                   iframe.register('authEvent', function (iframeEvent) {
-                    _assert(iframeEvent === null || iframeEvent === undefined ? undefined : iframeEvent.authEvent, auth, "invalid-auth-event"
+                    _assert(iframeEvent === null || iframeEvent === void 0 ? void 0 : iframeEvent.authEvent, auth, "invalid-auth-event"
                     /* INVALID_AUTH_EVENT */
                     ); // TODO: Consider splitting redirect and popup events earlier on
 
@@ -13374,7 +13374,7 @@
         }, function (result) {
           var _a;
 
-          var isSupported = (_a = result === null || result === undefined ? undefined : result[0]) === null || _a === undefined ? undefined : _a[WEB_STORAGE_SUPPORT_KEY];
+          var isSupported = (_a = result === null || result === void 0 ? void 0 : result[0]) === null || _a === void 0 ? void 0 : _a[WEB_STORAGE_SUPPORT_KEY];
 
           if (isSupported !== undefined) {
             cb(!!isSupported);
@@ -13448,7 +13448,7 @@
         var _a;
 
         this.assertAuthConfigured();
-        return ((_a = this.auth.currentUser) === null || _a === undefined ? undefined : _a.uid) || null;
+        return ((_a = this.auth.currentUser) === null || _a === void 0 ? void 0 : _a.uid) || null;
       }
     }, {
       key: "getToken",
@@ -13507,7 +13507,7 @@
         var unsubscribe = this.auth.onIdTokenChanged(function (user) {
           var _a;
 
-          listener(((_a = user) === null || _a === undefined ? undefined : _a.stsTokenManager.accessToken) || null);
+          listener(((_a = user) === null || _a === void 0 ? void 0 : _a.stsTokenManager.accessToken) || null);
         });
         this.internalListeners.set(listener, unsubscribe);
         this.updateProactiveRefresh();
@@ -13611,7 +13611,7 @@
         }); // Auth domain is optional if IdP sign in isn't being used
 
 
-        _assert(!(authDomain === null || authDomain === undefined ? undefined : authDomain.includes(':')), "argument-error"
+        _assert(!(authDomain === null || authDomain === void 0 ? void 0 : authDomain.includes(':')), "argument-error"
         /* ARGUMENT_ERROR */
         , {
           appName: app.name
@@ -13777,33 +13777,24 @@
   var RESOURCE = {
     USERS: "/users",
     POMODOROS: "/pomodoros",
-    TODAY_RECORDS: "/today-records",
-    CATEGORIES: "/categories",
-    CYCLE_SETTINGS: "/cycle-settings"
-  };
+    TODAY_RECORDS: "/today-records"};
   var SUB_SET = {
-    POMODORO_SETTING: "/pomodoro-setting",
-    AUTO_START_SETTING: "/auto-start-setting",
     TIMERS_STATES: "/timers-states",
-    DEMO_DATA: "/demo-data",
-    IS_UNCATEGORIZED_ON_STAT: "/is-uncategorized-on-stat",
-    COLOR_FOR_UNCATEGORIZED: "/color-for-uncategorized",
     CATEGORY_CHANGE_INFO_ARRAY: "/category-change-info-array",
-    GOALS: "/goals",
-    CURRENT_CYCLE_INFO: "/current-cycle-info"
-  }; //#endregion
+    CURRENT_CYCLE_INFO: "/current-cycle-info"}; //#endregion
 
-  var IDB_VERSION = 10;
   var cacheVersion = 1;
   var CacheName = "statRelatedCache-".concat(cacheVersion); //#endregion
+  //#region IndexedDB related
+
+  var IDB_VERSION = 11;
   // export const COLOR_FOR_SELECTED_SETTING = "#75BBAF"; // 이거는 완전 버튼 primary color와 같은 것.
   // export const COLOR_FOR_CURRENT_STH = "#e04f5d";
   // export const COLOR_FOR_SELECTED_SETTING = "#e04f5d";
   // export const COLOR_FOR_SELECTED_SETTING = "#f5737f";
   //#endregion Color related
 
-  var _excluded = ["pomoSetting"],
-      _excluded2 = ["currentCycleInfo"];
+  var _excluded = ["currentCycleInfo"];
   var DB = null;
   var CACHE = null;
   var BC = new BroadcastChannel("pomodoro");
@@ -13894,43 +13885,43 @@
               CACHE = _context3.sent;
 
               if (!(_typeof(ev.data) === "object" && ev.data !== null)) {
-                _context3.next = 20;
+                _context3.next = 19;
                 break;
               }
 
               _ev$data = ev.data, action = _ev$data.action, payload = _ev$data.payload;
               _context3.t0 = action;
-              _context3.next = _context3.t0 === "saveStates" ? 8 : _context3.t0 === "countDown" ? 10 : _context3.t0 === "emptyStateStore" ? 11 : _context3.t0 === "stopCountdown" ? 13 : _context3.t0 === "endTimer" ? 16 : 19;
+              _context3.next = _context3.t0 === "saveStates" ? 8 : _context3.t0 === "countDown" ? 10 : _context3.t0 === "emptyStateStore" ? 11 : _context3.t0 === "stopCountdown" ? 13 : _context3.t0 === "endTimer" ? 15 : 18;
               break;
 
             case 8:
               saveStates(payload);
-              return _context3.abrupt("break", 20);
+              return _context3.abrupt("break", 19);
 
             case 10:
-              return _context3.abrupt("break", 20);
+              return _context3.abrupt("break", 19);
 
             case 11:
               emptyStateStore(ev.source.id);
-              return _context3.abrupt("break", 20);
+              return _context3.abrupt("break", 19);
 
             case 13:
               //number로 바꿔야하 하는거 아니야?
-              console.log(payload.idOfSetInterval);
+              // console.log(payload.idOfSetInterval);
               clearInterval(payload.idOfSetInterval);
-              return _context3.abrupt("break", 20);
+              return _context3.abrupt("break", 19);
 
-            case 16:
-              _context3.next = 18;
+            case 15:
+              _context3.next = 17;
               return goNext(payload);
 
+            case 17:
+              return _context3.abrupt("break", 19);
+
             case 18:
-              return _context3.abrupt("break", 20);
+              return _context3.abrupt("break", 19);
 
             case 19:
-              return _context3.abrupt("break", 20);
-
-            case 20:
             case "end":
               return _context3.stop();
           }
@@ -13949,7 +13940,7 @@
         while (1) {
           switch (_context6.prev = _context6.next) {
             case 0:
-              console.log("notification from sw is clicked");
+              // console.log("notification from sw is clicked");
               ev.notification.close();
               pm = Promise.resolve().then( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
                 return _regeneratorRuntime().wrap(function _callee4$(_context4) {
@@ -13991,7 +13982,7 @@
               }());
               ev.waitUntil(pm);
 
-            case 4:
+            case 3:
             case "end":
               return _context6.stop();
           }
@@ -14057,13 +14048,13 @@
 
 
   function _openIndexedDB() {
-    _openIndexedDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+    _openIndexedDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
       var db;
-      return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+      return _regeneratorRuntime().wrap(function _callee9$(_context9) {
         while (1) {
-          switch (_context10.prev = _context10.next) {
+          switch (_context9.prev = _context9.next) {
             case 0:
-              _context10.next = 2;
+              _context9.next = 2;
               return openDB$1("timerRelatedDB", IDB_VERSION, {
                 upgrade: function upgrade(db, oldVersion, newVersion, transaction, event) {
                   console.log("DB updated from version", oldVersion, "to", newVersion);
@@ -14085,6 +14076,12 @@
                       keyPath: "name"
                     });
                   }
+
+                  if (!db.objectStoreNames.contains("taskDurationTracking")) {
+                    db.createObjectStore("taskDurationTracking", {
+                      keyPath: "name"
+                    });
+                  }
                 },
                 blocking: function blocking(currentVersion, blockedVersion, event) {
                   // db.close();
@@ -14094,43 +14091,43 @@
               });
 
             case 2:
-              db = _context10.sent;
+              db = _context9.sent;
 
               db.onclose = /*#__PURE__*/function () {
-                var _ref9 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee9(ev) {
-                  return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+                var _ref9 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee8(ev) {
+                  return _regeneratorRuntime().wrap(function _callee8$(_context8) {
                     while (1) {
-                      switch (_context9.prev = _context9.next) {
+                      switch (_context8.prev = _context8.next) {
                         case 0:
                           console.log("The database connection was unexpectedly closed", ev);
                           DB = null;
-                          _context9.next = 4;
+                          _context8.next = 4;
                           return openIndexedDB();
 
                         case 4:
-                          DB = _context9.sent;
+                          DB = _context8.sent;
 
                         case 5:
                         case "end":
-                          return _context9.stop();
+                          return _context8.stop();
                       }
                     }
-                  }, _callee9);
+                  }, _callee8);
                 }));
 
-                return function (_x25) {
+                return function (_x26) {
                   return _ref9.apply(this, arguments);
                 };
               }();
 
-              return _context10.abrupt("return", db);
+              return _context9.abrupt("return", db);
 
             case 5:
             case "end":
-              return _context10.stop();
+              return _context9.stop();
           }
         }
-      }, _callee10);
+      }, _callee9);
     }));
     return _openIndexedDB.apply(this, arguments);
   }
@@ -14179,8 +14176,82 @@
 
 
   function _saveStates() {
-    _saveStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee12(data) {
+    _saveStates = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(data) {
       var db, store;
+      return _regeneratorRuntime().wrap(function _callee11$(_context11) {
+        while (1) {
+          switch (_context11.prev = _context11.next) {
+            case 0:
+              _context11.prev = 0;
+              _context11.t0 = DB;
+
+              if (_context11.t0) {
+                _context11.next = 6;
+                break;
+              }
+
+              _context11.next = 5;
+              return openIndexedDB();
+
+            case 5:
+              _context11.t0 = _context11.sent;
+
+            case 6:
+              db = _context11.t0;
+              store = db.transaction("stateStore", "readwrite").objectStore("stateStore"); // console.log(data);
+
+              Array.from(data.stateArr).forEach( /*#__PURE__*/function () {
+                var _ref10 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee10(obj) {
+                  return _regeneratorRuntime().wrap(function _callee10$(_context10) {
+                    while (1) {
+                      switch (_context10.prev = _context10.next) {
+                        case 0:
+                          _context10.next = 2;
+                          return store.put(obj);
+
+                        case 2:
+                        case "end":
+                          return _context10.stop();
+                      }
+                    }
+                  }, _callee10);
+                }));
+
+                return function (_x27) {
+                  return _ref10.apply(this, arguments);
+                };
+              }());
+              _context11.next = 14;
+              break;
+
+            case 11:
+              _context11.prev = 11;
+              _context11.t1 = _context11["catch"](0);
+              console.warn(_context11.t1);
+
+            case 14:
+            case "end":
+              return _context11.stop();
+          }
+        }
+      }, _callee11, null, [[0, 11]]);
+    }));
+    return _saveStates.apply(this, arguments);
+  }
+
+  function emptyStateStore(_x6) {
+    return _emptyStateStore.apply(this, arguments);
+  } //
+
+  /**
+   * Purpose: 1. states를 가공 2. 가공된 states를 가지고 wrapUpSession을 호출.
+   * @param {*} payload timersStates and pomoSetting of the session that was just finished.
+   */
+
+
+  function _emptyStateStore() {
+    _emptyStateStore = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee12(clientId) {
+      var db, store, client;
       return _regeneratorRuntime().wrap(function _callee12$(_context12) {
         while (1) {
           switch (_context12.prev = _context12.next) {
@@ -14201,107 +14272,33 @@
 
             case 6:
               db = _context12.t0;
-              store = db.transaction("stateStore", "readwrite").objectStore("stateStore"); // console.log(data);
-
-              Array.from(data.stateArr).forEach( /*#__PURE__*/function () {
-                var _ref10 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee11(obj) {
-                  return _regeneratorRuntime().wrap(function _callee11$(_context11) {
-                    while (1) {
-                      switch (_context11.prev = _context11.next) {
-                        case 0:
-                          _context11.next = 2;
-                          return store.put(obj);
-
-                        case 2:
-                        case "end":
-                          return _context11.stop();
-                      }
-                    }
-                  }, _callee11);
-                }));
-
-                return function (_x26) {
-                  return _ref10.apply(this, arguments);
-                };
-              }());
-              _context12.next = 14;
-              break;
-
-            case 11:
-              _context12.prev = 11;
-              _context12.t1 = _context12["catch"](0);
-              console.warn(_context12.t1);
-
-            case 14:
-            case "end":
-              return _context12.stop();
-          }
-        }
-      }, _callee12, null, [[0, 11]]);
-    }));
-    return _saveStates.apply(this, arguments);
-  }
-
-  function emptyStateStore(_x6) {
-    return _emptyStateStore.apply(this, arguments);
-  } //
-
-  /**
-   * Purpose: 1. states를 가공 2. 가공된 states를 가지고 wrapUpSession을 호출.
-   * @param {*} payload timersStates and pomoSetting of the session that was just finished.
-   */
-
-
-  function _emptyStateStore() {
-    _emptyStateStore = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee13(clientId) {
-      var db, store, client;
-      return _regeneratorRuntime().wrap(function _callee13$(_context13) {
-        while (1) {
-          switch (_context13.prev = _context13.next) {
-            case 0:
-              _context13.prev = 0;
-              _context13.t0 = DB;
-
-              if (_context13.t0) {
-                _context13.next = 6;
-                break;
-              }
-
-              _context13.next = 5;
-              return openIndexedDB();
-
-            case 5:
-              _context13.t0 = _context13.sent;
-
-            case 6:
-              db = _context13.t0;
               store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
-              _context13.next = 10;
+              _context12.next = 10;
               return store.clear();
 
             case 10:
               console.log("stateStore has been cleared");
-              _context13.next = 13;
+              _context12.next = 13;
               return self.clients.get(clientId);
 
             case 13:
-              client = _context13.sent;
+              client = _context12.sent;
               client.postMessage({}); //TODO: 이거 아직도 필요한가?... -> 딱히 이거 받아다가 뭘 하지를 않는데 그냥 지우지는 말자. (navigator.serviceWorker.addEventListener "message"에서 else)
 
-              _context13.next = 20;
+              _context12.next = 20;
               break;
 
             case 17:
-              _context13.prev = 17;
-              _context13.t1 = _context13["catch"](0);
-              console.warn(_context13.t1);
+              _context12.prev = 17;
+              _context12.t1 = _context12["catch"](0);
+              console.warn(_context12.t1);
 
             case 20:
             case "end":
-              return _context13.stop();
+              return _context12.stop();
           }
         }
-      }, _callee13, null, [[0, 17]]);
+      }, _callee12, null, [[0, 17]]);
     }));
     return _emptyStateStore.apply(this, arguments);
   }
@@ -14331,15 +14328,19 @@
 
 
   function _goNext() {
-    _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee14(payload) {
-      var pomoSetting, timersStatesWithCurrentCycleInfo, currentCycleInfo, timersStates, duration, repetitionCount, pause, startTime, sessionData;
-      return _regeneratorRuntime().wrap(function _callee14$(_context14) {
+    _goNext = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee13(payload) {
+      var pomoSetting, timersStatesWithCurrentCycleInfo, taskChangeInfoArray, currentCycleInfo, timersStates, duration, repetitionCount, pause, startTime, sessionData;
+      return _regeneratorRuntime().wrap(function _callee13$(_context13) {
         while (1) {
-          switch (_context14.prev = _context14.next) {
+          switch (_context13.prev = _context13.next) {
             case 0:
-              pomoSetting = payload.pomoSetting, timersStatesWithCurrentCycleInfo = _objectWithoutProperties(payload, _excluded); //? autoStartSetting은 왜 빼고 보냈지 payload에..?... -> retrieveAutoStartSettingFromIDB()를 wrapUpSession()에서 call하는데 다 이유가 있을듯.
+              pomoSetting = payload.pomoSetting, timersStatesWithCurrentCycleInfo = payload.timersStatesWithCurrentCycleInfo, taskChangeInfoArray = payload.taskChangeInfoArray; //? autoStartSetting은 왜 빼고 보냈지 payload에..?... -> retrieveAutoStartSettingFromIDB()를 wrapUpSession()에서 call하는데 다 이유가 있을듯.
+              // console.log(
+              //   "timersStatesWithCurrentCycleInfo at goNext",
+              //   timersStatesWithCurrentCycleInfo
+              // );
 
-              currentCycleInfo = timersStatesWithCurrentCycleInfo.currentCycleInfo, timersStates = _objectWithoutProperties(timersStatesWithCurrentCycleInfo, _excluded2);
+              currentCycleInfo = timersStatesWithCurrentCycleInfo.currentCycleInfo, timersStates = _objectWithoutProperties(timersStatesWithCurrentCycleInfo, _excluded);
               duration = timersStates.duration, repetitionCount = timersStates.repetitionCount, pause = timersStates.pause, startTime = timersStates.startTime; //! info about the session just finished
 
               sessionData = {
@@ -14357,15 +14358,16 @@
                 timersStates: timersStates,
                 currentCycleInfo: currentCycleInfo,
                 pomoSetting: pomoSetting,
+                taskChangeInfoArray: taskChangeInfoArray,
                 sessionData: sessionData
               });
 
             case 5:
             case "end":
-              return _context14.stop();
+              return _context13.stop();
           }
         }
-      }, _callee14);
+      }, _callee13);
     }));
     return _goNext.apply(this, arguments);
   }
@@ -14385,14 +14387,14 @@
 
 
   function _wrapUpSession() {
-    _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15(_ref7) {
-      var session, timersStates, currentCycleInfo, pomoSetting, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, idToken, infoArrayBeforeReset, infoArrAfterReset, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, numOfCycle, totalFocusDurationTargeted, cycleDurationTargeted, totalDurationOfSetOfCyclesTargeted, payload, _payload, _payload2, cycleRecordVeryLastPomo, cycleRecordLongBreak, _payload3;
+    _wrapUpSession = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee14(_ref7) {
+      var session, timersStates, currentCycleInfo, pomoSetting, taskChangeInfoArray, sessionData, timersStatesForNextSession, autoStartSetting, arrOfStatesOfTimerReset, idTokenAndEmail, idToken, infoArrayBeforeReset, infoArrAfterReset, pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo, numOfCycle, totalFocusDurationTargeted, cycleDurationTargeted, totalDurationOfSetOfCyclesTargeted, payload, _payload, _payload2, cycleRecordVeryLastPomo, cycleRecordLongBreak, _payload3;
 
-      return _regeneratorRuntime().wrap(function _callee15$(_context15) {
+      return _regeneratorRuntime().wrap(function _callee14$(_context14) {
         while (1) {
-          switch (_context15.prev = _context15.next) {
+          switch (_context14.prev = _context14.next) {
             case 0:
-              session = _ref7.session, timersStates = _ref7.timersStates, currentCycleInfo = _ref7.currentCycleInfo, pomoSetting = _ref7.pomoSetting, sessionData = _ref7.sessionData;
+              session = _ref7.session, timersStates = _ref7.timersStates, currentCycleInfo = _ref7.currentCycleInfo, pomoSetting = _ref7.pomoSetting, taskChangeInfoArray = _ref7.taskChangeInfoArray, sessionData = _ref7.sessionData;
               timersStatesForNextSession = _objectSpread2({}, timersStates); // reset TimerState
 
               timersStatesForNextSession.running = false;
@@ -14404,11 +14406,11 @@
               //                      2. duration: 방금 끝난 세션의 종류에 따라 달라지기 때문에 각 case에서 처리.
 
               timersStatesForNextSession.repetitionCount++;
-              _context15.next = 8;
+              _context14.next = 8;
               return retrieveAutoStartSettingFromIDB();
 
             case 8:
-              autoStartSetting = _context15.sent;
+              autoStartSetting = _context14.sent;
               arrOfStatesOfTimerReset = [{
                 name: "running",
                 value: false
@@ -14427,42 +14429,25 @@
                 payload: null
               }); //? getIdTokenAndEmail -> error -> res(null) is not what I considered here...
 
-              _context15.next = 13;
+              _context14.next = 13;
               return getIdTokenAndEmail();
 
             case 13:
-              idTokenAndEmail = _context15.sent;
+              idTokenAndEmail = _context14.sent;
               infoArrayBeforeReset = null;
 
               if (!idTokenAndEmail) {
-                _context15.next = 25;
+                _context14.next = 25;
                 break;
               }
 
               idToken = idTokenAndEmail.idToken;
-              _context15.next = 19;
+              _context14.next = 19;
               return getCategoryChangeInfoArrayFromIDB();
 
             case 19:
-              infoArrayBeforeReset = _context15.sent.value;
+              infoArrayBeforeReset = _context14.sent.value;
               // console.log("infoArrayBeforeReset", infoArrayBeforeReset);
-              // [
-              //     {
-              //         "categoryName": "Netflix",
-              //         "categoryChangeTimestamp": 1724909137377,
-              //         "color": "#be37a5",
-              //         "progress": 0,
-              //         "_id": "66d0064f7387aa24ba4f22ef",
-              //         "_uuid": "055e186a-44b1-4b3d-a54b-8545fa3f78d9"
-              //     },
-              //     {
-              //         "categoryName": "ENG",
-              //         "categoryChangeTimestamp": 1724909227140,
-              //         "_uuid": "73315058-5726-4158-a781-5d60d80af94c",
-              //         "color": "#6e95bf",
-              //         "progress": 0.5
-              //     }
-              // ]
               infoArrAfterReset = [_objectSpread2(_objectSpread2({}, infoArrayBeforeReset[infoArrayBeforeReset.length - 1]), {}, {
                 categoryChangeTimestamp: 0,
                 progress: 0
@@ -14510,8 +14495,8 @@
               totalFocusDurationTargeted = 60 * pomoDuration * numOfPomo;
               cycleDurationTargeted = 60 * (pomoDuration * numOfPomo + shortBreakDuration * (numOfPomo - 1) + longBreakDuration);
               totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
-              _context15.t0 = session;
-              _context15.next = _context15.t0 === SESSION.POMO ? 32 : _context15.t0 === SESSION.SHORT_BREAK ? 45 : _context15.t0 === SESSION.LAST_POMO ? 54 : _context15.t0 === SESSION.VERY_LAST_POMO ? 67 : _context15.t0 === SESSION.LONG_BREAK ? 84 : 95;
+              _context14.t0 = session;
+              _context14.next = _context14.t0 === SESSION.POMO ? 32 : _context14.t0 === SESSION.SHORT_BREAK ? 46 : _context14.t0 === SESSION.LAST_POMO ? 55 : _context14.t0 === SESSION.VERY_LAST_POMO ? 69 : _context14.t0 === SESSION.LONG_BREAK ? 87 : 98;
               break;
 
             case 32:
@@ -14521,7 +14506,7 @@
               }); // 1. 정보 변환
 
               timersStatesForNextSession.duration = shortBreakDuration;
-              _context15.next = 36;
+              _context14.next = 36;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14531,21 +14516,31 @@
               }]));
 
             case 36:
-              _context15.t1 = idTokenAndEmail;
-
-              if (!_context15.t1) {
-                _context15.next = 40;
+              if (!(sessionData.startTime !== 0)) {
+                _context14.next = 44;
                 break;
               }
 
-              _context15.next = 40;
-              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
+              _context14.t1 = idTokenAndEmail;
 
-            case 40:
-              _context15.next = 42;
+              if (!_context14.t1) {
+                _context14.next = 41;
+                break;
+              }
+
+              _context14.next = 41;
+              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, taskChangeInfoArray, sessionData);
+
+            case 41:
+              _context14.next = 43;
               return persistSessionToIDB("pomo", sessionData);
 
-            case 42:
+            case 43:
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "pomo"
+              }, sessionData), idToken);
+
+            case 44:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14566,18 +14561,15 @@
                 console.warn("autoStartSetting is undefined");
               }
 
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "pomo"
-              }, sessionData), idToken);
-              return _context15.abrupt("break", 96);
+              return _context14.abrupt("break", 99);
 
-            case 45:
+            case 46:
               self.registration.showNotification("pomo", {
                 body: "Time to focus",
                 silent: true
               });
               timersStatesForNextSession.duration = pomoDuration;
-              _context15.next = 49;
+              _context14.next = 50;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14586,11 +14578,11 @@
                 value: timersStatesForNextSession.duration
               }]));
 
-            case 49:
-              _context15.next = 51;
+            case 50:
+              _context14.next = 52;
               return persistSessionToIDB("break", sessionData);
 
-            case 51:
+            case 52:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesPomoStartAutomatically === false) {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14611,29 +14603,18 @@
                 console.warn("autoStartSetting is undefined");
               }
 
-              persistRecOfTodayToServer(_objectSpread2({
+              sessionData.startTime !== 0 && persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 96);
+              return _context14.abrupt("break", 99);
 
-            case 54:
+            case 55:
               self.registration.showNotification("longBreak", {
                 body: "Time to take a long break",
                 silent: true
               });
               timersStatesForNextSession.duration = longBreakDuration;
-              _context15.t2 = idTokenAndEmail;
-
-              if (!_context15.t2) {
-                _context15.next = 60;
-                break;
-              }
-
-              _context15.next = 60;
-              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
-
-            case 60:
-              _context15.next = 62;
+              _context14.next = 59;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14642,11 +14623,30 @@
                 value: timersStatesForNextSession.duration
               }]));
 
-            case 62:
-              _context15.next = 64;
-              return persistSessionToIDB("pomo", sessionData);
+            case 59:
+              if (!(sessionData.startTime !== 0)) {
+                _context14.next = 67;
+                break;
+              }
+
+              _context14.t2 = idTokenAndEmail;
+
+              if (!_context14.t2) {
+                _context14.next = 64;
+                break;
+              }
+
+              _context14.next = 64;
+              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, taskChangeInfoArray, sessionData);
 
             case 64:
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "pomo"
+              }, sessionData), idToken);
+              _context14.next = 67;
+              return persistSessionToIDB("pomo", sessionData);
+
+            case 67:
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesBreakStartAutomatically === false) {
                   persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14667,12 +14667,9 @@
                 console.warn("autoStartSetting is undefined");
               }
 
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "pomo"
-              }, sessionData), idToken);
-              return _context15.abrupt("break", 96);
+              return _context14.abrupt("break", 99);
 
-            case 67:
+            case 69:
               self.registration.showNotification("cyclesCompleted", {
                 body: "All cycles of focus durations are done",
                 silent: true
@@ -14685,7 +14682,7 @@
               timersStatesForNextSession.repetitionCount = 0;
               timersStatesForNextSession.duration = pomoDuration; //? 2)
 
-              _context15.next = 74;
+              _context14.next = 76;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14703,10 +14700,6 @@
                 }
               }]));
 
-            case 74:
-              _context15.next = 76;
-              return persistSessionToIDB("pomo", sessionData);
-
             case 76:
               //? 3)
               persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -14717,23 +14710,35 @@
                 veryFirstCycleStartTimestamp: 0,
                 totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted
               }, idToken);
-              persistRecOfTodayToServer(_objectSpread2({
-                kind: "pomo"
-              }, sessionData), idToken);
-              _context15.t3 = idTokenAndEmail;
 
-              if (!_context15.t3) {
-                _context15.next = 83;
+              if (!(sessionData.startTime !== 0)) {
+                _context14.next = 86;
                 break;
               }
 
-              _context15.next = 83;
-              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, sessionData);
+              _context14.t3 = idTokenAndEmail;
+
+              if (!_context14.t3) {
+                _context14.next = 83;
+                break;
+              }
+
+              _context14.next = 83;
+              return recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, taskChangeInfoArray, sessionData);
 
             case 83:
-              return _context15.abrupt("break", 96);
+              _context14.next = 85;
+              return persistSessionToIDB("pomo", sessionData);
 
-            case 84:
+            case 85:
+              persistRecOfTodayToServer(_objectSpread2({
+                kind: "pomo"
+              }, sessionData), idToken);
+
+            case 86:
+              return _context14.abrupt("break", 99);
+
+            case 87:
               self.registration.showNotification("nextCycle", {
                 body: "time to do the next cycle of pomos",
                 silent: true
@@ -14744,7 +14749,7 @@
                 payload: cycleRecordLongBreak
               });
               timersStatesForNextSession.duration = pomoDuration;
-              _context15.next = 90;
+              _context14.next = 93;
               return persistStatesToIDB([].concat(arrOfStatesOfTimerReset, [{
                 name: "repetitionCount",
                 value: timersStatesForNextSession.repetitionCount
@@ -14762,11 +14767,11 @@
                 }
               }]));
 
-            case 90:
-              _context15.next = 92;
+            case 93:
+              _context14.next = 95;
               return persistSessionToIDB("break", sessionData);
 
-            case 92:
+            case 95:
               // console.log("autoStartSetting at wrapUpSession()", autoStartSetting);
               if (autoStartSetting !== undefined) {
                 if (autoStartSetting.doesCycleStartAutomatically) {
@@ -14799,20 +14804,20 @@
                 console.warn("autoStartSetting is undefined");
               }
 
-              persistRecOfTodayToServer(_objectSpread2({
+              sessionData.startTime !== 0 && persistRecOfTodayToServer(_objectSpread2({
                 kind: "break"
               }, sessionData), idToken);
-              return _context15.abrupt("break", 96);
+              return _context14.abrupt("break", 99);
 
-            case 95:
-              return _context15.abrupt("break", 96);
+            case 98:
+              return _context14.abrupt("break", 99);
 
-            case 96:
+            case 99:
             case "end":
-              return _context15.stop();
+              return _context14.stop();
           }
         }
-      }, _callee15);
+      }, _callee14);
     }));
     return _wrapUpSession.apply(this, arguments);
   }
@@ -14840,50 +14845,50 @@
 
 
   function _retrieveAutoStartSettingFromIDB() {
-    _retrieveAutoStartSettingFromIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee16() {
+    _retrieveAutoStartSettingFromIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee15() {
       var db, store, result;
-      return _regeneratorRuntime().wrap(function _callee16$(_context16) {
+      return _regeneratorRuntime().wrap(function _callee15$(_context15) {
         while (1) {
-          switch (_context16.prev = _context16.next) {
+          switch (_context15.prev = _context15.next) {
             case 0:
-              _context16.t0 = DB;
+              _context15.t0 = DB;
 
-              if (_context16.t0) {
-                _context16.next = 5;
+              if (_context15.t0) {
+                _context15.next = 5;
                 break;
               }
 
-              _context16.next = 4;
+              _context15.next = 4;
               return openIndexedDB();
 
             case 4:
-              _context16.t0 = _context16.sent;
+              _context15.t0 = _context15.sent;
 
             case 5:
-              db = _context16.t0;
+              db = _context15.t0;
               store = db.transaction("stateStore", "readonly").objectStore("stateStore");
-              _context16.next = 9;
+              _context15.next = 9;
               return store.get("autoStartSetting");
 
             case 9:
-              result = _context16.sent;
+              result = _context15.sent;
 
               if (!(result !== undefined)) {
-                _context16.next = 14;
+                _context15.next = 14;
                 break;
               }
 
-              return _context16.abrupt("return", result.value);
+              return _context15.abrupt("return", result.value);
 
             case 14:
-              return _context16.abrupt("return", undefined);
+              return _context15.abrupt("return", undefined);
 
             case 15:
             case "end":
-              return _context16.stop();
+              return _context15.stop();
           }
         }
-      }, _callee16);
+      }, _callee15);
     }));
     return _retrieveAutoStartSettingFromIDB.apply(this, arguments);
   }
@@ -14893,49 +14898,49 @@
   }
 
   function _persistSessionToIDB() {
-    _persistSessionToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee17(kind, sessionData) {
+    _persistSessionToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee16(kind, sessionData) {
       var db, store;
-      return _regeneratorRuntime().wrap(function _callee17$(_context17) {
+      return _regeneratorRuntime().wrap(function _callee16$(_context16) {
         while (1) {
-          switch (_context17.prev = _context17.next) {
+          switch (_context16.prev = _context16.next) {
             case 0:
-              _context17.prev = 0;
-              _context17.t0 = DB;
+              _context16.prev = 0;
+              _context16.t0 = DB;
 
-              if (_context17.t0) {
-                _context17.next = 6;
+              if (_context16.t0) {
+                _context16.next = 6;
                 break;
               }
 
-              _context17.next = 5;
+              _context16.next = 5;
               return openIndexedDB();
 
             case 5:
-              _context17.t0 = _context17.sent;
+              _context16.t0 = _context16.sent;
 
             case 6:
-              db = _context17.t0;
+              db = _context16.t0;
               store = db.transaction("recOfToday", "readwrite").objectStore("recOfToday");
-              _context17.next = 10;
+              _context16.next = 10;
               return store.add(_objectSpread2({
                 kind: kind
               }, sessionData));
 
             case 10:
-              _context17.next = 15;
+              _context16.next = 15;
               break;
 
             case 12:
-              _context17.prev = 12;
-              _context17.t1 = _context17["catch"](0);
-              console.warn(_context17.t1);
+              _context16.prev = 12;
+              _context16.t1 = _context16["catch"](0);
+              console.warn(_context16.t1);
 
             case 15:
             case "end":
-              return _context17.stop();
+              return _context16.stop();
           }
         }
-      }, _callee17, null, [[0, 12]]);
+      }, _callee16, null, [[0, 12]]);
     }));
     return _persistSessionToIDB.apply(this, arguments);
   }
@@ -14945,64 +14950,64 @@
   }
 
   function _persistStatesToIDB() {
-    _persistStatesToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(stateArr) {
+    _persistStatesToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee18(stateArr) {
       var db, store;
-      return _regeneratorRuntime().wrap(function _callee19$(_context19) {
+      return _regeneratorRuntime().wrap(function _callee18$(_context18) {
         while (1) {
-          switch (_context19.prev = _context19.next) {
+          switch (_context18.prev = _context18.next) {
             case 0:
-              _context19.prev = 0;
-              _context19.t0 = DB;
+              _context18.prev = 0;
+              _context18.t0 = DB;
 
-              if (_context19.t0) {
-                _context19.next = 6;
+              if (_context18.t0) {
+                _context18.next = 6;
                 break;
               }
 
-              _context19.next = 5;
+              _context18.next = 5;
               return openIndexedDB();
 
             case 5:
-              _context19.t0 = _context19.sent;
+              _context18.t0 = _context18.sent;
 
             case 6:
-              db = _context19.t0;
+              db = _context18.t0;
               store = db.transaction("stateStore", "readwrite").objectStore("stateStore");
               Array.from(stateArr).forEach( /*#__PURE__*/function () {
-                var _ref11 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee18(obj) {
-                  return _regeneratorRuntime().wrap(function _callee18$(_context18) {
+                var _ref11 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee17(obj) {
+                  return _regeneratorRuntime().wrap(function _callee17$(_context17) {
                     while (1) {
-                      switch (_context18.prev = _context18.next) {
+                      switch (_context17.prev = _context17.next) {
                         case 0:
-                          _context18.next = 2;
+                          _context17.next = 2;
                           return store.put(obj);
 
                         case 2:
                         case "end":
-                          return _context18.stop();
+                          return _context17.stop();
                       }
                     }
-                  }, _callee18);
+                  }, _callee17);
                 }));
 
-                return function (_x27) {
+                return function (_x28) {
                   return _ref11.apply(this, arguments);
                 };
               }());
-              _context19.next = 14;
+              _context18.next = 14;
               break;
 
             case 11:
-              _context19.prev = 11;
-              _context19.t1 = _context19["catch"](0);
-              console.warn(_context19.t1);
+              _context18.prev = 11;
+              _context18.t1 = _context18["catch"](0);
+              console.warn(_context18.t1);
 
             case 14:
             case "end":
-              return _context19.stop();
+              return _context18.stop();
           }
         }
-      }, _callee19, null, [[0, 11]]);
+      }, _callee18, null, [[0, 11]]);
     }));
     return _persistStatesToIDB.apply(this, arguments);
   }
@@ -15012,7 +15017,60 @@
   }
 
   function _persistCategoryChangeInfoArrayToIDB() {
-    _persistCategoryChangeInfoArrayToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee20(infoArr) {
+    _persistCategoryChangeInfoArrayToIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee19(infoArr) {
+      var db, store;
+      return _regeneratorRuntime().wrap(function _callee19$(_context19) {
+        while (1) {
+          switch (_context19.prev = _context19.next) {
+            case 0:
+              _context19.t0 = DB;
+
+              if (_context19.t0) {
+                _context19.next = 5;
+                break;
+              }
+
+              _context19.next = 4;
+              return openIndexedDB();
+
+            case 4:
+              _context19.t0 = _context19.sent;
+
+            case 5:
+              db = _context19.t0;
+              store = db.transaction("categoryStore", "readwrite").objectStore("categoryStore");
+              _context19.prev = 7;
+              _context19.next = 10;
+              return store.put({
+                name: "changeInfoArray",
+                value: infoArr
+              });
+
+            case 10:
+              _context19.next = 15;
+              break;
+
+            case 12:
+              _context19.prev = 12;
+              _context19.t1 = _context19["catch"](7);
+              console.warn(_context19.t1);
+
+            case 15:
+            case "end":
+              return _context19.stop();
+          }
+        }
+      }, _callee19, null, [[7, 12]]);
+    }));
+    return _persistCategoryChangeInfoArrayToIDB.apply(this, arguments);
+  }
+
+  function getCategoryChangeInfoArrayFromIDB() {
+    return _getCategoryChangeInfoArrayFromIDB.apply(this, arguments);
+  }
+
+  function _getCategoryChangeInfoArrayFromIDB() {
+    _getCategoryChangeInfoArrayFromIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee20() {
       var db, store;
       return _regeneratorRuntime().wrap(function _callee20$(_context20) {
         while (1) {
@@ -15035,237 +15093,233 @@
               db = _context20.t0;
               store = db.transaction("categoryStore", "readwrite").objectStore("categoryStore");
               _context20.prev = 7;
-              _context20.next = 10;
-              return store.put({
-                name: "changeInfoArray",
-                value: infoArr
-              });
+              return _context20.abrupt("return", store.get("changeInfoArray"));
 
-            case 10:
-              _context20.next = 15;
-              break;
-
-            case 12:
-              _context20.prev = 12;
+            case 11:
+              _context20.prev = 11;
               _context20.t1 = _context20["catch"](7);
               console.warn(_context20.t1);
 
-            case 15:
+            case 14:
             case "end":
               return _context20.stop();
           }
         }
-      }, _callee20, null, [[7, 12]]);
-    }));
-    return _persistCategoryChangeInfoArrayToIDB.apply(this, arguments);
-  }
-
-  function getCategoryChangeInfoArrayFromIDB() {
-    return _getCategoryChangeInfoArrayFromIDB.apply(this, arguments);
-  }
-
-  function _getCategoryChangeInfoArrayFromIDB() {
-    _getCategoryChangeInfoArrayFromIDB = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee21() {
-      var db, store;
-      return _regeneratorRuntime().wrap(function _callee21$(_context21) {
-        while (1) {
-          switch (_context21.prev = _context21.next) {
-            case 0:
-              _context21.t0 = DB;
-
-              if (_context21.t0) {
-                _context21.next = 5;
-                break;
-              }
-
-              _context21.next = 4;
-              return openIndexedDB();
-
-            case 4:
-              _context21.t0 = _context21.sent;
-
-            case 5:
-              db = _context21.t0;
-              store = db.transaction("categoryStore", "readwrite").objectStore("categoryStore");
-              _context21.prev = 7;
-              return _context21.abrupt("return", store.get("changeInfoArray"));
-
-            case 11:
-              _context21.prev = 11;
-              _context21.t1 = _context21["catch"](7);
-              console.warn(_context21.t1);
-
-            case 14:
-            case "end":
-              return _context21.stop();
-          }
-        }
-      }, _callee21, null, [[7, 11]]);
+      }, _callee20, null, [[7, 11]]);
     }));
     return _getCategoryChangeInfoArrayFromIDB.apply(this, arguments);
   }
 
-  function recordPomo(_x13, _x14, _x15, _x16) {
+  function recordPomo(_x13, _x14, _x15, _x16, _x17) {
     return _recordPomo.apply(this, arguments);
   }
 
   function _recordPomo() {
-    _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee22(startTime, idTokenAndEmail, infoArray, sessionData) {
-      var idToken, email, today, LocaleDateString, final, cache, cacheUrl, statResponse, statData;
-      return _regeneratorRuntime().wrap(function _callee22$(_context22) {
+    _recordPomo = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee21(startTime, idTokenAndEmail, categoryChangeInfoArray, taskChangeInfoArray, sessionData) {
+      var idToken, timestamps, segments, durations, pomodoroRecordArr, taskFocusDurationMap, taskTrackingArr, cache, cacheUrl, statResponse, statData;
+      return _regeneratorRuntime().wrap(function _callee21$(_context21) {
         while (1) {
-          switch (_context22.prev = _context22.next) {
+          switch (_context21.prev = _context21.next) {
             case 0:
+              _context21.prev = 0;
+              idToken = idTokenAndEmail.idToken; // console.log("taskChangeInfoArray inside recordPomo", taskChangeInfoArray);
 
-              _context22.prev = 1;
-              idToken = idTokenAndEmail.idToken, email = idTokenAndEmail.email;
-              today = new Date(startTime);
-              LocaleDateString = "".concat(today.getMonth() + 1, "/").concat(today.getDate(), "/").concat(today.getFullYear()); //#region PLZ
-              //!  Type of the final below.
-              // {
-              //   userEmail: string;
-              //   duration: number;
-              //   startTime: number;
-              //   date: string;
-              //   isDummy: boolean;
-              //   category?: {
-              //     name: string;
-              //   };
-              // }[]
+              timestamps = makeTimestampsFromRawData(categoryChangeInfoArray, taskChangeInfoArray, sessionData.pause.record, sessionData.endTime);
+              segments = makeSegmentsFromTimestamps(timestamps);
+              durations = makeDurationsFromSegmentsByCategoryAndTaskCombination(segments);
+              pomodoroRecordArr = makePomoRecordsFromDurations(durations, startTime); // TODO 이거를 global state과 합치는데 이용하려면, index.tsx로 보내야하니까,
 
-              final = convertMilliSecToMin(createDataSortedByTimestamp(infoArray, sessionData.pause.record, sessionData.endTime).reduce(calculateDurationForEveryCategory, {
-                durationArr: [],
-                currentType: "focus",
-                currentOwner: "",
-                currentStartTime: 0
-              }).durationArr.reduce(aggregateFocusDurationOfTheSameCategory, {
-                c_duration_array: [],
-                currentCategoryName: ""
-              }).c_duration_array).map(function (val) {
-                if (val.categoryName !== "uncategorized") {
-                  return {
-                    userEmail: email,
-                    duration: val.duration,
-                    startTime: val.startTime,
-                    date: LocaleDateString,
-                    isDummy: false,
-                    category: {
-                      name: val.categoryName
-                    }
-                  };
-                } else {
-                  return {
-                    userEmail: email,
-                    duration: val.duration,
-                    startTime: val.startTime,
-                    date: LocaleDateString,
-                    isDummy: false
-                  };
-                }
-              }); // console.log("final in sw.js<----------------------------------", final);
-              //#endregion
-              //#region
+              taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
+              taskTrackingArr = Array.from(taskFocusDurationMap.entries()).map(function (_ref12) {
+                var _ref13 = _slicedToArray(_ref12, 2),
+                    taskId = _ref13[0],
+                    duration = _ref13[1];
+
+                return {
+                  taskId: taskId,
+                  duration: Math.floor(duration / (60 * 1000))
+                };
+              }); //#region
 
               BC.postMessage({
                 evName: "pomoAdded",
-                payload: final
-              }); // console.log("pubsub event from sw", pubsub.events);
-              //#endregion
+                payload: {
+                  pomodoroRecordArr: pomodoroRecordArr,
+                  taskTrackingArr: taskTrackingArr
+                }
+              }); //#endregion
               //#region Update cache
 
-              _context22.t0 = CACHE;
+              _context21.t0 = CACHE;
 
-              if (_context22.t0) {
-                _context22.next = 12;
+              if (_context21.t0) {
+                _context21.next = 14;
                 break;
               }
 
-              _context22.next = 11;
+              _context21.next = 13;
               return openCache(CacheName);
 
-            case 11:
-              _context22.t0 = _context22.sent;
+            case 13:
+              _context21.t0 = _context21.sent;
 
-            case 12:
-              cache = _context22.t0;
+            case 14:
+              cache = _context21.t0;
               // console.log("CACHE", CACHE);
               // console.log("cache in recordPomo", cache);
               cacheUrl = BASE_URL + RESOURCE.POMODOROS; // console.log("cache address", cacheUrl);
 
-              _context22.next = 16;
+              _context21.next = 18;
               return cache.match(cacheUrl);
 
-            case 16:
-              statResponse = _context22.sent;
+            case 18:
+              statResponse = _context21.sent;
 
               if (!(statResponse !== undefined)) {
-                _context22.next = 32;
+                _context21.next = 34;
                 break;
               }
 
-              _context22.next = 20;
+              _context21.next = 22;
               return statResponse.json();
 
-            case 20:
-              statData = _context22.sent;
-              _context22.prev = 21;
-              _context22.next = 24;
-              return cache.put(cacheUrl, new Response(JSON.stringify([].concat(_toConsumableArray(statData), _toConsumableArray(final))), {
+            case 22:
+              statData = _context21.sent;
+              _context21.prev = 23;
+              _context21.next = 26;
+              return cache.put(cacheUrl, new Response(JSON.stringify([].concat(_toConsumableArray(statData), _toConsumableArray(pomodoroRecordArr))), {
                 headers: {
                   "Content-Type": "application/json"
                 }
               }));
 
-            case 24:
+            case 26:
               console.log("Data successfully cached.");
-              _context22.next = 30;
+              _context21.next = 32;
               break;
 
-            case 27:
-              _context22.prev = 27;
-              _context22.t1 = _context22["catch"](21);
-              console.error("Failed to put data in cache", _context22.t1);
-
-            case 30:
-              _context22.next = 33;
-              break;
+            case 29:
+              _context21.prev = 29;
+              _context21.t1 = _context21["catch"](23);
+              console.error("Failed to put data in cache", _context21.t1);
 
             case 32:
+              _context21.next = 35;
+              break;
+
+            case 34:
               console.warn("No existing cache entry found for ".concat(CacheName, ".")); // name I defined.
               // console.log(await getCacheNames()); // real ones.
 
-            case 33:
-              _context22.next = 35;
+            case 35:
+              _context21.next = 37;
               return fetchWrapper(RESOURCE.POMODOROS, "POST", {
-                pomodoroRecordArr: final
+                pomodoroRecordArr: pomodoroRecordArr,
+                taskTrackingArr: taskTrackingArr
               }, idToken);
 
-            case 35:
-              _context22.next = 40;
+            case 37:
+              _context21.next = 42;
               break;
 
-            case 37:
-              _context22.prev = 37;
-              _context22.t2 = _context22["catch"](1);
-              console.warn(_context22.t2);
+            case 39:
+              _context21.prev = 39;
+              _context21.t2 = _context21["catch"](0);
+              console.warn(_context21.t2);
 
-            case 40:
+            case 42:
             case "end":
-              return _context22.stop();
+              return _context21.stop();
           }
         }
-      }, _callee22, null, [[1, 37], [21, 27]]);
+      }, _callee21, null, [[0, 39], [23, 29]]);
     }));
     return _recordPomo.apply(this, arguments);
   }
 
-  function persistTimersStatesToServer(_x17, _x18) {
+  function persistTimersStatesToServer(_x18, _x19) {
     return _persistTimersStatesToServer.apply(this, arguments);
   }
 
   function _persistTimersStatesToServer() {
-    _persistTimersStatesToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee23(states, idToken) {
+    _persistTimersStatesToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee22(states, idToken) {
       var cache, pomoSettingAndTimerStatesResponse, pomoSettingAndTimersStates;
+      return _regeneratorRuntime().wrap(function _callee22$(_context22) {
+        while (1) {
+          switch (_context22.prev = _context22.next) {
+            case 0:
+              _context22.prev = 0;
+
+              if (!idToken) {
+                _context22.next = 20;
+                break;
+              }
+
+              _context22.t0 = CACHE;
+
+              if (_context22.t0) {
+                _context22.next = 7;
+                break;
+              }
+
+              _context22.next = 6;
+              return openCache(CacheName);
+
+            case 6:
+              _context22.t0 = _context22.sent;
+
+            case 7:
+              cache = _context22.t0;
+              _context22.next = 10;
+              return cache.match(BASE_URL + RESOURCE.USERS);
+
+            case 10:
+              pomoSettingAndTimerStatesResponse = _context22.sent;
+
+              if (!(pomoSettingAndTimerStatesResponse !== undefined)) {
+                _context22.next = 18;
+                break;
+              }
+
+              _context22.next = 14;
+              return pomoSettingAndTimerStatesResponse.json();
+
+            case 14:
+              pomoSettingAndTimersStates = _context22.sent;
+              pomoSettingAndTimersStates.timersStates = states;
+              _context22.next = 18;
+              return cache.put(BASE_URL + RESOURCE.USERS, new Response(JSON.stringify(pomoSettingAndTimersStates)));
+
+            case 18:
+              _context22.next = 20;
+              return fetchWrapper(RESOURCE.USERS + SUB_SET.TIMERS_STATES, "PATCH", _objectSpread2({}, states), idToken);
+
+            case 20:
+              _context22.next = 25;
+              break;
+
+            case 22:
+              _context22.prev = 22;
+              _context22.t1 = _context22["catch"](0);
+              console.warn(_context22.t1);
+
+            case 25:
+            case "end":
+              return _context22.stop();
+          }
+        }
+      }, _callee22, null, [[0, 22]]);
+    }));
+    return _persistTimersStatesToServer.apply(this, arguments);
+  }
+
+  function persistRecOfTodayToServer(_x20, _x21) {
+    return _persistRecOfTodayToServer.apply(this, arguments);
+  }
+
+  function _persistRecOfTodayToServer() {
+    _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee23(record, idToken) {
+      var cache, resOfRecordOfToday, recordsOfToday;
       return _regeneratorRuntime().wrap(function _callee23$(_context23) {
         while (1) {
           switch (_context23.prev = _context23.next) {
@@ -15293,28 +15347,30 @@
             case 7:
               cache = _context23.t0;
               _context23.next = 10;
-              return cache.match(BASE_URL + RESOURCE.USERS);
+              return cache.match(BASE_URL + RESOURCE.TODAY_RECORDS);
 
             case 10:
-              pomoSettingAndTimerStatesResponse = _context23.sent;
+              resOfRecordOfToday = _context23.sent;
 
-              if (!(pomoSettingAndTimerStatesResponse !== undefined)) {
+              if (!(resOfRecordOfToday !== undefined)) {
                 _context23.next = 18;
                 break;
               }
 
               _context23.next = 14;
-              return pomoSettingAndTimerStatesResponse.json();
+              return resOfRecordOfToday.json();
 
             case 14:
-              pomoSettingAndTimersStates = _context23.sent;
-              pomoSettingAndTimersStates.timersStates = states;
+              recordsOfToday = _context23.sent;
+              recordsOfToday.push({
+                record: record
+              });
               _context23.next = 18;
-              return cache.put(BASE_URL + RESOURCE.USERS, new Response(JSON.stringify(pomoSettingAndTimersStates)));
+              return cache.put(BASE_URL + RESOURCE.TODAY_RECORDS, new Response(JSON.stringify(recordsOfToday)));
 
             case 18:
               _context23.next = 20;
-              return fetchWrapper(RESOURCE.USERS + SUB_SET.TIMERS_STATES, "PATCH", _objectSpread2({}, states), idToken);
+              return fetchWrapper(RESOURCE.TODAY_RECORDS, "POST", _objectSpread2({}, record), idToken);
 
             case 20:
               _context23.next = 25;
@@ -15332,84 +15388,6 @@
         }
       }, _callee23, null, [[0, 22]]);
     }));
-    return _persistTimersStatesToServer.apply(this, arguments);
-  }
-
-  function persistRecOfTodayToServer(_x19, _x20) {
-    return _persistRecOfTodayToServer.apply(this, arguments);
-  }
-
-  function _persistRecOfTodayToServer() {
-    _persistRecOfTodayToServer = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee24(record, idToken) {
-      var cache, resOfRecordOfToday, recordsOfToday;
-      return _regeneratorRuntime().wrap(function _callee24$(_context24) {
-        while (1) {
-          switch (_context24.prev = _context24.next) {
-            case 0:
-              _context24.prev = 0;
-
-              if (!idToken) {
-                _context24.next = 20;
-                break;
-              }
-
-              _context24.t0 = CACHE;
-
-              if (_context24.t0) {
-                _context24.next = 7;
-                break;
-              }
-
-              _context24.next = 6;
-              return openCache(CacheName);
-
-            case 6:
-              _context24.t0 = _context24.sent;
-
-            case 7:
-              cache = _context24.t0;
-              _context24.next = 10;
-              return cache.match(BASE_URL + RESOURCE.TODAY_RECORDS);
-
-            case 10:
-              resOfRecordOfToday = _context24.sent;
-
-              if (!(resOfRecordOfToday !== undefined)) {
-                _context24.next = 18;
-                break;
-              }
-
-              _context24.next = 14;
-              return resOfRecordOfToday.json();
-
-            case 14:
-              recordsOfToday = _context24.sent;
-              recordsOfToday.push({
-                record: record
-              });
-              _context24.next = 18;
-              return cache.put(BASE_URL + RESOURCE.TODAY_RECORDS, new Response(JSON.stringify(recordsOfToday)));
-
-            case 18:
-              _context24.next = 20;
-              return fetchWrapper(RESOURCE.TODAY_RECORDS, "POST", _objectSpread2({}, record), idToken);
-
-            case 20:
-              _context24.next = 25;
-              break;
-
-            case 22:
-              _context24.prev = 22;
-              _context24.t1 = _context24["catch"](0);
-              console.warn(_context24.t1);
-
-            case 25:
-            case "end":
-              return _context24.stop();
-          }
-        }
-      }, _callee24, null, [[0, 22]]);
-    }));
     return _persistRecOfTodayToServer.apply(this, arguments);
   }
 
@@ -15419,12 +15397,12 @@
         numOfCycle = _ref8.numOfCycle;
 
     if (howManyCountdown === 0) {
-      console.log("1");
+      // console.log("1");
       return SESSION.VERY_LAST_POMO;
     }
 
     if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
-      console.log("2");
+      // console.log("2");
       return SESSION.VERY_LAST_POMO;
     }
 
@@ -15434,33 +15412,33 @@
         //                         = (2, 3) -> PBPL|PBPL|PBP
         if (howManyCountdown % 2 === 0) {
           if (howManyCountdown % (2 * numOfPomo) === 0) {
-            console.log("3");
+            // console.log("3");
             return SESSION.LONG_BREAK;
-          }
+          } // console.log("4");
 
-          console.log("4");
+
           return SESSION.SHORT_BREAK;
         }
 
         if (howManyCountdown % 2 === 1) {
           if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
-            console.log("5");
+            // console.log("5");
             return SESSION.LAST_POMO;
-          }
+          } // console.log("6");
 
-          console.log("6");
+
           return SESSION.POMO;
         }
       } else if (numOfPomo === 1) {
         // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
         // Short break does not exist
         if (howManyCountdown % 2 === 0) {
-          console.log("7");
+          // console.log("7");
           return SESSION.LONG_BREAK;
         }
 
         if (howManyCountdown % 2 === 1) {
-          console.log("8");
+          // console.log("8");
           return SESSION.LAST_POMO;
         }
       }
@@ -15469,22 +15447,22 @@
       if (numOfPomo > 1) {
         // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
         if (howManyCountdown % 2 === 1) {
-          console.log("9");
+          // console.log("9");
           return SESSION.POMO;
         }
 
         if (howManyCountdown % 2 === 0) {
-          console.log("10");
+          // console.log("10");
           return SESSION.SHORT_BREAK;
         }
       } else if (numOfPomo === 1) {
         // P
-        console.log("11");
+        // console.log("11");
         return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
       }
-    }
+    } // console.log("12");
 
-    console.log("12");
+
     return SESSION.POMO; //dummy
   }
   /**
@@ -15497,21 +15475,21 @@
    */
 
 
-  function fetchWrapper(_x21, _x22, _x23, _x24) {
+  function fetchWrapper(_x22, _x23, _x24, _x25) {
     return _fetchWrapper.apply(this, arguments);
-  } //#region utilities for category change
-  //#region transform 1 - to get data sorted by timestamp.
+  } //-------------------------------New After Todoist Integration Feature-----------------------------
+  //#region raw data to timestamps
 
 
   function _fetchWrapper() {
-    _fetchWrapper = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee25(URL, METHOD, data, idToken) {
+    _fetchWrapper = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee24(URL, METHOD, data, idToken) {
       var response;
-      return _regeneratorRuntime().wrap(function _callee25$(_context25) {
+      return _regeneratorRuntime().wrap(function _callee24$(_context24) {
         while (1) {
-          switch (_context25.prev = _context25.next) {
+          switch (_context24.prev = _context24.next) {
             case 0:
-              _context25.prev = 0;
-              _context25.next = 3;
+              _context24.prev = 0;
+              _context24.next = 3;
               return fetch(BASE_URL + URL, {
                 method: METHOD,
                 body: JSON.stringify(data),
@@ -15522,14 +15500,14 @@
               });
 
             case 3:
-              response = _context25.sent;
-              return _context25.abrupt("return", response);
+              response = _context24.sent;
+              return _context24.abrupt("return", response);
 
             case 7:
-              _context25.prev = 7;
-              _context25.t0 = _context25["catch"](0);
+              _context24.prev = 7;
+              _context24.t0 = _context24["catch"](0);
 
-              if (_context25.t0 instanceof TypeError && _context25.t0.message.toLowerCase() === "failed to fetch" && !navigator.onLine) {
+              if (_context24.t0 instanceof TypeError && _context24.t0.message.toLowerCase() === "failed to fetch" && !navigator.onLine) {
                 BC.postMessage({
                   evName: "fetchCallFailed_Network_Error",
                   payload: {
@@ -15539,23 +15517,24 @@
                   }
                 });
               } else {
-                console.warn(_context25.t0);
+                console.warn(_context24.t0);
               }
 
             case 10:
             case "end":
-              return _context25.stop();
+              return _context24.stop();
           }
         }
-      }, _callee25, null, [[0, 7]]);
+      }, _callee24, null, [[0, 7]]);
     }));
     return _fetchWrapper.apply(this, arguments);
   }
 
-  function createDataSortedByTimestamp(categoryChangeInfoArray, pauseRecord, endTime) {
-    var categoryChanges = transformCategoryChanges(categoryChangeInfoArray);
+  function makeTimestampsFromRawData(categoryChangeInfoArray, taskChangeInfoArray, pauseRecord, endTime) {
+    var categoryChanges = transformCategoryChangeInfoArray(categoryChangeInfoArray);
+    var taskChanges = transformTaskChangesArray(taskChangeInfoArray);
     var pauseRecords = transformPauseRecords(pauseRecord);
-    var data = [].concat(_toConsumableArray(categoryChanges), _toConsumableArray(pauseRecords));
+    var data = [].concat(_toConsumableArray(categoryChanges), _toConsumableArray(taskChanges), _toConsumableArray(pauseRecords));
     data.sort(function (a, b) {
       return a.timestamp - b.timestamp;
     });
@@ -15565,12 +15544,22 @@
     });
     return data;
 
-    function transformCategoryChanges(categoryChangeInfoArray) {
+    function transformCategoryChangeInfoArray(categoryChangeInfoArray) {
       return categoryChangeInfoArray.map(function (val) {
         return {
           kind: "category",
-          name: val.categoryName,
+          subKind: val.categoryName,
           timestamp: val.categoryChangeTimestamp
+        };
+      });
+    }
+
+    function transformTaskChangesArray(taskChangeInfoArray) {
+      return taskChangeInfoArray.map(function (val) {
+        return {
+          kind: "task",
+          subKind: val.id,
+          timestamp: val.taskChangeTimestamp
         };
       });
     }
@@ -15579,33 +15568,64 @@
       return pauseRecords.flatMap(function (val) {
         return [{
           kind: "pause",
-          name: "start",
+          subKind: "start",
           timestamp: val.start
         }, {
           kind: "pause",
-          name: "end",
+          subKind: "end",
           timestamp: val.end
         }];
       });
     }
   } //#endregion
-  //#region transform 2: duration for each category
+  //#region timestamps to segments - Array<InfoOfSessionStateChange> -> Array<SessionSegment>
 
-
-  function calculateDurationForEveryCategory(acc, val, idx, _array) {
+  function makeSegmentsFromTimestamps(timestampData) {
+    var segArrAndHelper = timestampData.reduce(timestamps_to_segments, {
+      segmentDurationArr: [],
+      currentType: "focus",
+      currentOwner: ["", ""],
+      currentStartTime: 0
+    });
+    return segArrAndHelper.segmentDurationArr;
+  }
+  function timestamps_to_segments(acc, val, idx, _array) {
+    // 로직:
+    // 1. currentValue가 이제 Info니까... 우선 그냥 timestamp이용해서 시간 간격을 계산한다.
+    // 2. 그리고 이제 currentValue.kind가 무엇이냐에 따라서...
     if (idx === 0) {
-      acc.currentOwner = val.name;
-      acc.currentStartTime = val.timestamp;
+      // segments의 첫번째가 pause일리 없기 때문에 index가 0인 경우는 그냥 kind는 category일 것이므로, 바로 name을 owner로 설정한다.
+      // kind와 name의 조합이 어떤 의미인지 맨 위의 comment를 보면 이해할 수 있다.
+      if (val.kind === "category") {
+        acc.currentOwner[0] = val.subKind;
+      } else if (val.kind === "task") {
+        acc.currentOwner[1] = val.subKind;
+      }
+
+      acc.currentStartTime = val.timestamp; // startTime으로 값이 같을테니 idx === 1일때는 할당해주지 않는다.
+
       return acc;
     }
 
-    var duration_in_ms = val.timestamp - _array[idx - 1].timestamp;
+    if (idx === 1) {
+      if (val.kind === "category") {
+        acc.currentOwner[0] = val.subKind;
+      } else if (val.kind === "task") {
+        acc.currentOwner[1] = val.subKind;
+      }
+
+      return acc;
+    }
+
+    var duration_in_ms = val.timestamp - _array[idx - 1].timestamp; // const duration_in_min = Math.floor(duration_in_ms / (60 * 1000));
+    // Session의 상태에 변화가 있을 때마다 timestamp가 찍혔었고 (pasue, category change), 그 사이의 duration을 계산한다.
+    // duration_in_ms는 방금의 변화에 의해 일단락된 segment의 duration을 의미한다.
 
     switch (val.kind) {
       case "pause":
-        if (val.name === "start") {
-          acc.durationArr.push({
-            owner: acc.currentOwner,
+        if (val.subKind === "start") {
+          acc.segmentDurationArr.push({
+            owner: [acc.currentOwner[0], acc.currentOwner[1]],
             duration: duration_in_ms,
             type: acc.currentType,
             startTime: acc.currentStartTime
@@ -15614,12 +15634,12 @@
           acc.currentStartTime = val.timestamp;
         }
 
-        if (val.name === "end") {
-          acc.durationArr.push({
-            owner: acc.currentOwner,
+        if (val.subKind === "end") {
+          acc.segmentDurationArr.push({
+            owner: [acc.currentOwner[0], acc.currentOwner[1]],
             duration: duration_in_ms,
             type: acc.currentType,
-            startTime: val.timestamp
+            startTime: acc.currentStartTime
           });
           acc.currentType = "focus";
           acc.currentStartTime = val.timestamp;
@@ -15628,66 +15648,159 @@
         break;
 
       case "category":
-        acc.durationArr.push({
-          owner: acc.currentOwner,
+        acc.segmentDurationArr.push({
+          owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
           startTime: acc.currentStartTime
         });
-        acc.currentOwner = val.name;
+        acc.currentOwner[0] = val.subKind; // category가 바뀌었으므로, owner도 바꿔준다.
+
+        acc.currentStartTime = val.timestamp;
+        break;
+
+      case "task":
+        acc.segmentDurationArr.push({
+          owner: [acc.currentOwner[0], acc.currentOwner[1]],
+          duration: duration_in_ms,
+          type: acc.currentType,
+          startTime: acc.currentStartTime
+        });
+        acc.currentOwner[1] = val.subKind;
         acc.currentStartTime = val.timestamp;
         break;
 
       case "endOfSession":
-        if (duration_in_ms !== 0) {
-          acc.durationArr.push({
-            owner: acc.currentOwner,
+        if (duration_in_ms !== 0) // A session is forcibly ended by a user during a pause.
+          acc.segmentDurationArr.push({
+            owner: [acc.currentOwner[0], acc.currentOwner[1]],
             duration: duration_in_ms,
             type: acc.currentType,
             startTime: acc.currentStartTime
           });
-        }
-
         break;
     }
 
     return acc;
   } //#endregion
-  //#region transform 3: sum up focus durations of the same category.
+  //#region segments to durations - aggregate the same session by the same kind
+  //#region by task & category combination
 
-
-  function aggregateFocusDurationOfTheSameCategory(prev, val, idx) {
-    if (idx === 0) {
-      prev.c_duration_array.push({
-        categoryName: val.owner,
-        duration: val.duration,
-        startTime: val.startTime
-      });
-      prev.currentCategoryName = val.owner;
-      return prev;
-    }
-
-    if (val.owner === prev.currentCategoryName) {
-      if (val.type === "focus") {
-        prev.c_duration_array[prev.c_duration_array.length - 1].duration += val.duration;
-      }
-    }
-
-    if (val.owner !== prev.currentCategoryName) {
-      var newDuration = {
-        categoryName: val.owner,
-        duration: val.type === "focus" ? val.duration : 0,
-        startTime: val.startTime
-      };
-      prev.c_duration_array.push(newDuration);
-      prev.currentCategoryName = val.owner;
-    }
-
-    return prev;
+  function makeDurationsFromSegmentsByCategoryAndTaskCombination(segmentData) {
+    var durationAndHelper = segmentData.reduce(segments_to_durations, {
+      durationArrOfCategoryTaskCombination: [],
+      currentCategoryTaskCombination: ["", ""]
+    });
+    return durationAndHelper.durationArrOfCategoryTaskCombination;
   }
+  function segments_to_durations(acc, segment, idx) {
+    if (idx === 0) {
+      acc.durationArrOfCategoryTaskCombination.push({
+        categoryName: segment.owner[0],
+        taskId: segment.owner[1],
+        duration: segment.duration,
+        startTime: segment.startTime
+      });
+      acc.currentCategoryTaskCombination[0] = segment.owner[0];
+      acc.currentCategoryTaskCombination[1] = segment.owner[1];
+      return acc;
+    } // Check if this segment has the SAME owner as the current one
 
-  function convertMilliSecToMin(durationByCategoryArr) {
-    return durationByCategoryArr.map(function (val) {
+
+    if (segment.owner[0] === acc.currentCategoryTaskCombination[0] && segment.owner[1] === acc.currentCategoryTaskCombination[1]) {
+      // Same owner - aggregate the duration if it's a focus type
+      if (segment.type === "focus") {
+        acc.durationArrOfCategoryTaskCombination[acc.durationArrOfCategoryTaskCombination.length - 1].duration += segment.duration;
+      }
+    } else {
+      // Different owner - create a new entry
+      var newDuration = {
+        categoryName: segment.owner[0],
+        taskId: segment.owner[1],
+        duration: segment.type === "focus" ? segment.duration : 0,
+        startTime: segment.startTime
+      };
+      acc.durationArrOfCategoryTaskCombination.push(newDuration);
+      acc.currentCategoryTaskCombination = [segment.owner[0], segment.owner[1]];
+    }
+
+    return acc;
+  } //#endregion task & category
+  //#region by task
+
+  /**
+   * Aggregates focus durations by taskId only (ignores category).
+   * Only "focus" segments are counted.
+   */
+
+  function getTaskDurationMapFromSegments(segments) {
+    var TaskDurationMap = segments.reduce(function (acc, segment) {
+      var taskId = segment.owner[1];
+      if (segment.type !== "focus" || !taskId) return acc;
+
+      if (acc.has(taskId)) {
+        // If the taskId already exists, add the duration to the existing value
+        acc.set(taskId, acc.get(taskId) + segment.duration);
+      } else {
+        acc.set(taskId, segment.duration);
+      }
+
+      return acc;
+    }, new Map());
+    return TaskDurationMap;
+  }
+  function segments_to_task_durations(acc, segment) {
+    var taskId = segment.owner[1];
+    if (segment.type !== "focus" || !taskId) return acc;
+
+    if (acc.has(taskId)) {
+      acc.get(taskId).duration += segment.duration;
+    } else {
+      acc.set(taskId, {
+        duration: segment.duration
+      });
+    }
+
+    return acc;
+  } //#endregion by task
+  //#endregion
+  //#region durations to pomoRecords
+
+  function makePomoRecordsFromDurations(durations, startTime) {
+    var today = new Date(startTime);
+    var LocaleDateString = "".concat(today.getMonth() + 1, "/").concat(today.getDate(), "/").concat(today.getFullYear());
+    return convertMilliSecToMin2(durations).map(function (val) {
+      // 카테고리가 uncategorized인 경우 category field를 넣지 않고,
+      // 마찬가지로 taskId가 ""인 경우 task field를 넣지 않는다.
+      var pomoRecord = {
+        duration: val.duration,
+        startTime: val.startTime,
+        date: LocaleDateString,
+        isDummy: false
+      };
+
+      if (val.categoryName !== "uncategorized") {
+        pomoRecord = _objectSpread2(_objectSpread2({}, pomoRecord), {}, {
+          category: {
+            name: val.categoryName
+          }
+        });
+      } //! none task is removed
+
+
+      if (val.taskId !== "") {
+        pomoRecord = _objectSpread2(_objectSpread2({}, pomoRecord), {}, {
+          task: {
+            id: val.taskId
+          }
+        });
+      }
+
+      return pomoRecord;
+    });
+  }
+  function convertMilliSecToMin2(durationArrOfCategoryTaskCombination) {
+    return durationArrOfCategoryTaskCombination.map(function (val) {
       // console.log(
       //   "<-------------------------------convertMilliSecToMin---------------------------------->"
       // );
@@ -15696,11 +15809,24 @@
         duration: Math.floor(val.duration / (60 * 1000))
       });
     });
-  }
+  } //#endregion
+  //#region utilities for category change
 
   function roundTo_X_DecimalPoints(num, X) {
     return Math.round(num * Math.pow(10, X)) / Math.pow(10, X);
   } //#endregion
   //#endregion
 
-})();
+  exports.convertMilliSecToMin2 = convertMilliSecToMin2;
+  exports.getTaskDurationMapFromSegments = getTaskDurationMapFromSegments;
+  exports.makeDurationsFromSegmentsByCategoryAndTaskCombination = makeDurationsFromSegmentsByCategoryAndTaskCombination;
+  exports.makePomoRecordsFromDurations = makePomoRecordsFromDurations;
+  exports.makeSegmentsFromTimestamps = makeSegmentsFromTimestamps;
+  exports.makeTimestampsFromRawData = makeTimestampsFromRawData;
+  exports.segments_to_durations = segments_to_durations;
+  exports.segments_to_task_durations = segments_to_task_durations;
+  exports.timestamps_to_segments = timestamps_to_segments;
+
+  return exports;
+
+})({});

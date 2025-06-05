@@ -5,6 +5,7 @@ import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
 import Navbar from "./Pages/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
 import { pubsub } from "./pubsub";
+import { ToastContainer } from "react-toastify";
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
     navBar: string;
@@ -102,14 +103,17 @@ function App() {
   //#endregion
 
   return (
-    <AuthContextProvider>
-      <RecordsOfTodayContextProvider>
-        <ThemeProvider theme={theme}>
-          <Navbar />
-          <Outlet />
-        </ThemeProvider>
-      </RecordsOfTodayContextProvider>
-    </AuthContextProvider>
+    <>
+      <AuthContextProvider>
+        <RecordsOfTodayContextProvider>
+          <ThemeProvider theme={theme}>
+            <Navbar />
+            <Outlet />
+          </ThemeProvider>
+        </RecordsOfTodayContextProvider>
+      </AuthContextProvider>
+      <ToastContainer />
+    </>
   );
 }
 

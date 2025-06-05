@@ -124,8 +124,11 @@ export function AuthContextProvider({
           (setting) => setting.isCurrent
         )?.pomoSetting;
 
+        // console.log("data from server", states);
+
         //1. persist TimerSliceStates to Indexed DB
         await persistStatesToIDB(states.timersStates);
+
         postMsgToSW("saveStates", {
           stateArr: [
             { name: "pomoSetting", value: pomoSetting },

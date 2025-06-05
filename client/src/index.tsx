@@ -27,6 +27,14 @@ import {
   BASE_URL,
   CURRENT_CATEGORY_NAME,
   SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
+  CURRENT_SESSION_TYPE,
+  CURRENT_TASK_ID,
+  TIMER_RELATED_DB,
+  STATE_STORE_NAME,
+  RECORDS_OF_TODAY_STORE_NAME,
+  FAILED_REQUESTS_STORE_NAME,
+  CATEGORY_CHANGE_INFO_STORE_NAME,
+  TASK_DURATION_TRACKING_STORE_NAME,
 } from "./constants";
 import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
@@ -40,7 +48,11 @@ import {
 import { AxiosRequestConfig } from "axios";
 import { boundedPomoInfoStore } from "./zustand-stores/pomoInfoStoreUsingSlice";
 import { roundTo_X_DecimalPoints } from "./utils/number-related-utils";
-import { getAverage } from "./utils/anything";
+import {
+  assignStartTimeToChangeInfoArrays,
+  getAverage,
+} from "./utils/anything";
+import { TaskChangeInfo } from "./types/todoistRelatedTypes";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -84,6 +96,13 @@ interface TimerRelatedDB extends DBSchema {
     value: {
       name: "changeInfoArray";
       value: CategoryChangeInfo[];
+    };
+    key: string;
+  };
+  taskDurationTracking: {
+    value: {
+      name: "taskChangeInfoArray";
+      value: TaskChangeInfo[];
     };
     key: string;
   };
@@ -149,6 +168,8 @@ root.render(
   </BrowserRouter>
 );
 //#region event handlers
+// 필요한 이유: session이 종료될 때 해야하는 작업들 중, service worker thread에서는 처리할 수 없는 것들이 있기 때문에,
+// main thread에서 처리 할 수 있도록 message를 보내는 것. e.g) zustand store에 있는 global state들 update하는 경우.
 BC.addEventListener("message", async (ev) => {
   const { evName, payload } = ev.data;
 
@@ -165,7 +186,11 @@ BC.addEventListener("message", async (ev) => {
       //     name: string;
       //   };
       // }[]
-      pubsub.publish(evName, payload);
+      const { pomodoroRecordArr, taskTrackingArr } = payload;
+
+      pubsub.publish(evName, pomodoroRecordArr);
+      boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
+
       break;
     case "endOfCycle": // payload is a cycleRecord
       console.log(
@@ -216,8 +241,66 @@ BC.addEventListener("message", async (ev) => {
 
       break;
 
+    /**
+     * This event is triggered when the session ends due to a service worker.
+     * What it does is:
+     * 1. publish the event to the NavBar component. -> NavBar's useEffect reset categoryChangeInfoArray.
+     * 2. update the timersStates' running and startTime.
+     * 3. reset the taskChangeInfoArray in the state store.
+     */
     case "sessionEndBySW":
       pubsub.publish(evName, payload); // This event is subscribed by NavBar's useEffect callback.
+      // payload is like this.
+      // const infoArrAfterReset = [
+      //  {
+      //    ...infoArrayBeforeReset[infoArrayBeforeReset.length - 1],
+      //    categoryChangeTimestamp: 0,
+      //    progress: 0,
+      //  },
+      // ];
+
+      // console.log("payload at endbysw", payload);
+
+      // 이거 autoStart인 경우, zustand가 두 값을 비교해서 나중에것 하나로 (즉 true) 한번 update하는게 아니라, 찰나에 두번 update함.
+      // TODO? - sw.js에서 조건을 걸어서 보내든 조건을 걸 수 있는 boolean을 payload에 포함시키면 한번만 update하게 할 수 있는데,
+      //?        뭔가 자꾸 에러나고 약간 복잡해서 우선 그냥 넘김.
+      boundedPomoInfoStore.getState().setTimersStatesPartial({
+        running: false,
+        startTime: 0,
+      });
+
+      // TODO 아래에 적어놓은것들이 실제로 그렇게 작동하는지 테스트 해봐야함. 당시에 약간 작업기억 후달리는 느낌이였음.
+      //! 사실 아래의 코드들은 방금 끝난 세션의 종류가 break이면 이렇게 할 필요가 없음.
+      //! 왜냐하면 - pomo일때만 더러워진거 다시 초기화? 같은거 하기위해 필요한 것임.
+      // 그러면 여기서도 pomo인지 뭔지 판단을 해야하는데, sw.js에 의해 종료되는 경우에도 pomo랑 거시기 뭐시기를 우리가 sessionStorage에 update했던가?....
+      //? 만약 TC가 다시 로드되는 것에 의해 sessionStorage가 update된다면 .. 타이밍상 여기에서는 pomo인지 break인지 판단이 불가능한게 아닌가?
+      // TC가 다시 load되면서 update됨. (L1159 useEffect)
+
+      //! IMPT - 왜 JustFinishedType인지
+      //! -> 이 찰나는 아직 TC로 가서 useEffect에 의해 current session type을 판단해서 setItem() 호출하기 전 이다.
+      const sessionTypeJustFinished =
+        sessionStorage.getItem(CURRENT_SESSION_TYPE);
+
+      // 방금 종료된 세션이 POMO였을 경우에만,
+      // changeInfoArray가 여러개의 taskChangeInfo에 의해 더럽혀?졌을 가능성이 있기 때문에 그것을 초기화 해주는 것임.
+
+      if (
+        sessionTypeJustFinished !== null &&
+        sessionTypeJustFinished.toUpperCase() === "POMO"
+      ) {
+        const currentTaskId = boundedPomoInfoStore.getState().currentTaskId; // the same value as the one in the sesionStorage.
+        const newTaskChangeInfo = {
+          id: currentTaskId,
+          taskChangeTimestamp: 0,
+        };
+        boundedPomoInfoStore
+          .getState()
+          .setTaskChangeInfoArray([newTaskChangeInfo]); //? 이게 먼저 실행되고, autoStartCurrentSession의 changeTimestamp할당이 일어나겠지?
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+          taskChangeInfoArray: [newTaskChangeInfo],
+        });
+      }
+
       break;
 
     case "makeSound":
@@ -301,9 +384,12 @@ window.addEventListener("beforeunload", async (event) => {
   stopCountDownInBackground();
   if (localStorage.getItem("user") === "authenticated") {
     sessionStorage.removeItem(CURRENT_CATEGORY_NAME);
+    sessionStorage.removeItem(CURRENT_TASK_ID); // When a user's todoistIntegration is diabled, the id is just an empty string. 그래서 없는거 지우는게 아님.
     await deleteCache(CacheName);
     await clear__StateStore_RecOfToday_CategoryStore();
   }
+
+  sessionStorage.removeItem(CURRENT_SESSION_TYPE);
 });
 //#endregion
 
@@ -571,35 +657,46 @@ export async function delete_entry_of_cache(
 }
 
 export async function openIndexedDB() {
-  let db = await openDB<TimerRelatedDB>("timerRelatedDB", IDB_VERSION, {
+  let db = await openDB<TimerRelatedDB>(TIMER_RELATED_DB, IDB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction, event) {
       console.log("DB updated from version", oldVersion, "to", newVersion);
 
-      if (db.objectStoreNames.contains("stateStore")) {
-        db.deleteObjectStore("stateStore");
+      if (db.objectStoreNames.contains(STATE_STORE_NAME)) {
+        db.deleteObjectStore(STATE_STORE_NAME);
       }
-      db.createObjectStore("stateStore", {
+      db.createObjectStore(STATE_STORE_NAME, {
         keyPath: "name",
       });
-      if (db.objectStoreNames.contains("recOfToday")) {
-        db.deleteObjectStore("recOfToday");
+
+      if (db.objectStoreNames.contains(RECORDS_OF_TODAY_STORE_NAME)) {
+        db.deleteObjectStore(RECORDS_OF_TODAY_STORE_NAME);
       }
-      db.createObjectStore("recOfToday", {
+      db.createObjectStore(RECORDS_OF_TODAY_STORE_NAME, {
         keyPath: ["startTime"], //TODO: 이거는 왜 array야?
       });
-      if (db.objectStoreNames.contains("failedReqInfo")) {
-        db.deleteObjectStore("failedReqInfo");
+
+      if (db.objectStoreNames.contains(FAILED_REQUESTS_STORE_NAME)) {
+        db.deleteObjectStore(FAILED_REQUESTS_STORE_NAME);
       }
-      db.createObjectStore("failedReqInfo", {
+      db.createObjectStore(FAILED_REQUESTS_STORE_NAME, {
         keyPath: "userEmail",
       });
-      if (db.objectStoreNames.contains("categoryStore")) {
-        db.deleteObjectStore("categoryStore");
+
+      if (db.objectStoreNames.contains(CATEGORY_CHANGE_INFO_STORE_NAME)) {
+        db.deleteObjectStore(CATEGORY_CHANGE_INFO_STORE_NAME);
       }
-      db.createObjectStore("categoryStore", {
+      db.createObjectStore(CATEGORY_CHANGE_INFO_STORE_NAME, {
+        keyPath: "name",
+      });
+
+      if (db.objectStoreNames.contains(TASK_DURATION_TRACKING_STORE_NAME)) {
+        db.deleteObjectStore(TASK_DURATION_TRACKING_STORE_NAME);
+      }
+      db.createObjectStore(TASK_DURATION_TRACKING_STORE_NAME, {
         keyPath: "name",
       });
     },
+
     blocking(currentVersion, blockedVersion, event) {
       console.log("blocking", event);
       window.location.reload();
@@ -767,13 +864,28 @@ export async function persistStatesToIDB(
 export async function persistCategoryChangeInfoArrayToIDB(
   infoArr: CategoryChangeInfo[]
 ) {
-  let db = DB || (await openIndexedDB());
-  const store = db
-    .transaction("categoryStore", "readwrite")
-    .objectStore("categoryStore");
-
   try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction("categoryStore", "readwrite")
+      .objectStore("categoryStore");
+
     await store.put({ name: "changeInfoArray", value: infoArr });
+  } catch (error) {
+    console.warn(error);
+  }
+}
+
+export async function persistTaskChangeInfoArrayToIDB(
+  infoArr: TaskChangeInfo[]
+) {
+  try {
+    let db = DB || (await openIndexedDB());
+    const store = db
+      .transaction(TASK_DURATION_TRACKING_STORE_NAME, "readwrite")
+      .objectStore(TASK_DURATION_TRACKING_STORE_NAME);
+
+    await store.put({ name: "taskChangeInfoArray", value: infoArr });
   } catch (error) {
     console.warn(error);
   }
@@ -879,8 +991,6 @@ export function stopCountDownInBackground() {
 export async function countDown(setIntervalId: number | string | null) {
   let statesFromIDB = await obtainStatesFromIDB("withSettings");
 
-  // console.log("states in countDown()", statesFromIDB);
-
   if (Object.entries(statesFromIDB).length !== 0) {
     let { pomoSetting, autoStartSetting, ...timersStatesWithCurrentCycleInfo } =
       statesFromIDB as dataCombinedFromIDB;
@@ -920,9 +1030,12 @@ export async function countDown(setIntervalId: number | string | null) {
           // console.log(
           //   "-------------------------------------About To Call EndTimer()-------------------------------------"
           // );
+
           postMsgToSW("endTimer", {
             pomoSetting,
-            ...timersStatesWithCurrentCycleInfo,
+            timersStatesWithCurrentCycleInfo,
+            taskChangeInfoArray:
+              boundedPomoInfoStore.getState().taskChangeInfoArray,
           });
         }
       }, 500);
@@ -975,7 +1088,8 @@ const SESSION = {
   VERY_LAST_POMO: 5,
 };
 // 1. 시작한다는 의미:
-// 결국 TimersStates를 update한다음에 이것을 1)persist locally 2)persist remotely
+// 결국 TimersStates를 update한다는 것.
+// 이건 1)persist locally 2)persist remotely
 //
 // 2.언제 작용하는지:
 // 앱 닫았다가 나중에 열었을 때 다른 페이지에서 바로 시작하는 경우.
@@ -1003,6 +1117,14 @@ async function autoStartCurrentSession({
     timersStates.startTime = endTimeOfPrevSession + 500; //? 몇을 더해야하지?..
     currentCycleInfo.cycleStartTimestamp = timersStates.startTime;
     timersStates.running = true;
+
+    boundedPomoInfoStore.getState().setTimersStatesPartial({
+      running: true,
+      startTime: timersStates.startTime,
+    });
+
+    assignStartTimeToChangeInfoArrays(timersStates.startTime);
+
     // console.log("endTimeOfPrevSession", endTimeOfPrevSession);
     //#region Countdown
     let idOfSetInterval = setInterval(() => {
@@ -1039,7 +1161,12 @@ async function autoStartCurrentSession({
           //? 만약에 user가 currentCategory를 지우는 버튼을 클릭하는 시각이 이 object argument를 만들기 시작하는 시각과 같거나 그 언저리면 어떻게 되는거야?
           // 눌러서 remove item하기 전에 sessionStorage에서 null값이 아닌 유의미한 값을 가져왔으면... 걍 네가 더 빨리 remove 버튼을 눌렀어야하는거임... 걍 신경 끄면 될 듯...:::
           pomoSetting,
-          ...{ ...timersStates, currentCycleInfo },
+          timersStatesWithCurrentCycleInfo: {
+            ...timersStates,
+            currentCycleInfo,
+          },
+          taskChangeInfoArray:
+            boundedPomoInfoStore.getState().taskChangeInfoArray,
         });
       }
     }, 500);

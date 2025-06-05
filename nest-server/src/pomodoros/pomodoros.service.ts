@@ -1,48 +1,94 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreatePomodoroDto } from './dto/create-pomodoro.dto';
 import { CreateDemoDataDto } from './dto/create-demo-data.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Pomodoro } from 'src/schemas/pomodoro.schema';
 import { Model } from 'mongoose';
 import { Category } from 'src/schemas/category.schema';
+import { TodoistTaskTracking } from 'src/schemas/todoistTaskTracking.schema';
 
 @Injectable()
 export class PomodorosService {
   constructor(
     @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
     @InjectModel(Category.name) private categoryModel: Model<Category>,
+    @InjectModel(TodoistTaskTracking.name)
+    private todoistTaskTrackingModel: Model<TodoistTaskTracking>,
   ) {}
 
-  async persistPomodoroRecords(
+  // task 끼리 계산해서 묶어주면,
+  async persistPomodoroRecordsAndTaskTrackingDurations(
     createPomodoroDto: CreatePomodoroDto,
     userEmail: string,
   ) {
-    const documentsWithCategoriesPopulated = [];
+    console.log('Received createPomodoroDto in service:', createPomodoroDto);
+
+    const arrayOfObjectsModifiedForPomodoroDoc = [];
 
     for (const val of createPomodoroDto.pomodoroRecordArr) {
+      const recordToPush: any = { ...val, userEmail };
+
+      // Handle category reference
       if (val.category) {
-        const currentCategory = await this.categoryModel //<------- we got object as a whole and use it's property _id.
+        const currentCategory = await this.categoryModel
           .findOne({
             userEmail,
             name: val.category.name,
           })
           .exec();
-        documentsWithCategoriesPopulated.push({
-          ...val,
-          category: currentCategory._id,
-        });
-      } else {
-        documentsWithCategoriesPopulated.push({
-          ...val,
-        });
+
+        if (currentCategory) {
+          recordToPush.category = currentCategory._id;
+        } else {
+          // Optionally handle missing category (e.g., skip or throw error)
+          recordToPush.category = undefined;
+        }
       }
+
+      // Handle task reference (if you want to store taskId as a string)
+      if (val.task) {
+        recordToPush.taskId = val.task.id;
+        // Optionally remove the nested task object
+        delete recordToPush.task;
+      }
+
+      arrayOfObjectsModifiedForPomodoroDoc.push(recordToPush);
     }
 
-    const result = await this.pomodoroModel.insertMany(
-      documentsWithCategoriesPopulated,
+    console.log(
+      'arrayOfObjectsModifiedForPomodoroDoc in persistPomodoroRecords',
+      arrayOfObjectsModifiedForPomodoroDoc,
     );
 
-    return result;
+    const pomodoroRecordPersistResult = await this.pomodoroModel.insertMany(
+      arrayOfObjectsModifiedForPomodoroDoc,
+    );
+
+    const taskTrackingDurationsToPersist =
+      createPomodoroDto.taskTrackingArr.map((tracking) => ({
+        ...tracking,
+        userEmail, // Add userEmail property
+      }));
+
+    // Instead of insertMany, use bulkWrite for upsert+inc
+    const bulkOps = taskTrackingDurationsToPersist.map((tracking) => ({
+      updateOne: {
+        filter: { userEmail: tracking.userEmail, taskId: tracking.taskId },
+        update: { $inc: { duration: tracking.duration } },
+        upsert: true,
+      },
+    }));
+
+    const taskTrackingDurationsPersistResult =
+      await this.todoistTaskTrackingModel.bulkWrite(bulkOps);
+
+    console.log(
+      'taskTrackingDurationsPersistResult in persistPomodoroRecords<--------------------',
+      taskTrackingDurationsPersistResult,
+    );
+
+    // TODO - userEmail을 제외하고 보내기?
+    return { pomodoroRecordPersistResult, taskTrackingDurationsPersistResult };
   }
 
   async getAllPomodoroRecordsByUserEmail(userEmail: string) {
@@ -210,190 +256,3 @@ function createRecords({
 function generateRandomNumOfCycle(min, max) {
   return Math.random() * (max - min) + min;
 }
-
-//#region Type definitions
-type InfoType = {
-  kind: 'category' | 'pause' | 'endOfSession';
-  name?: string | 'start' | 'end';
-  timestamp: number;
-};
-type M = {
-  c_duration_array: {
-    categoryName: string;
-    duration: number;
-    startTime: number;
-  }[];
-  currentCategoryName: string;
-};
-type NN = {
-  durationArr: {
-    owner: string; //! This is not optional since pause can also have its category. I mean we just can pause a session and the session has its category (including "uncategorized")
-    duration: number;
-    type: 'pause' | 'focus';
-    startTime: number;
-  }[];
-  currentStartTime: number;
-  currentType: 'pause' | 'focus';
-  currentOwner: string;
-};
-type Duration = {
-  owner: string;
-  duration: number;
-  type: 'pause' | 'focus';
-  startTime: number;
-};
-//#endregion
-
-//#region transform 1 - to get data sorted by timestamp.
-function createDataSortedByTimestamp(
-  categoryChangeInfoArray: {
-    categoryName: string;
-    categoryChangeTimestamp: number;
-  }[],
-  pauseRecord: {
-    start: number;
-    end: number;
-  }[],
-  endTime: number,
-) {
-  const categoryChanges = transformCategoryChanges(categoryChangeInfoArray);
-  const pauseRecords = transformPauseRecords(pauseRecord);
-  const data = [...categoryChanges, ...pauseRecords];
-  data.sort((a, b) => a.timestamp - b.timestamp);
-  data.push({ kind: 'endOfSession', timestamp: endTime });
-  return data;
-
-  function transformCategoryChanges(
-    categoryChangeInfoArray: {
-      categoryName: string;
-      categoryChangeTimestamp: number;
-    }[],
-  ): InfoType[] {
-    return categoryChangeInfoArray.map((val) => ({
-      kind: 'category',
-      name: val.categoryName,
-      timestamp: val.categoryChangeTimestamp,
-    }));
-  }
-
-  function transformPauseRecords(
-    pauseRecords: { start: number; end: number }[],
-  ): InfoType[] {
-    return pauseRecords.flatMap((val) => [
-      { kind: 'pause', name: 'start', timestamp: val.start },
-      { kind: 'pause', name: 'end', timestamp: val.end },
-    ]);
-  }
-}
-//#endregion
-
-//#region transform 2: duration for each category
-//! reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: T[]) => U, initialValue: U): U;
-function calculateDurationForEveryCategory(
-  acc: NN,
-  val: InfoType,
-  idx: number,
-  _array: InfoType[],
-): NN {
-  // 로직:
-  // 1. currentValue가 이제 Info니까... 우선 그냥 timestamp이용해서 시간 간격을 계산한다.
-  // 2. 그리고 이제 currentValue.kind가 무엇이냐에 따라서...
-  if (idx === 0) {
-    acc.currentOwner = val.name!;
-    acc.currentStartTime = val.timestamp;
-    return acc;
-  }
-
-  const duration_in_ms = val.timestamp - _array[idx - 1].timestamp;
-  const duration_in_min = Math.floor(duration_in_ms / (60 * 1000));
-
-  switch (val.kind) {
-    case 'pause':
-      if (val.name === 'start') {
-        acc.durationArr.push({
-          owner: acc.currentOwner,
-          duration: duration_in_min,
-          type: acc.currentType,
-          startTime: acc.currentStartTime,
-        });
-        acc.currentType = 'pause';
-        acc.currentStartTime = val.timestamp;
-      }
-      if (val.name === 'end') {
-        acc.durationArr.push({
-          owner: acc.currentOwner,
-          duration: duration_in_min,
-          type: acc.currentType,
-          startTime: acc.currentStartTime,
-        });
-        acc.currentType = 'focus';
-        acc.currentStartTime = val.timestamp;
-      }
-      break;
-    case 'category':
-      acc.durationArr.push({
-        owner: acc.currentOwner,
-        duration: duration_in_min,
-        type: acc.currentType,
-        startTime: acc.currentStartTime,
-      });
-      acc.currentOwner = val.name!;
-      acc.currentStartTime = val.timestamp;
-      break;
-    case 'endOfSession':
-      if (duration_in_min !== 0)
-        // A session is forcibly ended by a user during a pause.
-        acc.durationArr.push({
-          owner: acc.currentOwner,
-          duration: duration_in_min,
-          type: acc.currentType,
-          startTime: acc.currentStartTime,
-        });
-      break;
-
-    default:
-      break;
-  }
-
-  return acc;
-}
-//#endregion
-
-//#region transform 3: sum up focus durations of the same category.
-function aggregateFocusDurationOfTheSameCategory(
-  prev: M,
-  val: Duration,
-  idx: number,
-  // array: Duration[],
-) {
-  if (idx === 0) {
-    prev.c_duration_array.push({
-      categoryName: val.owner,
-      duration: val.duration,
-      startTime: val.startTime,
-    });
-    prev.currentCategoryName = val.owner;
-
-    return prev;
-  }
-
-  if (val.owner === prev.currentCategoryName) {
-    if (val.type === 'focus') {
-      prev.c_duration_array[prev.c_duration_array.length - 1].duration +=
-        val.duration;
-    }
-  }
-
-  if (val.owner !== prev.currentCategoryName) {
-    const newDuration = {
-      categoryName: val.owner,
-      duration: val.type === 'focus' ? val.duration : 0, // pause 도중에 다른 카테고리로 바꿨다면, 처음 duration이 pause.
-      startTime: val.startTime,
-    };
-    prev.c_duration_array.push(newDuration);
-    prev.currentCategoryName = val.owner;
-  }
-
-  return prev;
-}
-//#endregion

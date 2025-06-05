@@ -25,6 +25,7 @@ import { Grid } from "../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 import { TimerController } from "./Timer-Related/TimerController/TimerController";
+import { TodoistTasks } from "./Todoist-Related/TodoistTasks";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -44,6 +45,9 @@ export default function Main() {
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
   const autoStartSetting = useBoundedPomoInfoStore(
     (state) => state.autoStartSetting
+  );
+  const isTodoistIntegrationEnabled = useBoundedPomoInfoStore(
+    (state) => state.isTodoistIntegrationEnabled
   );
 
   //#region UseEffects
@@ -257,6 +261,13 @@ export default function Main() {
                       {user !== null && (
                         <BoxShadowWrapper>
                           <CategoryList />
+                        </BoxShadowWrapper>
+                      )}
+                    </GridItem>
+                    <GridItem width={"100%"}>
+                      {user !== null && isTodoistIntegrationEnabled && (
+                        <BoxShadowWrapper>
+                          <TodoistTasks />
                         </BoxShadowWrapper>
                       )}
                     </GridItem>

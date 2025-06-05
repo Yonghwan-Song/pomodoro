@@ -19,6 +19,8 @@ import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategor
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 import { UpdateGoalsDto } from './dto/update-goals.dto';
 import { UpdateCurrentCycleInfoDto } from './dto/update-current-cycle-info.dto';
+import { UpdateCurrentTaskIdAndTaskChangeInfoArrayDto } from './dto/update-current-task-id';
+import { UpdateTaskChangeInfoArrayDto } from './dto/update-task-change-info-array.dto';
 
 @Controller('users')
 export class UsersController {
@@ -134,9 +136,43 @@ export class UsersController {
     updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
     @Req() request: CustomRequest,
   ) {
-    console.log(updateCategoryChangeInfoArrayDto.categoryChangeInfoArray);
+    console.log(
+      'updateCategoryChangeInfoArrayDto.categoryChangeInfoArray',
+      updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
+    );
     return await this.usersService.updateCategoryChangeInfoArray(
       updateCategoryChangeInfoArrayDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('current-task-id')
+  async updateCurrentTaskId(
+    @Body(new ValidationPipe())
+    updateCurrentTaskIdAndTaskChangeInfoArrayDto: UpdateCurrentTaskIdAndTaskChangeInfoArrayDto,
+    @Req() request: CustomRequest,
+  ) {
+    console.log(
+      'updateCurrentTaskIdAndTaskChangeInfoArrayDto',
+      updateCurrentTaskIdAndTaskChangeInfoArrayDto,
+    );
+
+    return await this.usersService.updateCurrentTaskIdAndTaskChangeInfoArray(
+      updateCurrentTaskIdAndTaskChangeInfoArrayDto,
+      request.userEmail,
+    );
+  }
+
+  @Patch('task-change-info-array')
+  async updateTaskChangeInfoArray(
+    @Body(new ValidationPipe())
+    updateTaskChangeInfoArrayDto: UpdateTaskChangeInfoArrayDto,
+    @Req() request: CustomRequest,
+  ) {
+    console.log('updateTaskChangeInfoArrayDto', updateTaskChangeInfoArrayDto);
+
+    return await this.usersService.updateTaskChangeInfoArray(
+      updateTaskChangeInfoArrayDto,
       request.userEmail,
     );
   }

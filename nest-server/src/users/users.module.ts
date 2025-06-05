@@ -10,6 +10,10 @@ import {
   CycleSetting,
   CycleSettingSchema,
 } from 'src/schemas/cycleSetting.schema';
+import {
+  TodoistTaskTracking,
+  TodoistTaskTrackingSchema,
+} from 'src/schemas/todoistTaskTracking.schema';
 
 @Module({
   imports: [
@@ -19,6 +23,7 @@ import {
       { name: TodayRecord.name, schema: TodayRecordSchema },
       { name: Category.name, schema: CategorySchema },
       { name: CycleSetting.name, schema: CycleSettingSchema },
+      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema },
     ]),
   ],
   controllers: [UsersController],

@@ -32,7 +32,7 @@ export function reducer(
   action: TimerAction
 ): TimerStateType {
   switch (action.type) {
-    case "start":
+    case ACTION.START:
       postMsgToSW("saveStates", {
         stateArr: [
           { name: "startTime", value: action.payload },
@@ -48,7 +48,7 @@ export function reducer(
         startTime: action.payload!,
       };
 
-    case "pause":
+    case ACTION.PAUSE:
       postMsgToSW("saveStates", {
         stateArr: [
           { name: "running", value: false },
@@ -76,7 +76,7 @@ export function reducer(
         },
       };
 
-    case "resume":
+    case ACTION.RESUME:
       postMsgToSW("saveStates", {
         stateArr: [
           { name: "running", value: true },
@@ -122,7 +122,7 @@ export function reducer(
         },
       };
 
-    case "reset":
+    case ACTION.RESET:
       postMsgToSW("saveStates", {
         stateArr: [
           { name: "startTime", value: 0 },
@@ -136,7 +136,7 @@ export function reducer(
         pause: { totalLength: 0, record: [] },
       };
 
-    case "continue":
+    case ACTION.CONTINUE:
       return {
         ...action.payload,
       };

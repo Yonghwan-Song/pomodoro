@@ -21,7 +21,9 @@ export class PomodorosController {
     @Body(new ValidationPipe()) createPomodoroDto: CreatePomodoroDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.pomodorosService.persistPomodoroRecords(
+    // console.log('Received createPomodoroDto in controller:', createPomodoroDto);
+
+    return await this.pomodorosService.persistPomodoroRecordsAndTaskTrackingDurations(
       createPomodoroDto,
       request.userEmail,
     );

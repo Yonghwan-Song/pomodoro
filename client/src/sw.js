@@ -2,7 +2,13 @@
 import { openDB } from "idb";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { auth } from "../src/firebase";
-import { CacheName, BASE_URL, RESOURCE, SUB_SET } from "./constants/index";
+import {
+  CacheName,
+  BASE_URL,
+  RESOURCE,
+  SUB_SET,
+  TASK_DURATION_TRACKING_STORE_NAME,
+} from "./constants/index";
 import { IDB_VERSION } from "./constants/index";
 
 let DB = null;
@@ -76,7 +82,7 @@ self.addEventListener("message", async (ev) => {
 
       case "stopCountdown":
         //number로 바꿔야하 하는거 아니야?
-        console.log(payload.idOfSetInterval);
+        // console.log(payload.idOfSetInterval);
         clearInterval(payload.idOfSetInterval);
         break;
 
@@ -92,7 +98,7 @@ self.addEventListener("message", async (ev) => {
 });
 
 self.addEventListener("notificationclick", async (ev) => {
-  console.log("notification from sw is clicked");
+  // console.log("notification from sw is clicked");
   ev.notification.close();
 
   let pm = Promise.resolve()
@@ -118,16 +124,6 @@ async function openCache(name) {
   return cache;
 }
 
-async function getCacheNames() {
-  try {
-    const cacheNames = await caches.keys();
-    console.log("Cache Names:", cacheNames);
-    return cacheNames;
-  } catch (error) {
-    console.error("Error fetching cache names:", error);
-  }
-}
-
 async function openIndexedDB() {
   let db = await openDB("timerRelatedDB", IDB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction, event) {
@@ -138,13 +134,21 @@ async function openIndexedDB() {
           keyPath: "name",
         });
       }
+
       if (!db.objectStoreNames.contains("recOfToday")) {
         db.createObjectStore("recOfToday", {
           keyPath: ["kind", "startTime"],
         });
       }
+
       if (!db.objectStoreNames.contains("categoryStore")) {
         db.createObjectStore("categoryStore", {
+          keyPath: "name",
+        });
+      }
+
+      if (!db.objectStoreNames.contains("taskDurationTracking")) {
+        db.createObjectStore("taskDurationTracking", {
           keyPath: "name",
         });
       }
@@ -253,7 +257,12 @@ async function emptyStateStore(clientId) {
  * @param {*} payload timersStates and pomoSetting of the session that was just finished.
  */
 async function goNext(payload) {
-  let { pomoSetting, ...timersStatesWithCurrentCycleInfo } = payload; //? autoStartSetting은 왜 빼고 보냈지 payload에..?... -> retrieveAutoStartSettingFromIDB()를 wrapUpSession()에서 call하는데 다 이유가 있을듯.
+  let { pomoSetting, timersStatesWithCurrentCycleInfo, taskChangeInfoArray } =
+    payload; //? autoStartSetting은 왜 빼고 보냈지 payload에..?... -> retrieveAutoStartSettingFromIDB()를 wrapUpSession()에서 call하는데 다 이유가 있을듯.
+  // console.log(
+  //   "timersStatesWithCurrentCycleInfo at goNext",
+  //   timersStatesWithCurrentCycleInfo
+  // );
   let { currentCycleInfo, ...timersStates } = timersStatesWithCurrentCycleInfo;
   let { duration, repetitionCount, pause, startTime } = timersStates; //! info about the session just finished
 
@@ -273,6 +282,7 @@ async function goNext(payload) {
     timersStates,
     currentCycleInfo,
     pomoSetting,
+    taskChangeInfoArray,
     sessionData,
   });
 }
@@ -301,6 +311,7 @@ async function wrapUpSession({
   timersStates,
   currentCycleInfo,
   pomoSetting,
+  taskChangeInfoArray,
   sessionData,
 }) {
   let timersStatesForNextSession = { ...timersStates };
@@ -339,23 +350,6 @@ async function wrapUpSession({
     infoArrayBeforeReset = (await getCategoryChangeInfoArrayFromIDB()).value;
 
     // console.log("infoArrayBeforeReset", infoArrayBeforeReset);
-    // [
-    //     {
-    //         "categoryName": "Netflix",
-    //         "categoryChangeTimestamp": 1724909137377,
-    //         "color": "#be37a5",
-    //         "progress": 0,
-    //         "_id": "66d0064f7387aa24ba4f22ef",
-    //         "_uuid": "055e186a-44b1-4b3d-a54b-8545fa3f78d9"
-    //     },
-    //     {
-    //         "categoryName": "ENG",
-    //         "categoryChangeTimestamp": 1724909227140,
-    //         "_uuid": "73315058-5726-4158-a781-5d60d80af94c",
-    //         "color": "#6e95bf",
-    //         "progress": 0.5
-    //     }
-    // ]
 
     const infoArrAfterReset = [
       {
@@ -450,14 +444,18 @@ async function wrapUpSession({
       ]);
 
       // 2. 마무리 하면서 생기는 데이터 persist
-      idTokenAndEmail &&
-        (await recordPomo(
-          timersStates.startTime,
-          idTokenAndEmail,
-          infoArrayBeforeReset,
-          sessionData
-        ));
-      await persistSessionToIDB("pomo", sessionData);
+      if (sessionData.startTime !== 0) {
+        idTokenAndEmail &&
+          (await recordPomo(
+            timersStates.startTime,
+            idTokenAndEmail,
+            infoArrayBeforeReset,
+            taskChangeInfoArray,
+            sessionData
+          ));
+        await persistSessionToIDB("pomo", sessionData);
+        persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+      }
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
@@ -478,8 +476,6 @@ async function wrapUpSession({
       } else {
         console.warn("autoStartSetting is undefined");
       }
-
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
 
       break;
 
@@ -525,7 +521,8 @@ async function wrapUpSession({
         console.warn("autoStartSetting is undefined");
       }
 
-      persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+      sessionData.startTime !== 0 &&
+        persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
 
       break;
 
@@ -536,13 +533,6 @@ async function wrapUpSession({
       });
 
       timersStatesForNextSession.duration = longBreakDuration;
-      idTokenAndEmail &&
-        (await recordPomo(
-          timersStates.startTime,
-          idTokenAndEmail,
-          infoArrayBeforeReset,
-          sessionData
-        ));
 
       await persistStatesToIDB([
         ...arrOfStatesOfTimerReset,
@@ -555,8 +545,18 @@ async function wrapUpSession({
           value: timersStatesForNextSession.duration,
         },
       ]);
-
-      await persistSessionToIDB("pomo", sessionData);
+      if (sessionData.startTime !== 0) {
+        idTokenAndEmail &&
+          (await recordPomo(
+            timersStates.startTime,
+            idTokenAndEmail,
+            infoArrayBeforeReset,
+            taskChangeInfoArray,
+            sessionData
+          ));
+        persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+        await persistSessionToIDB("pomo", sessionData);
+      }
 
       if (autoStartSetting !== undefined) {
         if (autoStartSetting.doesBreakStartAutomatically === false) {
@@ -577,8 +577,6 @@ async function wrapUpSession({
       } else {
         console.warn("autoStartSetting is undefined");
       }
-
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
 
       break;
 
@@ -627,7 +625,6 @@ async function wrapUpSession({
           },
         },
       ]);
-      await persistSessionToIDB("pomo", sessionData);
 
       //? 3)
       persistTimersStatesToServer(timersStatesForNextSession, idToken);
@@ -643,14 +640,19 @@ async function wrapUpSession({
         },
         idToken
       );
-      persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
-      idTokenAndEmail &&
-        (await recordPomo(
-          timersStates.startTime,
-          idTokenAndEmail,
-          infoArrayBeforeReset,
-          sessionData
-        ));
+
+      if (sessionData.startTime !== 0) {
+        idTokenAndEmail &&
+          (await recordPomo(
+            timersStates.startTime,
+            idTokenAndEmail,
+            infoArrayBeforeReset,
+            taskChangeInfoArray,
+            sessionData
+          ));
+        await persistSessionToIDB("pomo", sessionData);
+        persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+      }
 
       break;
 
@@ -745,7 +747,8 @@ async function wrapUpSession({
         console.warn("autoStartSetting is undefined");
       }
 
-      persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+      sessionData.startTime !== 0 &&
+        persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
 
       break;
 
@@ -862,77 +865,45 @@ async function getCategoryChangeInfoArrayFromIDB() {
   }
 }
 
-async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
-  let body = null;
-  // console.log("info arr in recordPomo", infoArray);
-
+async function recordPomo(
+  startTime,
+  idTokenAndEmail,
+  categoryChangeInfoArray,
+  taskChangeInfoArray,
+  sessionData
+) {
   try {
-    const { idToken, email } = idTokenAndEmail;
-    const today = new Date(startTime);
-    let LocaleDateString = `${
-      today.getMonth() + 1
-    }/${today.getDate()}/${today.getFullYear()}`;
+    const { idToken } = idTokenAndEmail;
 
-    //#region PLZ
-    //!  Type of the final below.
-    // {
-    //   userEmail: string;
-    //   duration: number;
-    //   startTime: number;
-    //   date: string;
-    //   isDummy: boolean;
-    //   category?: {
-    //     name: string;
-    //   };
-    // }[]
+    // console.log("taskChangeInfoArray inside recordPomo", taskChangeInfoArray);
 
-    const final = convertMilliSecToMin(
-      createDataSortedByTimestamp(
-        infoArray,
-        sessionData.pause.record,
-        sessionData.endTime
-      )
-        .reduce(calculateDurationForEveryCategory, {
-          durationArr: [],
-          currentType: "focus",
-          currentOwner: "",
-          currentStartTime: 0,
-        })
-        .durationArr.reduce(aggregateFocusDurationOfTheSameCategory, {
-          c_duration_array: [],
-          currentCategoryName: "",
-        }).c_duration_array
-    ).map((val) => {
-      if (val.categoryName !== "uncategorized") {
-        return {
-          userEmail: email,
-          duration: val.duration,
-          startTime: val.startTime,
-          date: LocaleDateString,
-          isDummy: false,
-          category: {
-            name: val.categoryName,
-          },
-        };
-      } else {
-        return {
-          userEmail: email,
-          duration: val.duration,
-          startTime: val.startTime,
-          date: LocaleDateString,
-          isDummy: false,
-        };
-      }
-    });
-    // console.log("final in sw.js<----------------------------------", final);
-    //#endregion
+    const timestamps = makeTimestampsFromRawData(
+      categoryChangeInfoArray,
+      taskChangeInfoArray,
+      sessionData.pause.record,
+      sessionData.endTime
+    );
+    const segments = makeSegmentsFromTimestamps(timestamps);
+    const durations =
+      makeDurationsFromSegmentsByCategoryAndTaskCombination(segments);
+    const pomodoroRecordArr = makePomoRecordsFromDurations(
+      durations,
+      startTime
+    );
+    // TODO 이거를 global state과 합치는데 이용하려면, index.tsx로 보내야하니까,
+    const taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
+    const taskTrackingArr = Array.from(taskFocusDurationMap.entries()).map(
+      ([taskId, duration]) => ({
+        taskId,
+        duration: Math.floor(duration / (60 * 1000)),
+      })
+    );
 
     //#region
     BC.postMessage({
       evName: "pomoAdded",
-      payload: final,
+      payload: { pomodoroRecordArr, taskTrackingArr },
     });
-    // console.log("pubsub event from sw", pubsub.events);
 
     //#endregion
 
@@ -955,7 +926,7 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
         // Put the updated data back into the cache
         await cache.put(
           cacheUrl,
-          new Response(JSON.stringify([...statData, ...final]), {
+          new Response(JSON.stringify([...statData, ...pomodoroRecordArr]), {
             headers: { "Content-Type": "application/json" },
           })
         );
@@ -973,7 +944,8 @@ async function recordPomo(startTime, idTokenAndEmail, infoArray, sessionData) {
       RESOURCE.POMODOROS,
       "POST",
       {
-        pomodoroRecordArr: final,
+        pomodoroRecordArr,
+        taskTrackingArr,
       },
       idToken
     );
@@ -1048,12 +1020,12 @@ async function persistRecOfTodayToServer(record, idToken) {
 
 function identifyPrevSession({ howManyCountdown, numOfPomo, numOfCycle }) {
   if (howManyCountdown === 0) {
-    console.log("1");
+    // console.log("1");
     return SESSION.VERY_LAST_POMO;
   }
 
   if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
-    console.log("2");
+    // console.log("2");
     return SESSION.VERY_LAST_POMO;
   }
 
@@ -1063,29 +1035,29 @@ function identifyPrevSession({ howManyCountdown, numOfPomo, numOfCycle }) {
       //                         = (2, 3) -> PBPL|PBPL|PBP
       if (howManyCountdown % 2 === 0) {
         if (howManyCountdown % (2 * numOfPomo) === 0) {
-          console.log("3");
+          // console.log("3");
           return SESSION.LONG_BREAK;
         }
-        console.log("4");
+        // console.log("4");
         return SESSION.SHORT_BREAK;
       }
       if (howManyCountdown % 2 === 1) {
         if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
-          console.log("5");
+          // console.log("5");
           return SESSION.LAST_POMO;
         }
-        console.log("6");
+        // console.log("6");
         return SESSION.POMO;
       }
     } else if (numOfPomo === 1) {
       // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
       // Short break does not exist
       if (howManyCountdown % 2 === 0) {
-        console.log("7");
+        // console.log("7");
         return SESSION.LONG_BREAK;
       }
       if (howManyCountdown % 2 === 1) {
-        console.log("8");
+        // console.log("8");
         return SESSION.LAST_POMO;
       }
     }
@@ -1094,21 +1066,22 @@ function identifyPrevSession({ howManyCountdown, numOfPomo, numOfCycle }) {
     if (numOfPomo > 1) {
       // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
       if (howManyCountdown % 2 === 1) {
-        console.log("9");
+        // console.log("9");
         return SESSION.POMO;
       }
       if (howManyCountdown % 2 === 0) {
-        console.log("10");
+        // console.log("10");
         return SESSION.SHORT_BREAK;
       }
     } else if (numOfPomo === 1) {
       // P
-      console.log("11");
+      // console.log("11");
       return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
     }
   }
 
-  console.log("12");
+  // console.log("12");
+
   return SESSION.POMO; //dummy
 }
 
@@ -1151,52 +1124,95 @@ async function fetchWrapper(URL, METHOD, data, idToken) {
   }
 }
 
-//#region utilities for category change
-//#region transform 1 - to get data sorted by timestamp.
-function createDataSortedByTimestamp(
+//-------------------------------New After Todoist Integration Feature-----------------------------
+//#region raw data to timestamps
+export function makeTimestampsFromRawData(
   categoryChangeInfoArray,
+  taskChangeInfoArray,
   pauseRecord,
   endTime
 ) {
-  const categoryChanges = transformCategoryChanges(categoryChangeInfoArray);
+  const categoryChanges = transformCategoryChangeInfoArray(
+    categoryChangeInfoArray
+  );
+  const taskChanges = transformTaskChangesArray(taskChangeInfoArray);
   const pauseRecords = transformPauseRecords(pauseRecord);
-  const data = [...categoryChanges, ...pauseRecords];
+  const data = [...categoryChanges, ...taskChanges, ...pauseRecords];
+
   data.sort((a, b) => a.timestamp - b.timestamp);
   data.push({ kind: "endOfSession", timestamp: endTime });
+
   return data;
 
-  function transformCategoryChanges(categoryChangeInfoArray) {
+  function transformCategoryChangeInfoArray(categoryChangeInfoArray) {
     return categoryChangeInfoArray.map((val) => ({
       kind: "category",
-      name: val.categoryName,
+      subKind: val.categoryName,
       timestamp: val.categoryChangeTimestamp,
+    }));
+  }
+
+  function transformTaskChangesArray(taskChangeInfoArray) {
+    return taskChangeInfoArray.map((val) => ({
+      kind: "task",
+      subKind: val.id,
+      timestamp: val.taskChangeTimestamp,
     }));
   }
 
   function transformPauseRecords(pauseRecords) {
     return pauseRecords.flatMap((val) => [
-      { kind: "pause", name: "start", timestamp: val.start },
-      { kind: "pause", name: "end", timestamp: val.end },
+      { kind: "pause", subKind: "start", timestamp: val.start },
+      { kind: "pause", subKind: "end", timestamp: val.end },
     ]);
   }
 }
 //#endregion
 
-//#region transform 2: duration for each category
-function calculateDurationForEveryCategory(acc, val, idx, _array) {
+//#region timestamps to segments - Array<InfoOfSessionStateChange> -> Array<SessionSegment>
+export function makeSegmentsFromTimestamps(timestampData) {
+  const segArrAndHelper = timestampData.reduce(timestamps_to_segments, {
+    segmentDurationArr: [],
+    currentType: "focus",
+    currentOwner: ["", ""],
+    currentStartTime: 0,
+  });
+  return segArrAndHelper.segmentDurationArr;
+}
+export function timestamps_to_segments(acc, val, idx, _array) {
+  // 로직:
+  // 1. currentValue가 이제 Info니까... 우선 그냥 timestamp이용해서 시간 간격을 계산한다.
+  // 2. 그리고 이제 currentValue.kind가 무엇이냐에 따라서...
   if (idx === 0) {
-    acc.currentOwner = val.name;
-    acc.currentStartTime = val.timestamp;
+    // segments의 첫번째가 pause일리 없기 때문에 index가 0인 경우는 그냥 kind는 category일 것이므로, 바로 name을 owner로 설정한다.
+    // kind와 name의 조합이 어떤 의미인지 맨 위의 comment를 보면 이해할 수 있다.
+    if (val.kind === "category") {
+      acc.currentOwner[0] = val.subKind;
+    } else if (val.kind === "task") {
+      acc.currentOwner[1] = val.subKind;
+    }
+    acc.currentStartTime = val.timestamp; // startTime으로 값이 같을테니 idx === 1일때는 할당해주지 않는다.
+    return acc;
+  }
+  if (idx === 1) {
+    if (val.kind === "category") {
+      acc.currentOwner[0] = val.subKind;
+    } else if (val.kind === "task") {
+      acc.currentOwner[1] = val.subKind;
+    }
     return acc;
   }
 
   const duration_in_ms = val.timestamp - _array[idx - 1].timestamp;
+  // const duration_in_min = Math.floor(duration_in_ms / (60 * 1000));
 
+  // Session의 상태에 변화가 있을 때마다 timestamp가 찍혔었고 (pasue, category change), 그 사이의 duration을 계산한다.
+  // duration_in_ms는 방금의 변화에 의해 일단락된 segment의 duration을 의미한다.
   switch (val.kind) {
     case "pause":
-      if (val.name === "start") {
-        acc.durationArr.push({
-          owner: acc.currentOwner,
+      if (val.subKind === "start") {
+        acc.segmentDurationArr.push({
+          owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
           startTime: acc.currentStartTime,
@@ -1204,37 +1220,48 @@ function calculateDurationForEveryCategory(acc, val, idx, _array) {
         acc.currentType = "pause";
         acc.currentStartTime = val.timestamp;
       }
-      if (val.name === "end") {
-        acc.durationArr.push({
-          owner: acc.currentOwner,
+      if (val.subKind === "end") {
+        acc.segmentDurationArr.push({
+          owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: val.timestamp,
+          startTime: acc.currentStartTime,
         });
         acc.currentType = "focus";
         acc.currentStartTime = val.timestamp;
       }
       break;
     case "category":
-      acc.durationArr.push({
-        owner: acc.currentOwner,
+      acc.segmentDurationArr.push({
+        owner: [acc.currentOwner[0], acc.currentOwner[1]],
         duration: duration_in_ms,
         type: acc.currentType,
         startTime: acc.currentStartTime,
       });
-      acc.currentOwner = val.name;
+      acc.currentOwner[0] = val.subKind; // category가 바뀌었으므로, owner도 바꿔준다.
+      acc.currentStartTime = val.timestamp;
+      break;
+    case "task":
+      acc.segmentDurationArr.push({
+        owner: [acc.currentOwner[0], acc.currentOwner[1]],
+        duration: duration_in_ms,
+        type: acc.currentType,
+        startTime: acc.currentStartTime,
+      });
+      acc.currentOwner[1] = val.subKind;
       acc.currentStartTime = val.timestamp;
       break;
     case "endOfSession":
-      if (duration_in_ms !== 0) {
-        acc.durationArr.push({
-          owner: acc.currentOwner,
+      if (duration_in_ms !== 0)
+        // A session is forcibly ended by a user during a pause.
+        acc.segmentDurationArr.push({
+          owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
           startTime: acc.currentStartTime,
         });
-      }
       break;
+
     default:
       break;
   }
@@ -1243,41 +1270,135 @@ function calculateDurationForEveryCategory(acc, val, idx, _array) {
 }
 //#endregion
 
-//#region transform 3: sum up focus durations of the same category.
-function aggregateFocusDurationOfTheSameCategory(prev, val, idx) {
+//#region segments to durations - aggregate the same session by the same kind
+//#region by task & category combination
+export function makeDurationsFromSegmentsByCategoryAndTaskCombination(
+  segmentData
+) {
+  const durationAndHelper = segmentData.reduce(segments_to_durations, {
+    durationArrOfCategoryTaskCombination: [],
+    currentCategoryTaskCombination: ["", ""],
+  });
+  return durationAndHelper.durationArrOfCategoryTaskCombination;
+}
+export function segments_to_durations(acc, segment, idx) {
   if (idx === 0) {
-    prev.c_duration_array.push({
-      categoryName: val.owner,
+    acc.durationArrOfCategoryTaskCombination.push({
+      categoryName: segment.owner[0],
+      taskId: segment.owner[1],
+      duration: segment.duration,
+      startTime: segment.startTime,
+    });
+    acc.currentCategoryTaskCombination[0] = segment.owner[0];
+    acc.currentCategoryTaskCombination[1] = segment.owner[1];
+    return acc;
+  }
+
+  // Check if this segment has the SAME owner as the current one
+  if (
+    segment.owner[0] === acc.currentCategoryTaskCombination[0] &&
+    segment.owner[1] === acc.currentCategoryTaskCombination[1]
+  ) {
+    // Same owner - aggregate the duration if it's a focus type
+    if (segment.type === "focus") {
+      acc.durationArrOfCategoryTaskCombination[
+        acc.durationArrOfCategoryTaskCombination.length - 1
+      ].duration += segment.duration;
+    }
+  } else {
+    // Different owner - create a new entry
+    const newDuration = {
+      categoryName: segment.owner[0],
+      taskId: segment.owner[1],
+      duration: segment.type === "focus" ? segment.duration : 0,
+      startTime: segment.startTime,
+    };
+    acc.durationArrOfCategoryTaskCombination.push(newDuration);
+    acc.currentCategoryTaskCombination = [segment.owner[0], segment.owner[1]];
+  }
+
+  return acc;
+}
+//#endregion task & category
+//#region by task
+/**
+ * Aggregates focus durations by taskId only (ignores category).
+ * Only "focus" segments are counted.
+ */
+export function getTaskDurationMapFromSegments(segments) {
+  const TaskDurationMap = segments.reduce((acc, segment) => {
+    const taskId = segment.owner[1];
+    if (segment.type !== "focus" || !taskId) return acc;
+
+    if (acc.has(taskId)) {
+      // If the taskId already exists, add the duration to the existing value
+      acc.set(taskId, acc.get(taskId) + segment.duration);
+    } else {
+      acc.set(taskId, segment.duration);
+    }
+
+    return acc;
+  }, new Map());
+
+  return TaskDurationMap;
+}
+export function segments_to_task_durations(acc, segment) {
+  const taskId = segment.owner[1];
+  if (segment.type !== "focus" || !taskId) return acc;
+
+  if (acc.has(taskId)) {
+    acc.get(taskId).duration += segment.duration;
+  } else {
+    acc.set(taskId, { duration: segment.duration });
+  }
+
+  return acc;
+}
+//#endregion by task
+//#endregion
+
+//#region durations to pomoRecords
+export function makePomoRecordsFromDurations(durations, startTime) {
+  const today = new Date(startTime);
+  let LocaleDateString = `${
+    today.getMonth() + 1
+  }/${today.getDate()}/${today.getFullYear()}`;
+
+  return convertMilliSecToMin2(durations).map((val) => {
+    // 카테고리가 uncategorized인 경우 category field를 넣지 않고,
+    // 마찬가지로 taskId가 ""인 경우 task field를 넣지 않는다.
+
+    let pomoRecord = {
       duration: val.duration,
       startTime: val.startTime,
-    });
-    prev.currentCategoryName = val.owner;
-
-    return prev;
-  }
-
-  if (val.owner === prev.currentCategoryName) {
-    if (val.type === "focus") {
-      prev.c_duration_array[prev.c_duration_array.length - 1].duration +=
-        val.duration;
-    }
-  }
-
-  if (val.owner !== prev.currentCategoryName) {
-    const newDuration = {
-      categoryName: val.owner,
-      duration: val.type === "focus" ? val.duration : 0,
-      startTime: val.startTime,
+      date: LocaleDateString,
+      isDummy: false,
     };
-    prev.c_duration_array.push(newDuration);
-    prev.currentCategoryName = val.owner;
-  }
 
-  return prev;
+    if (val.categoryName !== "uncategorized") {
+      pomoRecord = {
+        ...pomoRecord,
+        category: {
+          name: val.categoryName,
+        },
+      };
+    }
+
+    //! none task is removed
+    if (val.taskId !== "") {
+      pomoRecord = {
+        ...pomoRecord,
+        task: {
+          id: val.taskId,
+        },
+      };
+    }
+
+    return pomoRecord;
+  });
 }
-
-function convertMilliSecToMin(durationByCategoryArr) {
-  return durationByCategoryArr.map((val) => {
+export function convertMilliSecToMin2(durationArrOfCategoryTaskCombination) {
+  return durationArrOfCategoryTaskCombination.map((val) => {
     // console.log(
     //   "<-------------------------------convertMilliSecToMin---------------------------------->"
     // );
@@ -1285,6 +1406,9 @@ function convertMilliSecToMin(durationByCategoryArr) {
     return { ...val, duration: Math.floor(val.duration / (60 * 1000)) };
   });
 }
+//#endregion
+
+//#region utilities for category change
 function roundTo_X_DecimalPoints(num, X) {
   return Math.round(num * 10 ** X) / 10 ** X;
 }

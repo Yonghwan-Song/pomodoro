@@ -43,6 +43,7 @@ import { roundTo_X_DecimalPoints } from "../../utils/number-related-utils";
 import { CycleSettingFrame } from "./CycleSettingFrame";
 import { AutoStartSettingsUI } from "./AutoStartSettingsUI";
 import { calculateTargetFocusRatio } from "../../utils/anything";
+import { TodoistIntegration } from "./TodoistIntegration";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -80,7 +81,7 @@ function Settings() {
     // I will not modify this object referenced.
     return cycleSettings.find((setting) => setting.isCurrent);
   }, [cycleSettings]);
-  console.log("currentCycleSetting at Settings", currentCycleSetting);
+  // console.log("currentCycleSetting at Settings", currentCycleSetting);
   const [cycleSettingSelected, setCycleSettingSelected] =
     useState<CycleSetting | null>(null);
   const [flag, setFlag] = useState(true);
@@ -778,6 +779,11 @@ function Settings() {
             <GridItem>
               <BoxShadowWrapper>
                 <Categories />
+              </BoxShadowWrapper>
+            </GridItem>
+            <GridItem>
+              <BoxShadowWrapper>
+                <TodoistIntegration />
               </BoxShadowWrapper>
             </GridItem>
           </>

@@ -108,6 +108,19 @@ CycleSettingFrameProps) {
     (state) => state.setPomoSetting
   );
 
+  const isTodoistIntegrationEnabled = useBoundedPomoInfoStore(
+    (states) => states.isTodoistIntegrationEnabled
+  );
+  const setTaskChangeInfoArray = useBoundedPomoInfoStore(
+    (states) => states.setTaskChangeInfoArray
+  );
+  const currentTaskId = useBoundedPomoInfoStore(
+    (states) => states.currentTaskId
+  );
+  const setTimersStatesPartial = useBoundedPomoInfoStore(
+    (states) => states.setTimersStatesPartial
+  );
+
   // useEffect(() => {
   //   if (isUserCreatingNewCycleSetting && cycleSettingNameInputRef.current) {
   //     cycleSettingNameInputRef.current.focus();
@@ -143,6 +156,21 @@ CycleSettingFrameProps) {
 
   const confirmDelete = (ev: React.MouseEvent<HTMLButtonElement>) => {
     deleteSelectedSetting(ev);
+    // 지금 지우는게 현재 세션에 적용되어있는 세팅인 경우에만 이렇게 하는게 맞는거 같은데
+    // 어떻게 판단하지?
+    if (user !== null) {
+      if (cycleSettingSelected?.isCurrent && isTodoistIntegrationEnabled) {
+        const newTaskChangeInfo = {
+          id: currentTaskId,
+          taskChangeTimestamp: 0,
+        };
+        setTaskChangeInfoArray([newTaskChangeInfo]);
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+          taskChangeInfoArray: [newTaskChangeInfo],
+        });
+        setTimersStatesPartial({ running: false, startTime: 0 });
+      }
+    }
     closeDeleteModal();
   };
 
@@ -264,6 +292,18 @@ CycleSettingFrameProps) {
         totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
       });
       updateCategoryChangeInfoArray(infoArr);
+
+      if (isTodoistIntegrationEnabled) {
+        const newTaskChangeInfo = {
+          id: currentTaskId,
+          taskChangeTimestamp: 0,
+        };
+        setTaskChangeInfoArray([newTaskChangeInfo]);
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+          taskChangeInfoArray: [newTaskChangeInfo],
+        });
+        setTimersStatesPartial({ running: false, startTime: 0 });
+      }
     }
 
     closeSelectModal();
@@ -358,6 +398,18 @@ CycleSettingFrameProps) {
         totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
       });
       updateCategoryChangeInfoArray(infoArr);
+
+      if (isTodoistIntegrationEnabled) {
+        const newTaskChangeInfo = {
+          id: currentTaskId,
+          taskChangeTimestamp: 0,
+        };
+        setTaskChangeInfoArray([newTaskChangeInfo]);
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+          taskChangeInfoArray: [newTaskChangeInfo],
+        });
+        setTimersStatesPartial({ running: false, startTime: 0 });
+      }
     } else {
       // 1) 2)
       const {
