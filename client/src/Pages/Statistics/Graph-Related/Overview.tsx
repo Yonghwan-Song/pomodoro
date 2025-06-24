@@ -24,7 +24,7 @@ export function Overview(props: OverviewProps) {
       fontSize={"1em"}
       // inset={true}
     >
-      <FlexBox justifyContent="space-around">
+      <FlexBox justifyContent="space-around" columnGap="7px">
         <TotalComparison thisTotal={today} lastTotal={lastDay} target="day" />
 
         <TotalComparison

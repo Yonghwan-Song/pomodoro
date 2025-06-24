@@ -318,21 +318,18 @@ export function StackedGraph({
   //#endregion
 
   return (
-    <BoxShadowWrapper
-    // inset={true}
-    >
+    <BoxShadowWrapper>
       <div
         style={{
           position: "absolute",
           display: "flex",
-          right: 0,
-          top: "10px",
-          marginRight: "20px",
+          right: "5px",
+          top: "6px",
           zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
-        <p>{weekRange}</p>
+        <p style={{ width: "95px", textAlign: "center" }}>{weekRange}</p>
         <RightArrow handleClick={() => calculateNextWeekData(statData)} />
       </div>
       {/* <ResponsiveContainer width="100%" height={400}> */}
@@ -340,7 +337,7 @@ export function StackedGraph({
         <AreaChart
           data={dailyStatOfWeek}
           //* IMPT: This margin is applied to the acutal graph that consists of the cartesian grid and the two cartesian axises. And they are  the children of the Surface component the parent of which is the AreaChart.
-          margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
+          margin={{ top: 12, right: 10, left: -27, bottom: -10 }}
         >
           <defs></defs>
           <CartesianGrid strokeDasharray="3 3" />

@@ -63,6 +63,7 @@
     ]
   },
   "devDependencies": {
+    "@emotion/react": "^11.14.0",
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-json": "^6.0.0",

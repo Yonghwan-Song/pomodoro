@@ -21,24 +21,22 @@ type TimelineProps = {
 export default function Timeline({ arrOfSessions }: TimelineProps) {
   const divRef = useRef<HTMLDivElement>(null);
 
-  //! These are going to be used by UI event handlers defined below.
-  let isButtonPressed = false;
-  let clientXByMouseDown: number = 0;
-  let leftWhenMouseDown: number | null = null;
+  // ref로 변경된 변수들
+  const isButtonPressed = useRef<boolean>(false);
+  const clientXByMouseDown = useRef<number>(0);
+  const leftWhenMouseDown = useRef<number | null>(null);
+  const touchStartX = useRef<number>(0);
+  const isTouching = useRef<boolean>(false);
 
   //#region About Responsiveness
-  const fullWidthOfTimeline = useRef<number>(1920 * 6); // pixel per hour * 24. But I will just set it to FHD media's timeline width.
+  const fullWidthOfTimeline = useRef<number>(1920 * 6);
   let initialLeftAndRight = {
     left: "0px",
     right: "",
   };
-  const currentRule = useRef<number>(8 / 60); // <=> PIXEL.PER_SEC.IN_FHD
+  const currentRule = useRef<number>(8 / 60);
 
   //#region Listen to the change events of every range
-
-  // Reason for `&& divRef.current` in the if condition:
-  // Since these handlers are also called in other paths like "/statistics",
-  // the divRef.current check ensures they are only executed when the path is "/timer".
   const handleMobileRange = useCallback((ev: MediaQueryListEvent) => {
     if (ev.matches && divRef.current) {
       console.log("------------mobile------------");
@@ -171,35 +169,31 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
   //#region UI event handlers
   /**
-   * How it works:
-   *   1. drag timeline to the right <=> see the part of timeline hided beyond the left edge of viewport
-   *      <=> clientX by moving mouse pointer becomes bigger than the clientX when pressing down mouse button.
-   *      <=> deltaX > 0 (deltaX is defined in this function)
-   *   2. drag timeline to the left - the opposite of the explanation above.
-   *
-   * What it does:
-   *   1. calculate leftWhenMouseDown
-   *   2. calculate a new left value.
-   *   2. assign a new left or right value.
-   *
-   * @param clientXByMouseMove - https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/clientX
-   *
-   * leftWhenMouseDown, fullWidthOfTimeline are defined in this function component scope.
+   * 타임라인을 드래그하여 이동시키는 핵심 함수
+   * 원리: 시작위치 + 움직인거리 = 새로운위치
+   * @param clientX - 현재 마우스/터치의 X 좌표
    */
-  function moveTimelineByDragging(clientXByMouseMove: number) {
-    // 1.
-    let deltaX = clientXByMouseMove - clientXByMouseDown;
+  function moveTimelineByDragging(clientX: number) {
+    // 1. 얼마나 움직였는지 계산 (터치와 마우스 구분)
+    let deltaX =
+      clientX -
+      (isTouching.current ? touchStartX.current : clientXByMouseDown.current);
+
+    // 2. 타임라인이 끝에 붙어있는 경우 (right: 0px) 처리
     if (isTimelineAtTheEnd()) {
-      leftWhenMouseDown = -(
+      // 끝에서 시작하는 경우의 left값 계산 (음수)
+      leftWhenMouseDown.current = -(
         fullWidthOfTimeline.current - document.documentElement.clientWidth
       );
-      isTimelineDraggedToTheRight() && (divRef.current!.style.right = "");
+      // 오른쪽으로 드래그하면 right 속성 제거
+      (isTouching.current ? deltaX > 0 : isTimelineDraggedToTheRight()) &&
+        (divRef.current!.style.right = "");
     }
 
-    // 2.
-    let newLeftVal = leftWhenMouseDown! + deltaX; //non-null assertion왜 했지?... 근거라도 적어두지 ㅠ
+    // 3. 새로운 left 위치 = 시작위치 + 움직인거리
+    let newLeftVal = leftWhenMouseDown.current! + deltaX;
 
-    // 3.
+    // 4. 경계 처리
     if (isTimelineBeingDraggedBeyondLeftEdge()) {
       // To prevent timeline from being dragged too much
       // to the extent that an empty span appears between the left edge of viewport and the start of timeline.
@@ -217,91 +211,159 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       -newLeftVal + document.documentElement.clientWidth >
       fullWidthOfTimeline.current
     ) {
+      // 너무 왼쪽으로 드래그 → 끝점 고정
       divRef.current!.style.right = "0px";
       divRef.current!.style.left = "";
     } else {
+      // 정상 범위 → left 값 업데이트
       divRef.current!.style.left = newLeftVal + "px";
     }
 
+    // 헬퍼 함수들
     function isTimelineBeingDraggedBeyondLeftEdge() {
-      return newLeftVal > 0;
+      return newLeftVal > 0; // left가 양수 = 시작점을 넘어섬
     }
     function isTimelineAtTheEnd() {
-      return parseInt(divRef.current!.style.right) === 0;
+      return parseInt(divRef.current!.style.right) === 0; // right: 0px인 상태
     }
     function isTimelineDraggedToTheRight() {
-      return deltaX > 0;
+      return deltaX > 0; // 마우스가 오른쪽으로 움직임
     }
   }
 
+  /**
+   * 마우스 드래그 시작 처리
+   * 전역 이벤트 리스너를 등록해서 요소 밖에서도 드래그 추적 가능
+   */
   function handleMouseDown(ev: React.MouseEvent<HTMLDivElement>) {
     if (ev.button === 0) {
-      isButtonPressed = true;
-      clientXByMouseDown = ev.clientX;
+      // 왼쪽 마우스 버튼만
+      // 1. 드래그 상태 저장
+      isButtonPressed.current = true;
+      clientXByMouseDown.current = ev.clientX; // 시작 X좌표
       if (divRef.current !== null) {
-        leftWhenMouseDown = parseInt(divRef.current.style.left);
+        leftWhenMouseDown.current = parseInt(divRef.current.style.left); // 시작 left값
       }
+
+      // 2. 전역 이벤트 리스너 등록 (요소 밖에서도 드래그 추적)
       document.body.onmousemove = (ev) => {
-        if (isButtonPressed) {
+        if (isButtonPressed.current) {
           moveTimelineByDragging(ev.clientX);
         }
       };
       document.body.onmouseup = (ev) => {
-        isButtonPressed = false;
+        // 3. 드래그 종료 처리
+        isButtonPressed.current = false;
         document.body.onmouseup = null;
         document.body.onmousemove = null;
       };
       document.body.onmouseleave = (ev) => {
-        isButtonPressed = false;
+        // 4. 마우스가 브라우저 밖으로 나가면 드래그 종료
+        isButtonPressed.current = false;
         document.body.onmouseleave = null;
         document.body.onmouseup = null;
         document.body.onmousemove = null;
       };
     }
   }
+
+  /**
+   * 마우스 이동 처리 (요소 내에서만)
+   * 실제로는 mouseDown에서 등록한 전역 리스너가 주로 사용됨
+   */
   function handleMouseMove(ev: React.MouseEvent<HTMLDivElement>) {
-    if (isButtonPressed) {
+    if (isButtonPressed.current) {
       moveTimelineByDragging(ev.clientX);
     }
   }
+
+  /**
+   * 터치 시작 처리
+   * 마우스와 달리 요소에 직접 등록된 이벤트만 사용
+   */
+  function handleTouchStart(ev: React.TouchEvent<HTMLDivElement>) {
+    if (ev.touches.length === 1) {
+      // 한 손가락 터치만 처리
+      isTouching.current = true;
+      touchStartX.current = ev.touches[0].clientX; // 터치 시작 X좌표
+      if (divRef.current !== null) {
+        leftWhenMouseDown.current = parseInt(divRef.current.style.left); // 시작 left값
+      }
+    }
+  }
+
+  /**
+   * 터치 이동 처리
+   * preventDefault()로 페이지 스크롤 방지 중요!
+   */
+  function handleTouchMove(ev: React.TouchEvent<HTMLDivElement>) {
+    if (isTouching.current && ev.touches.length === 1) {
+      ev.preventDefault(); // 페이지 스크롤 방지
+      moveTimelineByDragging(ev.touches[0].clientX);
+    }
+  }
+
+  /**
+   * 터치 종료 처리
+   * 터치 상태를 false로 변경 (마우스와 달리 반드시 필요)
+   */
+  function handleTouchEnd(ev: React.TouchEvent<HTMLDivElement>) {
+    isTouching.current = false;
+  }
+
+  /**
+   * 마우스 휠로 타임라인 스크롤
+   * deltaY 값으로 left 위치를 조정 (위로 스크롤 = 음수, 아래로 스크롤 = 양수)
+   */
   function handleWheel(ev: React.WheelEvent<HTMLDivElement>) {
-    // console.log("fullWidthOfTimeline", fullWidthOfTimeline);
     let currentLeft = 0,
       newLeftVal = 0;
 
-    //* 1. calculate currentLeft.
-    // right is either "" or "0px"
+    // 1. 현재 left 값 계산
     if (parseInt(divRef.current!.style.right) === 0) {
-      //it means we have fully scrolled the timeline up to 24:00
+      // right: 0px인 경우 (끝에 붙어있는 상태)
       currentLeft = -(
         fullWidthOfTimeline.current - document.documentElement.clientWidth
       );
+      // 위로 스크롤하면 right 속성 제거
       ev.deltaY < 0 && (divRef.current!.style.right = "");
     } else {
+      // 일반적인 경우
       currentLeft = parseInt(divRef.current!.style.left);
     }
 
-    //* 2
+    // 2. 새로운 left 값 = 현재값 - 휠 이동량
     newLeftVal = currentLeft - ev.deltaY;
 
-    //* 3 assign a new left or right value.
+    // 3. 경계 처리 (moveTimelineByDragging과 동일한 로직)
     if (newLeftVal > 0) {
+      // 너무 오른쪽 → 시작점 고정
       divRef.current!.style.left = "0px";
     } else if (
       -newLeftVal + document.documentElement.clientWidth >
       fullWidthOfTimeline.current
     ) {
+      // 너무 왼쪽 → 끝점 고정
       divRef.current!.style.right = "0px";
       divRef.current!.style.left = "";
     } else {
+      // 정상 범위 → left 값 업데이트
       divRef.current!.style.left = newLeftVal + "px";
     }
   }
+
+  /**
+   * 우클릭 메뉴 방지
+   */
   function handleContextMenu(ev: React.MouseEvent<HTMLDivElement>) {
     ev.preventDefault();
   }
   //#endregion
 
+  /**
+   * 화면 크기 변경시 타임라인 위치 조정
+   * 뷰포트가 타임라인보다 클 때 끝점에 맞춤
+   */
   function checkAndAdjustTimelinePosition() {
     if (
       divRef.current &&
@@ -309,11 +371,16 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
         fullWidthOfTimeline.current -
           Math.abs(parseInt(divRef.current!.style.left))
     ) {
+      // 뷰포트가 남은 타임라인보다 크면 끝점에 고정
       divRef.current.style.right = "0px";
       divRef.current.style.left = "";
     }
   }
 
+  /**
+   * 반응형 전환시 비례 계산으로 left 값 조정
+   * 예: FHD→모바일 전환시 픽셀 비율에 맞춰 위치 유지
+   */
   function calculateNewLeft({
     prevRule,
     newRule,
@@ -321,18 +388,14 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
     prevRule: number;
     newRule: number;
   }) {
-    // console.log("prevRule", prevRule);
-    // console.log("newRule", newRule);
     if (divRef.current && divRef.current.style.left.length !== 0) {
+      // 이전 규칙 기준 위치를 새 규칙 기준으로 변환
       let newLeft = (parseInt(divRef.current.style.left) / prevRule) * newRule;
-      // console.log("newLeft", newLeft);
-      divRef.current.style.left =
-        // (parseInt(divRef.current.style.left) / prevRule) * newRule + "px";
-        newLeft + "px";
+      divRef.current.style.left = newLeft + "px";
     }
   }
 
-  // Prevent scrolling document when mouse is on timeline.
+  // 타임라인에서 휠 스크롤시 페이지 스크롤 방지
   divRef.current?.addEventListener("wheel", preventScroll, { passive: false });
   function preventScroll(ev: any) {
     ev.preventDefault();
@@ -348,7 +411,6 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
   useEffect(() => {
     window.onresize = (ev) => {
-      // console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
       checkAndAdjustTimelinePosition();
     };
 
@@ -386,16 +448,18 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
         position: "absolute",
         height: `max(${MINIMUMS.TIMELINE}px, ${VH_RATIO.TIMELINE}vh)`,
         backgroundColor: "#c6d1e6",
-
-        // properties below should change dynamically.
         left: initialLeftAndRight.left,
         right: initialLeftAndRight.right,
         width: `${fullWidthOfTimeline.current}px`,
+        touchAction: "none", // 브라우저 기본 터치 동작 비활성화
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onWheel={handleWheel}
       onContextMenu={handleContextMenu}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <Scale />
       <>

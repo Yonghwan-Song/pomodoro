@@ -318,18 +318,20 @@ export default function GoalGraph({
         style={{
           position: "absolute",
           display: "flex",
-          right: 0,
-          top: "10px",
-          marginRight: "20px",
+          right: "5px",
+          top: "6px",
           zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
-        <p>{weekRange}</p>
+        <p style={{ width: "95px", textAlign: "center" }}>{weekRange}</p>
         <RightArrow handleClick={() => calculateNextWeekData(statData)} />
       </div>
       <ResponsiveContainer width="100%" minHeight={300}>
-        <BarChart data={dailyStatOfWeekWithGoal}>
+        <BarChart
+          data={dailyStatOfWeekWithGoal}
+          margin={{ top: 10, right: 10, left: -27, bottom: -10 }}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="dayOfWeek" />
           <YAxis

@@ -1,10 +1,13 @@
+/** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from "react";
 import { ReactComponent as TrashBinIcon } from "../../../Icons/trash-bin-trash-svgrepo-com.svg";
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
+import { css } from "@emotion/react";
 import {
   BASE_URL,
+  BREAK_POINTS,
   CacheName,
   CURRENT_CATEGORY_NAME,
   RESOURCE,
@@ -15,7 +18,6 @@ import {
   delete_entry_of_cache,
   persistCategoryChangeInfoArrayToIDB,
 } from "../../..";
-import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import { AxiosRequestConfig } from "axios";
 import { errController } from "../../../axios-and-error-handling/errorController";
@@ -385,13 +387,50 @@ export default function Categories() {
   //#endregion
 
   return (
-    <FlexBox justifyContent="space-between" alignItems="flex-start">
-      <form name="existing">
+    <>
+      <form id="existing-form" name="existing" style={{ display: "none" }}>
+        {/* Hidden form for existing categories */}
+      </form>
+      <form
+        id="new-form"
+        name="new"
+        onSubmit={saveNewCategory}
+        style={{ display: "none" }}
+      >
+        {/* Hidden form for new category */}
+      </form>
+
+      <div
+        css={css`
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-column-gap: 10px;
+          grid-row-gap: 10px;
+
+          @media (width <= ${BREAK_POINTS.MOBILE}) {
+            grid-template-columns: 1fr;
+            grid-column-gap: 0px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+          }
+        `}
+      >
         {categoriesInputs.map((item, index) => {
           return (
-            <div key={index} style={{ display: "flex" }}>
-              <label htmlFor={item.color}>
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                rowGap: "3px",
+              }}
+            >
+              <label htmlFor={item.color} css={{ display: "grid" }}>
                 <input
+                  form="existing-form"
                   id={index.toString()}
                   data-uuid={item._uuid}
                   type={"color"}
@@ -400,8 +439,14 @@ export default function Categories() {
                   onChange={handleColorInputChange}
                 />
               </label>
-              <label htmlFor={item.name}>
+              <label
+                htmlFor={item.name}
+                css={{
+                  display: "grid",
+                }}
+              >
                 <input
+                  form="existing-form"
                   id={index.toString()}
                   data-uuid={item._uuid}
                   type={"text"}
@@ -422,7 +467,7 @@ export default function Categories() {
                 data-name={item.name}
                 style={{
                   cursor: "pointer",
-                  width: "1em",
+                  width: "21px",
                   height: "auto",
                 }}
                 onClick={() => openModal(item.name)}
@@ -430,29 +475,63 @@ export default function Categories() {
             </div>
           );
         })}
-      </form>
-
-      <div>
         <div
           style={{
             display: "flex",
             columnGap: "6px",
             justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            rowGap: "3px",
           }}
         >
-          <label htmlFor="colorForUnCategorized">
+          <label
+            htmlFor="colorForUnCategorized"
+            css={{
+              display: "grid",
+            }}
+          >
             <input
               type="color"
               name="colorForUnCategorized"
               value={colorInputForUnCategorized}
               onChange={handleColorInputChangeForUnCategorized}
+              style={{ display: "block" }}
             />
           </label>
           <p>Uncategorized</p>
         </div>
-        <form name="new" onSubmit={saveNewCategory}>
-          <label htmlFor="color">
+
+        {/* New Category's color and name along with Save and Cancel buttons */}
+        <div
+          css={css`
+            display: flex;
+            flex-wrap: wrap;
+            row-gap: 3px;
+            justify-content: space-between;
+
+            grid-column-start: 2;
+            grid-column-end: 3;
+            grid-row-start: 1;
+            grid-row-end: 2;
+
+            @media (width <= ${BREAK_POINTS.MOBILE}) {
+              grid-column-start: 1;
+              grid-column-end: 2;
+              grid-row-start: 1;
+              grid-row-end: 2;
+            }
+          `}
+        >
+          {/* Color */}
+          <label
+            htmlFor="color"
+            css={{
+              display: "grid",
+            }}
+          >
             <input
+              form="new-form"
               id="color"
               type="color"
               name="newCategoryColor"
@@ -460,8 +539,11 @@ export default function Categories() {
               value={newCategoryInput.color}
             />
           </label>
-          <label htmlFor="name">
+
+          {/* Name */}
+          <label htmlFor="name" css={{ display: "grid" }}>
             <input
+              form="new-form"
               id="name"
               type="text"
               name="newCategoryName"
@@ -472,60 +554,81 @@ export default function Categories() {
               }}
             />
           </label>
+        </div>
+
+        <div
+          css={css`
+            display: flex;
+            flex-wrap: wrap;
+            row-gap: 3px;
+            justify-content: space-between;
+
+            grid-column-start: 2;
+            grid-column-end: 3;
+            grid-row-start: 2;
+            grid-row-end: 3;
+
+            @media (width <= ${BREAK_POINTS.MOBILE}) {
+              grid-column-start: 1;
+              grid-column-end: 2;
+              grid-row-start: 2;
+              grid-row-end: 3;
+            }
+          `}
+        >
+          <Button
+            form="new-form"
+            color={"primary"}
+            style={{ justifySelf: "left" }}
+          >
+            SAVE
+          </Button>
+
+          <Button
+            type="button"
+            onClick={() => {
+              setNewCategoryInput({
+                name: "",
+                color: "",
+                isCurrent: false,
+                isOnStat: true,
+              });
+            }}
+            style={{ justifySelf: "right" }}
+          >
+            Cancel
+          </Button>
+        </div>
+
+        <ReactModal
+          isOpen={isModalOpen}
+          onRequestClose={closeModal}
+          style={customModalStyles}
+          contentLabel="Delete Confirmation"
+        >
+          <h2>Confirm Deletion</h2>
+          <p>
+            Are you sure you want to delete the{" "}
+            <span style={{ color: "red", fontWeight: "bold" }}>
+              {categoryToDelete}
+            </span>{" "}
+            category?
+          </p>
           <div
             style={{
               display: "flex",
-              gap: "1rem",
-              justifyContent: "space-between",
-              marginTop: "4px",
+              gap: "1.5rem",
+              justifyContent: "space-around",
+              marginTop: "5px",
             }}
           >
-            <Button color={"primary"}>SAVE</Button>
-            <Button
-              type="button"
-              onClick={() => {
-                setNewCategoryInput({
-                  name: "",
-                  color: "",
-                  isCurrent: false,
-                  isOnStat: true,
-                });
-              }}
-            >
-              Cancel
+            <Button onClick={closeModal}>Cancel</Button>
+            <Button color={"primary"} onClick={confirmDeleteCategory}>
+              Delete
             </Button>
           </div>
-        </form>
+        </ReactModal>
       </div>
-
-      <ReactModal
-        isOpen={isModalOpen}
-        onRequestClose={closeModal}
-        style={customModalStyles}
-        contentLabel="Delete Confirmation"
-      >
-        <h2>Confirm Deletion</h2>
-        <p>
-          Are you sure you want to delete the{" "}
-          <span style={{ color: "red", fontWeight: "bold" }}>
-            {categoryToDelete}
-          </span>{" "}
-          category?
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: "1.5rem",
-            justifyContent: "space-around",
-            marginTop: "5px",
-          }}
-        >
-          <Button onClick={closeModal}>Cancel</Button>
-          <Button color={"primary"} onClick={confirmDeleteCategory}>
-            Delete
-          </Button>
-        </div>
-      </ReactModal>
-    </FlexBox>
+    </>
   );
 }

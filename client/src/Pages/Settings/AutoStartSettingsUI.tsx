@@ -31,6 +31,9 @@ export function AutoStartSettingsUI({
           display: "flex",
           justifyContent: "space-around",
           flexWrap: "wrap",
+          alignItems: "center",
+          rowGap: "20px",
+          columnGap: "9px",
         }}
       >
         <ToggleSwitch
@@ -38,6 +41,7 @@ export function AutoStartSettingsUI({
           name="pomo"
           isSwitchOn={doesPomoStartAutomatically}
           isHorizontal={false}
+          marginBetweenLabelNameAndSwitch={12}
           onChange={(e) => {
             setDoesPomoStartAutomatically(e.target.checked);
           }}
@@ -54,6 +58,7 @@ export function AutoStartSettingsUI({
           name="break"
           isSwitchOn={doesBreakStartAutomatically}
           isHorizontal={false}
+          marginBetweenLabelNameAndSwitch={12}
           onChange={(e) => {
             setDoesBreakStartAutomatically(e.target.checked);
           }}
@@ -69,6 +74,7 @@ export function AutoStartSettingsUI({
           name="cycle"
           isSwitchOn={doesCycleStartAutomatically}
           isHorizontal={false}
+          marginBetweenLabelNameAndSwitch={12}
           onChange={(e) => {
             setDoesCycleStartAutomatically(e.target.checked);
           }}

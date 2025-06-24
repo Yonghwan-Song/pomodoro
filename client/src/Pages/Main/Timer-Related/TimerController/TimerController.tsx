@@ -1,3 +1,4 @@
+/** @jsxImportSource @emotion/react */
 import { useState, useMemo, useEffect, useRef, useReducer } from "react";
 import { AxiosError } from "axios";
 import {
@@ -7,6 +8,7 @@ import {
   SUB_SET,
   CURRENT_SESSION_TYPE,
   CURRENT_TASK_ID,
+  BREAK_POINTS,
 } from "../../../../constants/index";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { User } from "firebase/auth";
@@ -70,6 +72,7 @@ import { Button } from "../../../../ReusableComponents/Buttons/Button";
 import { ACTION, reducer, TimerAction } from "../reducers";
 import Time from "../Time/Time";
 import { getAverage, isSessionNotStartedYet } from "../../../../utils/anything";
+import { css } from "@emotion/react";
 
 type TimerControllerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -2162,8 +2165,28 @@ export function TimerController({
   //#endregion
 
   return (
-    <Grid column={2} alignItems={"center"} columnGap="23px" padding="0px">
-      <GridItem>
+    <div
+      css={css`
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-width: 634px;
+        grid-column-gap: 10px;
+        grid-row-gap: 25px;
+
+        @media (width <= ${BREAK_POINTS.MOBILE}) {
+          padding-bottom: 6px;
+
+          grid-template-columns: 1fr;
+          grid-column-gap: 0px;
+
+          > * {
+            grid-column-start: 1;
+            grid-column-end: 2;
+          }
+        }
+      `}
+    >
+      <div css={{ alignSelf: "center" }}>
         <FlexBox justifyContent="space-evenly">
           <h1>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h1>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
@@ -2191,8 +2214,22 @@ export function TimerController({
             <h3>{tooltipText[3]}</h3>
           </div>
         </Tooltip>
-      </GridItem>
-      <GridItem rowStart={1} rowEnd={5} columnStart={2} columnEnd={3}>
+      </div>
+      <div
+        css={css`
+          grid-row-start: 1;
+          grid-row-end: 5;
+          grid-column-start: 2;
+          grid-column-end: 3;
+
+          @media (width <= ${BREAK_POINTS.MOBILE}) {
+            grid-row-start: 1;
+            grid-row-end: 2;
+            grid-column-start: 1;
+            grid-column-end: 2;
+          }
+        `}
+      >
         <CircularProgressBar
           progress={
             durationInSeconds === 0
@@ -2218,8 +2255,9 @@ export function TimerController({
             setTotalDurationOfSetOfCyclesInSec
           }
         />
-      </GridItem>
-      <GridItem>
+      </div>
+
+      <div css={{ alignSelf: "center" }}>
         <PauseTimer
           isOnSession={timerState.running || timerState.startTime !== 0}
           isPaused={
@@ -2230,8 +2268,9 @@ export function TimerController({
           pauseData={timerState.pause}
           startTime={timerState.startTime}
         />
-      </GridItem>
-      <GridItem>
+      </div>
+
+      <div css={{ alignSelf: "center" }}>
         <FlexBox justifyContent="space-evenly">
           <Button
             type={"submit"}
@@ -2259,8 +2298,9 @@ export function TimerController({
               : "End"}
           </Button>
         </FlexBox>
-      </GridItem>
-      <GridItem>
+      </div>
+
+      <div css={{ alignSelf: "center" }}>
         <h3 style={{ textAlign: "center" }}>
           Remaining Pomo Sessions -{" "}
           {calculateNumOfRemainingPomoSessions(
@@ -2268,18 +2308,30 @@ export function TimerController({
             repetitionCountWithinCycle
           )}
         </h3>
-      </GridItem>
-      <GridItem>
+      </div>
+
+      <div css={{ alignSelf: "center" }}>
         <h3 style={{ textAlign: "center" }}>
           Cycle - {cycleCount} out of {numOfCycle}
         </h3>
-      </GridItem>
-      <GridItem>
-        <span>current ratio - {currentRatio}</span>{" "}
-        <span>targeted ratio - {ratioTargeted}</span>
-        <p>adherence rate - {adherenceRateInPercent}%</p>
-      </GridItem>
-    </Grid>
+      </div>
+
+      <div
+        css={{
+          placeSelf: "center",
+        }}
+      >
+        <div>
+          Current Ratio - <b>{currentRatio}</b>
+        </div>
+        <div>
+          Targeted Ratio - <b>{ratioTargeted}</b>
+        </div>
+        <p>
+          Adherence Rate - <b>{adherenceRateInPercent}%</b>
+        </p>
+      </div>
+    </div>
   );
 }
 

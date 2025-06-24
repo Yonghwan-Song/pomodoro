@@ -235,7 +235,14 @@ export default function GoalForm() {
 
   return (
     <form>
-      <div style={{ display: "flex", flexDirection: "row", flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          rowGap: "6px",
+        }}
+      >
         <div>
           <div
             style={{

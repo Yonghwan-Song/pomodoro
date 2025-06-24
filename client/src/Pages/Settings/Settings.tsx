@@ -1,11 +1,12 @@
+/** @jsxImportSource @emotion/react */
 import React, { useEffect, useMemo } from "react";
 import { useState } from "react";
+import { css } from "@emotion/react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { CycleSetting, PomoSettingType } from "../../types/clientStatesType";
 import { Button } from "../../ReusableComponents/Buttons/Button";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
-import { Grid } from "../../ReusableComponents/Layouts/Grid";
-import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
+import { BREAK_POINTS } from "../../constants";
 import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
 import {
   CacheName,
@@ -44,6 +45,7 @@ import { CycleSettingFrame } from "./CycleSettingFrame";
 import { AutoStartSettingsUI } from "./AutoStartSettingsUI";
 import { calculateTargetFocusRatio } from "../../utils/anything";
 import { TodoistIntegration } from "./TodoistIntegration";
+import { StyledBoxSimplified } from "../../ReusableComponents/Box/StyledBox";
 
 function Settings() {
   const { user } = useAuthContext()!;
@@ -675,15 +677,42 @@ function Settings() {
 
   return (
     <main
-      style={{
-        minHeight: `calc(100vh - max(${VH_RATIO.NAV_BAR}vh, ${MINIMUMS.NAV_BAR}px))`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      css={css`
+        min-height: calc(
+          100vh - max(${VH_RATIO.NAV_BAR}vh, ${MINIMUMS.NAV_BAR}px)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `}
     >
-      <Grid maxWidth="634px" columnGap="25px" rowGap="25px">
-        <GridItem>
+      <div
+        css={css`
+          display: grid;
+          grid-template-columns: 1fr;
+          max-width: 634px;
+
+          padding: 10px;
+          grid-column-gap: 25px;
+          grid-row-gap: 25px;
+          overflow-x: scroll;
+
+          > * {
+            min-width: 0px; // is set to auto when display is the grid or flex. The auto value for flex/grid items means they won't shrink below their content's intrinsic minimum width.
+          }
+
+          @media (width <= ${BREAK_POINTS.MOBILE}) {
+            grid-template-columns: 1fr;
+            grid-column-gap: 0px;
+
+            > * {
+              grid-column-start: 1;
+              grid-column-end: 2;
+            }
+          }
+        `}
+      >
+        <div>
           <CycleSettingFrame
             isUserCreatingNewCycleSetting={isUserCreatingNewCycleSetting}
             handleSubmitToEditCycleSetting={handleSubmitToEditCycleSetting}
@@ -707,8 +736,9 @@ function Settings() {
             setIsInputLocked={setIsInputLocked}
             setTargetFocusRatio={setTargetFocusRatio}
           />
-        </GridItem>
-        <GridItem>
+        </div>
+
+        <div>
           <AutoStartSettingsUI
             handleSubmitToChangeAutoStartSettings={
               handleSubmitToChangeAutoStartSettings
@@ -720,11 +750,12 @@ function Settings() {
             setDoesBreakStartAutomatically={setDoesBreakStartAutomatically}
             setDoesCycleStartAutomatically={setDoesCycleStartAutomatically}
           />
-        </GridItem>
+        </div>
+
         {user !== null && (
           <>
-            <GridItem>
-              <BoxShadowWrapper>
+            <div>
+              <StyledBoxSimplified style={{ minWidth: "0px" }}>
                 <CycleSettingList
                   setPomoSettingInputs={setPomoSettingInputs}
                   setCycleSettingNameInput={setCycleSettingNameInput}
@@ -740,11 +771,16 @@ function Settings() {
                   setIsInputLocked={setIsInputLocked}
                   currentCycleSetting={currentCycleSetting}
                 />
-              </BoxShadowWrapper>
-            </GridItem>
-            <GridItem>
+              </StyledBoxSimplified>
+            </div>
+            <div>
               <BoxShadowWrapper>
-                <FlexBox justifyContent="space-between">
+                <FlexBox
+                  justifyContent="space-around"
+                  flexWrap="wrap"
+                  columnGap="9px"
+                  rowGap="11px"
+                >
                   <Button
                     color={"primary"}
                     handleClick={() => createDemoData(user!)}
@@ -770,25 +806,28 @@ function Settings() {
                   </Button>
                 </FlexBox>
               </BoxShadowWrapper>
-            </GridItem>
-            <GridItem>
+            </div>
+
+            <div>
               <BoxShadowWrapper>
                 <GoalForm />
               </BoxShadowWrapper>
-            </GridItem>
-            <GridItem>
+            </div>
+
+            <div>
               <BoxShadowWrapper>
                 <Categories />
               </BoxShadowWrapper>
-            </GridItem>
-            <GridItem>
+            </div>
+
+            <div>
               <BoxShadowWrapper>
                 <TodoistIntegration />
               </BoxShadowWrapper>
-            </GridItem>
+            </div>
           </>
         )}
-      </Grid>
+      </div>
     </main>
   );
 }

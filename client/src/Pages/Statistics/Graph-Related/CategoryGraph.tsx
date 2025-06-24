@@ -335,21 +335,20 @@ export function CategoryGraph({
         style={{
           position: "absolute",
           display: "flex",
-          right: 0,
-          top: "10px",
-          marginRight: "20px",
+          right: "5px",
+          top: "6px",
           zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
-        <p>{weekRange}</p>
+        <p style={{ width: "95px", textAlign: "center" }}>{weekRange}</p>
         <RightArrow handleClick={() => calculateNextWeekData(statData)} />
       </div>
 
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
           data={dailyStatOfWeek}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: -27, bottom: -10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={"dayOfWeek"} />

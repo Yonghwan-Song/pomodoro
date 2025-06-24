@@ -96,6 +96,7 @@ const TaskDescription = styled.p`
   font-size: 0.875rem;
   color: #4b5563;
   margin-top: 0.25rem;
+  word-break: break-all;
 `;
 
 const TaskDueDate = styled.div`
@@ -253,6 +254,7 @@ export const TaskItem = ({
   return (
     <TaskContainer>
       <TaskCard priority={task.priority}>
+        {/* flex container */}
         <TaskHeader>
           <ButtonOrSpacer>
             {hasChildren ? (
@@ -264,15 +266,12 @@ export const TaskItem = ({
               </ExpandButton>
             ) : null}
           </ButtonOrSpacer>
+          {/* flex item */}
           <TaskContent>
             <TaskTitle
               onClick={(ev) => {
                 handleTaskSelection(task.id, Date.now());
               }}
-              // Original
-              // onClick={(ev) => {
-              //   handleTaskClick(ev, Date.now());
-              // }}
               isCurrent={isCurrent}
             >
               {task.content}
@@ -289,7 +288,9 @@ export const TaskItem = ({
             )}
             {task.due && <TaskDueDate>Due: {task.due.string}</TaskDueDate>}
           </TaskContent>
+          {/* -- */}
         </TaskHeader>
+        {/* -- */}
       </TaskCard>
 
       {hasChildren && expanded && (

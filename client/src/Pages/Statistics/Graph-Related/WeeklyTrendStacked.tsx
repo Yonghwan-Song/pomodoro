@@ -130,20 +130,19 @@ export function WeeklyTrendStacked({
         style={{
           position: "absolute",
           display: "flex",
-          right: 0,
-          top: "10px",
-          marginRight: "20px",
+          right: "5px",
+          top: "6px",
           zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => selectPreviousTenWeekData()} />
-        <p>{range}</p>
+        <p style={{ width: "172px", textAlign: "center" }}>{range}</p>
         <RightArrow handleClick={() => selectNextTenWeekData()} />
       </div>
       <ResponsiveContainer width={"100%"} minHeight={300}>
         <AreaChart
           data={combinedWithGoals}
-          margin={{ top: 20, right: 30, left: 20, bottom: 0 }}
+          margin={{ top: 10, right: 10, left: -20, bottom: -10 }}
         >
           <defs></defs>
 

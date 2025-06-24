@@ -1,3 +1,4 @@
+/** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from "react";
 import { RESOURCE, SUB_SET } from "../../../constants";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
@@ -9,6 +10,7 @@ import {
   generateTaskDictionaryAndTree,
   useTaskSelectionHandler,
 } from "./todoist-utility";
+import { Button } from "../../../ReusableComponents/Buttons/Button";
 
 const Container = styled.div`
   padding: 1rem;
@@ -18,23 +20,25 @@ const Heading = styled.h1`
   font-size: 1.25rem;
   font-weight: bold;
   margin-bottom: 1rem;
+  margin-top: 0.5rem;
+  text-align: center;
 `;
 
 const Message = styled.div<{ error?: boolean }>`
   padding: 1rem;
   color: ${({ error }) => (error ? "#EF4444" : "inherit")};
+  text-align: center;
+  text-decoration: underline;
 `;
 
 const NoTaskButton = styled.button<{ selected: boolean }>`
   display: block;
   width: 100%;
+  font-size: 1em;
   padding: 0.75rem;
-  margin-bottom: 1rem;
   background: ${({ selected }) => (selected ? "#ffe4b5" : "#f3f4f6")};
   color: #3275ad;
   border: 2px dashed #3275ad;
-  /* color: #898b90;
-  border: 2px dashed #ff8522; */
   border-radius: 0.5rem;
   font-weight: bold;
   cursor: pointer;
@@ -146,19 +150,24 @@ export function TodoistTasks() {
 
   return (
     <div>
-      <h1>Todoist Items</h1>
-      <button onClick={fetchTodoistTasks} disabled={loading}>
-        {getButtonText()}
-      </button>
-      <NoTaskButton
-        onClick={(ev) => {
-          handleTaskSelection("", Date.now());
-        }}
-        // onClick={handleNoTaskSelected}
-        selected={currentTaskId === ""}
-      >
-        💤 No Task
-      </NoTaskButton>
+      <h1 style={{ textAlign: "center", marginBottom: "1rem" }}>
+        Todoist Items
+      </h1>
+
+      <div css={{ display: "flex", columnGap: "9px", padding: "1rem" }}>
+        <NoTaskButton
+          onClick={(ev) => {
+            handleTaskSelection("", Date.now());
+          }}
+          selected={currentTaskId === ""}
+        >
+          💤 Run Without Task
+        </NoTaskButton>
+        <Button onClick={fetchTodoistTasks} disabled={loading}>
+          {getButtonText()}
+        </Button>
+      </div>
+
       <Container>
         <Heading>My Tasks</Heading>
         {getMessage()}

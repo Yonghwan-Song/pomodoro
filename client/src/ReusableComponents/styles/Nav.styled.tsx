@@ -5,6 +5,8 @@ export const StyledNav = styled.nav`
   position: sticky;
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  min-width: 0px;
   padding: 0 2rem;
   align-items: center;
   /* height: ${VH_RATIO.NAV_BAR}vh; */

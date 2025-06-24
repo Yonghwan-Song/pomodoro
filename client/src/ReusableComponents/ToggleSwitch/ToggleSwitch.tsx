@@ -19,6 +19,12 @@ type ToggleSwitchPropsType = {
   onChange: React.ChangeEventHandler<HTMLInputElement>;
 };
 
+export type StyledToggleSwitchContainerPropsType = {
+  unitSize?: number;
+  xAxisEdgeWidth?: number;
+  children?: React.ReactNode;
+};
+
 export default function ToggleSwitch({
   labelName,
   name,
@@ -46,7 +52,6 @@ export default function ToggleSwitch({
     >
       <input
         type="checkbox"
-        // id="checkbox"
         name={name}
         id={name}
         checked={isSwitchOn}
@@ -60,7 +65,6 @@ export default function ToggleSwitch({
       />
 
       <StyledLabelForSwitch
-        // htmlFor="checkbox"
         htmlFor={name}
         isHorizontal={isHorizontal}
         marginBetweenLabelNameAndSwitch={marginBetweenLabelNameAndSwitch} //TODO: check: tsx에서 optional로 하면 undeinfed 되겠지?

@@ -617,7 +617,7 @@ CycleSettingFrameProps) {
               />
             </div>
           </label>
-          <div>
+          <div style={{ textAlign: "center" }}>
             <span style={{ color: "red" }}>
               {roundTo_X_DecimalPoints(ratioTargetedCalculated * 100, 2)}%{" "}
               {/* {ratioTargetedCalculated * 100}%{" "} */}
