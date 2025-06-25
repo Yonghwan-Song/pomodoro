@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuthContext } from "../../Context/AuthContext";
 import { Button } from "../../ReusableComponents/Buttons/Button";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
@@ -38,6 +38,7 @@ type CycleSettingFrameProps = {
     ev: React.ChangeEvent<HTMLInputElement>
   ) => void;
   handlePomoSettingChange: (ev: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePomoSettingBlur: (ev: React.FocusEvent<HTMLInputElement>) => void;
   pomoSettingInputs: PomoSettingType;
   ratioTargetedCalculated: number;
   handleSubmitToSaveNewCycleSetting: (
@@ -56,6 +57,13 @@ type CycleSettingFrameProps = {
   isInputLocked: boolean;
   setIsInputLocked: React.Dispatch<React.SetStateAction<boolean>>;
   setTargetFocusRatio: React.Dispatch<React.SetStateAction<number>>;
+  displayValues: {
+    pomoDuration: string;
+    shortBreakDuration: string;
+    longBreakDuration: string;
+    numOfPomo: string;
+    numOfCycle: string;
+  };
 };
 
 const customModalStyles = {
@@ -75,6 +83,7 @@ export function CycleSettingFrame({
   handleSubmitToEditCycleSetting,
   handleCycleSettingNameChange,
   handlePomoSettingChange,
+  handlePomoSettingBlur,
   pomoSettingInputs,
   ratioTargetedCalculated,
   handleSubmitToSaveNewCycleSetting,
@@ -89,8 +98,8 @@ export function CycleSettingFrame({
   isInputLocked,
   setIsInputLocked,
   setTargetFocusRatio,
-}: // pomoSettingMemoized,
-CycleSettingFrameProps) {
+  displayValues,
+}: CycleSettingFrameProps) {
   const { user } = useAuthContext()!;
   const cycleSettingNameInputRef = useRef<HTMLInputElement>(null);
   const pomoDurationInputRef = useRef<HTMLInputElement>(null);
@@ -509,11 +518,8 @@ CycleSettingFrameProps) {
         onSubmit={(ev) => {
           if (isUserCreatingNewCycleSetting) {
             handleSubmitToSaveNewCycleSetting(ev);
-            // setIsInputLocked(true); //<--- In case name duplication occurs, inputLock should be still false.
           } else {
             handleSubmitToEditCycleSetting(ev);
-            // console.log("It was me");
-            // console.log("Am I going to be called?....");
             setIsInputLocked(true);
           }
         }}
@@ -558,8 +564,9 @@ CycleSettingFrameProps) {
                 name="pomoDuration"
                 type="number"
                 className={styles.arrangeInput}
-                value={pomoSettingInputs.pomoDuration || 0}
+                value={displayValues.pomoDuration}
                 onChange={handlePomoSettingChange}
+                onBlur={handlePomoSettingBlur}
                 ref={pomoDurationInputRef}
                 readOnly={isInputLocked}
               />
@@ -572,8 +579,9 @@ CycleSettingFrameProps) {
                 name="shortBreakDuration"
                 type="number"
                 className={styles.arrangeInput}
-                value={pomoSettingInputs.shortBreakDuration || 0}
+                value={displayValues.shortBreakDuration}
                 onChange={handlePomoSettingChange}
+                onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
             </div>
@@ -585,8 +593,9 @@ CycleSettingFrameProps) {
                 name="longBreakDuration"
                 type="number"
                 className={styles.arrangeInput}
-                value={pomoSettingInputs.longBreakDuration || 0}
+                value={displayValues.longBreakDuration}
                 onChange={handlePomoSettingChange}
+                onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
             </div>
@@ -598,8 +607,9 @@ CycleSettingFrameProps) {
                 name="numOfPomo"
                 type="number"
                 className={styles.arrangeInput}
-                value={pomoSettingInputs.numOfPomo || 0}
+                value={displayValues.numOfPomo}
                 onChange={handlePomoSettingChange}
+                onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
             </div>
@@ -611,8 +621,9 @@ CycleSettingFrameProps) {
                 name="numOfCycle"
                 type="number"
                 className={styles.arrangeInput}
-                value={pomoSettingInputs.numOfCycle || 0}
+                value={displayValues.numOfCycle}
                 onChange={handlePomoSettingChange}
+                onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
             </div>

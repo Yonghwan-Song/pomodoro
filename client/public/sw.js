@@ -8811,11 +8811,6 @@
   //#endregion
   //#region IndexedDB related
   const IDB_VERSION = 11;
-  // export const COLOR_FOR_SELECTED_SETTING = "#75BBAF"; // 이거는 완전 버튼 primary color와 같은 것.
-  // export const COLOR_FOR_CURRENT_STH = "#e04f5d";
-  // export const COLOR_FOR_SELECTED_SETTING = "#e04f5d";
-  // export const COLOR_FOR_SELECTED_SETTING = "#f5737f";
-  //#endregion Color related
 
   const _excluded = ["currentCycleInfo"];
   let DB = null;

@@ -148,3 +148,11 @@ export const COLOR_FOR_SELECTED_SETTING = "#57a194"; // 이거는 primary보다 
 // export const COLOR_FOR_SELECTED_SETTING = "#e04f5d";
 // export const COLOR_FOR_SELECTED_SETTING = "#f5737f";
 //#endregion Color related
+
+export const POMO_SETTING_RANGES = {
+  pomoDuration: [1, 1000],
+  shortBreakDuration: [1, 1000],
+  longBreakDuration: [1, 1000],
+  numOfPomo: [1, 100],
+  numOfCycle: [1, 100],
+};

@@ -6,7 +6,7 @@ import { useAuthContext } from "../../Context/AuthContext";
 import { CycleSetting, PomoSettingType } from "../../types/clientStatesType";
 import { Button } from "../../ReusableComponents/Buttons/Button";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
-import { BREAK_POINTS } from "../../constants";
+import { BREAK_POINTS, POMO_SETTING_RANGES } from "../../constants";
 import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
 import {
   CacheName,
@@ -121,6 +121,7 @@ function Settings() {
     // "Default cycle setting"
     ""
   );
+
   const [pomoSettingInputs, setPomoSettingInputs] = useState({
     pomoDuration: 25,
     shortBreakDuration: 5,
@@ -128,6 +129,16 @@ function Settings() {
     numOfPomo: 4,
     numOfCycle: 1,
   });
+
+  // 표시용 state (string 타입)
+  const [displayValues, setDisplayValues] = useState({
+    pomoDuration: "25",
+    shortBreakDuration: "5",
+    longBreakDuration: "15",
+    numOfPomo: "4",
+    numOfCycle: "1",
+  });
+
   const [targetFocusRatio, setTargetFocusRatio] = useState(0.77);
   const [doesPomoStartAutomatically, setDoesPomoStartAutomatically] = useState(
     () => {
@@ -280,6 +291,28 @@ function Settings() {
   }
 
   function handlePomoSettingChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const fieldName = event.target.name as keyof typeof pomoSettingInputs;
+    const inputValue = event.target.value;
+
+    setDisplayValues({
+      ...displayValues,
+      [fieldName]: inputValue,
+    });
+
+    if (inputValue === "") return;
+
+    const targetValue = +inputValue;
+
+    const [min, max] = POMO_SETTING_RANGES[fieldName];
+    if (targetValue < min || targetValue > max) {
+      setDisplayValues({
+        ...displayValues,
+        [fieldName]: pomoSettingInputs[fieldName].toString(),
+      });
+      window.alert(`Allowed range: ${min} ~ ${max}`);
+      return;
+    }
+
     const { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
       pomoSettingInputs;
 
@@ -294,96 +327,96 @@ function Settings() {
       2
     );
 
-    let targetValue = +event.target.value;
-    // duration >= 1 && duration <= 1000, num >= 1 && num <= 100
-    if (targetValue >= 1) {
-      // for min values
-      switch (event.target.name) {
-        case "pomoDuration":
-          if (targetValue <= 1000) {
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              pomoDuration: targetValue,
-            });
-            totalFocusDurationTargetedInSec = 60 * targetValue * numOfPomo;
-            cycleDurationTargetedInSec =
-              60 *
-              (targetValue * numOfPomo +
-                shortBreakDuration * (numOfPomo - 1) +
-                longBreakDuration);
-            ratioTargeted = roundTo_X_DecimalPoints(
-              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-              2
-            );
-            setTargetFocusRatio(ratioTargeted);
-          }
-          break;
-        case "shortBreakDuration":
-          if (targetValue <= 1000) {
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              shortBreakDuration: targetValue,
-            });
-            cycleDurationTargetedInSec =
-              60 *
-              (pomoDuration * numOfPomo +
-                targetValue * (numOfPomo - 1) +
-                longBreakDuration);
-            ratioTargeted = roundTo_X_DecimalPoints(
-              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-              2
-            );
-            setTargetFocusRatio(ratioTargeted);
-          }
-          break;
-        case "longBreakDuration":
-          if (targetValue <= 1000) {
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              longBreakDuration: targetValue,
-            });
-            cycleDurationTargetedInSec =
-              60 *
-              (pomoDuration * numOfPomo +
-                shortBreakDuration * (numOfPomo - 1) +
-                targetValue);
-            ratioTargeted = roundTo_X_DecimalPoints(
-              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-              2
-            );
-            setTargetFocusRatio(ratioTargeted);
-          }
-          break;
-        case "numOfPomo":
-          if (targetValue <= 100) {
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              numOfPomo: targetValue,
-            });
-            totalFocusDurationTargetedInSec = 60 * pomoDuration * targetValue;
-            cycleDurationTargetedInSec =
-              60 *
-              (pomoDuration * targetValue +
-                shortBreakDuration * (targetValue - 1) +
-                longBreakDuration);
-            ratioTargeted = roundTo_X_DecimalPoints(
-              totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-              2
-            );
-            setTargetFocusRatio(ratioTargeted);
-          }
-          break;
-        case "numOfCycle":
-          if (targetValue <= 100) {
-            setPomoSettingInputs({
-              ...pomoSettingInputs,
-              numOfCycle: targetValue,
-            });
-          }
-          break;
-        default:
-          break;
-      }
+    switch (fieldName) {
+      case "pomoDuration":
+        setPomoSettingInputs({
+          ...pomoSettingInputs,
+          pomoDuration: targetValue,
+        });
+        totalFocusDurationTargetedInSec = 60 * targetValue * numOfPomo;
+        cycleDurationTargetedInSec =
+          60 *
+          (targetValue * numOfPomo +
+            shortBreakDuration * (numOfPomo - 1) +
+            longBreakDuration);
+        ratioTargeted = roundTo_X_DecimalPoints(
+          totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+          2
+        );
+        setTargetFocusRatio(ratioTargeted);
+        break;
+      case "shortBreakDuration":
+        setPomoSettingInputs({
+          ...pomoSettingInputs,
+          shortBreakDuration: targetValue,
+        });
+        cycleDurationTargetedInSec =
+          60 *
+          (pomoDuration * numOfPomo +
+            targetValue * (numOfPomo - 1) +
+            longBreakDuration);
+        ratioTargeted = roundTo_X_DecimalPoints(
+          totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+          2
+        );
+        setTargetFocusRatio(ratioTargeted);
+        break;
+      case "longBreakDuration":
+        setPomoSettingInputs({
+          ...pomoSettingInputs,
+          longBreakDuration: targetValue,
+        });
+        cycleDurationTargetedInSec =
+          60 *
+          (pomoDuration * numOfPomo +
+            shortBreakDuration * (numOfPomo - 1) +
+            targetValue);
+        ratioTargeted = roundTo_X_DecimalPoints(
+          totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+          2
+        );
+        setTargetFocusRatio(ratioTargeted);
+        break;
+      case "numOfPomo":
+        setPomoSettingInputs({
+          ...pomoSettingInputs,
+          numOfPomo: targetValue,
+        });
+        totalFocusDurationTargetedInSec = 60 * pomoDuration * targetValue;
+        cycleDurationTargetedInSec =
+          60 *
+          (pomoDuration * targetValue +
+            shortBreakDuration * (targetValue - 1) +
+            longBreakDuration);
+        ratioTargeted = roundTo_X_DecimalPoints(
+          totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
+          2
+        );
+        setTargetFocusRatio(ratioTargeted);
+        break;
+      case "numOfCycle":
+        setPomoSettingInputs({
+          ...pomoSettingInputs,
+          numOfCycle: targetValue,
+        });
+        break;
+      default:
+        break;
+    }
+  }
+
+  // onBlur 핸들러 (빈 값일 때 기본값으로 복원)
+  function handlePomoSettingBlur(event: React.FocusEvent<HTMLInputElement>) {
+    const fieldName = event.target.name as keyof typeof displayValues;
+    const displayValue = displayValues[fieldName];
+    const actualValue = pomoSettingInputs[fieldName];
+
+    // 표시값이 빈 문자열이면 실제값으로 복원
+    if (displayValue === "") {
+      setDisplayValues({
+        ...displayValues,
+        [fieldName]: actualValue.toString(),
+      });
     }
   }
 
@@ -631,6 +664,17 @@ function Settings() {
 
   //#region Side Effects
 
+  // 표시용과 계산용(number type)은 씽크가 맞아야함.
+  useEffect(() => {
+    setDisplayValues({
+      pomoDuration: pomoSettingInputs.pomoDuration.toString(),
+      shortBreakDuration: pomoSettingInputs.shortBreakDuration.toString(),
+      longBreakDuration: pomoSettingInputs.longBreakDuration.toString(),
+      numOfPomo: pomoSettingInputs.numOfPomo.toString(),
+      numOfCycle: pomoSettingInputs.numOfCycle.toString(),
+    });
+  }, [pomoSettingInputs]);
+
   // To set pomoSettingInputs to default when a user logs out.
   useEffect(() => {
     if (isUserCreatingNewCycleSetting) {
@@ -718,7 +762,9 @@ function Settings() {
             handleSubmitToEditCycleSetting={handleSubmitToEditCycleSetting}
             handleCycleSettingNameChange={handleCycleSettingNameChange}
             handlePomoSettingChange={handlePomoSettingChange}
+            handlePomoSettingBlur={handlePomoSettingBlur}
             pomoSettingInputs={pomoSettingInputs}
+            displayValues={displayValues}
             cycleSettingNameInput={cycleSettingNameInput}
             ratioTargetedCalculated={targetFocusRatio}
             handleSubmitToSaveNewCycleSetting={
