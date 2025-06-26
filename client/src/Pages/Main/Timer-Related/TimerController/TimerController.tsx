@@ -761,7 +761,7 @@ export function TimerController({
         if (sessionData.startTime !== 0) {
           // 2)
           user &&
-            persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+            persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: "pomo",
