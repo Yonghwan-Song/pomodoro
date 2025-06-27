@@ -88,8 +88,8 @@ function Navbar() {
         document.documentElement.style.overflowY = "hidden";
         document.body.style.overflowY = "hidden";
       } else {
-        document.documentElement.style.overflowY = "";
-        document.body.style.overflowY = "";
+        document.documentElement.style.overflowY = "auto";
+        document.body.style.overflowY = "auto";
       }
       return next;
     });
@@ -122,11 +122,15 @@ function Navbar() {
   function handleLinkClick2(e: React.SyntheticEvent) {
     stopCountDownInBackground();
 
-    document.documentElement.style.overflowY = "";
-    document.body.style.overflowY = "";
+    document.documentElement.style.overflowY = "auto";
+    document.body.style.overflowY = "auto";
 
     handleSignOut();
   }
+
+  useEffect(() => {
+    console.log("isActive is", isActive);
+  }, [isActive]);
 
   // When this component is mounted, user is null. Thus, subscription does not happen.
   // But after a usre logs in, a subscription to the event starts...
@@ -161,7 +165,12 @@ function Navbar() {
             <StyledLink
               to="/statistics"
               max={{ constant: "1rem", variable: "2.4318vh" }}
-              onClick={handleLinkClick}
+              // onClick={handleLinkClick}
+              onClick={() => {
+                if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
+                  toggleSideBar();
+                }
+              }}
             >
               Statistics
             </StyledLink>
@@ -171,7 +180,12 @@ function Navbar() {
           <StyledLink
             to="/settings"
             max={{ constant: "1rem", variable: "2.4318vh" }}
-            onClick={handleLinkClick}
+            // onClick={handleLinkClick}
+            onClick={() => {
+              if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
+                toggleSideBar();
+              }
+            }}
           >
             Settings
           </StyledLink>
@@ -191,7 +205,12 @@ function Navbar() {
           <li>
             <StyledLink
               to="/signin"
-              onClick={toggleSideBar}
+              // onClick={toggleSideBar}
+              onClick={() => {
+                if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
+                  toggleSideBar();
+                }
+              }}
               max={{ constant: "0.75rem", variable: "1.6212vh" }}
               color={"#FFB86C"}
               hover
@@ -202,7 +221,15 @@ function Navbar() {
         )}
       </UnorderedList>
 
-      <div className={styles.burger} onClick={toggleSideBar}>
+      {/* <div className={styles.burger} onClick={toggleSideBar}> */}
+      <div
+        className={styles.burger}
+        onClick={() => {
+          if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
+            toggleSideBar();
+          }
+        }}
+      >
         <div className={styles.burgerDiv}></div>
         <div className={styles.burgerDiv}></div>
         <div className={styles.burgerDiv}></div>
