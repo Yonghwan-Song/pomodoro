@@ -167,11 +167,12 @@ const CircularProgressBar = ({
       setTotalFocusDurationInSec(newTotalFocusDuration);
       setCycleDurationInSec(newCycleDuration);
       setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCyclesInSec);
-      axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
-        totalFocusDuration: newTotalFocusDuration,
-        cycleDuration: newCycleDuration,
-        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
-      });
+      user &&
+        axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration: newTotalFocusDuration,
+          cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
+        });
       persistStatesToIDB({
         currentCycleInfo: {
           totalFocusDuration: newTotalFocusDuration,
@@ -187,11 +188,12 @@ const CircularProgressBar = ({
         totalDurationOfSetOfCyclesInSec + timeToAddInSeconds;
       setCycleDurationInSec(newCycleDuration);
       setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCyclesInSec);
-      axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
-        totalFocusDuration: totalFocusDurationInSec,
-        cycleDuration: newCycleDuration,
-        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
-      });
+      user &&
+        axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration: totalFocusDurationInSec,
+          cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
+        });
       persistStatesToIDB({
         currentCycleInfo: {
           totalFocusDuration: totalFocusDurationInSec,
@@ -259,11 +261,12 @@ const CircularProgressBar = ({
         setTotalFocusDurationInSec(newTotalFocusDuration);
         setCycleDurationInSec(newCycleDuration);
         setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
-        axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
-          totalFocusDuration: newTotalFocusDuration,
-          cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-        });
+        user &&
+          axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+            totalFocusDuration: newTotalFocusDuration,
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          });
         persistStatesToIDB({
           currentCycleInfo: {
             totalFocusDuration: newTotalFocusDuration,
@@ -279,11 +282,12 @@ const CircularProgressBar = ({
           totalDurationOfSetOfCyclesInSec - timeToSubtractInSeconds;
         setCycleDurationInSec(newCycleDuration);
         setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
-        axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
-          totalFocusDuration: totalFocusDurationInSec,
-          cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-        });
+        user &&
+          axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
+            totalFocusDuration: totalFocusDurationInSec,
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          });
         persistStatesToIDB({
           currentCycleInfo: {
             totalFocusDuration: totalFocusDurationInSec,

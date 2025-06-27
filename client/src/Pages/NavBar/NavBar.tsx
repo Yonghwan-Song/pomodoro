@@ -80,40 +80,51 @@ function Navbar() {
   }
 
   function toggleSideBar() {
-    if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
-      // console.log(`inner width - ${window.innerWidth}
-      // theme.mobile - ${theme.mobile}`);
+    // Toggle the ul element
+    setIsActive((prev) => {
+      const next = !prev;
+      // y축 스크롤 조건부로 막기 (html, body 모두 적용)
+      if (next) {
+        document.documentElement.style.overflowY = "hidden";
+        document.body.style.overflowY = "hidden";
+      } else {
+        document.documentElement.style.overflowY = "";
+        document.body.style.overflowY = "";
+      }
+      return next;
+    });
 
-      // Toggle the ul element
-      setIsActive(!isActive);
+    // Apply animation to the li elements
+    let navLinks = Array.from(
+      ulRef.current!.children as HTMLCollectionOf<HTMLLIElement>
+    ); // children property is inhertied from the Element interface
+    // console.log(navLinks);
 
-      // Apply animation to the li elements
-      let navLinks = Array.from(
-        ulRef.current!.children as HTMLCollectionOf<HTMLLIElement>
-      ); // children property is inhertied from the Element interface
-      // console.log(navLinks);
-
-      navLinks.forEach((link: HTMLLIElement, index) => {
-        if (link.style.animation) {
-          link.style.animation = "";
-        } else {
-          link.style.animation = `${styles.navLinksFade} 0.5s ease forwards ${
-            index / 7 + 0.2
-          }s`;
-        }
-        // console.log(link.style);
-        // console.log(index / 7);
-      });
-    }
+    navLinks.forEach((link: HTMLLIElement, index) => {
+      if (link.style.animation) {
+        link.style.animation = "";
+      } else {
+        link.style.animation = `${styles.navLinksFade} 0.5s ease forwards ${
+          index / 7 + 0.2
+        }s`;
+      }
+      // console.log(link.style);
+      // console.log(index / 7);
+    });
   }
 
   function handleLinkClick(e: React.SyntheticEvent) {
-    toggleSideBar();
-    setIsActive(!isActive);
+    if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
+      toggleSideBar();
+    }
   }
 
   function handleLinkClick2(e: React.SyntheticEvent) {
     stopCountDownInBackground();
+
+    document.documentElement.style.overflowY = "";
+    document.body.style.overflowY = "";
+
     handleSignOut();
   }
 

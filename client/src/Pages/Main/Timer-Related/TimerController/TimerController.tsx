@@ -2188,7 +2188,7 @@ export function TimerController({
     >
       <div css={{ alignSelf: "center" }}>
         <FlexBox justifyContent="space-evenly">
-          <h1>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h1>
+          <h2>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h2>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
         <Tooltip id="session-info" place="top">

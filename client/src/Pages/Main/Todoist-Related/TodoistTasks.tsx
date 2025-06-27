@@ -16,7 +16,7 @@ const Container = styled.div`
   padding: 1rem;
 `;
 
-const Heading = styled.h1`
+const Heading = styled.h2`
   font-size: 1.25rem;
   font-weight: bold;
   margin-bottom: 1rem;
@@ -150,9 +150,9 @@ export function TodoistTasks() {
 
   return (
     <div>
-      <h1 style={{ textAlign: "center", marginBottom: "1rem" }}>
+      <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>
         Todoist Items
-      </h1>
+      </h2>
 
       <div css={{ display: "flex", columnGap: "9px", padding: "1rem" }}>
         <NoTaskButton
