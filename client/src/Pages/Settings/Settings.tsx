@@ -258,16 +258,21 @@ function Settings() {
         startTime: 0,
         pause: { totalLength: 0, record: [] },
       });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
-        categoryChangeInfoArray: infoArr,
-      });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        totalFocusDuration,
-        cycleDuration,
-        cycleStartTimestamp: 0,
-        veryFirstCycleStartTimestamp: 0,
-        totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-      });
+      user &&
+        axiosInstance.patch(
+          RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+          {
+            categoryChangeInfoArray: infoArr,
+          }
+        );
+      user &&
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration,
+          cycleDuration,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        });
     } else {
       setCycleSettingSelected(currentCycleSetting);
       setPomoSettingInputs(currentCycleSetting.pomoSetting);

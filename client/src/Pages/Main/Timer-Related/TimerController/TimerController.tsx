@@ -62,8 +62,6 @@ import {
   boundedPomoInfoStore,
   useBoundedPomoInfoStore,
 } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
-import { Grid } from "../../../../ReusableComponents/Layouts/Grid";
-import { GridItem } from "../../../../ReusableComponents/Layouts/GridItem";
 import { FlexBox } from "../../../../ReusableComponents/Layouts/FlexBox";
 import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
 import { Tooltip } from "react-tooltip";
@@ -401,14 +399,17 @@ export function TimerController({
     }
 
     // console.log("cycleStatPayload", cycleStatPayload);
+    // console.log("user is", user);
+
     updateCycleSettings(cycleSettingsCloned);
-    axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
-      name,
-      data: {
-        cycleStat: cycleStatPayload,
-        averageAdherenceRate: averageAdherenceRatePayload,
-      },
-    });
+    user &&
+      axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
+        name,
+        data: {
+          cycleStat: cycleStatPayload,
+          averageAdherenceRate: averageAdherenceRatePayload,
+        },
+      });
   }
   /**
    * Decide this time rendering is whether a pomo duration or a break
@@ -1047,19 +1048,20 @@ export function TimerController({
             };
             updateCategoryChangeInfoArray([infoObj]);
             persistCategoryChangeInfoArrayToIDB([infoObj]);
-            axiosInstance.patch(
-              RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-              {
-                categoryChangeInfoArray: [
-                  {
-                    categoryName: infoObj.categoryName,
-                    categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
-                    color: infoObj.color,
-                    progress: infoObj.progress,
-                  },
-                ],
-              }
-            );
+            user &&
+              axiosInstance.patch(
+                RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+                {
+                  categoryChangeInfoArray: [
+                    {
+                      categoryName: infoObj.categoryName,
+                      categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
+                      color: infoObj.color,
+                      progress: infoObj.progress,
+                    },
+                  ],
+                }
+              );
           } else {
             // console.log("pomo session is on going");
             // console.log("running", (states as TimersStatesType).running);
@@ -1091,27 +1093,28 @@ export function TimerController({
               ...categoryChangeInfoArray,
               infoObj,
             ]);
-            axiosInstance.patch(
-              RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-              {
-                categoryChangeInfoArray: [
-                  ...categoryChangeInfoArray.map((info) => {
-                    return {
-                      categoryName: info.categoryName,
-                      categoryChangeTimestamp: info.categoryChangeTimestamp,
-                      color: info.color,
-                      progress: info.progress,
-                    };
-                  }),
-                  {
-                    categoryName: infoObj.categoryName,
-                    categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
-                    color: infoObj.color,
-                    progress: infoObj.progress,
-                  },
-                ],
-              }
-            );
+            user &&
+              axiosInstance.patch(
+                RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+                {
+                  categoryChangeInfoArray: [
+                    ...categoryChangeInfoArray.map((info) => {
+                      return {
+                        categoryName: info.categoryName,
+                        categoryChangeTimestamp: info.categoryChangeTimestamp,
+                        color: info.color,
+                        progress: info.progress,
+                      };
+                    }),
+                    {
+                      categoryName: infoObj.categoryName,
+                      categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
+                      color: infoObj.color,
+                      progress: infoObj.progress,
+                    },
+                  ],
+                }
+              );
           }
         }
         if (
@@ -1133,19 +1136,20 @@ export function TimerController({
           updateCategoryChangeInfoArray([infoObj]);
           // console.log("categoryChangeInfoArray", [infoObj]);
           persistCategoryChangeInfoArrayToIDB([infoObj]);
-          axiosInstance.patch(
-            RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-            {
-              categoryChangeInfoArray: [
-                {
-                  categoryName: infoObj.categoryName,
-                  categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
-                  color: infoObj.color,
-                  progress: infoObj.progress,
-                },
-              ],
-            }
-          );
+          user &&
+            axiosInstance.patch(
+              RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+              {
+                categoryChangeInfoArray: [
+                  {
+                    categoryName: infoObj.categoryName,
+                    categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
+                    color: infoObj.color,
+                    progress: infoObj.progress,
+                  },
+                ],
+              }
+            );
         }
       }
     }
@@ -1170,15 +1174,16 @@ export function TimerController({
 
         updateCategoryChangeInfoArray(updated);
         persistCategoryChangeInfoArrayToIDB(updated);
-        axiosInstance.patch(
-          RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-          {
-            categoryChangeInfoArray: updated.map((info) => {
-              const { _uuid, ...infoWithout_uuid } = info;
-              return infoWithout_uuid;
-            }),
-          }
-        );
+        user &&
+          axiosInstance.patch(
+            RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
+            {
+              categoryChangeInfoArray: updated.map((info) => {
+                const { _uuid, ...infoWithout_uuid } = info;
+                return infoWithout_uuid;
+              }),
+            }
+          );
       }
       // 0. idb (x)
       // 1. server (x)
@@ -1495,11 +1500,12 @@ export function TimerController({
               },
             ],
           });
-          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-            cycleStartTimestamp: startTime,
-            totalFocusDuration: totalFocusDurationTargetedInSec,
-            cycleDuration: cycleDurationTargetedInSec,
-          });
+          user &&
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              cycleStartTimestamp: startTime,
+              totalFocusDuration: totalFocusDurationTargetedInSec,
+              cycleDuration: cycleDurationTargetedInSec,
+            });
         }
       }
 
@@ -1527,10 +1533,11 @@ export function TimerController({
               },
             ],
           });
-          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-            cycleDuration: newCycleDuration,
-            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-          });
+          user &&
+            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+              cycleDuration: newCycleDuration,
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+            });
         } else {
         }
       }
@@ -1687,10 +1694,11 @@ export function TimerController({
                 },
               ],
             });
-            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-              cycleStartTimestamp: momentTimerIsToggled,
-            });
+            user &&
+              axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+                totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+                cycleStartTimestamp: momentTimerIsToggled,
+              });
           } else {
             setCycleStartTimestamp(momentTimerIsToggled);
             postMsgToSW("saveStates", {
@@ -1708,9 +1716,10 @@ export function TimerController({
                 },
               ],
             });
-            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-              cycleStartTimestamp: momentTimerIsToggled,
-            });
+            user &&
+              axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+                cycleStartTimestamp: momentTimerIsToggled,
+              });
           }
         }
 
@@ -1738,10 +1747,11 @@ export function TimerController({
                 },
               ],
             });
-            axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-              cycleDuration: newCycleDuration,
-              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-            });
+            user &&
+              axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+                cycleDuration: newCycleDuration,
+                totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+              });
           } else {
           }
         }
@@ -1793,10 +1803,11 @@ export function TimerController({
           veryFirstCycleStartTimestamp,
         },
       });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        cycleDuration: newCycleDuration,
-        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-      });
+      user &&
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+          cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+        });
     } else if (doWePauseTimer()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
       setTimersStatesPartial({ running: false });
@@ -1878,11 +1889,12 @@ export function TimerController({
           veryFirstCycleStartTimestamp,
         },
       });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        totalFocusDuration: newTotalFocusDuration,
-        cycleDuration: newCycleDuration,
-        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-      });
+      user &&
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+          totalFocusDuration: newTotalFocusDuration,
+          cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+        });
     } else {
       // Break session
       if (
@@ -1910,10 +1922,11 @@ export function TimerController({
           veryFirstCycleStartTimestamp,
         },
       });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        cycleDuration: newCycleDuration,
-        totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-      });
+      user &&
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+          cycleDuration: newCycleDuration,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+        });
     }
 
     if (isThisSessionPaused()) {
@@ -2354,9 +2367,10 @@ async function persistRecOfTodayToServer(user: User, record: RecType) {
     }
 
     // http requeset
-    const response = await axiosInstance.post(RESOURCE.TODAY_RECORDS, {
-      ...record,
-    });
+    user &&
+      (await axiosInstance.post(RESOURCE.TODAY_RECORDS, {
+        ...record,
+      }));
     // console.log("res of persistRecOfTodayToSever", response);
   } catch (error) {
     console.warn(error);
@@ -2440,7 +2454,7 @@ async function recordPomo2(
       pomodoroRecordArr,
       taskTrackingArr,
     };
-    axiosInstance.post(RESOURCE.POMODOROS, payload);
+    axiosInstance.post(RESOURCE.POMODOROS, payload); // 이 함수 호출 모두 user를 조건으로 걸고 호출하기 때문에 문제 없다.
   } catch (err) {
     if (
       // ignore the code below for now
