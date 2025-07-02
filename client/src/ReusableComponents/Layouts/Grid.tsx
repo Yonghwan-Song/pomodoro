@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { StyledGrid } from "../styles/Grid.styled";
 
 type GridProps = {
@@ -22,8 +23,13 @@ type GridProps = {
   marginBottom?: string;
   marginLeft?: string;
   padding?: string;
+  style?: CSSProperties;
 };
 
-export function Grid({ children, ...props }: GridProps) {
-  return <StyledGrid {...props}>{children}</StyledGrid>;
+export function Grid({ children, style, ...props }: GridProps) {
+  return (
+    <StyledGrid {...props} style={style}>
+      {children}
+    </StyledGrid>
+  );
 }

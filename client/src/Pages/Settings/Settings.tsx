@@ -725,9 +725,13 @@ function Settings() {
         min-height: calc(
           100vh - max(${VH_RATIO.NAV_BAR}vh, ${MINIMUMS.NAV_BAR}px)
         );
-        display: flex;
+        display: grid;
+        justify-items: center;
         align-items: center;
-        justify-content: center;
+
+        @media (width <= ${BREAK_POINTS.MOBILE}) {
+          justify-items: stretch;
+        }
       `}
     >
       <div

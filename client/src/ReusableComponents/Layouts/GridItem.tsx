@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { StyledGridItem } from "../styles/GridItem.styled";
 
 type GridItemProps = {
@@ -11,8 +12,13 @@ type GridItemProps = {
   width?: string;
   minWidth?: number;
   minHeight?: number;
+  style?: CSSProperties;
 };
 
-export function GridItem({ children, ...props }: GridItemProps) {
-  return <StyledGridItem {...props}>{children}</StyledGridItem>;
+export function GridItem({ children, style, ...props }: GridItemProps) {
+  return (
+    <StyledGridItem {...props} style={style}>
+      {children}
+    </StyledGridItem>
+  );
 }

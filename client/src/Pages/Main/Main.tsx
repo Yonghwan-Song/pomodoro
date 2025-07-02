@@ -1,3 +1,4 @@
+/** @jsxImportSource @emotion/react */
 import { useEffect, useRef, useState } from "react";
 import {
   obtainStatesFromIDB,
@@ -15,6 +16,7 @@ import { RecType } from "../../types/clientStatesType";
 import { pubsub } from "../../pubsub";
 import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
 import {
+  BREAK_POINTS,
   MINIMUMS,
   SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
   VH_RATIO,
@@ -26,6 +28,7 @@ import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 import { TimerController } from "./Timer-Related/TimerController/TimerController";
 import { TodoistTasks } from "./Todoist-Related/TodoistTasks";
+import { css } from "@emotion/react";
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -221,16 +224,19 @@ export default function Main() {
   return (
     <main>
       <RecOfToday records={records} />
-
       <section
-        style={{
-          minHeight: `calc(100vh - max(${SUM_OF_RATIO}vh, ${SUM_OF_MIN}px))`, // This CSS rule is intended to make this section extend to the bottom of the viewport.
-          // marginBottom: "100px", //! it does not make any changes. I think this is because of the minHeight. There is no remaining space left outside of this block. I need to adjust paddings to move this section.
-          paddingBottom: "16px", //*<---------------------------- This works.
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
+        css={css`
+          min-height: calc(
+            100vh - max(${SUM_OF_RATIO}vh, ${SUM_OF_MIN}px)
+          ); // This CSS rule is intended to make this section extend to the bottom of the viewport.
+          display: grid;
+          justify-items: center;
+          align-items: center;
+
+          @media (width <= ${BREAK_POINTS.MOBILE}) {
+            justify-items: stretch;
+          }
+        `}
       >
         {isStatesRelatedToTimerReady &&
           isCurrentCycleInfoReady &&
@@ -239,7 +245,7 @@ export default function Main() {
               isUserAuthReady ? (
                 // Though the user auth is ready, user's data needed to run a timer might not be ready.
                 areDataForRunningTimerFetchedCompletely ? (
-                  <Grid
+                  <Grid //* grid item이자 grid container
                     placeContent="center"
                     placeItems="center"
                     rowGap="14px"
@@ -281,16 +287,25 @@ export default function Main() {
               )
             ) : (
               // When a user logs out,
-              <BoxShadowWrapper>
-                <TimerController
-                  statesRelatedToTimer={statesRelatedToTimer}
-                  currentCycleInfo={currentCycleInfo}
-                  pomoSetting={pomoSetting}
-                  autoStartSetting={autoStartSetting}
-                  records={records}
-                  setRecords={setRecords}
-                />
-              </BoxShadowWrapper>
+              <Grid //* flex item이자 grid container
+                placeContent="center"
+                placeItems="center"
+                rowGap="14px"
+                maxWidth="687px"
+              >
+                <GridItem width="100%">
+                  <BoxShadowWrapper>
+                    <TimerController
+                      statesRelatedToTimer={statesRelatedToTimer}
+                      currentCycleInfo={currentCycleInfo}
+                      pomoSetting={pomoSetting}
+                      autoStartSetting={autoStartSetting}
+                      records={records}
+                      setRecords={setRecords}
+                    />
+                  </BoxShadowWrapper>
+                </GridItem>
+              </Grid>
             )
           ) : (
             <h2>loading timer...</h2>
