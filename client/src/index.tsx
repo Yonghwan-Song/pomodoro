@@ -171,6 +171,8 @@ root.render(
 // 필요한 이유: session이 종료될 때 해야하는 작업들 중, service worker thread에서는 처리할 수 없는 것들이 있기 때문에,
 // main thread에서 처리 할 수 있도록 message를 보내는 것. e.g) zustand store에 있는 global state들 update하는 경우.
 BC.addEventListener("message", async (ev) => {
+  const userEmail = await getUserEmail();
+
   const { evName, payload } = ev.data;
 
   switch (evName) {
@@ -231,13 +233,14 @@ BC.addEventListener("message", async (ev) => {
 
       boundedPomoInfoStore.setState({ cycleSettings: cycleSettingsCloned });
       console.log("cycleStatPayload at the BC event handler", cycleStatPayload);
-      axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
-        name,
-        data: {
-          cycleStat: cycleStatPayload,
-          averageAdherenceRate: averageAdherenceRatePayload,
-        },
-      });
+      userEmail &&
+        axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
+          name,
+          data: {
+            cycleStat: cycleStatPayload,
+            averageAdherenceRate: averageAdherenceRatePayload,
+          },
+        });
 
       break;
 
@@ -296,9 +299,10 @@ BC.addEventListener("message", async (ev) => {
         boundedPomoInfoStore
           .getState()
           .setTaskChangeInfoArray([newTaskChangeInfo]); //? 이게 먼저 실행되고, autoStartCurrentSession의 changeTimestamp할당이 일어나겠지?
-        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-          taskChangeInfoArray: [newTaskChangeInfo],
-        });
+        userEmail &&
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+            taskChangeInfoArray: [newTaskChangeInfo],
+          });
       }
 
       break;
@@ -321,6 +325,7 @@ BC.addEventListener("message", async (ev) => {
 
       // console.log("about to call autoStartCurrentSession in index.tsx");
       autoStartCurrentSession({
+        userEmail,
         timersStates,
         currentCycleInfo,
         pomoSetting,
@@ -399,11 +404,10 @@ window.addEventListener("beforeunload", async (event) => {
  * This function is only used when a session is started automatically in either "/statistics" or "/settings".
  *
  */
+// TODO - 이거 이제 필요 없는듯? 다음 커밋에서 지우던가 하자
 export async function updateTimersStates_with_token({
-  idToken,
   states,
 }: {
-  idToken: string;
   states: Partial<PatternTimerStatesType> & TimerStateType;
 }) {
   try {
@@ -422,10 +426,9 @@ export async function updateTimersStates_with_token({
       );
     }
 
-    const res = await axiosInstance.patch(
-      RESOURCE.USERS + SUB_SET.TIMERS_STATES,
-      { ...states }
-    );
+    await axiosInstance.patch(RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
+      ...states,
+    });
     // console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
   } catch (err) {
     console.warn(err);
@@ -462,6 +465,7 @@ export async function persistTimersStatesToServer(
       );
     }
 
+    // 함수 호출할 때 조건부로 호출해서 401 error 발생 안함
     await axiosInstance.patch(RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
       ...states,
     });
@@ -494,6 +498,7 @@ export async function persistAutoStartSettingToServer(
     }
 
     const res = await axiosInstance.patch(
+      // 함수 호출할 때 조건부로 호출해서 401 error 발생 안함
       RESOURCE.USERS + SUB_SET.AUTO_START_SETTING,
       {
         // autoStartSetting: autoStartSetting,
@@ -1095,12 +1100,14 @@ const SESSION = {
 // 앱 닫았다가 나중에 열었을 때 다른 페이지에서 바로 시작하는 경우.
 // unAuth user의 경우 - ~/settings로 바로 접속하는 경우, auth user의 경우 - ~/statistics or ~/settings로 접속하는 경우.
 async function autoStartCurrentSession({
+  userEmail,
   timersStates,
   currentCycleInfo,
   pomoSetting,
   endTimeOfPrevSession,
   prevSessionType,
 }: {
+  userEmail: string | null;
   timersStates: TimerStateType & PatternTimerStatesType;
   currentCycleInfo: CycleInfoType;
   pomoSetting: PomoSettingType;
@@ -1196,11 +1203,12 @@ async function autoStartCurrentSession({
           ...currentCycleInfo,
         },
       });
-      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-        cycleStartTimestamp: currentCycleInfo.cycleStartTimestamp,
-        totalFocusDuration: currentCycleInfo.totalFocusDuration,
-        cycleDuration: currentCycleInfo.cycleDuration,
-      });
+      userEmail &&
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+          cycleStartTimestamp: currentCycleInfo.cycleStartTimestamp,
+          totalFocusDuration: currentCycleInfo.totalFocusDuration,
+          cycleDuration: currentCycleInfo.cycleDuration,
+        });
     }
 
     // 1. persist locally.
@@ -1223,11 +1231,9 @@ async function autoStartCurrentSession({
     // the timersStates fetched from server is not same as the timersStates stored in idb before refreshing.
 
     // 2. persist remotely.
-    let idTokenAndEmail = await obtainIdToken();
-    if (idTokenAndEmail) {
-      const { idToken } = idTokenAndEmail;
+    let idToken = await obtainIdToken();
+    if (idToken) {
       updateTimersStates_with_token({
-        idToken: idToken,
         states: {
           startTime: timersStates.startTime,
           running: timersStates.running,

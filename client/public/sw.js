@@ -8823,16 +8823,13 @@
     LONG_BREAK: 4,
     VERY_LAST_POMO: 5
   };
-  const getIdTokenAndEmail = () => {
+  const obtainIdToken = () => {
     return new Promise((res, rej) => {
       const unsubscribe = onAuthStateChanged(auth, user => {
         unsubscribe();
         if (user) {
           getIdToken(user).then(idToken => {
-            res({
-              idToken,
-              email: user.email
-            });
+            res(idToken);
           }, error => {
             res(null);
           });
@@ -9128,12 +9125,10 @@
       payload: null
     });
 
-    //? getIdTokenAndEmail -> error -> res(null) is not what I considered here...
-    let idTokenAndEmail = await getIdTokenAndEmail();
-    let idToken;
+    //? obtainIdToken() -> error -> res(null) is not what I considered here...
+    const idToken = await obtainIdToken();
     let infoArrayBeforeReset = null;
-    if (idTokenAndEmail) {
-      idToken = idTokenAndEmail.idToken;
+    if (idToken) {
       infoArrayBeforeReset = (await getCategoryChangeInfoArrayFromIDB()).value;
 
       // console.log("infoArrayBeforeReset", infoArrayBeforeReset);
@@ -9214,7 +9209,7 @@
 
         // 2. 마무리 하면서 생기는 데이터 persist
         if (sessionData.startTime !== 0) {
-          idTokenAndEmail && (await recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, taskChangeInfoArray, sessionData));
+          idToken && (await recordPomo(timersStates.startTime, idToken, infoArrayBeforeReset, taskChangeInfoArray, sessionData));
           await persistSessionToIDB("pomo", sessionData);
           persistRecOfTodayToServer(_objectSpread2({
             kind: "pomo"
@@ -9291,7 +9286,7 @@
           value: timersStatesForNextSession.duration
         }]);
         if (sessionData.startTime !== 0) {
-          idTokenAndEmail && (await recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, taskChangeInfoArray, sessionData));
+          idToken && (await recordPomo(timersStates.startTime, idToken, infoArrayBeforeReset, taskChangeInfoArray, sessionData));
           persistRecOfTodayToServer(_objectSpread2({
             kind: "pomo"
           }, sessionData), idToken);
@@ -9357,7 +9352,7 @@
           totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted
         }, idToken);
         if (sessionData.startTime !== 0) {
-          idTokenAndEmail && (await recordPomo(timersStates.startTime, idTokenAndEmail, infoArrayBeforeReset, taskChangeInfoArray, sessionData));
+          idToken && (await recordPomo(timersStates.startTime, idToken, infoArrayBeforeReset, taskChangeInfoArray, sessionData));
           await persistSessionToIDB("pomo", sessionData);
           persistRecOfTodayToServer(_objectSpread2({
             kind: "pomo"
@@ -9517,12 +9512,8 @@
       console.warn(error);
     }
   }
-  async function recordPomo(startTime, idTokenAndEmail, categoryChangeInfoArray, taskChangeInfoArray, sessionData) {
+  async function recordPomo(startTime, idToken, categoryChangeInfoArray, taskChangeInfoArray, sessionData) {
     try {
-      const {
-        idToken
-      } = idTokenAndEmail;
-
       // console.log("taskChangeInfoArray inside recordPomo", taskChangeInfoArray);
 
       const timestamps = makeTimestampsFromRawData(categoryChangeInfoArray, taskChangeInfoArray, sessionData.pause.record, sessionData.endTime);
@@ -9702,10 +9693,14 @@
    * @param {*} URL string that comes after BASE_URL
    * @param {*} METHOD "POST" | "GET" | "PATCH" | "DELETE"
    * @param {*} data this is going to be stringified
-   * @param {*} idToken string
+   * @param {*} idToken string | null
    * @returns
    */
   async function fetchWrapper(URL, METHOD, data, idToken) {
+    //* idToken이 null인지 아닌지를 이곳에서 일관되게 체크하는게 좋을 것 같아서 아래처럼 했는데,
+    //* 그렇게 하면, 이전에 만들어 놓은 코드들을 봤을 때, 어차피 이곳에서 반려되는데, 이곳까지 도달하기 까지 불필요하게 실행되는 것들이 너무 많다고 판단되서 기존방식 유지하겠음.
+    //* 그래도 혹시 fetchWrapper 호출 시 conditional statement까먹고 안한 것 대비하기 위해 그냥 지우지 않겠음.
+    if (idToken === null) return;
     try {
       const response = await fetch(BASE_URL + URL, {
         method: METHOD,

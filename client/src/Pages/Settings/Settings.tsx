@@ -748,7 +748,6 @@ function Settings() {
           padding: 10px;
           grid-column-gap: 25px;
           grid-row-gap: 25px;
-          overflow-x: scroll;
 
           > * {
             min-width: 0px; // is set to auto when display is the grid or flex. The auto value for flex/grid items means they won't shrink below their content's intrinsic minimum width.
