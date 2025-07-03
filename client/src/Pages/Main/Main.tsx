@@ -279,11 +279,11 @@ export default function Main() {
                     </GridItem>
                   </Grid>
                 ) : (
-                  <h2>fetching data...</h2>
+                  <h2 css={{ textAlign: "center" }}>fetching data...</h2>
                 )
               ) : (
                 // User auth: NOT READY, user's data required to run timer: NOT READY
-                <h2>loading timer...</h2>
+                <h2 css={{ textAlign: "center" }}>loading timer...</h2>
               )
             ) : (
               // When a user logs out,
@@ -308,7 +308,7 @@ export default function Main() {
               </Grid>
             )
           ) : (
-            <h2>loading timer...</h2>
+            <h2 css={{ textAlign: "center" }}>loading timer...</h2>
           ))}
       </section>
     </main>
