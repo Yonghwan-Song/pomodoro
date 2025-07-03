@@ -696,6 +696,25 @@ export function TimerController({
             categoryChangeInfoArray
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+
+          // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
+          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
+            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
+              sessionData.startTime;
+          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
+            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
+              sessionData.startTime;
+
+          // console.log("sessionData.startTime", sessionData.startTime);
+          // console.log(
+          //   "copiedCategoryChangeInfoArray[0]",
+          //   copiedCategoryChangeInfoArray[0]
+          // );
+          // console.log(
+          //   "copiedTaskChangeInfoArray[0]",
+          //   copiedTaskChangeInfoArray[0]
+          // );
+
           // 1) and 2) 모두 아래 함수에서 실행한다.
 
           sessionData.startTime !== 0 &&

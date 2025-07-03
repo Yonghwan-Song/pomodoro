@@ -9131,7 +9131,13 @@
     if (idToken) {
       infoArrayBeforeReset = (await getCategoryChangeInfoArrayFromIDB()).value;
 
-      // console.log("infoArrayBeforeReset", infoArrayBeforeReset);
+      // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
+      if (infoArrayBeforeReset[0].categoryChangeTimestamp === 0) infoArrayBeforeReset[0].categoryChangeTimestamp = sessionData.startTime;
+      if (taskChangeInfoArray[0].taskChangeTimestamp === 0) taskChangeInfoArray[0].taskChangeTimestamp = sessionData.startTime;
+
+      // console.log("sessionData.startTime", sessionData.startTime);
+      // console.log("infoArrayBeforeReset[0]", infoArrayBeforeReset[0]);
+      // console.log("taskChangeInfoArray[0]", taskChangeInfoArray[0]);
 
       const infoArrAfterReset = [_objectSpread2(_objectSpread2({}, infoArrayBeforeReset[infoArrayBeforeReset.length - 1]), {}, {
         categoryChangeTimestamp: 0,
