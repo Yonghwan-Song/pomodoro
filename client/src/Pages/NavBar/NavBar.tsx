@@ -82,15 +82,16 @@ function Navbar() {
   function toggleSideBar() {
     // Toggle the ul element
     setIsActive((prev) => {
+      console.log("previous isActive value inside toggleSideBar()- ", prev);
       const next = !prev;
       // y축 스크롤 조건부로 막기 (html, body 모두 적용)
-      if (next) {
-        document.documentElement.style.overflowY = "hidden";
-        document.body.style.overflowY = "hidden";
-      } else {
-        document.documentElement.style.overflowY = "auto";
-        document.body.style.overflowY = "auto";
-      }
+      // if (next) {
+      //   document.documentElement.style.overflowY = "hidden";
+      //   document.body.style.overflowY = "hidden";
+      // } else {
+      //   document.documentElement.style.overflowY = "auto";
+      //   document.body.style.overflowY = "auto";
+      // }
       return next;
     });
 
@@ -122,8 +123,8 @@ function Navbar() {
   function handleLinkClick2(e: React.SyntheticEvent) {
     stopCountDownInBackground();
 
-    document.documentElement.style.overflowY = "auto";
-    document.body.style.overflowY = "auto";
+    // document.documentElement.style.overflowY = "auto";
+    // document.body.style.overflowY = "auto";
 
     handleSignOut();
   }
