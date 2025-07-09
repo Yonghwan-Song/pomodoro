@@ -828,6 +828,14 @@ export function TimerController({
             categoryChangeInfoArray
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+
+          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
+            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
+              sessionData.startTime;
+          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
+            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
+              sessionData.startTime;
+
           sessionData.startTime !== 0 &&
             (await recordPomo2(
               copiedCategoryChangeInfoArray,
@@ -922,6 +930,14 @@ export function TimerController({
             categoryChangeInfoArray
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+
+          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
+            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
+              sessionData.startTime;
+          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
+            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
+              sessionData.startTime;
+
           sessionData.startTime !== 0 &&
             (await recordPomo2(
               copiedCategoryChangeInfoArray,
