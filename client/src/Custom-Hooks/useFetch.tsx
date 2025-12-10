@@ -19,6 +19,7 @@ type ArgType<T, S> = {
   callbacks?: ((arg: DataType<T, S>) => void | Promise<void>)[]; // What if S is provided but callbacks need T?
   additionalDeps?: DependencyList;
   additionalCondition?: boolean;
+  params?: Record<string, any>;
 };
 
 type CustomReturnType<T, S> = [
@@ -46,6 +47,7 @@ export function useFetch<T, S = undefined>({
   callbacks,
   additionalDeps,
   additionalCondition,
+  params,
 }: ArgType<T, S>): CustomReturnType<T, S> {
   const [data, setData] = useState<DataType<T, S> | null>(null);
   const { user } = useAuthContext()!;
@@ -94,7 +96,8 @@ export function useFetch<T, S = undefined>({
     // This is going to be used in the getData() function.
     async function fetchDataFromServer() {
       try {
-        const response = await axiosInstance.get(urlSegment);
+        // TODO: param정도는 붙일 수 있게 해야하는거 아니야?
+        const response = await axiosInstance.get(urlSegment, { params });
 
         let data = // TODO 이거 타입이 어떻게 되는거야?... 그냥 DataType<T, S>인가... 그러면 T는... response.data가 존재 하지 않는경우는?.. 404로 돌리나 ㅠ
           modifier !== undefined ? modifier(response.data as T) : response.data;

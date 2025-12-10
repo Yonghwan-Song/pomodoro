@@ -16,6 +16,11 @@ import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 export class TodayRecordsController {
   constructor(private readonly todayRecordsService: TodayRecordsService) {}
 
+  @Post('seed')
+  async seed(@Req() request: CustomRequest) {
+    return await this.todayRecordsService.seedDummyData(request.userEmail);
+  }
+
   @Post()
   async create(
     @Body(new ValidationPipe()) createRecordOfTodayDto: CreateTodayRecordDto,
@@ -30,8 +35,14 @@ export class TodayRecordsController {
   }
 
   @Get()
-  async getTodayRecords(@Req() request: CustomRequest) {
-    return await this.todayRecordsService.findTodayRecords(request.userEmail);
+  async getTodayRecords(
+    @Req() request: CustomRequest,
+    @Query('timestamp') timestamp: string,
+  ) {
+    return await this.todayRecordsService.findTodayRecords(
+      request.userEmail,
+      parseInt(timestamp),
+    );
   }
 
   @Delete()
