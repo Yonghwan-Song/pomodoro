@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { ReactComponent as Arrow } from "../../../Icons/down-arrow-svgrepo-com.svg";
+import Arrow from "../../../Icons/down-arrow-svgrepo-com.svg?react";
 import styles from "./Arrows.module.css";
 export function ArrowDown({ handleClick }) {
   const intervalId = useRef(null);

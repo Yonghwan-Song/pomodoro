@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from "react";
-import { ReactComponent as TrashBinIcon } from "../../../Icons/trash-bin-trash-svgrepo-com.svg";
+import TrashBinIcon from "../../../Icons/trash-bin-trash-svgrepo-com.svg?react";
 import ReactModal from "react-modal";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";

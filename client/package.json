@@ -23,32 +23,63 @@
     "react-google-button": "^0.7.2",
     "react-modal": "^3.16.1",
     "react-router-dom": "^6.3.0",
-    "react-scripts": "5.0.1",
     "react-toastify": "^11.0.5",
     "react-tooltip": "^5.28.0",
     "recharts": "^2.1.14",
     "styled-components": "^5.3.5",
-    "typescript": "^4.9.4",
     "web-vitals": "^2.1.4",
     "zustand": "^5.0.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "lint": "eslint --ignore-path .gitignore .",
+    "start": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "echo 'Run vitest instead'",
+    "lint": "eslint --ignore-path ../.gitignore .",
     "format": "prettier --ignore-path .gitignore --write \"**/*.{ts,tsx,css,scss}\"",
     "coverage": "npm test -- --coverage --watchAll --collectCoverageFrom='src/components/**/*.{ts,tsx}' --collectCoverageFrom='!src/components/**/*.{types, stories, constants, test, sepc}.{ts,tsx}'",
     "prepare": "cd .. && husky install client/.husky"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest",
+      "eslint:recommended",
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended",
+      "plugin:@typescript-eslint/recommended",
       "plugin:jest-dom/recommended",
       "eslint-config-prettier"
-    ]
+    ],
+    "ignorePatterns": [
+      "build",
+      "dist",
+      "node_modules",
+      "public"
+    ],
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "react-refresh"
+    ],
+    "rules": {
+      "react-refresh/only-export-components": [
+        "warn",
+        {
+          "allowConstantExport": true
+        }
+      ],
+      "react/react-in-jsx-scope": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "prefer-const": "warn",
+      "no-undef": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+      "no-case-declarations": "off",
+      "@typescript-eslint/no-unused-expressions": "off"
+    }
   },
   "browserslist": {
     "production": [
@@ -63,6 +94,9 @@
     ]
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "@babel/preset-typescript": "^7.28.5",
     "@emotion/react": "^11.14.0",
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-commonjs": "^25.0.0",
@@ -70,14 +104,25 @@
     "@rollup/plugin-node-resolve": "^15.1.0",
     "@rollup/plugin-typescript": "^11.1.1",
     "@types/serviceworker": "^0.0.67",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.1",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-jest-dom": "^4.0.3",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.26",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.0",
     "msw": "^1.2.1",
     "prettier": "2.8.7",
     "rollup": "^2.79.1",
-    "tailwindcss": "^3.1.4"
+    "tailwindcss": "^3.1.4",
+    "typescript": "^5.9.3",
+    "vite": "^5.0.12",
+    "vite-plugin-svgr": "^4.2.0",
+    "vite-tsconfig-paths": "^4.3.1"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

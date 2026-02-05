@@ -983,7 +983,7 @@ export function postMsgToSW(action: ActionType, payload: any) {
 export function stopCountDownInBackground() {
   let id = localStorage.getItem("idOfSetInterval");
   if (id !== null) {
-    clearInterval(id);
+    clearInterval(Number(id));
     localStorage.removeItem("idOfSetInterval");
   }
 }

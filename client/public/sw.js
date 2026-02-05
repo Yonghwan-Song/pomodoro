@@ -4,9 +4,9 @@
   function _defineProperty(e, r, t) {
     return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
       value: t,
-      enumerable: true,
-      configurable: true,
-      writable: true
+      enumerable: !0,
+      configurable: !0,
+      writable: !0
     }) : e[r] = t, e;
   }
   function ownKeys(e, r) {
@@ -22,7 +22,7 @@
   function _objectSpread2(e) {
     for (var r = 1; r < arguments.length; r++) {
       var t = null != arguments[r] ? arguments[r] : {};
-      r % 2 ? ownKeys(Object(t), true).forEach(function (r) {
+      r % 2 ? ownKeys(Object(t), !0).forEach(function (r) {
         _defineProperty(e, r, t[r]);
       }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) {
         Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r));
@@ -54,7 +54,7 @@
     if ("object" != typeof t || !t) return t;
     var e = t[Symbol.toPrimitive];
     if (void 0 !== e) {
-      var i = e.call(t, r);
+      var i = e.call(t, r || "default");
       if ("object" != typeof i) return i;
       throw new TypeError("@@toPrimitive must return a primitive value.");
     }
@@ -320,9 +320,6 @@
    * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    * See the License for the specific language governing permissions and
    * limitations under the License.
-   */
-  /**
-   * @fileoverview Firebase constants.  Some of these (@defines) can be overridden at compile-time.
    */
 
   /**
@@ -1723,9 +1720,6 @@
    * limitations under the License.
    */
   /**
-   * A container for all of the Logger instances
-   */
-  /**
    * The JS SDK supports 5 log levels and also allows a user the ability to
    * silence the logs altogether.
    *
@@ -2709,8 +2703,6 @@
   OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
   PERFORMANCE OF THIS SOFTWARE.
   ***************************************************************************** */
-  /* global Reflect, Promise, SuppressedError, Symbol, Iterator */
-
   function __rest(s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
@@ -5279,7 +5271,7 @@
     const authInternal = _castAuth(auth);
     _assert(authInternal._canInitEmulator, authInternal, "emulator-config-failed" /* AuthErrorCode.EMULATOR_CONFIG_FAILED */);
     _assert(/^https?:\/\//.test(url), authInternal, "invalid-emulator-scheme" /* AuthErrorCode.INVALID_EMULATOR_SCHEME */);
-    const disableWarnings = false;
+    const disableWarnings = !!(options === null || options === void 0 ? void 0 : options.disableWarnings);
     const protocol = extractProtocol(url);
     const {
       host,
@@ -5299,7 +5291,7 @@
         disableWarnings
       })
     });
-    {
+    if (!disableWarnings) {
       emitEmulatorWarning();
     }
   }
@@ -8355,7 +8347,7 @@
         params.customParameters = JSON.stringify(provider.getCustomParameters());
       }
       // TODO set additionalParams from the provider as well?
-      for (const [key, value] of Object.entries({})) {
+      for (const [key, value] of Object.entries(additionalParams || {})) {
         params[key] = value;
       }
     }
@@ -8773,8 +8765,8 @@
   //#region Components/CircularProgressBar/circularProgressBar.jsx
   //#endregion
   //#region URLs
-  const ENV = "production"; // Change this to 'production' when deploying
-  // const ENV = "development"; // Change this to 'production' when deploying
+  // const ENV = "production"; // Change this to 'production' when deploying
+  const ENV = "development"; // Change this to 'production' when deploying
   const BASE_URLS = {
     development: "http://localhost:3000",
     production: "https://pomodoro-nest-apis.onrender.com"
@@ -10008,6 +10000,8 @@
   exports.segments_to_durations = segments_to_durations;
   exports.segments_to_task_durations = segments_to_task_durations;
   exports.timestamps_to_segments = timestamps_to_segments;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
 
   return exports;
 

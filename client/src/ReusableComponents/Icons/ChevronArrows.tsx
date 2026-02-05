@@ -1,5 +1,5 @@
-import { ReactComponent as ArrowToTheLeft } from "../../Icons/chevron-left-icon.svg";
-import { ReactComponent as ArrowToTheRight } from "../../Icons/chevron-right-icon.svg";
+import ArrowToTheLeft from "../../Icons/chevron-left-icon.svg?react";
+import ArrowToTheRight from "../../Icons/chevron-right-icon.svg?react";
 
 type ArrowsProps = {
   handleClick: (event: React.MouseEvent<SVGSVGElement>) => void;
