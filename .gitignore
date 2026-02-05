@@ -2,8 +2,21 @@
 
 .vscode/
 
+# Dependencies
 client/node_modules
-
 server/node_modules
+node_modules
 
+# Production
+client/build
+client/dist
+
+# Env
 server/.env
+*.env
+*.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
