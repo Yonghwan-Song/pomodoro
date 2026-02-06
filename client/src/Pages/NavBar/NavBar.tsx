@@ -177,6 +177,21 @@ function Navbar() {
             </StyledLink>
           </li>
         )}
+        {user !== null && (
+          <li>
+            <StyledLink
+              to="/group-study"
+              max={{ constant: "1rem", variable: "2.4318vh" }}
+              onClick={() => {
+                if (window.innerWidth <= Number(theme.mobile.slice(0, -2))) {
+                  toggleSideBar();
+                }
+              }}
+            >
+              Group Study
+            </StyledLink>
+          </li>
+        )}
         <li>
           <StyledLink
             to="/settings"

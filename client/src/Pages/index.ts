@@ -15,5 +15,6 @@ import Main from "./Main/Main";
 import Signin from "./Signin/Signin";
 import Settings from "./Settings/Settings";
 import Statistics from "./Statistics/Statistics";
+import GroupStudy from "./GroupStudy/GroupStudy";
 
-export { Main, Signin, Settings, Statistics };
+export { Main, Signin, Settings, Statistics, GroupStudy };

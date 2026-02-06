@@ -2,7 +2,9 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Main, Signin, Settings, Statistics } from "./Pages/index";
+import { Main, Signin, Settings, Statistics, GroupStudy } from "./Pages/index";
+import { RoomList } from "./Pages/GroupStudy/RoomList";
+import { Room } from "./Pages/GroupStudy/Room";
 import Protected from "./ReusableComponents/Protected";
 import { IDBPDatabase, DBSchema, openDB } from "idb";
 import { PauseType } from "./Pages/Main/Timer-Related/reducers";
@@ -153,6 +155,17 @@ root.render(
       <Route path="/" element={<App />}>
         <Route path="timer" element={<Main />} />
         <Route path="settings" element={<Settings />} />
+        <Route
+          path="group-study"
+          element={
+            <Protected>
+              <GroupStudy />
+            </Protected>
+          }
+        >
+          <Route index element={<RoomList />} />
+          <Route path="room/:roomId" element={<Room />} />
+        </Route>
         <Route
           path="statistics"
           element={
