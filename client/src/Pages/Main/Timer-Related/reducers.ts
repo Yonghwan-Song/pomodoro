@@ -1,4 +1,4 @@
-import { postMsgToSW } from "../../..";
+import { persistStatesToIDB } from "../../..";
 import { TimerStateType } from "../../../types/clientStatesType";
 
 export type PauseType = {
@@ -33,12 +33,10 @@ export function reducer(
 ): TimerStateType {
   switch (action.type) {
     case ACTION.START:
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "startTime", value: action.payload },
-          { name: "running", value: true },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-        ],
+      persistStatesToIDB({
+        startTime: action.payload,
+        running: true,
+        pause: { totalLength: 0, record: [] },
       });
 
       return {
@@ -49,20 +47,15 @@ export function reducer(
       };
 
     case ACTION.PAUSE:
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "running", value: false },
-          {
-            name: "pause",
-            value: {
-              ...state.pause,
-              record: [
-                ...state.pause!.record,
-                { start: action.payload, end: undefined },
-              ],
-            },
-          },
-        ],
+      persistStatesToIDB({
+        running: false,
+        pause: {
+          ...state.pause,
+          record: [
+            ...state.pause!.record,
+            { start: action.payload, end: undefined },
+          ],
+        },
       });
       return {
         ...state,
@@ -77,29 +70,24 @@ export function reducer(
       };
 
     case ACTION.RESUME:
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "running", value: true },
-          {
-            name: "pause",
-            value: {
-              record: state.pause!.record.map((obj) => {
-                if (obj.end === undefined) {
-                  return {
-                    ...obj,
-                    end: action.payload,
-                  };
-                } else {
-                  return obj;
-                }
-              }),
-              totalLength:
-                state.pause!.totalLength +
-                (action.payload! -
-                  state.pause!.record[state.pause!.record.length - 1].start),
-            },
-          },
-        ],
+      persistStatesToIDB({
+        running: true,
+        pause: {
+          record: state.pause!.record.map((obj) => {
+            if (obj.end === undefined) {
+              return {
+                ...obj,
+                end: action.payload,
+              };
+            } else {
+              return obj;
+            }
+          }),
+          totalLength:
+            state.pause!.totalLength +
+            (action.payload! -
+              state.pause!.record[state.pause!.record.length - 1].start),
+        },
       });
       return {
         ...state,
@@ -123,12 +111,10 @@ export function reducer(
       };
 
     case ACTION.RESET:
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "startTime", value: 0 },
-          { name: "running", value: false },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-        ],
+      persistStatesToIDB({
+        startTime: 0,
+        running: false,
+        pause: { totalLength: 0, record: [] },
       });
       return {
         running: false,
