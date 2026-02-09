@@ -134,7 +134,7 @@ export let TimerRelatedStates: TimersStatesType | null = null;
 
 // Main에서 사용하더라도 Main함수 내에 정의하지 않은 이유: `/timer`이외에 다른 url에 있더라도
 // 아래 두 event들은 발생할 수 있기 때문에.
-export let deciderOfWhetherDataForRunningTimerFetched: [boolean, boolean] = [
+export const deciderOfWhetherDataForRunningTimerFetched: [boolean, boolean] = [
   false, // for persisting timersStates to idb
   false, // for persisting recordsOfToday to idb
 ];
@@ -258,6 +258,7 @@ BC.addEventListener("message", async (ev) => {
       break;
 
     /**
+     * NOTE:
      * This event is triggered when the session ends due to a service worker.
      * What it does is:
      * 1. publish the event to the NavBar component. -> NavBar's useEffect reset categoryChangeInfoArray.
@@ -280,6 +281,7 @@ BC.addEventListener("message", async (ev) => {
       // 이거 autoStart인 경우, zustand가 두 값을 비교해서 나중에것 하나로 (즉 true) 한번 update하는게 아니라, 찰나에 두번 update함.
       // TODO? - sw.js에서 조건을 걸어서 보내든 조건을 걸 수 있는 boolean을 payload에 포함시키면 한번만 update하게 할 수 있는데,
       //?        뭔가 자꾸 에러나고 약간 복잡해서 우선 그냥 넘김.
+      // NOTE: 2.
       boundedPomoInfoStore.getState().setTimersStatesPartial({
         running: false,
         startTime: 0,
@@ -292,6 +294,8 @@ BC.addEventListener("message", async (ev) => {
       //? 만약 TC가 다시 로드되는 것에 의해 sessionStorage가 update된다면 .. 타이밍상 여기에서는 pomo인지 break인지 판단이 불가능한게 아닌가?
       // TC가 다시 load되면서 update됨. (L1159 useEffect)
 
+      // QQQ: 전반적으로 아래의 코드들의 의도가 뭔말인지 모르겠어.
+      //
       //! IMPT - 왜 JustFinishedType인지
       //! -> 이 찰나는 아직 TC로 가서 useEffect에 의해 current session type을 판단해서 setItem() 호출하기 전 이다.
       const sessionTypeJustFinished =
@@ -309,6 +313,7 @@ BC.addEventListener("message", async (ev) => {
           id: currentTaskId,
           taskChangeTimestamp: 0,
         };
+        // NOTE: 3.
         boundedPomoInfoStore
           .getState()
           .setTaskChangeInfoArray([newTaskChangeInfo]); //? 이게 먼저 실행되고, autoStartCurrentSession의 changeTimestamp할당이 일어나겠지?
@@ -325,7 +330,7 @@ BC.addEventListener("message", async (ev) => {
       break;
 
     case "autoStartCurrentSession":
-      let {
+      const {
         timersStates,
         currentCycleInfo,
         pomoSetting,
@@ -376,7 +381,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     //IMPT 로그아웃할때 unsub해야하는거 아니냐... -> //! 안해도 된다 왜냐하면, 로그아웃하고 앱 reload해서 어차피 다 사라짐.
     pubsub.subscribe("connectionIsUp", async () => {
       // I did not call unsub function of this subscription.
-      let userEmail = await getUserEmail(); //TODO: 그런데 이거 중복이네 hanldeFailedReqs에서 userEmail을 arg로 받아서 사용할 수 있는 방법을 찾아보든가
+      const userEmail = await getUserEmail(); //TODO: 그런데 이거 중복이네 hanldeFailedReqs에서 userEmail을 arg로 받아서 사용할 수 있는 방법을 찾아보든가
       // console.log("userEmail from subscribe to connectionIsUp", userEmail);
       // console.log("errController", errController);
       if (
@@ -425,12 +430,12 @@ export async function updateTimersStates_with_token({
 }) {
   try {
     // caching
-    let cache = DynamicCache || (await openCache(CacheName));
-    let pomoSettingAndTimersStatesResponse = await cache.match(
+    const cache = DynamicCache || (await openCache(CacheName));
+    const pomoSettingAndTimersStatesResponse = await cache.match(
       BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
-      let pomoSettingAndTimersStates =
+      const pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json();
       pomoSettingAndTimersStates.timersStates = states;
       await cache.put(
@@ -459,12 +464,12 @@ export async function persistTimersStatesToServer(
 ) {
   try {
     // caching
-    let cache = DynamicCache || (await openCache(CacheName));
-    let pomoSettingAndTimersStatesResponse = await cache.match(
+    const cache = DynamicCache || (await openCache(CacheName));
+    const pomoSettingAndTimersStatesResponse = await cache.match(
       BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
-      let pomoSettingAndTimersStates =
+      const pomoSettingAndTimersStates =
         await pomoSettingAndTimersStatesResponse.json(); // returns a JS object.
       for (const key in states) {
         //https://stackoverflow.com/questions/57086672/element-implicitly-has-an-any-type-because-expression-of-type-string-cant-b
@@ -499,10 +504,10 @@ export async function persistAutoStartSettingToServer(
     //?     삑 날것 같아서 그랬어. e.g 시작 버튼 누르고 곧바로 뭐 다른 페이지로 이동한다거나
     //!     그러니까 이거다. update을 하고(e.g. start pomo)존나 빨리
     //!     cache를 사용하게 되는 경우가 있을지 찾아봐
-    let cache = DynamicCache || (await openCache(CacheName));
-    let pomoInfoResponse = await cache.match(BASE_URL + RESOURCE.USERS);
+    const cache = DynamicCache || (await openCache(CacheName));
+    const pomoInfoResponse = await cache.match(BASE_URL + RESOURCE.USERS);
     if (pomoInfoResponse !== undefined) {
-      let pomoInfo = await pomoInfoResponse.json();
+      const pomoInfo = await pomoInfoResponse.json();
       pomoInfo.autoStartSetting = autoStartSetting;
       await cache.put(
         BASE_URL + RESOURCE.USERS,
@@ -575,17 +580,17 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
 }
 
 export async function clear__StateStore_RecOfToday_CategoryStore() {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   try {
-    let stateStore = db
+    const stateStore = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
     await stateStore.clear();
-    let recOfToday = db
+    const recOfToday = db
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
     await recOfToday.clear();
-    let categoryStore = db
+    const categoryStore = db
       .transaction("categoryStore", "readwrite")
       .objectStore("categoryStore");
     await categoryStore.clear();
@@ -596,9 +601,9 @@ export async function clear__StateStore_RecOfToday_CategoryStore() {
 
 export async function setStateStoreToDefault() {
   // console.log("setStateStoreToDefault");
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   try {
-    let tx = db.transaction("stateStore", "readwrite");
+    const tx = db.transaction("stateStore", "readwrite");
     await Promise.all([
       tx.store.put({ name: "duration", value: 25 }),
       tx.store.put({ name: "repetitionCount", value: 0 }),
@@ -649,7 +654,7 @@ export async function openCache(name: string) {
 
 export async function deleteCache(name: string) {
   try {
-    let result = await caches.delete(name);
+    const result = await caches.delete(name);
     if (result) {
       // console.log(`deleting was successful - ${result}`);
       DynamicCache = null;
@@ -675,7 +680,7 @@ export async function delete_entry_of_cache(
 }
 
 export async function openIndexedDB() {
-  let db = await openDB<TimerRelatedDB>(TIMER_RELATED_DB, IDB_VERSION, {
+  const db = await openDB<TimerRelatedDB>(TIMER_RELATED_DB, IDB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction, event) {
       console.log("DB updated from version", oldVersion, "to", newVersion);
 
@@ -739,11 +744,11 @@ export async function obtainStatesFromIDB(
 export async function obtainStatesFromIDB(
   opt: "withoutSettings" | "withSettings"
 ): Promise<any | {}> {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   // console.log("db", db);
   const store = db.transaction("stateStore").objectStore("stateStore");
-  let dataArr = await store.getAll(); // dataArr gets [] if the store is empty.
-  let states: dataCombinedFromIDB | {} = dataArr.reduce((acc, cur) => {
+  const dataArr = await store.getAll(); // dataArr gets [] if the store is empty.
+  const states: dataCombinedFromIDB | {} = dataArr.reduce((acc, cur) => {
     return { ...acc, [cur.name]: cur.value };
   }, {});
   if (Object.keys(states).length !== 0) {
@@ -764,7 +769,7 @@ export async function obtainStatesFromIDB(
 // But, if a user does not close the app, for example, from 11:00 pm to 12:30 am of the next day,
 // the records of the previous day still exists in the idb.
 export async function deleteRecordsBeforeTodayInIDB() {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   const store = db
     .transaction("recOfToday", "readwrite")
     .objectStore("recOfToday");
@@ -783,7 +788,7 @@ export async function deleteRecordsBeforeTodayInIDB() {
 }
 
 export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   const store = db
     .transaction("recOfToday", "readonly")
     .objectStore("recOfToday");
@@ -796,7 +801,7 @@ export async function persistFailedReqInfoToIDB(
   data: TimerRelatedDB["failedReqInfo"]["value"]
 ) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("failedReqInfo", "readwrite")
       .objectStore("failedReqInfo");
@@ -819,7 +824,7 @@ export async function persistSingleTodaySessionToIDB({
     timeCountedDown: number;
   };
 }) {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   const store = db
     .transaction("recOfToday", "readwrite")
     .objectStore("recOfToday");
@@ -843,7 +848,7 @@ export async function persistSingleTodaySessionToIDB({
 
 export async function persistManyTodaySessionsToIDB(records: RecType[]) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
@@ -856,22 +861,30 @@ export async function persistManyTodaySessionsToIDB(records: RecType[]) {
 }
 
 export async function persistStatesToIDB(
+  // states: Partial<
+  //   TimerStateType &
+  //     PatternTimerStatesType & {
+  //       currentCycleInfo: CycleInfoType;
+  //     } & PomoSettingType &
+  //     AutoStartSettingType
+  // >
   states: Partial<
     TimerStateType &
       PatternTimerStatesType & {
+        autoStartSetting: AutoStartSettingType;
         currentCycleInfo: CycleInfoType;
-      } & PomoSettingType &
-      AutoStartSettingType
+        pomoSetting: PomoSettingType;
+      }
   >
 ) {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   const store = db
     .transaction("stateStore", "readwrite")
     .objectStore("stateStore");
   try {
     // console.log("INSIDE PERSIST-STATES-TO-IDB");
     for (const [key, value] of Object.entries(states)) {
-      let obj = { name: key, value: value };
+      const obj = { name: key, value: value };
       await store.put(obj);
     }
   } catch (error) {
@@ -883,7 +896,7 @@ export async function persistCategoryChangeInfoArrayToIDB(
   infoArr: CategoryChangeInfo[]
 ) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("categoryStore", "readwrite")
       .objectStore("categoryStore");
@@ -898,7 +911,7 @@ export async function persistTaskChangeInfoArrayToIDB(
   infoArr: TaskChangeInfo[]
 ) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction(TASK_DURATION_TRACKING_STORE_NAME, "readwrite")
       .objectStore(TASK_DURATION_TRACKING_STORE_NAME);
@@ -911,7 +924,7 @@ export async function persistTaskChangeInfoArrayToIDB(
 
 export async function clearCategoryStore() {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("categoryStore", "readwrite")
       .objectStore("categoryStore");
@@ -923,7 +936,7 @@ export async function clearCategoryStore() {
 
 export async function emptyStateStore() {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
@@ -935,7 +948,7 @@ export async function emptyStateStore() {
 
 export async function clearRecOfToday() {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
@@ -947,7 +960,7 @@ export async function clearRecOfToday() {
 
 export async function emptyFailedReqInfo(userEmail: string) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("failedReqInfo", "readwrite")
       .objectStore("failedReqInfo");
@@ -958,43 +971,23 @@ export async function emptyFailedReqInfo(userEmail: string) {
   }
 }
 
-export type ActionType =
-  | "saveStates"
-  | "sendDataToIndexAndCountDown"
-  | "emptyStateStore"
-  | "stopCountdown"
-  // | "countDown" // not used anymore
-  | "endTimer";
-
-export function postMsgToSW(action: ActionType, payload: any) {
+export function postMsgToSW(action: "endTimer", payload: any) {
   if (SW !== null && SW.state !== "redundant") {
-    // console.log(`SW !== null && SW.state !== "redundant"`, SW);
     SW.postMessage({ action, payload });
-    if (action === "stopCountdown") {
-      localStorage.removeItem("idOfSetInterval");
-    }
   } else if (SW === null) {
-    // console.log("SW === null", SW);
     registerServiceWorker((sw) => {
       sw.postMessage({ action, payload });
-      if (action === "stopCountdown") {
-        localStorage.removeItem("idOfSetInterval");
-      }
     });
   } else if (SW.state === "redundant") {
-    // console.log("SW.state === redundant", SW);
     SW = null; //The redundant SW above is going to be garbage collected
     registerServiceWorker((sw) => {
       sw.postMessage({ action, payload });
-      if (action === "stopCountdown") {
-        localStorage.removeItem("idOfSetInterval");
-      }
     });
   }
 }
 
 export function stopCountDownInBackground() {
-  let id = localStorage.getItem("idOfSetInterval");
+  const id = localStorage.getItem("idOfSetInterval");
   if (id !== null) {
     clearInterval(Number(id));
     localStorage.removeItem("idOfSetInterval");
@@ -1007,11 +1000,14 @@ export function stopCountDownInBackground() {
  *! The timersStates
  */
 export async function countDown(setIntervalId: number | string | null) {
-  let statesFromIDB = await obtainStatesFromIDB("withSettings");
+  const statesFromIDB = await obtainStatesFromIDB("withSettings");
 
   if (Object.entries(statesFromIDB).length !== 0) {
-    let { pomoSetting, autoStartSetting, ...timersStatesWithCurrentCycleInfo } =
-      statesFromIDB as dataCombinedFromIDB;
+    const {
+      pomoSetting,
+      autoStartSetting,
+      ...timersStatesWithCurrentCycleInfo
+    } = statesFromIDB as dataCombinedFromIDB;
     //* 1. 만약 Main과 그 children들에 의해 한 session이 시작되었고,
     //* 2. backbround에서 돌아가고 있지 않으면
     //*   (사실.. background는 아님.. 원래는 sw.js에서 돌려서 background가 맞았는데 이게 몇초 이내에 지맘대로 꺼져서.. 결국 main thread(index.tsx파일에서..?)돌리게 되었기 때문)
@@ -1021,8 +1017,8 @@ export async function countDown(setIntervalId: number | string | null) {
       ) && //* 1.
       timerIsNotRunningInBackground() //* 2.
     ) {
-      let idOfSetInterval = setInterval(() => {
-        let remainingDuration = Math.floor(
+      const idOfSetInterval = setInterval(() => {
+        const remainingDuration = Math.floor(
           ((
             timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
           ).duration *
@@ -1083,7 +1079,7 @@ export async function countDown(setIntervalId: number | string | null) {
 // source of audio asset: https://notificationsounds.com/about
 export async function makeSound() {
   try {
-    let audioContext = new AudioContext();
+    const audioContext = new AudioContext();
     const buffer = await (
       await fetch("/the-little-dwarf-498.ogg")
     ).arrayBuffer();
@@ -1147,8 +1143,8 @@ async function autoStartCurrentSession({
 
     // console.log("endTimeOfPrevSession", endTimeOfPrevSession);
     //#region Countdown
-    let idOfSetInterval = setInterval(() => {
-      let remainingDuration = Math.floor(
+    const idOfSetInterval = setInterval(() => {
+      const remainingDuration = Math.floor(
         ((timersStates as dataCombinedFromIDB).duration * 60 * 1000 -
           (Date.now() -
             (timersStates as dataCombinedFromIDB).startTime -
@@ -1193,29 +1189,45 @@ async function autoStartCurrentSession({
     localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
     //#endregion
 
-    let stateArr: {
-      name: string;
-      value:
-        | number
-        | boolean
-        | PauseType
-        | PomoSettingType
-        | AutoStartSettingType
-        | CycleInfoType;
-    }[] = [
-      { name: "startTime", value: timersStates.startTime },
-      { name: "running", value: timersStates.running },
-      { name: "pause", value: timersStates.pause },
-    ];
+    // const stateArr: {
+    //   // TODO: comment
+    //   name: string;
+    //   value:
+    //     | number
+    //     | boolean
+    //     | PauseType
+    //     | PomoSettingType
+    //     | AutoStartSettingType
+    //     | CycleInfoType;
+    // }[] = [
+    //   { name: "startTime", value: timersStates.startTime },
+    //   { name: "running", value: timersStates.running },
+    //   { name: "pause", value: timersStates.pause },
+    // ];
+    const statesToPersist: Partial<
+      TimerStateType &
+        PatternTimerStatesType & {
+          autoStartSetting: AutoStartSettingType;
+          currentCycleInfo: CycleInfoType;
+          pomoSetting: PomoSettingType;
+        }
+    > = {
+      startTime: timersStates.startTime,
+      running: timersStates.running,
+      pause: timersStates.pause,
+    };
 
     if (prevSessionType === SESSION.LONG_BREAK) {
       // a new cycle starts
-      stateArr.push({
-        name: "currentCycleInfo",
-        value: {
-          ...currentCycleInfo,
-        },
-      });
+      // stateArr.push({
+      //   // TODO: comment
+      //   name: "currentCycleInfo",
+      //   value: {
+      //     ...currentCycleInfo,
+      //   },
+      // });
+      statesToPersist.currentCycleInfo = currentCycleInfo; // TODO: destructuring으로 해야하나?
+
       userEmail &&
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
           cycleStartTimestamp: currentCycleInfo.cycleStartTimestamp,
@@ -1223,14 +1235,14 @@ async function autoStartCurrentSession({
           cycleDuration: currentCycleInfo.cycleDuration,
         });
     }
-
     // 1. persist locally.
     // Problem:  We don't need to do assign this job to SW.
     // It might be not enough fast since there are some steps to be done
     // before the APIs of indexed db are actually called.
-    postMsgToSW("saveStates", {
-      stateArr,
-    });
+    // postMsgToSW("saveStates", {
+    //   stateArr,
+    // });
+    persistStatesToIDB(statesToPersist);
 
     // The Issue that currently is occuring
     // 1. start a session in "/timer"
@@ -1244,7 +1256,7 @@ async function autoStartCurrentSession({
     // the timersStates fetched from server is not same as the timersStates stored in idb before refreshing.
 
     // 2. persist remotely.
-    let idToken = await obtainIdToken();
+    const idToken = await obtainIdToken();
     if (idToken) {
       updateTimersStates_with_token({
         states: {

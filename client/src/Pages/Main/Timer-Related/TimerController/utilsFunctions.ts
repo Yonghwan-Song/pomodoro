@@ -15,7 +15,7 @@
  *   1. recordPomo     (1, 3)
  * ! 2. notify
  * ! 3. setDurationInMinutes
- * ! 4. postMsgToSW("saveStates")
+ * ! 4. persistStatesToIDB()
  * ! 5. setRecords
  */
 

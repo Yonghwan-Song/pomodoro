@@ -29,7 +29,7 @@ import {
   deleteCache,
   emptyStateStore,
   openCache,
-  postMsgToSW,
+  persistStatesToIDB,
   stopCountDownInBackground,
   persistAutoStartSettingToServer,
   persistTimersStatesToServer,
@@ -211,28 +211,20 @@ function Settings() {
         (numOfPomo - 1) * shortBreakDuration * 60 +
         longBreakDuration * 60;
 
-      postMsgToSW("saveStates", {
-        stateArr: [
-          { name: "pomoSetting", value: newPomoSetting },
-          {
-            name: "duration",
-            value: pomoDuration,
-          },
-          { name: "repetitionCount", value: 0 },
-          { name: "running", value: false },
-          { name: "startTime", value: 0 },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-          {
-            name: "currentCycleInfo",
-            value: {
-              totalFocusDuration,
-              cycleDuration,
-              cycleStartTimestamp: 0,
-              veryFirstCycleStartTimestamp: 0,
-              totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-            },
-          },
-        ],
+      persistStatesToIDB({
+        pomoSetting: newPomoSetting,
+        duration: pomoDuration,
+        repetitionCount: 0,
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+        currentCycleInfo: {
+          totalFocusDuration,
+          cycleDuration,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        },
       });
       const infoArr = [
         {
@@ -568,30 +560,20 @@ function Settings() {
         // 새로운 설정으로 사이클을 시작해야 하므로.
         updatePomoSetting(pomoSettingInputs);
         updateCategoryChangeInfoArray(infoArr);
-        postMsgToSW("saveStates", {
-          stateArr: [
-            // 1)
-            { name: "pomoSetting", value: pomoSettingInputs },
-            // 2)
-            { name: "duration", value: pomoDuration },
-            { name: "repetitionCount", value: 0 },
-            { name: "running", value: false },
-            { name: "startTime", value: 0 },
-            { name: "pause", value: { totalLength: 0, record: [] } },
-            // 3)
-            {
-              name: "currentCycleInfo",
-              value: {
-                totalFocusDuration,
-                cycleDuration,
-                cycleStartTimestamp: 0,
-                veryFirstCycleStartTimestamp: 0,
-                totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-              },
-            },
-            // 5) stateStore가 아닌데?
-            // { name: "categoryChangeInfoArray", value: infoArr },
-          ],
+        persistStatesToIDB({
+          pomoSetting: pomoSettingInputs,
+          duration: pomoDuration,
+          repetitionCount: 0,
+          running: false,
+          startTime: 0,
+          pause: { totalLength: 0, record: [] },
+          currentCycleInfo: {
+            totalFocusDuration,
+            cycleDuration,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp: 0,
+            totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+          },
         });
         persistCategoryChangeInfoArrayToIDB(infoArr);
         stopCountDownInBackground();
@@ -623,28 +605,20 @@ function Settings() {
       // 1 - 2)timersStates, 3)currentCycleInfo 은 global state이 존재하지만 실제로 import해서 사용하지는 않음. IDB에 똑같은 값을 sync하고 있고, 그것을 사용하고 있음 (zustand 도입 전에 하던 방식 아직 유지중)
       updatePomoSetting(pomoSettingInputs); // 1)
       // 2
-      postMsgToSW("saveStates", {
-        stateArr: [
-          // 1)
-          { name: "pomoSetting", value: pomoSettingInputs },
-          // 2)
-          { name: "duration", value: pomoDuration },
-          { name: "repetitionCount", value: 0 },
-          { name: "running", value: false },
-          { name: "startTime", value: 0 },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-          // 3)
-          {
-            name: "currentCycleInfo",
-            value: {
-              totalFocusDuration,
-              cycleDuration,
-              cycleStartTimestamp: 0,
-              veryFirstCycleStartTimestamp: 0,
-              totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-            },
-          },
-        ],
+      persistStatesToIDB({
+        pomoSetting: pomoSettingInputs,
+        duration: pomoDuration,
+        repetitionCount: 0,
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+        currentCycleInfo: {
+          totalFocusDuration,
+          cycleDuration,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        },
       });
       stopCountDownInBackground();
     }
@@ -656,17 +630,12 @@ function Settings() {
   ) {
     event.preventDefault();
 
-    postMsgToSW("saveStates", {
-      stateArr: [
-        {
-          name: "autoStartSetting",
-          value: {
-            doesPomoStartAutomatically,
-            doesBreakStartAutomatically,
-            doesCycleStartAutomatically,
-          },
-        },
-      ],
+    persistStatesToIDB({
+      autoStartSetting: {
+        doesPomoStartAutomatically,
+        doesBreakStartAutomatically,
+        doesCycleStartAutomatically,
+      },
     });
 
     // 세션 reset을 안해도 되는건가? - 결국 세션이 종료될 때, 1)sw.js에 있는 wrapUpSession()에서 최신 정보를 가져올 수 있고,

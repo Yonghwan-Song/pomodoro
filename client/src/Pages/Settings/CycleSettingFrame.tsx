@@ -21,8 +21,8 @@ import {
 } from "../../constants";
 import {
   persistCategoryChangeInfoArrayToIDB,
+  persistStatesToIDB,
   persistTimersStatesToServer,
-  postMsgToSW,
   stopCountDownInBackground,
 } from "../..";
 import { roundTo_X_DecimalPoints } from "../../utils/number-related-utils";
@@ -239,28 +239,20 @@ export function CycleSettingFrame({
       totalFocusDuration +
       (numOfPomo - 1) * shortBreakDuration * 60 +
       longBreakDuration * 60;
-    postMsgToSW("saveStates", {
-      stateArr: [
-        { name: "pomoSetting", value: cycleSettingSelected.pomoSetting },
-        {
-          name: "duration",
-          value: cycleSettingSelected.pomoSetting.pomoDuration,
-        },
-        { name: "repetitionCount", value: 0 },
-        { name: "running", value: false },
-        { name: "startTime", value: 0 },
-        { name: "pause", value: { totalLength: 0, record: [] } },
-        {
-          name: "currentCycleInfo",
-          value: {
-            totalFocusDuration,
-            cycleDuration,
-            cycleStartTimestamp: 0,
-            veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-          },
-        },
-      ],
+    persistStatesToIDB({
+      pomoSetting: cycleSettingSelected.pomoSetting,
+      duration: cycleSettingSelected.pomoSetting.pomoDuration,
+      repetitionCount: 0,
+      running: false,
+      startTime: 0,
+      pause: { totalLength: 0, record: [] },
+      currentCycleInfo: {
+        totalFocusDuration,
+        cycleDuration,
+        cycleStartTimestamp: 0,
+        veryFirstCycleStartTimestamp: 0,
+        totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+      },
     });
     stopCountDownInBackground();
 
@@ -366,27 +358,19 @@ export function CycleSettingFrame({
         },
       ];
       //#region Reset IDB
-      postMsgToSW("saveStates", {
-        stateArr: [
-          {
-            name: "duration",
-            value: pomoDuration,
-          },
-          { name: "repetitionCount", value: 0 },
-          { name: "running", value: false },
-          { name: "startTime", value: 0 },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-          {
-            name: "currentCycleInfo",
-            value: {
-              totalFocusDuration,
-              cycleDuration,
-              cycleStartTimestamp: 0,
-              veryFirstCycleStartTimestamp: 0,
-              totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-            },
-          },
-        ],
+      persistStatesToIDB({
+        duration: pomoDuration,
+        repetitionCount: 0,
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+        currentCycleInfo: {
+          totalFocusDuration,
+          cycleDuration,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        },
       });
       persistCategoryChangeInfoArrayToIDB(infoArr);
       //#endregion Reset IDB
@@ -439,27 +423,19 @@ export function CycleSettingFrame({
         (numOfPomo - 1) * shortBreakDuration * 60 +
         longBreakDuration * 60;
 
-      postMsgToSW("saveStates", {
-        stateArr: [
-          {
-            name: "duration",
-            value: pomoDuration,
-          },
-          { name: "repetitionCount", value: 0 },
-          { name: "running", value: false },
-          { name: "startTime", value: 0 },
-          { name: "pause", value: { totalLength: 0, record: [] } },
-          {
-            name: "currentCycleInfo",
-            value: {
-              totalFocusDuration,
-              cycleDuration,
-              cycleStartTimestamp: 0,
-              veryFirstCycleStartTimestamp: 0,
-              totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-            },
-          },
-        ],
+      persistStatesToIDB({
+        duration: pomoDuration,
+        repetitionCount: 0,
+        running: false,
+        startTime: 0,
+        pause: { totalLength: 0, record: [] },
+        currentCycleInfo: {
+          totalFocusDuration,
+          cycleDuration,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp: 0,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        },
       });
       stopCountDownInBackground();
     }

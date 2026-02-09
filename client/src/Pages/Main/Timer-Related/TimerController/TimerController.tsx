@@ -16,7 +16,6 @@ import {
   DynamicCache,
   openCache,
   persistSingleTodaySessionToIDB,
-  postMsgToSW,
   makeSound,
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
@@ -661,14 +660,9 @@ export function TimerController({
         setDurationInMinutes(shortBreakDuration!);
         setRepetitionCount(repetitionCount + 1);
         // 2)
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "duration", value: shortBreakDuration },
-            {
-              name: "repetitionCount",
-              value: repetitionCount + 1,
-            },
-          ],
+        persistStatesToIDB({
+          duration: shortBreakDuration,
+          repetitionCount: repetitionCount + 1,
         });
         // A - 2: B.E
         // 자동시작 - 근본적으로  //!TimerState (running, startTime, pause)만 바꿔주면 됨.
@@ -760,14 +754,9 @@ export function TimerController({
         setDurationInMinutes(pomoDuration!);
         setRepetitionCount(repetitionCount + 1);
         // 2)
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "duration", value: pomoDuration },
-            {
-              name: "repetitionCount",
-              value: repetitionCount + 1,
-            },
-          ],
+        persistStatesToIDB({
+          duration: pomoDuration,
+          repetitionCount: repetitionCount + 1,
         });
         // A - 2: B.E
         if (!autoStartSetting.doesPomoStartAutomatically) {
@@ -808,14 +797,9 @@ export function TimerController({
         setDurationInMinutes(longBreakDuration!);
         setRepetitionCount(repetitionCount + 1);
         // 2)
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "duration", value: longBreakDuration },
-            {
-              name: "repetitionCount",
-              value: repetitionCount + 1,
-            },
-          ],
+        persistStatesToIDB({
+          duration: longBreakDuration,
+          repetitionCount: repetitionCount + 1,
         });
         // A - 2: B.E
         if (!autoStartSetting.doesBreakStartAutomatically) {
@@ -899,25 +883,17 @@ export function TimerController({
         setDurationInMinutes(pomoDuration);
         setRepetitionCount(0);
         // 2)
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "duration", value: pomoDuration },
-            {
-              name: "repetitionCount",
-              value: 0,
-            },
-            {
-              name: "currentCycleInfo",
-              value: {
-                totalFocusDuration: totalFocusDurationTargetedInSec,
-                cycleDuration: cycleDurationTargetedInSec,
-                cycleStartTimestamp: 0,
-                veryFirstCycleStartTimestamp: 0,
-                totalDurationOfSetOfCycles:
-                  cycleDurationTargetedInSec * numOfCycle,
-              },
-            },
-          ],
+        persistStatesToIDB({
+          duration: pomoDuration,
+          repetitionCount: 0,
+          currentCycleInfo: {
+            totalFocusDuration: totalFocusDurationTargetedInSec,
+            cycleDuration: cycleDurationTargetedInSec,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp: 0,
+            totalDurationOfSetOfCycles:
+              cycleDurationTargetedInSec * numOfCycle,
+          },
         });
         // A - 2: B.E
         if (user) {
@@ -1004,22 +980,14 @@ export function TimerController({
         setDurationInMinutes(pomoDuration!); //TODO: non-null assertion....
         setRepetitionCount(repetitionCount + 1);
         // 2)
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "duration", value: pomoDuration },
-            {
-              name: "repetitionCount",
-              value: repetitionCount + 1,
-            },
-            {
-              name: "currentCycleInfo",
-              value: {
-                cycleStartTimestamp: 0,
-                totalFocusDuration: totalFocusDurationTargetedInSec,
-                cycleDuration: cycleDurationTargetedInSec,
-              },
-            },
-          ],
+        persistStatesToIDB({
+          duration: pomoDuration,
+          repetitionCount: repetitionCount + 1,
+          currentCycleInfo: {
+            cycleStartTimestamp: 0,
+            totalFocusDuration: totalFocusDurationTargetedInSec,
+            cycleDuration: cycleDurationTargetedInSec,
+          },
         });
 
         //#region New
@@ -1524,20 +1492,14 @@ export function TimerController({
           setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
           setCycleDurationInSec(cycleDurationTargetedInSec);
           setCycleStartTimestamp(startTime);
-          postMsgToSW("saveStates", {
-            stateArr: [
-              {
-                name: "currentCycleInfo",
-                value: {
-                  totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-                  cycleStartTimestamp: startTime,
-                  //
-                  totalFocusDuration: totalFocusDurationInSec,
-                  cycleDuration: cycleDurationTargetedInSec,
-                  veryFirstCycleStartTimestamp,
-                },
-              },
-            ],
+          persistStatesToIDB({
+            currentCycleInfo: {
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+              cycleStartTimestamp: startTime,
+              totalFocusDuration: totalFocusDurationInSec,
+              cycleDuration: cycleDurationTargetedInSec,
+              veryFirstCycleStartTimestamp,
+            },
           });
           user &&
             axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
@@ -1548,20 +1510,14 @@ export function TimerController({
             });
         } else {
           setCycleStartTimestamp(startTime);
-          postMsgToSW("saveStates", {
-            stateArr: [
-              {
-                name: "currentCycleInfo",
-                value: {
-                  cycleStartTimestamp: startTime,
-                  //
-                  totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
-                  totalFocusDuration: totalFocusDurationInSec,
-                  cycleDuration: cycleDurationTargetedInSec,
-                  veryFirstCycleStartTimestamp,
-                },
-              },
-            ],
+          persistStatesToIDB({
+            currentCycleInfo: {
+              cycleStartTimestamp: startTime,
+              totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+              totalFocusDuration: totalFocusDurationInSec,
+              cycleDuration: cycleDurationTargetedInSec,
+              veryFirstCycleStartTimestamp,
+            },
           });
           user &&
             axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
@@ -1581,20 +1537,14 @@ export function TimerController({
             totalDurationOfSetOfCyclesInSec + gapForLateStartInSec;
           setCycleDurationInSec(newCycleDuration);
           setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
-          postMsgToSW("saveStates", {
-            stateArr: [
-              {
-                name: "currentCycleInfo",
-                value: {
-                  cycleDuration: newCycleDuration,
-                  totalFocusDurationTargeted: newTotalDurationOfSetOfCycles,
-                  //
-                  totalFocusDuration: totalFocusDurationInSec,
-                  cycleStartTimestamp,
-                  veryFirstCycleStartTimestamp,
-                },
-              },
-            ],
+          persistStatesToIDB({
+            currentCycleInfo: {
+              cycleDuration: newCycleDuration,
+              totalFocusDurationTargeted: newTotalDurationOfSetOfCycles,
+              totalFocusDuration: totalFocusDurationInSec,
+              cycleStartTimestamp,
+              veryFirstCycleStartTimestamp,
+            },
           });
           user &&
             axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
@@ -1641,22 +1591,16 @@ export function TimerController({
         });
         setCycleStartTimestamp(momentTimerIsToggled);
         setVeryFirstCycleStartTimestamp(momentTimerIsToggled);
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "repetitionCount", value: 0 },
-            { name: "duration", value: durationInSeconds / 60 },
-            {
-              name: "currentCycleInfo",
-              value: {
-                cycleStartTimestamp: momentTimerIsToggled,
-                veryFirstCycleStartTimestamp: momentTimerIsToggled,
-                //
-                totalFocusDuration: totalFocusDurationInSec,
-                cycleDuration: cycleDurationInSec,
-                totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
-              },
-            },
-          ],
+        persistStatesToIDB({
+          repetitionCount: 0,
+          duration: durationInSeconds / 60,
+          currentCycleInfo: {
+            cycleStartTimestamp: momentTimerIsToggled,
+            veryFirstCycleStartTimestamp: momentTimerIsToggled,
+            totalFocusDuration: totalFocusDurationInSec,
+            cycleDuration: cycleDurationInSec,
+            totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+          },
         });
         if (user !== null) {
           persistTimersStatesToServer({
@@ -1756,20 +1700,14 @@ export function TimerController({
               totalDurationOfSetOfCyclesInSec + gapForLateStartInSec;
             setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
             setCycleStartTimestamp(momentTimerIsToggled);
-            postMsgToSW("saveStates", {
-              stateArr: [
-                {
-                  name: "currentCycleInfo",
-                  value: {
-                    totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-                    cycleStartTimestamp: momentTimerIsToggled,
-                    //
-                    totalFocusDuration: totalFocusDurationInSec,
-                    cycleDuration: cycleDurationInSec,
-                    veryFirstCycleStartTimestamp,
-                  },
-                },
-              ],
+            persistStatesToIDB({
+              currentCycleInfo: {
+                totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+                cycleStartTimestamp: momentTimerIsToggled,
+                totalFocusDuration: totalFocusDurationInSec,
+                cycleDuration: cycleDurationInSec,
+                veryFirstCycleStartTimestamp,
+              },
             });
             user &&
               axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
@@ -1778,20 +1716,14 @@ export function TimerController({
               });
           } else {
             setCycleStartTimestamp(momentTimerIsToggled);
-            postMsgToSW("saveStates", {
-              stateArr: [
-                {
-                  name: "currentCycleInfo",
-                  value: {
-                    cycleStartTimestamp: momentTimerIsToggled,
-                    //
-                    totalFocusDuration: totalFocusDurationInSec,
-                    cycleDuration: cycleDurationInSec,
-                    veryFirstCycleStartTimestamp,
-                    totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
-                  },
-                },
-              ],
+            persistStatesToIDB({
+              currentCycleInfo: {
+                cycleStartTimestamp: momentTimerIsToggled,
+                totalFocusDuration: totalFocusDurationInSec,
+                cycleDuration: cycleDurationInSec,
+                veryFirstCycleStartTimestamp,
+                totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+              },
             });
             user &&
               axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
@@ -1809,20 +1741,14 @@ export function TimerController({
 
             setCycleDurationInSec(newCycleDuration);
             setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
-            postMsgToSW("saveStates", {
-              stateArr: [
-                {
-                  name: "currentCycleInfo",
-                  value: {
-                    cycleDuration: newCycleDuration,
-                    totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-                    //
-                    totalFocusDuration: totalFocusDurationInSec,
-                    cycleStartTimestamp,
-                    veryFirstCycleStartTimestamp,
-                  },
-                },
-              ],
+            persistStatesToIDB({
+              currentCycleInfo: {
+                cycleDuration: newCycleDuration,
+                totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+                totalFocusDuration: totalFocusDurationInSec,
+                cycleStartTimestamp,
+                veryFirstCycleStartTimestamp,
+              },
             });
             user &&
               axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {

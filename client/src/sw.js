@@ -55,33 +55,18 @@ self.addEventListener("activate", (ev) => {
   );
 });
 
+// TODO: 결국 이 sw에서 하는 작업들을 하나하나 제거해서 index.tsx파일이 만들어내는 Module execution context가
+// 그 일을 담당하도록 하나씩 모두 옮겨야함.
+// NOTE: Countdown은 이미 어쩔 수 없이 초반부터 옮겨놓은 것임.
+// 이제 다른 것들을 옮겨야하는데, 그 중에 가장 큰 것은 saveStates임.
+// 그러므로 emptyStateStore나 stopCountdown부터 옮겨보자.
 self.addEventListener("message", async (ev) => {
   CACHE = await openCache(CacheName);
   if (typeof ev.data === "object" && ev.data !== null) {
     const { action, payload } = ev.data;
 
     switch (action) {
-      case "saveStates":
-        saveStates(payload);
-        break;
-
-      // not used anymore. Instead, we use countDown() in the index.tsx
-      case "countDown":
-        // countDown(payload, ev.source.id);
-        break;
-
-      case "emptyStateStore":
-        emptyStateStore(ev.source.id);
-        break;
-
-      case "stopCountdown":
-        //number로 바꿔야하 하는거 아니야?
-        // console.log(payload.idOfSetInterval);
-        clearInterval(payload.idOfSetInterval);
-        break;
-
       case "endTimer":
-        // console.log("payload at the case endTimer at sw.js", payload);
         await goNext(payload);
         break;
 
@@ -95,7 +80,7 @@ self.addEventListener("notificationclick", async (ev) => {
   // console.log("notification from sw is clicked");
   ev.notification.close();
 
-  let pm = Promise.resolve()
+  const pm = Promise.resolve()
     .then(async () => {
       return await self.clients.matchAll();
     })
@@ -119,7 +104,7 @@ async function openCache(name) {
 }
 
 async function openIndexedDB() {
-  let db = await openDB("timerRelatedDB", IDB_VERSION, {
+  const db = await openDB("timerRelatedDB", IDB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction, event) {
       console.log("DB updated from version", oldVersion, "to", newVersion);
 
@@ -172,23 +157,6 @@ async function openIndexedDB() {
 //     { name: "running", value: true },
 //   ],
 // };
-async function saveStates(data) {
-  try {
-    let db = DB || (await openIndexedDB());
-    const store = db
-      .transaction("stateStore", "readwrite")
-      .objectStore("stateStore");
-
-    // console.log(data);
-
-    Array.from(data.stateArr).forEach(async (obj) => {
-      await store.put(obj);
-    });
-  } catch (error) {
-    console.warn(error);
-  }
-}
-
 // If the timer was running in the timer page, continue to count down the timer.
 // async function countDown(setIntervalId, clientId) {
 //   try {
@@ -231,14 +199,14 @@ async function saveStates(data) {
  */
 async function emptyStateStore(clientId) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
     await store.clear();
     console.log("stateStore has been cleared");
 
-    let client = await self.clients.get(clientId);
+    const client = await self.clients.get(clientId);
     client.postMessage({}); //TODO: 이거 아직도 필요한가?... -> 딱히 이거 받아다가 뭘 하지를 않는데 그냥 지우지는 말자. (navigator.serviceWorker.addEventListener "message"에서 else)
   } catch (error) {
     console.warn(error);
@@ -249,16 +217,15 @@ async function emptyStateStore(clientId) {
 /**
  * Purpose: 1. states를 가공 2. 가공된 states를 가지고 wrapUpSession을 호출.
  * @param {*} payload timersStates and pomoSetting of the session that was just finished.
+ * NOTE: (timersStates's) repetitionCount, duration are changed properly for the next session. (timersStates's) startTime, running, pause are initialized.
+ * pomoSetting (longBreakDuration, shortBreakDuration, pomoDuration, numOfPomo, numOfCycle) is required to decide the next session. (duration and repetitionCount)
  */
 async function goNext(payload) {
-  let { pomoSetting, timersStatesWithCurrentCycleInfo, taskChangeInfoArray } =
-    payload; //? autoStartSetting은 왜 빼고 보냈지 payload에..?... -> retrieveAutoStartSettingFromIDB()를 wrapUpSession()에서 call하는데 다 이유가 있을듯.
-  // console.log(
-  //   "timersStatesWithCurrentCycleInfo at goNext",
-  //   timersStatesWithCurrentCycleInfo
-  // );
-  let { currentCycleInfo, ...timersStates } = timersStatesWithCurrentCycleInfo;
-  let { duration, repetitionCount, pause, startTime } = timersStates; //! info about the session just finished
+  const { pomoSetting, timersStatesWithCurrentCycleInfo, taskChangeInfoArray } =
+    payload;
+  const { currentCycleInfo, ...timersStates } =
+    timersStatesWithCurrentCycleInfo;
+  const { duration, repetitionCount, pause, startTime } = timersStates; //! info about the session just finished
 
   const sessionData = {
     pause,
@@ -268,7 +235,7 @@ async function goNext(payload) {
   };
 
   wrapUpSession({
-    session: identifyPrevSession({
+    kindOfSessionJustFinished: identifyPrevSession({
       howManyCountdown: repetitionCount + 1,
       numOfPomo: pomoSetting.numOfPomo,
       numOfCycle: pomoSetting.numOfCycle,
@@ -295,20 +262,20 @@ async function goNext(payload) {
  *      2. Cache에 - Statistics component에서 불필요하게 HTTP request를 날리지 않게 하기 위해.
  *
  * @param {Object} param0
- * @param {*} param0.session 방금 끝난 세션의 종류 - 맨 위에 `const SESSION = ...` 참고
+ * @param {*} param0.kindOfSessionJustFinished 방금 끝난 세션의 종류 - 맨 위에 `const SESSION = ...` 참고
  * @param {*} param0.timersStates
  * @param {*} param0.pomoSetting
  * @param {*} param0.sessionData {pause: any; startTime: any; endTime: any; timeCountedDown: any;} - today record 계산하는데 필요함.
  */
 async function wrapUpSession({
-  session,
+  kindOfSessionJustFinished,
   timersStates,
   currentCycleInfo,
   pomoSetting,
   taskChangeInfoArray,
   sessionData,
 }) {
-  let timersStatesForNextSession = { ...timersStates };
+  const timersStatesForNextSession = { ...timersStates };
   // reset TimerState
   timersStatesForNextSession.running = false;
   timersStatesForNextSession.startTime = 0;
@@ -338,13 +305,16 @@ async function wrapUpSession({
   //? obtainIdToken() -> error -> res(null) is not what I considered here...
   const idToken = await obtainIdToken();
 
-  let infoArrayBeforeReset = null;
+  let categoryChangeInfoArrayBeforeReset = null;
   if (idToken) {
-    infoArrayBeforeReset = (await getCategoryChangeInfoArrayFromIDB()).value;
+    categoryChangeInfoArrayBeforeReset = (
+      await getCategoryChangeInfoArrayFromIDB()
+    ).value;
 
     // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
-    if (infoArrayBeforeReset[0].categoryChangeTimestamp === 0)
-      infoArrayBeforeReset[0].categoryChangeTimestamp = sessionData.startTime;
+    if (categoryChangeInfoArrayBeforeReset[0].categoryChangeTimestamp === 0)
+      categoryChangeInfoArrayBeforeReset[0].categoryChangeTimestamp =
+        sessionData.startTime;
     if (taskChangeInfoArray[0].taskChangeTimestamp === 0)
       taskChangeInfoArray[0].taskChangeTimestamp = sessionData.startTime;
 
@@ -352,26 +322,32 @@ async function wrapUpSession({
     // console.log("infoArrayBeforeReset[0]", infoArrayBeforeReset[0]);
     // console.log("taskChangeInfoArray[0]", taskChangeInfoArray[0]);
 
-    const infoArrAfterReset = [
+    const categoryChangeInfoArrAfterReset = [
       {
-        ...infoArrayBeforeReset[infoArrayBeforeReset.length - 1],
+        ...categoryChangeInfoArrayBeforeReset[
+          categoryChangeInfoArrayBeforeReset.length - 1
+        ],
         categoryChangeTimestamp: 0,
         progress: 0,
       },
     ];
 
-    // console.log("infoArrAfterReset", infoArrAfterReset);
-    // [
-    //     {
-    //         "categoryName": "ENG",
-    //         "categoryChangeTimestamp": 0,
-    //         "_uuid": "73315058-5726-4158-a781-5d60d80af94c",
-    //         "color": "#6e95bf",
-    //         "progress": 0
-    //     }
-    // ]
+    /**
+     * NOTE:
+     * console.log("infoArrAfterReset", infoArrAfterReset);
+     *   [
+         {
+           "categoryName": "ENG",
+           "categoryChangeTimestamp": 0,
+           "_uuid": "73315058-5726-4158-a781-5d60d80af94c",
+           "color": "#6e95bf",
+           "progress": 0
+         }
+        ]
+     */
 
-    infoArrayBeforeReset[0].categoryChangeTimestamp = sessionData.startTime; // It is 0 before this assignment.
+    categoryChangeInfoArrayBeforeReset[0].categoryChangeTimestamp =
+      sessionData.startTime; // It is 0 before this assignment.
 
     // const infoArr = [
     //   {
@@ -381,16 +357,18 @@ async function wrapUpSession({
     //   },
     // ];
 
+    // DESIGN: 로직이 직접 삽입되어야할 지점. (함수 호출로?)
     BC.postMessage({
       evName: "sessionEndBySW",
-      payload: infoArrAfterReset,
+      payload: categoryChangeInfoArrAfterReset,
     });
-    persistCategoryChangeInfoArrayToIDB(infoArrAfterReset);
+
+    persistCategoryChangeInfoArrayToIDB(categoryChangeInfoArrAfterReset);
     fetchWrapper(
       RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
       "PATCH",
       {
-        categoryChangeInfoArray: infoArrAfterReset.map((info) => {
+        categoryChangeInfoArray: categoryChangeInfoArrAfterReset.map((info) => {
           return {
             categoryName: info.categoryName,
             categoryChangeTimestamp: info.categoryChangeTimestamp,
@@ -423,7 +401,8 @@ async function wrapUpSession({
       longBreakDuration);
   const totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
 
-  switch (session) {
+  // session은 그냥... 저 아래 case의 숫자잖아... 시발. 아...
+  switch (kindOfSessionJustFinished) {
     case SESSION.POMO:
       self.registration.showNotification("shortBreak", {
         body: "Time to take a short break",
@@ -450,7 +429,7 @@ async function wrapUpSession({
           (await recordPomo(
             timersStates.startTime,
             idToken,
-            infoArrayBeforeReset,
+            categoryChangeInfoArrayBeforeReset,
             taskChangeInfoArray,
             sessionData
           ));
@@ -467,7 +446,7 @@ async function wrapUpSession({
             currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
-            prevSessionType: session,
+            prevSessionType: kindOfSessionJustFinished,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -511,7 +490,7 @@ async function wrapUpSession({
             currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
-            prevSessionType: session,
+            prevSessionType: kindOfSessionJustFinished,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -551,7 +530,7 @@ async function wrapUpSession({
           (await recordPomo(
             timersStates.startTime,
             idToken,
-            infoArrayBeforeReset,
+            categoryChangeInfoArrayBeforeReset,
             taskChangeInfoArray,
             sessionData
           ));
@@ -568,7 +547,7 @@ async function wrapUpSession({
             currentCycleInfo,
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
-            prevSessionType: session,
+            prevSessionType: kindOfSessionJustFinished,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -647,7 +626,7 @@ async function wrapUpSession({
           (await recordPomo(
             timersStates.startTime,
             idToken,
-            infoArrayBeforeReset,
+            categoryChangeInfoArrayBeforeReset,
             taskChangeInfoArray,
             sessionData
           ));
@@ -725,7 +704,7 @@ async function wrapUpSession({
             },
             pomoSetting: pomoSetting,
             endTime: sessionData.endTime,
-            prevSessionType: session,
+            prevSessionType: kindOfSessionJustFinished,
           };
           BC.postMessage({
             evName: "autoStartCurrentSession",
@@ -792,11 +771,11 @@ function getCycleRecord(
 
 // same as the one in the src/index.tsx
 async function retrieveAutoStartSettingFromIDB() {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   const store = db
     .transaction("stateStore", "readonly")
     .objectStore("stateStore");
-  let result = await store.get("autoStartSetting");
+  const result = await store.get("autoStartSetting");
   if (result !== undefined) {
     return result.value;
   } else {
@@ -813,7 +792,7 @@ async function retrieveAutoStartSettingFromIDB() {
  */
 async function persistSessionToIDB(kind, sessionData) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("recOfToday", "readwrite")
       .objectStore("recOfToday");
@@ -826,7 +805,7 @@ async function persistSessionToIDB(kind, sessionData) {
 
 async function persistStatesToIDB(stateArr) {
   try {
-    let db = DB || (await openIndexedDB());
+    const db = DB || (await openIndexedDB());
     const store = db
       .transaction("stateStore", "readwrite")
       .objectStore("stateStore");
@@ -840,7 +819,7 @@ async function persistStatesToIDB(stateArr) {
 }
 
 async function persistCategoryChangeInfoArrayToIDB(infoArr) {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
   const store = db
     .transaction("categoryStore", "readwrite")
     .objectStore("categoryStore");
@@ -853,7 +832,7 @@ async function persistCategoryChangeInfoArrayToIDB(infoArr) {
 }
 
 async function getCategoryChangeInfoArrayFromIDB() {
-  let db = DB || (await openIndexedDB());
+  const db = DB || (await openIndexedDB());
 
   const store = db
     .transaction("categoryStore", "readwrite")
@@ -908,18 +887,18 @@ async function recordPomo(
 
     //#region Update cache
 
-    let cache = CACHE || (await openCache(CacheName));
+    const cache = CACHE || (await openCache(CacheName));
     // console.log("CACHE", CACHE);
     // console.log("cache in recordPomo", cache);
 
     const cacheUrl = BASE_URL + RESOURCE.POMODOROS;
     // console.log("cache address", cacheUrl);
 
-    let statResponse = await cache.match(cacheUrl); //<------ was a problem. statResponse was undefined. Sol: open cache in the message event handler above.
+    const statResponse = await cache.match(cacheUrl); //<------ was a problem. statResponse was undefined. Sol: open cache in the message event handler above.
     // console.log("statResponse", statResponse);
 
     if (statResponse !== undefined) {
-      let statData = await statResponse.json();
+      const statData = await statResponse.json();
 
       try {
         // Put the updated data back into the cache
@@ -957,12 +936,12 @@ async function persistTimersStatesToServer(states, idToken) {
   try {
     if (idToken) {
       // caching
-      let cache = CACHE || (await openCache(CacheName));
-      let pomoSettingAndTimerStatesResponse = await cache.match(
+      const cache = CACHE || (await openCache(CacheName));
+      const pomoSettingAndTimerStatesResponse = await cache.match(
         BASE_URL + RESOURCE.USERS
       );
       if (pomoSettingAndTimerStatesResponse !== undefined) {
-        let pomoSettingAndTimersStates =
+        const pomoSettingAndTimersStates =
           await pomoSettingAndTimerStatesResponse.json();
         pomoSettingAndTimersStates.timersStates = states;
         await cache.put(
@@ -987,12 +966,12 @@ async function persistRecOfTodayToServer(record, idToken) {
   try {
     if (idToken) {
       //#region caching
-      let cache = CACHE || (await openCache(CacheName));
-      let resOfRecordOfToday = await cache.match(
+      const cache = CACHE || (await openCache(CacheName));
+      const resOfRecordOfToday = await cache.match(
         BASE_URL + RESOURCE.TODAY_RECORDS
       );
       if (resOfRecordOfToday !== undefined) {
-        let recordsOfToday = await resOfRecordOfToday.json();
+        const recordsOfToday = await resOfRecordOfToday.json();
         recordsOfToday.push({
           record,
         });
@@ -1364,7 +1343,7 @@ export function segments_to_task_durations(acc, segment) {
 //#region durations to pomoRecords
 export function makePomoRecordsFromDurations(durations, startTime) {
   const today = new Date(startTime);
-  let LocaleDateString = `${
+  const LocaleDateString = `${
     today.getMonth() + 1
   }/${today.getDate()}/${today.getFullYear()}`;
 

@@ -24,7 +24,6 @@ import {
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
-  postMsgToSW,
   setStateStoreToDefault,
 } from "..";
 import { Category, CategoryChangeInfo } from "../types/clientStatesType";
@@ -129,12 +128,10 @@ export function AuthContextProvider({
         //1. persist TimerSliceStates to Indexed DB
         await persistStatesToIDB(states.timersStates);
 
-        postMsgToSW("saveStates", {
-          stateArr: [
-            { name: "pomoSetting", value: pomoSetting },
-            { name: "autoStartSetting", value: states.autoStartSetting },
-            { name: "currentCycleInfo", value: states.currentCycleInfo },
-          ],
+        persistStatesToIDB({
+          pomoSetting,
+          autoStartSetting: states.autoStartSetting,
+          currentCycleInfo: states.currentCycleInfo,
         });
         //2.
         localStorage.setItem("user", "authenticated");
