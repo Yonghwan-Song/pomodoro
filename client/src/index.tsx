@@ -52,9 +52,14 @@ import { boundedPomoInfoStore } from "./zustand-stores/pomoInfoStoreUsingSlice";
 import { roundTo_X_DecimalPoints } from "./utils/number-related-utils";
 import {
   assignStartTimeToChangeInfoArrays,
-  getAverage,
+  getCycleRecord,
 } from "./utils/anything";
 import { TaskChangeInfo } from "./types/todoistRelatedTypes";
+import { notify, makeSound } from "./utils/notify";
+import { recordPomo } from "./utils/recordPomo";
+import { persistRecOfTodayToServer } from "./utils/persistRecOfTodayToServer";
+import { handleSessionEndBySW } from "./utils/handleSessionEndBySW";
+import { handleEndOfCycle } from "./utils/handleEndOfCycle";
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -178,7 +183,7 @@ root.render(
         <Route index element={<Vacant />} />
       </Route>
     </Routes>
-  </BrowserRouter>
+  </BrowserRouter>,
 );
 //#region event handlers
 // 필요한 이유: session이 종료될 때 해야하는 작업들 중, service worker thread에서는 처리할 수 없는 것들이 있기 때문에,
@@ -208,53 +213,7 @@ BC.addEventListener("message", async (ev) => {
 
       break;
     case "endOfCycle": // payload is a cycleRecord
-      console.log(
-        "cycleRecord at the endOfCycle case of BC message event handler",
-        payload
-      );
-      //  {
-      //     "ratio": 0.39,
-      //     "cycleAdherenceRate": 1.34,
-      //     "start": 1741940763818,
-      //     "end": 1741941072818,
-      //     "date": "2025-03-14T08:32:54.045Z"
-      // }
-      const zustandStates = boundedPomoInfoStore.getState();
-      const cycleSettingsCloned = structuredClone(zustandStates.cycleSettings);
-      let name = "";
-      let cycleStatPayload: CycleRecord[] = [];
-      let averageAdherenceRatePayload = 1;
-      for (let i = 0; i < cycleSettingsCloned.length; i++) {
-        if (cycleSettingsCloned[i].isCurrent) {
-          name = cycleSettingsCloned[i].name;
-          if (cycleSettingsCloned[i].cycleStat.length >= 10) {
-            cycleSettingsCloned[i].cycleStat.shift();
-          }
-          cycleSettingsCloned[i].cycleStat.push(payload);
-          const adherenceRateArr = cycleSettingsCloned[i].cycleStat.map(
-            (record) => record.cycleAdherenceRate
-          );
-          const averageAdherenceRate = roundTo_X_DecimalPoints(
-            getAverage(adherenceRateArr),
-            2
-          );
-          cycleSettingsCloned[i].averageAdherenceRate = averageAdherenceRate;
-          averageAdherenceRatePayload = averageAdherenceRate;
-          cycleStatPayload = cycleSettingsCloned[i].cycleStat;
-        }
-      }
-
-      boundedPomoInfoStore.setState({ cycleSettings: cycleSettingsCloned });
-      console.log("cycleStatPayload at the BC event handler", cycleStatPayload);
-      userEmail &&
-        axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
-          name,
-          data: {
-            cycleStat: cycleStatPayload,
-            averageAdherenceRate: averageAdherenceRatePayload,
-          },
-        });
-
+      handleEndOfCycle(payload, userEmail);
       break;
 
     /**
@@ -267,56 +226,25 @@ BC.addEventListener("message", async (ev) => {
      */
     case "sessionEndBySW":
       pubsub.publish(evName, payload); // This event is subscribed by NavBar's useEffect callback.
-      // payload is like this.
-      // const infoArrAfterReset = [
-      //  {
-      //    ...infoArrayBeforeReset[infoArrayBeforeReset.length - 1],
-      //    categoryChangeTimestamp: 0,
-      //    progress: 0,
-      //  },
-      // ];
-
-      // console.log("payload at endbysw", payload);
-
-      // 이거 autoStart인 경우, zustand가 두 값을 비교해서 나중에것 하나로 (즉 true) 한번 update하는게 아니라, 찰나에 두번 update함.
-      // TODO? - sw.js에서 조건을 걸어서 보내든 조건을 걸 수 있는 boolean을 payload에 포함시키면 한번만 update하게 할 수 있는데,
-      //?        뭔가 자꾸 에러나고 약간 복잡해서 우선 그냥 넘김.
-      // NOTE: 2.
       boundedPomoInfoStore.getState().setTimersStatesPartial({
         running: false,
         startTime: 0,
       });
-
-      // TODO 아래에 적어놓은것들이 실제로 그렇게 작동하는지 테스트 해봐야함. 당시에 약간 작업기억 후달리는 느낌이였음.
-      //! 사실 아래의 코드들은 방금 끝난 세션의 종류가 break이면 이렇게 할 필요가 없음.
-      //! 왜냐하면 - pomo일때만 더러워진거 다시 초기화? 같은거 하기위해 필요한 것임.
-      // 그러면 여기서도 pomo인지 뭔지 판단을 해야하는데, sw.js에 의해 종료되는 경우에도 pomo랑 거시기 뭐시기를 우리가 sessionStorage에 update했던가?....
-      //? 만약 TC가 다시 로드되는 것에 의해 sessionStorage가 update된다면 .. 타이밍상 여기에서는 pomo인지 break인지 판단이 불가능한게 아닌가?
-      // TC가 다시 load되면서 update됨. (L1159 useEffect)
-
-      // QQQ: 전반적으로 아래의 코드들의 의도가 뭔말인지 모르겠어.
-      //
-      //! IMPT - 왜 JustFinishedType인지
-      //! -> 이 찰나는 아직 TC로 가서 useEffect에 의해 current session type을 판단해서 setItem() 호출하기 전 이다.
       const sessionTypeJustFinished =
         sessionStorage.getItem(CURRENT_SESSION_TYPE);
-
-      // 방금 종료된 세션이 POMO였을 경우에만,
-      // changeInfoArray가 여러개의 taskChangeInfo에 의해 더럽혀?졌을 가능성이 있기 때문에 그것을 초기화 해주는 것임.
 
       if (
         sessionTypeJustFinished !== null &&
         sessionTypeJustFinished.toUpperCase() === "POMO"
       ) {
-        const currentTaskId = boundedPomoInfoStore.getState().currentTaskId; // the same value as the one in the sesionStorage.
+        const currentTaskId = boundedPomoInfoStore.getState().currentTaskId;
         const newTaskChangeInfo = {
           id: currentTaskId,
           taskChangeTimestamp: 0,
         };
-        // NOTE: 3.
         boundedPomoInfoStore
           .getState()
-          .setTaskChangeInfoArray([newTaskChangeInfo]); //? 이게 먼저 실행되고, autoStartCurrentSession의 changeTimestamp할당이 일어나겠지?
+          .setTaskChangeInfoArray([newTaskChangeInfo]);
         userEmail &&
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
             taskChangeInfoArray: [newTaskChangeInfo],
@@ -336,7 +264,6 @@ BC.addEventListener("message", async (ev) => {
         pomoSetting,
         endTime,
         prevSessionType,
-        currentCategoryName,
       } = payload; // sw.js의 BC에 의해...
 
       console.log("payload is not including currentCategoryName", payload);
@@ -349,7 +276,6 @@ BC.addEventListener("message", async (ev) => {
         pomoSetting,
         endTimeOfPrevSession: endTime,
         prevSessionType,
-        currentCategoryName,
       });
       break;
 
@@ -432,7 +358,7 @@ export async function updateTimersStates_with_token({
     // caching
     const cache = DynamicCache || (await openCache(CacheName));
     const pomoSettingAndTimersStatesResponse = await cache.match(
-      BASE_URL + RESOURCE.USERS
+      BASE_URL + RESOURCE.USERS,
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       const pomoSettingAndTimersStates =
@@ -440,7 +366,7 @@ export async function updateTimersStates_with_token({
       pomoSettingAndTimersStates.timersStates = states;
       await cache.put(
         BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoSettingAndTimersStates))
+        new Response(JSON.stringify(pomoSettingAndTimersStates)),
       );
     }
 
@@ -460,13 +386,13 @@ export async function updateTimersStates_with_token({
  */
 //TODO - 저 위에것도 이름 바꾸기 - 그런데 token 안쓰는데 왜 이름은 with token이지?
 export async function persistTimersStatesToServer(
-  states: Partial<PatternTimerStatesType & TimerStateType>
+  states: Partial<PatternTimerStatesType & TimerStateType>,
 ) {
   try {
     // caching
     const cache = DynamicCache || (await openCache(CacheName));
     const pomoSettingAndTimersStatesResponse = await cache.match(
-      BASE_URL + RESOURCE.USERS
+      BASE_URL + RESOURCE.USERS,
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       const pomoSettingAndTimersStates =
@@ -479,7 +405,7 @@ export async function persistTimersStatesToServer(
 
       await cache.put(
         BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoSettingAndTimersStates))
+        new Response(JSON.stringify(pomoSettingAndTimersStates)),
       );
     }
 
@@ -494,7 +420,7 @@ export async function persistTimersStatesToServer(
 
 export async function persistAutoStartSettingToServer(
   user: User,
-  autoStartSetting: AutoStartSettingType
+  autoStartSetting: AutoStartSettingType,
 ) {
   try {
     // caching
@@ -511,7 +437,7 @@ export async function persistAutoStartSettingToServer(
       pomoInfo.autoStartSetting = autoStartSetting;
       await cache.put(
         BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoInfo))
+        new Response(JSON.stringify(pomoInfo)),
       );
     }
 
@@ -521,7 +447,7 @@ export async function persistAutoStartSettingToServer(
       {
         // autoStartSetting: autoStartSetting,
         ...autoStartSetting,
-      }
+      },
     );
     // console.log("res.data in updateAutoStartSetting ===>", res.data);
   } catch (error) {
@@ -553,9 +479,9 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
         (err) => {
           console.warn("Service worker registration failed:", err);
           prompt(
-            "An unexpected problem happened while registering a service worker script. Please refresh the current page"
+            "An unexpected problem happened while registering a service worker script. Please refresh the current page",
           );
-        }
+        },
       );
 
     navigator.serviceWorker.addEventListener("controllerchange", async () => {
@@ -566,7 +492,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
       if ("idOfSetInterval" in data) {
         localStorage.setItem(
           "idOfSetInterval",
-          data.idOfSetInterval.toString()
+          data.idOfSetInterval.toString(),
         );
       } else if ("timerHasEnded" in data) {
         localStorage.removeItem("idOfSetInterval");
@@ -668,7 +594,7 @@ export async function deleteCache(name: string) {
 
 export async function delete_entry_of_cache(
   cacheName: string,
-  entryName: string
+  entryName: string,
 ) {
   try {
     const cache = await caches.open(cacheName);
@@ -736,13 +662,13 @@ export async function openIndexedDB() {
 }
 
 export async function obtainStatesFromIDB(
-  opt: "withoutSettings"
+  opt: "withoutSettings",
 ): Promise<TimersStatesTypeWithCurrentCycleInfo | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withSettings"
+  opt: "withSettings",
 ): Promise<dataCombinedFromIDB | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withoutSettings" | "withSettings"
+  opt: "withoutSettings" | "withSettings",
 ): Promise<any | {}> {
   const db = DB || (await openIndexedDB());
   // console.log("db", db);
@@ -778,13 +704,27 @@ export async function deleteRecordsBeforeTodayInIDB() {
   const startOfTodayTimestamp = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate()
+    now.getDate(),
   ).getTime();
   allSessions.forEach(async (rec) => {
     if (rec.endTime < startOfTodayTimestamp) {
       await store.delete([rec.startTime]);
     }
   });
+}
+
+export async function getCategoryChangeInfoArrayFromIDB() {
+  const db = DB || (await openIndexedDB());
+
+  const store = db
+    .transaction("categoryStore", "readwrite")
+    .objectStore("categoryStore");
+
+  try {
+    return store.get("changeInfoArray");
+  } catch (error) {
+    console.warn(error);
+  }
 }
 
 export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
@@ -797,8 +737,38 @@ export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   return allSessions;
 }
 
+export async function retrieveAutoStartSettingFromIDB() {
+  const db = DB || (await openIndexedDB());
+  const store = db
+    .transaction("stateStore", "readonly")
+    .objectStore("stateStore");
+  const result = await store.get("autoStartSetting");
+  if (isAutoStartSettingRecord(result)) {
+    return result.value;
+  } else {
+    // By the time the timer is mounted, stateStore in idb is guaranteed to
+    // have at least the default autoStartSetting and pomoSetting.
+    return undefined;
+  }
+}
+
+function isAutoStartSettingRecord(
+  record: TimerRelatedDB["stateStore"]["value"] | undefined,
+): record is { name: "autoStartSetting"; value: AutoStartSettingType } {
+  if (record === undefined) return false;
+  if (record.name !== "autoStartSetting") return false;
+  const value = record.value as AutoStartSettingType;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof value.doesPomoStartAutomatically === "boolean" &&
+    typeof value.doesBreakStartAutomatically === "boolean" &&
+    typeof value.doesCycleStartAutomatically === "boolean"
+  );
+}
+
 export async function persistFailedReqInfoToIDB(
-  data: TimerRelatedDB["failedReqInfo"]["value"]
+  data: TimerRelatedDB["failedReqInfo"]["value"],
 ) {
   try {
     const db = DB || (await openIndexedDB());
@@ -875,7 +845,7 @@ export async function persistStatesToIDB(
         currentCycleInfo: CycleInfoType;
         pomoSetting: PomoSettingType;
       }
-  >
+  >,
 ) {
   const db = DB || (await openIndexedDB());
   const store = db
@@ -893,7 +863,7 @@ export async function persistStatesToIDB(
 }
 
 export async function persistCategoryChangeInfoArrayToIDB(
-  infoArr: CategoryChangeInfo[]
+  infoArr: CategoryChangeInfo[],
 ) {
   try {
     const db = DB || (await openIndexedDB());
@@ -908,7 +878,7 @@ export async function persistCategoryChangeInfoArrayToIDB(
 }
 
 export async function persistTaskChangeInfoArrayToIDB(
-  infoArr: TaskChangeInfo[]
+  infoArr: TaskChangeInfo[],
 ) {
   try {
     const db = DB || (await openIndexedDB());
@@ -974,15 +944,278 @@ export async function emptyFailedReqInfo(userEmail: string) {
 export function postMsgToSW(action: "endTimer", payload: any) {
   if (SW !== null && SW.state !== "redundant") {
     SW.postMessage({ action, payload });
-  } else if (SW === null) {
-    registerServiceWorker((sw) => {
-      sw.postMessage({ action, payload });
-    });
-  } else if (SW.state === "redundant") {
+    return;
+  }
+
+  if (SW?.state === "redundant") {
     SW = null; //The redundant SW above is going to be garbage collected
-    registerServiceWorker((sw) => {
-      sw.postMessage({ action, payload });
+  }
+
+  registerServiceWorker((sw) => {
+    sw.postMessage({ action, payload });
+  });
+}
+
+type GoNextPayload = {
+  pomoSetting: PomoSettingType;
+  timersStatesWithCurrentCycleInfo: TimersStatesTypeWithCurrentCycleInfo;
+  taskChangeInfoArray: TaskChangeInfo[];
+};
+
+function buildSessionData(timersStates: {
+  duration: number;
+  pause: PauseType;
+  startTime: number;
+}) {
+  const { duration, pause, startTime } = timersStates;
+  return {
+    pause,
+    startTime,
+    endTime: startTime + pause.totalLength + duration * 60 * 1000,
+    timeCountedDown: duration,
+  };
+}
+
+function buildTimersStatesForNextSession(
+  timersStates: TimersStatesType,
+): TimersStatesType {
+  const next = { ...timersStates };
+  next.running = false;
+  next.startTime = 0;
+  next.pause = { totalLength: 0, record: [] };
+  next.repetitionCount++;
+  return next;
+}
+
+function computeTargetedDurations(pomoSetting: PomoSettingType) {
+  const {
+    pomoDuration,
+    shortBreakDuration,
+    longBreakDuration,
+    numOfPomo,
+    numOfCycle,
+  } = pomoSetting;
+  const totalFocusDurationTargeted = 60 * pomoDuration * numOfPomo;
+  const cycleDurationTargeted =
+    60 *
+    (pomoDuration * numOfPomo +
+      shortBreakDuration * (numOfPomo - 1) +
+      longBreakDuration);
+  const totalDurationOfSetOfCyclesTargeted =
+    numOfCycle * cycleDurationTargeted;
+  return {
+    totalFocusDurationTargeted,
+    cycleDurationTargeted,
+    totalDurationOfSetOfCyclesTargeted,
+  };
+}
+
+const statesOfTimerResetConstant = {
+  running: false as const,
+  startTime: 0,
+  pause: {
+    totalLength: 0,
+    record: [] as { start: number; end: number | undefined }[],
+  },
+};
+
+async function loadSessionEndPrereqs(): Promise<{
+  autoStartSetting: Awaited<ReturnType<typeof retrieveAutoStartSettingFromIDB>>;
+  idToken: string | null;
+  userEmail: string | null;
+  statesOfTimerReset: typeof statesOfTimerResetConstant;
+}> {
+  const [autoStartSetting, idToken, userEmail] = await Promise.all([
+    retrieveAutoStartSettingFromIDB(),
+    obtainIdToken(),
+    getUserEmail(),
+  ]);
+  return {
+    autoStartSetting,
+    idToken,
+    userEmail,
+    statesOfTimerReset: statesOfTimerResetConstant,
+  };
+}
+
+async function prepareCategoryChangeAndPersistForSessionEnd(params: {
+  idToken: string | null;
+  userEmail: string | null;
+  sessionData: ReturnType<typeof buildSessionData>;
+  taskChangeInfoArray: TaskChangeInfo[];
+}): Promise<CategoryChangeInfo[]> {
+  const { idToken, userEmail, sessionData, taskChangeInfoArray } = params;
+  if (idToken === null) return [];
+
+  const categoryChangeInfoResult = await getCategoryChangeInfoArrayFromIDB();
+  const categoryChangeInfoArrayBeforeReset =
+    categoryChangeInfoResult?.value ?? [];
+  if (categoryChangeInfoArrayBeforeReset.length === 0) {
+    console.warn("categoryChangeInfoArray is missing in IDB");
+  }
+
+  // NOTE: create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
+  const firstCategoryChange = categoryChangeInfoArrayBeforeReset[0];
+  if (
+    firstCategoryChange &&
+    firstCategoryChange.categoryChangeTimestamp === 0
+  )
+    firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+
+  const firstTaskChange = taskChangeInfoArray[0];
+  if (firstTaskChange && firstTaskChange.taskChangeTimestamp === 0)
+    firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+
+  const lastCategoryChangeInfo =
+    categoryChangeInfoArrayBeforeReset[
+      categoryChangeInfoArrayBeforeReset.length - 1
+    ];
+  const categoryChangeInfoArrAfterReset: CategoryChangeInfo[] =
+    lastCategoryChangeInfo
+      ? [
+          {
+            ...lastCategoryChangeInfo,
+            categoryChangeTimestamp: 0,
+            progress: 0,
+          },
+        ]
+      : [];
+
+  handleSessionEndBySW({
+    categoryChangeInfoArrAfterReset,
+    userEmail,
+  });
+
+  persistCategoryChangeInfoArrayToIDB(categoryChangeInfoArrAfterReset);
+  axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
+    categoryChangeInfoArray: categoryChangeInfoArrAfterReset.map((info) => ({
+      categoryName: info.categoryName,
+      categoryChangeTimestamp: info.categoryChangeTimestamp,
+      color: info.color,
+      progress: info.progress,
+    })),
+  });
+
+  return categoryChangeInfoArrayBeforeReset;
+}
+
+async function persistTimerStatesToIDB(options: {
+  statesOfTimerReset: typeof statesOfTimerResetConstant;
+  repetitionCount: number;
+  duration: number;
+  currentCycleInfo?: CycleInfoType;
+}) {
+  await persistStatesToIDB({
+    ...options.statesOfTimerReset,
+    repetitionCount: options.repetitionCount,
+    duration: options.duration,
+    ...(options.currentCycleInfo !== undefined && {
+      currentCycleInfo: options.currentCycleInfo,
+    }),
+  });
+}
+
+function handleAutoStartOrPersist(options: {
+  autoStartSetting: AutoStartSettingType | undefined;
+  shouldAutoStart: boolean;
+  persistToServer: () => void;
+  autoStart: () => void;
+}) {
+  if (options.autoStartSetting === undefined) {
+    console.warn("autoStartSetting is undefined");
+    return;
+  }
+  if (options.shouldAutoStart) options.autoStart();
+  else options.persistToServer();
+}
+
+type SessionWrapUpContext = {
+  sessionData: ReturnType<typeof buildSessionData>;
+  timersStatesForNextSession: TimersStatesType;
+  currentCycleInfo: CycleInfoType;
+  pomoSetting: PomoSettingType;
+  autoStartSetting: Awaited<ReturnType<typeof retrieveAutoStartSettingFromIDB>>;
+  idToken: string | null;
+  userEmail: string | null;
+  categoryChangeInfoArrayBeforeReset: CategoryChangeInfo[];
+  taskChangeInfoArray: TaskChangeInfo[];
+  statesOfTimerReset: typeof statesOfTimerResetConstant;
+  totalFocusDurationTargeted: number;
+  cycleDurationTargeted: number;
+  totalDurationOfSetOfCyclesTargeted: number;
+  kindOfSessionJustFinished: number;
+};
+
+export async function endTimer(action: "endTimer", payload: GoNextPayload) {
+  const { pomoSetting, timersStatesWithCurrentCycleInfo, taskChangeInfoArray } =
+    payload;
+  const { currentCycleInfo, ...timersStates } =
+    timersStatesWithCurrentCycleInfo;
+
+  const sessionData = buildSessionData(timersStates);
+
+  const kindOfSessionJustFinished = identifyPrevSession({
+    howManyCountdown: timersStates.repetitionCount + 1,
+    numOfPomo: pomoSetting.numOfPomo,
+    numOfCycle: pomoSetting.numOfCycle,
+  });
+
+  const timersStatesForNextSession =
+    buildTimersStatesForNextSession(timersStates);
+
+  const { autoStartSetting, idToken, userEmail, statesOfTimerReset } =
+    await loadSessionEndPrereqs();
+
+  // DESIGN: Why two arrays, ~BeforeReset and ~AfterReset?
+  const categoryChangeInfoArrayBeforeReset =
+    await prepareCategoryChangeAndPersistForSessionEnd({
+      idToken,
+      userEmail,
+      sessionData,
+      taskChangeInfoArray,
     });
+
+  const {
+    totalFocusDurationTargeted,
+    cycleDurationTargeted,
+    totalDurationOfSetOfCyclesTargeted,
+  } = computeTargetedDurations(pomoSetting);
+
+  const ctx: SessionWrapUpContext = {
+    sessionData,
+    timersStatesForNextSession,
+    currentCycleInfo,
+    pomoSetting,
+    autoStartSetting,
+    idToken,
+    userEmail,
+    categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    statesOfTimerReset,
+    totalFocusDurationTargeted,
+    cycleDurationTargeted,
+    totalDurationOfSetOfCyclesTargeted,
+    kindOfSessionJustFinished,
+  };
+
+  switch (kindOfSessionJustFinished) {
+    case SESSION.POMO:
+      await wrapUpPomoSession(ctx);
+      break;
+    case SESSION.SHORT_BREAK:
+      await wrapUpShortBreakSession(ctx);
+      break;
+    case SESSION.LAST_POMO:
+      await wrapUpLastPomoSession(ctx);
+      break;
+    case SESSION.VERY_LAST_POMO:
+      await wrapUpVeryLastPomoSession(ctx);
+      break;
+    case SESSION.LONG_BREAK:
+      await wrapUpLongBreakSession(ctx);
+      break;
+    default:
+      break;
   }
 }
 
@@ -1000,7 +1233,7 @@ export function stopCountDownInBackground() {
  *! The timersStates
  */
 export async function countDown(setIntervalId: number | string | null) {
-  const statesFromIDB = await obtainStatesFromIDB("withSettings");
+  const statesFromIDB = await obtainStatesFromIDB("withSettings"); // autoStartSetting 포함!
 
   if (Object.entries(statesFromIDB).length !== 0) {
     const {
@@ -1013,7 +1246,7 @@ export async function countDown(setIntervalId: number | string | null) {
     //*   (사실.. background는 아님.. 원래는 sw.js에서 돌려서 background가 맞았는데 이게 몇초 이내에 지맘대로 꺼져서.. 결국 main thread(index.tsx파일에서..?)돌리게 되었기 때문)
     if (
       DoesTimerStarted(
-        timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
+        timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo,
       ) && //* 1.
       timerIsNotRunningInBackground() //* 2.
     ) {
@@ -1031,7 +1264,7 @@ export async function countDown(setIntervalId: number | string | null) {
               (
                 timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
               ).pause.totalLength)) /
-            1000
+            1000,
         );
         // console.log(
         //   "count down remaining duration - by countDown()",
@@ -1045,7 +1278,7 @@ export async function countDown(setIntervalId: number | string | null) {
           //   "-------------------------------------About To Call EndTimer()-------------------------------------"
           // );
 
-          postMsgToSW("endTimer", {
+          endTimer("endTimer", {
             pomoSetting,
             timersStatesWithCurrentCycleInfo,
             taskChangeInfoArray:
@@ -1070,27 +1303,9 @@ export async function countDown(setIntervalId: number | string | null) {
   }
 
   function DoesTimerStarted(
-    timersStates: TimersStatesTypeWithCurrentCycleInfo
+    timersStates: TimersStatesTypeWithCurrentCycleInfo,
   ) {
     return timersStates.running;
-  }
-}
-
-// source of audio asset: https://notificationsounds.com/about
-export async function makeSound() {
-  try {
-    const audioContext = new AudioContext();
-    const buffer = await (
-      await fetch("/the-little-dwarf-498.ogg")
-    ).arrayBuffer();
-    // console.log("buffer", buffer);
-    const audioBuffer = await audioContext.decodeAudioData(buffer);
-    const audioBufferSourceNode = audioContext.createBufferSource();
-    audioBufferSourceNode.buffer = audioBuffer;
-    audioBufferSourceNode.connect(audioContext.destination);
-    audioBufferSourceNode.start();
-  } catch (error) {
-    console.warn(error);
   }
 }
 
@@ -1101,6 +1316,361 @@ const SESSION = {
   LONG_BREAK: 4,
   VERY_LAST_POMO: 5,
 };
+
+function identifyPrevSession({
+  howManyCountdown,
+  numOfPomo,
+  numOfCycle,
+}: {
+  howManyCountdown: number;
+  numOfPomo: number;
+  numOfCycle: number;
+}) {
+  if (howManyCountdown === 0) {
+    return SESSION.VERY_LAST_POMO;
+  }
+
+  if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
+    return SESSION.VERY_LAST_POMO;
+  }
+
+  if (numOfCycle > 1) {
+    if (numOfPomo > 1) {
+      if (howManyCountdown % 2 === 0) {
+        if (howManyCountdown % (2 * numOfPomo) === 0) {
+          return SESSION.LONG_BREAK;
+        }
+        return SESSION.SHORT_BREAK;
+      }
+      if (howManyCountdown % 2 === 1) {
+        if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
+          return SESSION.LAST_POMO;
+        }
+        return SESSION.POMO;
+      }
+    } else if (numOfPomo === 1) {
+      if (howManyCountdown % 2 === 0) {
+        return SESSION.LONG_BREAK;
+      }
+      if (howManyCountdown % 2 === 1) {
+        return SESSION.LAST_POMO;
+      }
+    }
+  } else if (numOfCycle === 1) {
+    if (numOfPomo > 1) {
+      if (howManyCountdown % 2 === 1) {
+        return SESSION.POMO;
+      }
+      if (howManyCountdown % 2 === 0) {
+        return SESSION.SHORT_BREAK;
+      }
+    } else if (numOfPomo === 1) {
+      return SESSION.VERY_LAST_POMO;
+    }
+  }
+
+  return SESSION.POMO; // dummy
+}
+
+async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
+  const {
+    sessionData,
+    timersStatesForNextSession,
+    currentCycleInfo,
+    pomoSetting,
+    autoStartSetting,
+    idToken,
+    userEmail,
+    categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    statesOfTimerReset,
+  } = ctx;
+  notify("shortBreak");
+
+  timersStatesForNextSession.duration = ctx.pomoSetting.shortBreakDuration;
+  await persistTimerStatesToIDB({
+    statesOfTimerReset,
+    repetitionCount: timersStatesForNextSession.repetitionCount,
+    duration: timersStatesForNextSession.duration,
+  });
+
+  if (sessionData.startTime !== 0) {
+    await recordPomo(
+      categoryChangeInfoArrayBeforeReset,
+      taskChangeInfoArray,
+      sessionData,
+    );
+    await persistSingleTodaySessionToIDB({
+      kind: "pomo",
+      data: sessionData,
+    });
+    persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+  }
+
+  handleAutoStartOrPersist({
+    autoStartSetting,
+    shouldAutoStart: autoStartSetting?.doesBreakStartAutomatically ?? false,
+    persistToServer: () =>
+      persistTimersStatesToServer(timersStatesForNextSession),
+    autoStart: () =>
+      autoStartCurrentSession({
+        userEmail,
+        timersStates: timersStatesForNextSession,
+        currentCycleInfo,
+        pomoSetting,
+        endTimeOfPrevSession: sessionData.endTime,
+        prevSessionType: ctx.kindOfSessionJustFinished,
+      }),
+  });
+}
+
+async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
+  const {
+    sessionData,
+    timersStatesForNextSession,
+    currentCycleInfo,
+    pomoSetting,
+    autoStartSetting,
+    idToken,
+    statesOfTimerReset,
+  } = ctx;
+  notify("pomo");
+
+  timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+
+  await persistTimerStatesToIDB({
+    statesOfTimerReset,
+    repetitionCount: timersStatesForNextSession.repetitionCount,
+    duration: timersStatesForNextSession.duration,
+  });
+
+  await persistSingleTodaySessionToIDB({
+    kind: "break",
+    data: sessionData,
+  });
+
+  handleAutoStartOrPersist({
+    autoStartSetting,
+    shouldAutoStart: autoStartSetting?.doesPomoStartAutomatically ?? false,
+    persistToServer: () =>
+      persistTimersStatesToServer(timersStatesForNextSession),
+    autoStart: () =>
+      autoStartCurrentSession({
+        userEmail: ctx.userEmail,
+        timersStates: timersStatesForNextSession,
+        currentCycleInfo,
+        pomoSetting,
+        endTimeOfPrevSession: sessionData.endTime,
+        prevSessionType: ctx.kindOfSessionJustFinished,
+      }),
+  });
+
+  sessionData.startTime !== 0 &&
+    persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+}
+
+async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
+  const {
+    sessionData,
+    timersStatesForNextSession,
+    currentCycleInfo,
+    pomoSetting,
+    autoStartSetting,
+    idToken,
+    userEmail,
+    categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    statesOfTimerReset,
+  } = ctx;
+  notify("longBreak");
+
+  timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
+
+  await persistTimerStatesToIDB({
+    statesOfTimerReset,
+    repetitionCount: timersStatesForNextSession.repetitionCount,
+    duration: timersStatesForNextSession.duration,
+  });
+
+  if (sessionData.startTime !== 0) {
+    await recordPomo(
+      categoryChangeInfoArrayBeforeReset,
+      taskChangeInfoArray,
+      sessionData,
+    );
+    persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+    await persistSingleTodaySessionToIDB({
+      kind: "pomo",
+      data: sessionData,
+    });
+  }
+
+  handleAutoStartOrPersist({
+    autoStartSetting,
+    shouldAutoStart: autoStartSetting?.doesBreakStartAutomatically ?? false,
+    persistToServer: () =>
+      persistTimersStatesToServer(timersStatesForNextSession),
+    autoStart: () =>
+      autoStartCurrentSession({
+        userEmail,
+        timersStates: timersStatesForNextSession,
+        currentCycleInfo,
+        pomoSetting,
+        endTimeOfPrevSession: sessionData.endTime,
+        prevSessionType: ctx.kindOfSessionJustFinished,
+      }),
+  });
+}
+
+async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
+  const {
+    sessionData,
+    timersStatesForNextSession,
+    currentCycleInfo,
+    idToken,
+    userEmail,
+    categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    statesOfTimerReset,
+    totalFocusDurationTargeted,
+    cycleDurationTargeted,
+    totalDurationOfSetOfCyclesTargeted,
+  } = ctx;
+  notify("cyclesCompleted");
+
+  const cycleRecordVeryLastPomo = getCycleRecord(
+    currentCycleInfo.cycleDuration,
+    currentCycleInfo.totalFocusDuration,
+    roundTo_X_DecimalPoints(
+      totalFocusDurationTargeted / cycleDurationTargeted,
+      2,
+    ),
+    sessionData.endTime,
+  );
+
+  handleEndOfCycle(cycleRecordVeryLastPomo, userEmail);
+
+  timersStatesForNextSession.repetitionCount = 0;
+  timersStatesForNextSession.duration = ctx.pomoSetting.pomoDuration;
+
+  await persistTimerStatesToIDB({
+    statesOfTimerReset,
+    repetitionCount: timersStatesForNextSession.repetitionCount,
+    duration: timersStatesForNextSession.duration,
+    currentCycleInfo: {
+      totalFocusDuration: totalFocusDurationTargeted,
+      cycleDuration: cycleDurationTargeted,
+      cycleStartTimestamp: 0,
+      veryFirstCycleStartTimestamp: 0,
+      totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
+    },
+  });
+
+  persistTimersStatesToServer(timersStatesForNextSession);
+  axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+    totalFocusDuration: totalFocusDurationTargeted,
+    cycleDuration: cycleDurationTargeted,
+    cycleStartTimestamp: 0,
+    veryFirstCycleStartTimestamp: 0,
+    totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
+  });
+
+  if (sessionData.startTime !== 0) {
+    await recordPomo(
+      categoryChangeInfoArrayBeforeReset,
+      taskChangeInfoArray,
+      sessionData,
+    );
+    await persistSingleTodaySessionToIDB({
+      kind: "pomo",
+      data: sessionData,
+    });
+    persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+  }
+}
+
+async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
+  const {
+    sessionData,
+    timersStatesForNextSession,
+    currentCycleInfo,
+    pomoSetting,
+    autoStartSetting,
+    idToken,
+    userEmail,
+    statesOfTimerReset,
+    totalFocusDurationTargeted,
+    cycleDurationTargeted,
+  } = ctx;
+  notify("nextCycle");
+
+  const cycleRecordLongBreak = getCycleRecord(
+    currentCycleInfo.cycleDuration,
+    currentCycleInfo.totalFocusDuration,
+    roundTo_X_DecimalPoints(
+      totalFocusDurationTargeted / cycleDurationTargeted,
+      2,
+    ),
+    sessionData.endTime,
+  );
+
+  handleEndOfCycle(cycleRecordLongBreak, userEmail);
+
+  timersStatesForNextSession.duration = pomoSetting.pomoDuration;
+
+  await persistTimerStatesToIDB({
+    statesOfTimerReset,
+    repetitionCount: timersStatesForNextSession.repetitionCount,
+    duration: timersStatesForNextSession.duration,
+    currentCycleInfo: {
+      totalFocusDuration: totalFocusDurationTargeted,
+      cycleDuration: cycleDurationTargeted,
+      cycleStartTimestamp: 0,
+      veryFirstCycleStartTimestamp:
+        currentCycleInfo.veryFirstCycleStartTimestamp,
+      totalDurationOfSetOfCycles: currentCycleInfo.totalDurationOfSetOfCycles,
+    },
+  });
+
+  await persistSingleTodaySessionToIDB({
+    kind: "break",
+    data: sessionData,
+  });
+
+  handleAutoStartOrPersist({
+    autoStartSetting,
+    shouldAutoStart: autoStartSetting?.doesCycleStartAutomatically ?? false,
+    persistToServer: () => {
+      persistTimersStatesToServer(timersStatesForNextSession);
+      axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+        totalFocusDuration: totalFocusDurationTargeted,
+        cycleDuration: cycleDurationTargeted,
+        cycleStartTimestamp: 0,
+      });
+    },
+    autoStart: () =>
+      autoStartCurrentSession({
+        userEmail,
+        timersStates: timersStatesForNextSession,
+        currentCycleInfo: {
+          totalFocusDuration: totalFocusDurationTargeted,
+          cycleDuration: cycleDurationTargeted,
+          cycleStartTimestamp: 0,
+          veryFirstCycleStartTimestamp:
+            currentCycleInfo.veryFirstCycleStartTimestamp,
+          totalDurationOfSetOfCycles:
+            currentCycleInfo.totalDurationOfSetOfCycles,
+        },
+        pomoSetting,
+        endTimeOfPrevSession: sessionData.endTime,
+        prevSessionType: ctx.kindOfSessionJustFinished,
+      }),
+  });
+
+  sessionData.startTime !== 0 &&
+    persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+}
+
 // 1. 시작한다는 의미:
 // 결국 TimersStates를 update한다는 것.
 // 이건 1)persist locally 2)persist remotely
@@ -1122,7 +1692,6 @@ async function autoStartCurrentSession({
   pomoSetting: PomoSettingType;
   endTimeOfPrevSession: number;
   prevSessionType: number;
-  currentCategoryName: string | undefined | null;
 }) {
   try {
     //? IMPT 여기가지 도달하는데 endTime보다 1초 이상 늦으면, cycle종료시점이 ... 거시기 해지잖아. 아니 도달하는데 까지 걸리는 시간에
@@ -1149,7 +1718,7 @@ async function autoStartCurrentSession({
           (Date.now() -
             (timersStates as dataCombinedFromIDB).startTime -
             (timersStates as dataCombinedFromIDB).pause.totalLength)) /
-          1000
+          1000,
       );
       // console.log(
       //   "count down remaining duration - by autoStartCurrentSession()",
@@ -1166,7 +1735,7 @@ async function autoStartCurrentSession({
         // console.log(
         //   "-------------------------------------About To Call EndTimer()-------------------------------------"
         // );
-        postMsgToSW("endTimer", {
+        endTimer("endTimer", {
           // currentCategoryName,
           //* 그러니까 만약에 한 세션이 `/timer`이외의 다른 페이지에서 "자동시작"되었다고 가정하자.
           //* 이때, 그 current session의 category에 대한 변동을 위의 `currentCategoryName`은 반영할 수 없다.
@@ -1273,18 +1842,18 @@ async function autoStartCurrentSession({
   }
 }
 
-export function obtainIdToken(): Promise<{ idToken: string } | null> {
+export function obtainIdToken(): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
       if (user) {
         getIdToken(user).then(
           (idToken) => {
-            resolve({ idToken });
+            resolve(idToken);
           },
           (error) => {
             resolve(null);
-          }
+          },
         );
       } else {
         reject(null);

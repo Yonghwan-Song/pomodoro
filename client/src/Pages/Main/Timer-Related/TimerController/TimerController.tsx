@@ -11,12 +11,10 @@ import {
   BREAK_POINTS,
 } from "../../../../constants/index";
 import { useAuthContext } from "../../../../Context/AuthContext";
-import { User } from "firebase/auth";
 import {
   DynamicCache,
   openCache,
   persistSingleTodaySessionToIDB,
-  makeSound,
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
   persistTimersStatesToServer,
@@ -24,30 +22,21 @@ import {
   DB,
   persistStatesToIDB,
 } from "../../../..";
+import { notify } from "../../../../utils/notify";
+import { recordPomo } from "../../../../utils/recordPomo";
+import { persistRecOfTodayToServer } from "../../../../utils/persistRecOfTodayToServer";
 import {
   AutoStartSettingType,
   CategoryChangeInfo,
   CycleInfoType,
   CycleRecord,
-  DurationOfCategoryTaskCombination,
-  InfoOfSessionStateChange,
   PomoSettingType,
   RecType,
-  SessionSegment,
-  TaskTrackingDocument,
   TimerStateType,
   TimersStatesType,
   TimersStatesTypeWithCurrentCycleInfo,
 } from "../../../../types/clientStatesType";
 import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
-import { PomodoroSessionDocument } from "../../../Statistics/statRelatedTypes";
-import {
-  makeTimestampsFromRawData,
-  makeSegmentsFromTimestamps,
-  makeDurationsFromSegmentsByCategoryAndTaskCombination,
-  makePomoRecordsFromDurations,
-  getTaskDurationMapFromSegments,
-} from "../../Category-Related/category-change-utility";
 import {
   calculateCycleCount,
   calculateNumOfRemainingPomoSessions,
@@ -720,7 +709,7 @@ export function TimerController({
           // 1) and 2) 모두 아래 함수에서 실행한다.
 
           sessionData.startTime !== 0 &&
-            (await recordPomo2(
+            (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
               sessionData
@@ -733,8 +722,7 @@ export function TimerController({
         // New
         if (sessionData.startTime !== 0) {
           // 2)
-          user &&
-            persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: "pomo",
@@ -777,8 +765,7 @@ export function TimerController({
 
         if (sessionData.startTime !== 0) {
           // 2)
-          user &&
-            persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+          persistRecOfTodayToServer({ kind: "break", ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: "break",
@@ -837,7 +824,7 @@ export function TimerController({
           }
 
           sessionData.startTime !== 0 &&
-            (await recordPomo2(
+            (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
               sessionData
@@ -849,8 +836,7 @@ export function TimerController({
 
         if (sessionData.startTime !== 0) {
           // 2)
-          user &&
-            persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: "pomo",
@@ -939,7 +925,7 @@ export function TimerController({
           }
 
           sessionData.startTime !== 0 &&
-            (await recordPomo2(
+            (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
               sessionData
@@ -951,8 +937,7 @@ export function TimerController({
 
         if (sessionData.startTime !== 0) {
           // 2)
-          user &&
-            persistRecOfTodayToServer(user, { kind: "pomo", ...sessionData });
+          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: "pomo",
@@ -1015,8 +1000,7 @@ export function TimerController({
         // 1)
         setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
         // 2)
-        user &&
-          persistRecOfTodayToServer(user, { kind: "break", ...sessionData });
+        persistRecOfTodayToServer({ kind: "break", ...sessionData }, user);
         // 3)
         await persistSingleTodaySessionToIDB({
           kind: "break",
@@ -2351,165 +2335,5 @@ export function TimerController({
   );
 }
 
-async function persistRecOfTodayToServer(user: User, record: RecType) {
-  try {
-    // caching
-    let cache = DynamicCache || (await openCache(CacheName));
-    let resOfRecordOfToday = await cache.match(
-      BASE_URL + RESOURCE.TODAY_RECORDS
-    );
-    if (resOfRecordOfToday !== undefined) {
-      let recordsOfToday = await resOfRecordOfToday.json();
-      recordsOfToday.push({
-        record,
-      });
-      await cache.put(
-        BASE_URL + RESOURCE.TODAY_RECORDS,
-        new Response(JSON.stringify(recordsOfToday))
-      );
-    }
 
-    // http requeset
-    user &&
-      (await axiosInstance.post(RESOURCE.TODAY_RECORDS, {
-        ...record,
-      }));
-    // console.log("res of persistRecOfTodayToSever", response);
-  } catch (error) {
-    console.warn(error);
-  }
-}
 
-/**
- *
- * @param user
- * @param startTime 언제 시작되었는지
- * @param categoryChangeInfoArray 도중에 카테고리 변경에 관한 기록 &혹은 정보
- * @param sessionData
- */
-async function recordPomo2(
-  categoryChangeInfoArray: {
-    categoryName: string;
-    categoryChangeTimestamp: number;
-  }[],
-  taskChangeInfoArray: {
-    id: string;
-    taskChangeTimestamp: number;
-  }[],
-  sessionData: Omit<RecType, "kind">
-) {
-  try {
-    //#region Prepare some values: Raw data -> timestamps -> segments -> durations -> pomoRecords
-    const timestamps: InfoOfSessionStateChange[] = makeTimestampsFromRawData(
-      categoryChangeInfoArray,
-      taskChangeInfoArray,
-      sessionData.pause.record as {
-        start: number;
-        end: number; // After a session is ended, the end property is no longer able to have "undefined".
-      }[],
-      sessionData.endTime
-    );
-    const segments: Array<SessionSegment> =
-      makeSegmentsFromTimestamps(timestamps);
-    const durations: Array<DurationOfCategoryTaskCombination> =
-      makeDurationsFromSegmentsByCategoryAndTaskCombination(segments);
-    const pomodoroRecordArr: PomodoroSessionDocument[] =
-      makePomoRecordsFromDurations(
-        durations,
-        sessionData.startTime
-        // user.email! //! <-------------- 지웠음.
-      );
-    const taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
-    const taskTrackingArr: TaskTrackingDocument[] = Array.from(
-      taskFocusDurationMap.entries()
-    ).map(([taskId, duration]) => ({
-      taskId,
-      duration: Math.floor(duration / (60 * 1000)),
-    }));
-
-    boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
-
-    // console.log("taskTrackingArr", taskTrackingArr);
-    // console.log("pomodoroRecordArr", pomodoroRecordArr);
-    //#endregion
-
-    //#region Update cache
-    let cache = DynamicCache || (await openCache(CacheName));
-    let statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
-    if (statResponse !== undefined) {
-      let statData = await statResponse.json();
-
-      const dataToPush: PomodoroSessionDocument[] = pomodoroRecordArr;
-      statData.push(...dataToPush);
-
-      await cache.put(
-        BASE_URL + RESOURCE.POMODOROS,
-        new Response(JSON.stringify(statData))
-      );
-    }
-    //#endregion
-
-    // 하나의 세션에 여러개의 segment가 존재할 수 있다. 예를 들면, 카테고리 A에서 B로 바뀌고 중간에 한번 pause한다고 했을 때,
-    // focus-A -> pause-A -> focus-A -> focus-B 처럼 될 수 있다.
-    // 이 경우, 4개의 segment가 존재하고 pause-A segment는 제외하고 focus-A를 합쳐야 한다. 이런식으로 합쳐야 할것들을 합쳐서
-    // 하나의 세션에 여러개의 category focus segment들을 계산 한 후, pomodoroRecordArr에 넣어서 서버에 보낸다.
-    const payload = {
-      pomodoroRecordArr,
-      taskTrackingArr,
-    };
-    axiosInstance.post(RESOURCE.POMODOROS, payload); // 이 함수 호출 모두 user를 조건으로 걸고 호출하기 때문에 문제 없다.
-  } catch (err) {
-    if (
-      // ignore the code below for now
-      !window.navigator.onLine &&
-      // !(err as AxiosError).response && // https://stackoverflow.com/questions/62061642/how-to-check-if-axios-call-fails-due-to-no-internet-connection/72198060#72198060
-      (err as AxiosError).code === "ERR_NETWORK"
-    ) {
-      console.warn(err);
-    } else {
-      console.warn(err);
-    }
-  }
-}
-
-async function notify(which: string) {
-  let title = "Pomodoro";
-  let body = "";
-
-  // eslint-disable-next-line default-case
-  switch (which) {
-    case "pomo":
-      body = "Time to focus";
-      break;
-    case "shortBreak":
-      body = "Time to take a short break";
-      break;
-    case "longBreak":
-      body = "Time to take a long break";
-      break;
-    case "nextCycle":
-      body = "Time to do the next cycle of pomos";
-      break;
-    case "cyclesCompleted":
-      body = "All cycles of focus durations are done";
-      break;
-  }
-
-  let options = {
-    body,
-    silent: true,
-  };
-
-  await makeSound();
-
-  let noti = new Notification(title, options);
-
-  noti.addEventListener("click", (ev) => {
-    noti.close();
-    window.focus();
-  });
-
-  setTimeout(() => {
-    noti.close();
-  }, 5000);
-}
