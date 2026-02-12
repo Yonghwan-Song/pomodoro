@@ -5,14 +5,14 @@ import { auth } from "../firebase";
 import { errController } from "./errorController";
 import { RESOURCE } from "../constants";
 
-function obtainIdToken(): Promise<{ idToken: string } | null> {
+function obtainIdToken(): Promise<string | null> {
   return new Promise((res, rej) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
       if (user) {
         getIdToken(user).then(
           (idToken) => {
-            res({ idToken });
+            res(idToken);
           },
           (error) => {
             res(null);
@@ -26,9 +26,8 @@ function obtainIdToken(): Promise<{ idToken: string } | null> {
 }
 
 async function setBearerToken(config: AxiosRequestConfig) {
-  let result = await obtainIdToken();
-  if (result !== null) {
-    const { idToken } = result;
+  const idToken = await obtainIdToken();
+  if (idToken !== null) {
     config.headers !== undefined &&
       (config.headers.Authorization = `Bearer ${idToken}`);
   }

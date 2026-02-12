@@ -12,7 +12,7 @@ export function insert_UUID_to_reqConfig(
 ) {
   if (!_uuid) return reqConfig; //? 그냥... non-undefined assertion하기 쫄려서..
 
-  let parsed: UpdateCategoryDTOWithUUID = JSON.parse(reqConfig.data);
+  const parsed: UpdateCategoryDTOWithUUID = JSON.parse(reqConfig.data);
   if (_uuid) parsed._uuid = _uuid;
   reqConfig.data = JSON.stringify(parsed);
 
@@ -105,4 +105,36 @@ export function assignStartTimeToChangeInfoArrays(startTime: number) {
 export function isSessionNotStartedYet(running: boolean, startTime: number) {
   // [timerState.startTime]이 dep arr => session이 1)끝났을 때 그리고 2)시작할 때 side effect이 호출.
   return running === false && startTime === 0;
+}
+
+/**
+ *
+ * @param {*} cycleDurationInSec to calculate currentRatio
+ * @param {*} totalFocusDurationInSec to calculate currentRatio
+ * @param {*} ratioTargeted
+ * @param {*} endTime
+ *
+ * @returns a cycleRecord object
+ */
+export function getCycleRecord(
+  cycleDurationInSec: number,
+  totalFocusDurationInSec: number,
+  ratioTargeted: number,
+  endTime: number
+) {
+  const currentRatio = roundTo_X_DecimalPoints(
+    totalFocusDurationInSec / cycleDurationInSec,
+    2
+  );
+
+  return {
+    ratio: currentRatio,
+    cycleAdherenceRate: roundTo_X_DecimalPoints(
+      currentRatio / ratioTargeted,
+      2
+    ),
+    start: endTime - cycleDurationInSec * 1000,
+    end: endTime,
+    date: new Date(),
+  };
 }
