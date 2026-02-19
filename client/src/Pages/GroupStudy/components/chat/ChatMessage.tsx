@@ -1,17 +1,20 @@
 import { css } from "../../../../../styled-system/css";
 
+// TODO: 이거 type정의파일을 따로 만들
 export interface ChatMessageData {
   senderId: string;
+  senderNickname: string;
   message: string;
   timestamp: string;
 }
 
 interface ChatMessageProps {
   data: ChatMessageData;
+  mySocketId: string;
 }
 
-export function ChatMessage({ data }: ChatMessageProps) {
-  const isMe = data.senderId === "Me";
+export function ChatMessage({ data, mySocketId }: ChatMessageProps) {
+  const isMe = data.senderId === mySocketId;
 
   return (
     <div
@@ -32,7 +35,7 @@ export function ChatMessage({ data }: ChatMessageProps) {
             paddingLeft: "1",
           })}
         >
-          {data.senderId.substring(0, 6)}
+          {data.senderNickname}
         </span>
       )}
 

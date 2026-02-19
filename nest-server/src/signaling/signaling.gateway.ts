@@ -49,6 +49,7 @@ export class SignalingGateway
         const decoded = await admin.auth().verifyIdToken(token);
         socket.data.userEmail = decoded.email;
         socket.data.uid = decoded.uid;
+        socket.data.userNickname = decoded.name;
         next();
       } catch (err) {
         next(new Error('Authentication failed'));
@@ -59,7 +60,10 @@ export class SignalingGateway
   // --- Connection and Disconnection ---
 
   handleConnection(clientSocket: Socket) {
-    this.groupStudyManagementService.addPeer(clientSocket.id);
+    this.groupStudyManagementService.addPeer(
+      clientSocket.id,
+      clientSocket.data.userNickname,
+    );
   }
 
   async handleDisconnect(clientSocket: Socket) {
@@ -76,11 +80,13 @@ export class SignalingGateway
   }
 
   @SubscribeMessage(EventNames.CREATE_ROOM)
-  handleCreateRoom(
+  async handleCreateRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { name: string },
-  ): AckResponse<{ roomId: string }> {
-    const roomId = this.groupStudyManagementService.createRoom(payload.name);
+  ): Promise<AckResponse<{ roomId: string }>> {
+    const roomId = await this.groupStudyManagementService.createRoom(
+      payload.name,
+    );
     this.broadcastRoomList();
     return { success: true, data: { roomId } };
   }
@@ -97,6 +103,7 @@ export class SignalingGateway
         producerId: string;
         socketId: string;
         kind: string;
+        displayName?: string;
       }[];
       peers: string[];
     }>
@@ -153,9 +160,7 @@ export class SignalingGateway
   }
 
   @SubscribeMessage(EventNames.CREATE_SEND_TRANSPORT)
-  async handleCreateSendTransportRequest(
-    clientSocket: Socket,
-  ): Promise<void> {
+  async handleCreateSendTransportRequest(clientSocket: Socket): Promise<void> {
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.id,
@@ -166,9 +171,7 @@ export class SignalingGateway
   }
 
   @SubscribeMessage(EventNames.CREATE_RECV_TRANSPORT)
-  async handleCreateRecvTransportRequest(
-    clientSocket: Socket,
-  ): Promise<void> {
+  async handleCreateRecvTransportRequest(clientSocket: Socket): Promise<void> {
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.id,

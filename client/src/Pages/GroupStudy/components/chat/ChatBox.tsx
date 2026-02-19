@@ -5,9 +5,10 @@ import { ChatMessage, type ChatMessageData } from "./ChatMessage";
 interface ChatBoxProps {
   messages: ChatMessageData[];
   onSendMessage: (message: string) => void;
+  mySocketId: string;
 }
 
-export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
+export function ChatBox({ messages, onSendMessage, mySocketId }: ChatBoxProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [input, setInput] = useState("");
 
@@ -64,7 +65,9 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
         })}
       >
         <span>Chat Room</span>
-        <div className={css({ display: "flex", alignItems: "center", gap: "2" })}>
+        <div
+          className={css({ display: "flex", alignItems: "center", gap: "2" })}
+        >
           <span
             className={css({
               fontSize: "xs",
@@ -108,7 +111,9 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
                 Say hello!
               </div>
             ) : (
-              messages.map((msg, idx) => <ChatMessage key={idx} data={msg} />)
+              messages.map((msg, idx) => (
+                <ChatMessage key={idx} data={msg} mySocketId={mySocketId} />
+              ))
             )}
           </div>
 

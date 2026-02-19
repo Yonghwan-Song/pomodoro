@@ -11,6 +11,9 @@ import { MediasoupService } from 'src/mediasoup/mediasoup.service';
 import { Socket } from 'socket.io';
 import { RtpCapabilities } from 'mediasoup/node/lib/types';
 import { ProducerPayload } from 'src/common/webrtc/payload-related';
+import { InjectModel } from '@nestjs/mongoose';
+import { Room as RoomSchemaClass, RoomDocument } from 'src/schemas/room.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class GroupStudyManagementService
@@ -20,10 +23,29 @@ export class GroupStudyManagementService
   private peersMap: Map<string, Peer> = new Map();
   private roomsMap: Map<string, Room> = new Map();
 
-  constructor(private readonly mediasoupService: MediasoupService) {}
+  constructor(
+    private readonly mediasoupService: MediasoupService,
+    @InjectModel(RoomSchemaClass.name)
+    private readonly roomModel: Model<RoomDocument>, // TODO: RoomDocument는 대체 정체가 뭐임...
+  ) {}
 
-  onModuleInit() {
+  async onModuleInit() {
     this.logger.log('Service has been initialized.');
+    await this.loadRoomsFromDB();
+  }
+
+  private async loadRoomsFromDB() {
+    try {
+      const rooms = await this.roomModel.find().exec();
+      rooms.forEach((roomDoc) => {
+        const roomId = roomDoc._id.toString();
+        const room = new Room(roomId, roomDoc.name, roomDoc.isPermanent);
+        this.roomsMap.set(roomId, room);
+      });
+      this.logger.log(`Loaded ${rooms.length} rooms from DB into memory.`);
+    } catch (error) {
+      this.logger.error('Failed to load rooms from DB', error);
+    }
   }
 
   onModuleDestroy() {
@@ -31,8 +53,8 @@ export class GroupStudyManagementService
   }
 
   //#region Only Peer
-  addPeer(socketId: string) {
-    const newPeer = new Peer(socketId);
+  addPeer(socketId: string, userNickname: string) {
+    const newPeer = new Peer(socketId, userNickname);
     this.peersMap.set(socketId, newPeer);
     this.logCurrentState('[group-study-management.service:addPeer]');
   }
@@ -313,6 +335,7 @@ export class GroupStudyManagementService
         producerId: producer.id,
         socketId: clientSocket.id,
         kind,
+        displayName: peer.userNickname,
       };
       console.log(
         '[group-study-management.service:createProducer] producerPayload',
@@ -418,10 +441,17 @@ export class GroupStudyManagementService
     );
   }
 
-  createRoom(name: string) {
-    const roomId = `room-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const room = new Room(roomId, name || 'Untitled Room');
+  async createRoom(name: string) {
+    // 1. Create room in DB
+    const newRoomDoc = await new this.roomModel({
+      name: name || 'Untitled Room',
+    }).save();
+    const roomId = newRoomDoc._id.toString();
+
+    // 2. Create in-memory Room entity
+    const room = new Room(roomId, newRoomDoc.name, newRoomDoc.isPermanent);
     this.roomsMap.set(roomId, room);
+
     console.log(
       `[group-study-management.service:createRoom] Room created: ${roomId} (${room.name})`,
     );
@@ -460,9 +490,9 @@ export class GroupStudyManagementService
       .to(roomId)
       .emit(EventNames.ROOM_PEER_JOINED, { peerId: clientSocket.id });
 
-    const existingProducers = room.getAllProducers().filter(
-      (p) => p.socketId !== clientSocket.id,
-    );
+    const existingProducers = room
+      .getAllProducers()
+      .filter((p) => p.socketId !== clientSocket.id);
     const routerRtpCapabilities = this.mediasoupService.getRtcCapabilities();
     const peers = room
       .getPeers()
@@ -480,6 +510,8 @@ export class GroupStudyManagementService
     };
   }
 
+  // NOTE: 현재 Room이 사라지는 것은... in-memory에서 더이상 ref가 참조하지 않을때 GC되는 것을 기반으로 하고 있음. 어떻게?...
+  // 참조하는 주체 - 1)peer 2)roomsMap
   async leaveRoom(clientSocket: Socket) {
     try {
       const peer = this.peersMap.get(clientSocket.id);
@@ -495,8 +527,20 @@ export class GroupStudyManagementService
       room.removePeer(peer.id);
 
       this.notifyPeerLeft(clientSocket, room.id);
-      if (room.isEmpty()) {
+      if (room.isEmpty() && !room.isPermanent) {
         this.roomsMap.delete(room.id);
+        // Also remove from DB to keep sync
+        try {
+          await this.roomModel.findByIdAndDelete(room.id).exec();
+          console.log(
+            `[group-study-management.service:leaveRoom] Room ${room.id} deleted from DB as it is empty`,
+          );
+        } catch (dbErr) {
+          console.error(
+            `[group-study-management.service:leaveRoom] Failed to delete room ${room.id} from DB`,
+            dbErr,
+          );
+        }
       }
 
       peer.close();
@@ -538,6 +582,8 @@ export class GroupStudyManagementService
 
     const chatPayload = {
       senderId: clientSocket.id,
+      // senderNickname: ... // peer에 nickname을 등록해야
+      senderNickname: peer.userNickname,
       message: message,
       timestamp: new Date().toISOString(),
     };

@@ -37,7 +37,11 @@ export class UsersService {
     private cycleSettingModel: Model<CycleSetting>,
   ) {}
 
-  async create(createUserDto: CreateUserDto, userEmail: string) {
+  async create(
+    createUserDto: CreateUserDto,
+    userEmail: string,
+    userNickname: string,
+  ) {
     const defaultCycleSettingForANewUser = new this.cycleSettingModel({
       userEmail,
       name: 'Default cycle setting',
@@ -51,6 +55,7 @@ export class UsersService {
     const newUser = new this.userModel({
       ...createUserDto,
       userEmail,
+      userNickname,
       cycleSettings: [defaultCycleSettingForANewUser._id],
     });
 

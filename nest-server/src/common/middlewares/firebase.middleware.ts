@@ -4,6 +4,7 @@ import * as admin from 'firebase-admin';
 
 export interface CustomRequest extends Request {
   userEmail?: string;
+  userNickname?: string;
 }
 
 export async function FireBase_Admin_Middleware(
@@ -34,6 +35,7 @@ export async function FireBase_Admin_Middleware(
         //   '---------------------------------------------------------------------------------------',
         // );
         req.userEmail = decodeValue.email;
+        req.userNickname = decodeValue.name;
         return next();
       }
     } catch (error) {

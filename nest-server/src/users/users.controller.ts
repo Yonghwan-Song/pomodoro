@@ -38,7 +38,11 @@ export class UsersController {
     @Req() request: CustomRequest,
   ) {
     console.log(createUserDto);
-    return this.usersService.create(createUserDto, request.userEmail);
+    return this.usersService.create(
+      createUserDto,
+      request.userEmail,
+      request.userNickname,
+    );
   }
 
   @Patch('pomodoro-setting')

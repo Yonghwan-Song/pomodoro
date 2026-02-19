@@ -10,9 +10,11 @@ import type {
 } from "../../common/webrtc/payloadRelated";
 import type { ProducerInfo } from "./typeDef";
 import { useConnectionInfoContext } from "./hooks/useSocketInfoContext";
+import { useAuthContext } from "../../Context/AuthContext";
 import { ChatBox } from "./components/chat/ChatBox";
 import { RoomControls } from "./components/room/RoomControls";
 import { VideoGrid } from "./components/room/VideoGrid";
+import { ChatMessageData } from "./components/chat/ChatMessage"; // TODO: 이거 type정의파일을 따로 만들어서 import해야
 
 export function Room() {
   const {
@@ -26,7 +28,8 @@ export function Room() {
     startSharing,
     stopSharing,
   } = useConnectionInfoContext();
-  const { roomId } = useParams<{ roomId: string }>(); 
+  const { user } = useAuthContext();
+  const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const [isRoomJoined, setIsRoomJoined] = useState(false);
 
@@ -35,7 +38,7 @@ export function Room() {
   useEffect(() => {
     if (!stream && connected) {
       console.log(
-        "[Room] No stream found, obtaining stream for direct room access...",
+        "[Room] No stream found, obtaining stream for direct room access..."
       );
       obtainStream();
     }
@@ -62,18 +65,27 @@ export function Room() {
   const [areMediaTracksReadyToBeOpened, setAreMediaTracksReadyToBeOpened] =
     useState(false);
   const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(
-    new Map(),
+    new Map()
+  );
+  const [peerNicknames, setPeerNicknames] = useState<Map<string, string>>(
+    new Map()
   );
 
   const [chatMessages, setChatMessages] = useState<
-    { senderId: string; message: string; timestamp: string }[]
+    // {
+    //   senderId: string;
+    //   senderNickname: string;
+    //   message: string;
+    //   timestamp: string;
+    // }[]
+    Array<ChatMessageData>
   >([]);
 
   const handleNewRemoteStream = useCallback(
     (peerId: string, stream: MediaStream) => {
       setRemoteStreams((prev) => new Map(prev).set(peerId, stream));
     },
-    [],
+    []
   );
 
   const handleStreamClosed = useCallback((peerId: string) => {
@@ -109,7 +121,7 @@ export function Room() {
           console.error("Failed to leave room:", response.error);
           hasLeftRoomRef.current = false;
         }
-      },
+      }
     );
   }, [socket, isRoomJoined, navigate]);
 
@@ -128,7 +140,7 @@ export function Room() {
         socketRef.current.emit(EventNames.LEAVE_ROOM);
       }
     };
-  }, []); 
+  }, []);
 
   useEffect(() => {
     if (!socket || !connected || !roomId || isRoomJoined) return;
@@ -144,9 +156,10 @@ export function Room() {
             producerId: string;
             socketId: string;
             kind: string;
+            displayName?: string;
           }[];
           peers: SocketID[];
-        }>,
+        }>
       ) => {
         if (response.success && response.data) {
           console.log("Room joined successfully:", response.data);
@@ -155,22 +168,29 @@ export function Room() {
           if (response.data.existingProducers.length > 0) {
             console.log(
               "(EventNames.JOIN_ROOM) Existing producers:",
-              response.data.existingProducers,
+              response.data.existingProducers
             );
             setProducersList(
               response.data.existingProducers.map((p) => ({
                 ...p,
                 kind: p.kind as "video" | "audio",
                 isBeingConsumed: false,
-              })),
+              }))
             );
+            setPeerNicknames((prev) => {
+              const updated = new Map(prev);
+              response.data!.existingProducers.forEach((p) => {
+                if (p.displayName) updated.set(p.socketId, p.displayName);
+              });
+              return updated;
+            });
           }
         } else {
           console.error("Failed to join room:", response.error);
           alert("방 참가에 실패했습니다: " + response.error);
           navigate("/group-study");
         }
-      },
+      }
     );
   }, [socket, connected, roomId, isRoomJoined, navigate]);
 
@@ -185,6 +205,13 @@ export function Room() {
             isBeingConsumed: false,
           })),
         ]);
+        setPeerNicknames((prev) => {
+          const updated = new Map(prev);
+          payloads.forEach((p) => {
+            if (p.displayName) updated.set(p.socketId, p.displayName);
+          });
+          return updated;
+        });
       };
 
       socket!.on(EventNames.ROOM_GET_PRODUCER, updateProducersList);
@@ -218,8 +245,8 @@ export function Room() {
           prev.map((p) =>
             p.producerId === producer.producerId
               ? { ...p, isBeingConsumed: true }
-              : p,
-          ),
+              : p
+          )
         );
 
         console.log(`Requesting to consume producer: ${producer.producerId}`);
@@ -238,15 +265,16 @@ export function Room() {
               console.log(`Creating consumer for peer: ${peerId}`);
 
               try {
-                const consumer =
-                  await recvTransportRef.current!.consume(consumerOptions);
+                const consumer = await recvTransportRef.current!.consume(
+                  consumerOptions
+                );
 
                 console.log(
-                  `Successfully created consumer: ${consumer.id} (kind: ${consumer.kind}) for peer: ${peerId}`,
+                  `Successfully created consumer: ${consumer.id} (kind: ${consumer.kind}) for peer: ${peerId}`
                 );
 
                 setConsumersByPeerId((prev) =>
-                  new Map(prev).set(peerId, consumer),
+                  new Map(prev).set(peerId, consumer)
                 );
 
                 socket.emit(
@@ -255,10 +283,10 @@ export function Room() {
                   (ackResponse: AckResponse<{ resumed: boolean }>) => {
                     if (ackResponse.success) {
                       console.log(
-                        `Consumer ${consumer.id} resumed successfully`,
+                        `Consumer ${consumer.id} resumed successfully`
                       );
                     }
-                  },
+                  }
                 );
 
                 const { track } = consumer;
@@ -283,12 +311,12 @@ export function Room() {
                 console.error("Error creating consumer:", error);
               }
             }
-          },
+          }
         );
       }
     });
   }, [
-    producersList, 
+    producersList,
     handleNewRemoteStream,
     socket,
     handleStreamClosed,
@@ -346,16 +374,16 @@ export function Room() {
     }
 
     async function createSendTransportLocally(
-      webRtcTransportOptions: mediasoupTypes.TransportOptions,
+      webRtcTransportOptions: mediasoupTypes.TransportOptions
     ) {
       try {
         const sendTransport = device!.createSendTransport(
-          webRtcTransportOptions,
+          webRtcTransportOptions
         );
         if (sendTransport) {
           console.log(
             "verify: local send-transport has been created",
-            sendTransport,
+            sendTransport
           );
           sendTransportRef.current = sendTransport;
           setAreMediaTracksReadyToBeOpened(true);
@@ -374,7 +402,7 @@ export function Room() {
       ) {
         socket.off(
           EventNames.SEND_TRANSPORT_CREATED,
-          createSendTransportLocally,
+          createSendTransportLocally
         );
       }
     };
@@ -402,21 +430,21 @@ export function Room() {
       ) {
         socket.off(
           EventNames.RECV_TRANSPORT_CREATED,
-          createRecvTransportLocally,
+          createRecvTransportLocally
         );
       }
     };
 
     async function createRecvTransportLocally(
-      webRtcTransportOptions: mediasoupTypes.TransportOptions,
+      webRtcTransportOptions: mediasoupTypes.TransportOptions
     ) {
       try {
         const recvTransport = device!.createRecvTransport(
-          webRtcTransportOptions,
+          webRtcTransportOptions
         );
         console.log(
           "verify: local recv-transport has been created",
-          recvTransport,
+          recvTransport
         );
         if (recvTransport) {
           recvTransportRef.current = recvTransport;
@@ -448,13 +476,13 @@ export function Room() {
                   } else {
                     errback(new Error(ackResponse.error || "Unknown error"));
                   }
-                },
+                }
               );
             }
           } catch (error: unknown) {
             errback(error as Error);
           }
-        },
+        }
       );
 
       sendTransportRef.current!.on(
@@ -464,7 +492,7 @@ export function Room() {
             EventNames.PRODUCE,
             {
               transportId: sendTransportRef.current!.id,
-              kind: "video", 
+              kind: "video",
               rtpParameters: parameters.rtpParameters,
             },
             (ackResponse: AckResponse<{ producerId: string }>) => {
@@ -475,9 +503,9 @@ export function Room() {
                 console.log("Produce failed", ackResponse.error);
                 errback(new Error(ackResponse.error || "Unknown error"));
               }
-            },
+            }
           );
-        },
+        }
       );
     }
 
@@ -509,13 +537,13 @@ export function Room() {
                   } else {
                     errback(new Error(ackResponse.error || "Unknown error"));
                   }
-                },
+                }
               );
             }
           } catch (error) {
             errback(error as Error);
           }
-        },
+        }
       );
     }
   }, [isRecvTransportCreatedLocally]);
@@ -524,7 +552,7 @@ export function Room() {
     async function produce() {
       if (
         !stream ||
-        !isSharing || 
+        !isSharing ||
         !isSendTransportCreatedLocally ||
         !sendTransportRef.current
       )
@@ -568,7 +596,8 @@ export function Room() {
     if (!message.trim() || !socket) return;
 
     const newMessage = {
-      senderId: "Me",
+      senderId: socket.id!,
+      senderNickname: user?.displayName ?? "",
       message,
       timestamp: new Date().toISOString(),
     };
@@ -582,6 +611,7 @@ export function Room() {
 
     const handleIncomingMessage = (payload: {
       senderId: string;
+      senderNickname: string;
       message: string;
       timestamp: string;
     }) => {
@@ -605,9 +635,17 @@ export function Room() {
         canShare={areMediaTracksReadyToBeOpened}
       />
 
-      <VideoGrid localStream={stream} remoteStreams={remoteStreams} />
+      <VideoGrid
+        localStream={stream}
+        remoteStreams={remoteStreams}
+        peerNicknames={peerNicknames}
+      />
 
-      <ChatBox messages={chatMessages} onSendMessage={handleSendMessage} />
+      <ChatBox
+        messages={chatMessages}
+        onSendMessage={handleSendMessage}
+        mySocketId={socket?.id ?? ""}
+      />
     </>
   );
 }

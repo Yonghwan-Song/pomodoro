@@ -51,7 +51,7 @@ export function RoomList() {
           console.error("Failed to create room:", response.error);
           alert("방 생성에 실패했습니다.");
         }
-      },
+      }
     );
   };
 
@@ -59,7 +59,7 @@ export function RoomList() {
   const joinRoom = async (roomId: string) => {
     setIsJoining(true);
     try {
-      const stream = await obtainStream(); 
+      const stream = await obtainStream();
       if (stream) {
         console.log("[RoomList] Stream obtained, navigating to room", roomId);
         navigate(`room/${roomId}`);
@@ -159,6 +159,7 @@ export function RoomList() {
                 </span>
               </div>
               <button
+                // room.id만 어떻게 제대로 DB에서 가져와서 뿌려주기만 하면 될지도?...
                 onClick={() => joinRoom(room.id)}
                 disabled={isJoining}
                 style={{

@@ -66,6 +66,9 @@ export class User {
   @Prop({ unique: true })
   userEmail: string;
 
+  @Prop({ type: String, default: null, required: false })
+  userNickname: string;
+
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CycleSetting' }],
   })

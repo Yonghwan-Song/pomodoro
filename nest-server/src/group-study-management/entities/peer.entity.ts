@@ -8,6 +8,7 @@ import { Room } from './room.entity';
 
 export class Peer {
   public readonly id: string;
+  public userNickname: string;
   public room: Room | null;
   public rtpCapabilities?: RtpCapabilities;
   public sendTransport?: WebRtcTransport;
@@ -15,8 +16,9 @@ export class Peer {
   public readonly producers: Map<string, Producer> = new Map();
   public readonly consumers: Map<string, Consumer> = new Map();
 
-  constructor(socketId: string) {
+  constructor(socketId: string, userNickname: string) {
     this.id = socketId;
+    this.userNickname = userNickname;
   }
 
   addTransport(transport: WebRtcTransport, type: 'send' | 'recv') {

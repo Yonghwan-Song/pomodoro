@@ -183,7 +183,7 @@ root.render(
         <Route index element={<Vacant />} />
       </Route>
     </Routes>
-  </BrowserRouter>,
+  </BrowserRouter>
 );
 //#region event handlers
 // 필요한 이유: session이 종료될 때 해야하는 작업들 중, service worker thread에서는 처리할 수 없는 것들이 있기 때문에,
@@ -298,7 +298,6 @@ BC.addEventListener("message", async (ev) => {
 document.addEventListener("DOMContentLoaded", async () => {
   // console.log("ev handler for DOMContentLoaded is called");
   try {
-    registerServiceWorker();
     defineInterceptorsForAxiosInstance();
     DB = await openIndexedDB();
     await deleteRecordsBeforeTodayInIDB();
@@ -358,7 +357,7 @@ export async function updateTimersStates_with_token({
     // caching
     const cache = DynamicCache || (await openCache(CacheName));
     const pomoSettingAndTimersStatesResponse = await cache.match(
-      BASE_URL + RESOURCE.USERS,
+      BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       const pomoSettingAndTimersStates =
@@ -366,7 +365,7 @@ export async function updateTimersStates_with_token({
       pomoSettingAndTimersStates.timersStates = states;
       await cache.put(
         BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoSettingAndTimersStates)),
+        new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
 
@@ -386,13 +385,13 @@ export async function updateTimersStates_with_token({
  */
 //TODO - 저 위에것도 이름 바꾸기 - 그런데 token 안쓰는데 왜 이름은 with token이지?
 export async function persistTimersStatesToServer(
-  states: Partial<PatternTimerStatesType & TimerStateType>,
+  states: Partial<PatternTimerStatesType & TimerStateType>
 ) {
   try {
     // caching
     const cache = DynamicCache || (await openCache(CacheName));
     const pomoSettingAndTimersStatesResponse = await cache.match(
-      BASE_URL + RESOURCE.USERS,
+      BASE_URL + RESOURCE.USERS
     );
     if (pomoSettingAndTimersStatesResponse !== undefined) {
       const pomoSettingAndTimersStates =
@@ -405,7 +404,7 @@ export async function persistTimersStatesToServer(
 
       await cache.put(
         BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoSettingAndTimersStates)),
+        new Response(JSON.stringify(pomoSettingAndTimersStates))
       );
     }
 
@@ -420,7 +419,7 @@ export async function persistTimersStatesToServer(
 
 export async function persistAutoStartSettingToServer(
   user: User,
-  autoStartSetting: AutoStartSettingType,
+  autoStartSetting: AutoStartSettingType
 ) {
   try {
     // caching
@@ -437,7 +436,7 @@ export async function persistAutoStartSettingToServer(
       pomoInfo.autoStartSetting = autoStartSetting;
       await cache.put(
         BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoInfo)),
+        new Response(JSON.stringify(pomoInfo))
       );
     }
 
@@ -447,7 +446,7 @@ export async function persistAutoStartSettingToServer(
       {
         // autoStartSetting: autoStartSetting,
         ...autoStartSetting,
-      },
+      }
     );
     // console.log("res.data in updateAutoStartSetting ===>", res.data);
   } catch (error) {
@@ -479,9 +478,9 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
         (err) => {
           console.warn("Service worker registration failed:", err);
           prompt(
-            "An unexpected problem happened while registering a service worker script. Please refresh the current page",
+            "An unexpected problem happened while registering a service worker script. Please refresh the current page"
           );
-        },
+        }
       );
 
     navigator.serviceWorker.addEventListener("controllerchange", async () => {
@@ -492,7 +491,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
       if ("idOfSetInterval" in data) {
         localStorage.setItem(
           "idOfSetInterval",
-          data.idOfSetInterval.toString(),
+          data.idOfSetInterval.toString()
         );
       } else if ("timerHasEnded" in data) {
         localStorage.removeItem("idOfSetInterval");
@@ -594,7 +593,7 @@ export async function deleteCache(name: string) {
 
 export async function delete_entry_of_cache(
   cacheName: string,
-  entryName: string,
+  entryName: string
 ) {
   try {
     const cache = await caches.open(cacheName);
@@ -662,13 +661,13 @@ export async function openIndexedDB() {
 }
 
 export async function obtainStatesFromIDB(
-  opt: "withoutSettings",
+  opt: "withoutSettings"
 ): Promise<TimersStatesTypeWithCurrentCycleInfo | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withSettings",
+  opt: "withSettings"
 ): Promise<dataCombinedFromIDB | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withoutSettings" | "withSettings",
+  opt: "withoutSettings" | "withSettings"
 ): Promise<any | {}> {
   const db = DB || (await openIndexedDB());
   // console.log("db", db);
@@ -704,7 +703,7 @@ export async function deleteRecordsBeforeTodayInIDB() {
   const startOfTodayTimestamp = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate(),
+    now.getDate()
   ).getTime();
   allSessions.forEach(async (rec) => {
     if (rec.endTime < startOfTodayTimestamp) {
@@ -753,7 +752,7 @@ export async function retrieveAutoStartSettingFromIDB() {
 }
 
 function isAutoStartSettingRecord(
-  record: TimerRelatedDB["stateStore"]["value"] | undefined,
+  record: TimerRelatedDB["stateStore"]["value"] | undefined
 ): record is { name: "autoStartSetting"; value: AutoStartSettingType } {
   if (record === undefined) return false;
   if (record.name !== "autoStartSetting") return false;
@@ -768,7 +767,7 @@ function isAutoStartSettingRecord(
 }
 
 export async function persistFailedReqInfoToIDB(
-  data: TimerRelatedDB["failedReqInfo"]["value"],
+  data: TimerRelatedDB["failedReqInfo"]["value"]
 ) {
   try {
     const db = DB || (await openIndexedDB());
@@ -845,7 +844,7 @@ export async function persistStatesToIDB(
         currentCycleInfo: CycleInfoType;
         pomoSetting: PomoSettingType;
       }
-  >,
+  >
 ) {
   const db = DB || (await openIndexedDB());
   const store = db
@@ -863,7 +862,7 @@ export async function persistStatesToIDB(
 }
 
 export async function persistCategoryChangeInfoArrayToIDB(
-  infoArr: CategoryChangeInfo[],
+  infoArr: CategoryChangeInfo[]
 ) {
   try {
     const db = DB || (await openIndexedDB());
@@ -878,7 +877,7 @@ export async function persistCategoryChangeInfoArrayToIDB(
 }
 
 export async function persistTaskChangeInfoArrayToIDB(
-  infoArr: TaskChangeInfo[],
+  infoArr: TaskChangeInfo[]
 ) {
   try {
     const db = DB || (await openIndexedDB());
@@ -977,7 +976,7 @@ function buildSessionData(timersStates: {
 }
 
 function buildTimersStatesForNextSession(
-  timersStates: TimersStatesType,
+  timersStates: TimersStatesType
 ): TimersStatesType {
   const next = { ...timersStates };
   next.running = false;
@@ -1001,8 +1000,7 @@ function computeTargetedDurations(pomoSetting: PomoSettingType) {
     (pomoDuration * numOfPomo +
       shortBreakDuration * (numOfPomo - 1) +
       longBreakDuration);
-  const totalDurationOfSetOfCyclesTargeted =
-    numOfCycle * cycleDurationTargeted;
+  const totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
   return {
     totalFocusDurationTargeted,
     cycleDurationTargeted,
@@ -1056,10 +1054,7 @@ async function prepareCategoryChangeAndPersistForSessionEnd(params: {
 
   // NOTE: create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
   const firstCategoryChange = categoryChangeInfoArrayBeforeReset[0];
-  if (
-    firstCategoryChange &&
-    firstCategoryChange.categoryChangeTimestamp === 0
-  )
+  if (firstCategoryChange && firstCategoryChange.categoryChangeTimestamp === 0)
     firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
 
   const firstTaskChange = taskChangeInfoArray[0];
@@ -1246,7 +1241,7 @@ export async function countDown(setIntervalId: number | string | null) {
     //*   (사실.. background는 아님.. 원래는 sw.js에서 돌려서 background가 맞았는데 이게 몇초 이내에 지맘대로 꺼져서.. 결국 main thread(index.tsx파일에서..?)돌리게 되었기 때문)
     if (
       DoesTimerStarted(
-        timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo,
+        timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
       ) && //* 1.
       timerIsNotRunningInBackground() //* 2.
     ) {
@@ -1264,7 +1259,7 @@ export async function countDown(setIntervalId: number | string | null) {
               (
                 timersStatesWithCurrentCycleInfo as TimersStatesTypeWithCurrentCycleInfo
               ).pause.totalLength)) /
-            1000,
+            1000
         );
         // console.log(
         //   "count down remaining duration - by countDown()",
@@ -1303,7 +1298,7 @@ export async function countDown(setIntervalId: number | string | null) {
   }
 
   function DoesTimerStarted(
-    timersStates: TimersStatesTypeWithCurrentCycleInfo,
+    timersStates: TimersStatesTypeWithCurrentCycleInfo
   ) {
     return timersStates.running;
   }
@@ -1398,7 +1393,7 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
     await recordPomo(
       categoryChangeInfoArrayBeforeReset,
       taskChangeInfoArray,
-      sessionData,
+      sessionData
     );
     await persistSingleTodaySessionToIDB({
       kind: "pomo",
@@ -1496,7 +1491,7 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
     await recordPomo(
       categoryChangeInfoArrayBeforeReset,
       taskChangeInfoArray,
-      sessionData,
+      sessionData
     );
     persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
     await persistSingleTodaySessionToIDB({
@@ -1543,9 +1538,9 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     currentCycleInfo.totalFocusDuration,
     roundTo_X_DecimalPoints(
       totalFocusDurationTargeted / cycleDurationTargeted,
-      2,
+      2
     ),
-    sessionData.endTime,
+    sessionData.endTime
   );
 
   handleEndOfCycle(cycleRecordVeryLastPomo, userEmail);
@@ -1579,7 +1574,7 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     await recordPomo(
       categoryChangeInfoArrayBeforeReset,
       taskChangeInfoArray,
-      sessionData,
+      sessionData
     );
     await persistSingleTodaySessionToIDB({
       kind: "pomo",
@@ -1609,9 +1604,9 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
     currentCycleInfo.totalFocusDuration,
     roundTo_X_DecimalPoints(
       totalFocusDurationTargeted / cycleDurationTargeted,
-      2,
+      2
     ),
-    sessionData.endTime,
+    sessionData.endTime
   );
 
   handleEndOfCycle(cycleRecordLongBreak, userEmail);
@@ -1718,7 +1713,7 @@ async function autoStartCurrentSession({
           (Date.now() -
             (timersStates as dataCombinedFromIDB).startTime -
             (timersStates as dataCombinedFromIDB).pause.totalLength)) /
-          1000,
+          1000
       );
       // console.log(
       //   "count down remaining duration - by autoStartCurrentSession()",
@@ -1853,7 +1848,7 @@ export function obtainIdToken(): Promise<string | null> {
           },
           (error) => {
             resolve(null);
-          },
+          }
         );
       } else {
         reject(null);

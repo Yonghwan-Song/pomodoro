@@ -4,9 +4,14 @@ import VideoPlayer from "../media/VideoPlayer";
 interface VideoGridProps {
   localStream: MediaStream | null;
   remoteStreams: Map<string, MediaStream>;
+  peerNicknames: Map<string, string>;
 }
 
-export function VideoGrid({ localStream, remoteStreams }: VideoGridProps) {
+export function VideoGrid({
+  localStream,
+  remoteStreams,
+  peerNicknames,
+}: VideoGridProps) {
   return (
     <div
       className={css({
@@ -57,7 +62,7 @@ export function VideoGrid({ localStream, remoteStreams }: VideoGridProps) {
               marginBottom: "2",
             })}
           >
-            {peerId.substring(0, 6)}
+            {peerNicknames.get(peerId) ?? peerId.substring(0, 6)}
           </h3>
           <VideoPlayer stream={stream} />
         </div>
