@@ -118,10 +118,10 @@ export default function Statistics() {
   function calculateDailyPomodoroDuration(
     pomodoroDocs: PomodoroSessionDocument[]
   ): DayStat[] {
-    let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     // [{ date: '9/12/2022', total: 300 }, ... ]
 
-    let arrOfDurationByDate = pomodoroDocs
+    const arrOfDurationByDate = pomodoroDocs
       .sort(
         (a: PomodoroSessionDocument, b: PomodoroSessionDocument) =>
           a.startTime - b.startTime // in ascending order
@@ -132,7 +132,7 @@ export default function Statistics() {
           const dayOfWeekIndex = new Date(curRec.date).getDay();
           const categorySubtotal = createBaseCategorySubtotal();
           const timestamp = new Date(curRec.date).getTime();
-          let dailyPomos: DayStat = {
+          const dailyPomos: DayStat = {
             date: curRec.date,
             timestamp,
             dayOfWeek: days[dayOfWeekIndex],
@@ -176,7 +176,7 @@ export default function Statistics() {
           const dayOfWeekNumber = new Date(curRec.date).getDay();
           const categoryStat = createBaseCategorySubtotal();
           const timestamp = new Date(curRec.date).getTime();
-          let dailyPomos: DayStat = {
+          const dailyPomos: DayStat = {
             date: curRec.date,
             timestamp,
             dayOfWeek: days[dayOfWeekNumber],
@@ -305,14 +305,14 @@ export default function Statistics() {
    *           An average and weekRange are calcuated and set using the filtered array.
    */
   function calculateThisWeekData(pomodoroDailyStat: DayStat[]) {
-    let weekCloned = [...dailyStatOfThisWeek];
-    let correspondingWeekData = extractWeekData(pomodoroDailyStat, [
+    const weekCloned = [...dailyStatOfThisWeek];
+    const correspondingWeekData = extractWeekData(pomodoroDailyStat, [
       weekStart,
       weekEnd,
     ]);
     fillWeekCloned(weekCloned as DayStat[], correspondingWeekData);
 
-    let sum = correspondingWeekData.reduce((acc: number, cur: DayStat) => {
+    const sum = correspondingWeekData.reduce((acc: number, cur: DayStat) => {
       return acc + cur.total;
     }, 0);
 
@@ -403,7 +403,7 @@ export default function Statistics() {
  */
   function createStatTemplate() {
     const weekNumber = getISOWeek(Date.now());
-    let statArr: DayStatForGraph[] = [
+    const statArr: DayStatForGraph[] = [
       {
         date: "",
         dayOfWeek: "Mon",
@@ -458,7 +458,7 @@ export default function Statistics() {
 
     const _24h = 24 * 60 * 60 * 1000;
     for (let i = 1; i < 7; i++) {
-      let nextDate = new Date(startOfWeekTimestamp + i * _24h);
+      const nextDate = new Date(startOfWeekTimestamp + i * _24h);
       statArr[i].date = `${
         nextDate.getMonth() + 1
       }/${nextDate.getDate()}/${nextDate.getFullYear()}`;
@@ -504,8 +504,8 @@ export default function Statistics() {
     }[],
     weekStatFromData: DayStat[]
   ) {
-    for (let cloned of weekCloned) {
-      let matchingStat = weekStatFromData.find(
+    for (const cloned of weekCloned) {
+      const matchingStat = weekStatFromData.find(
         (fromData) => fromData.date === cloned.date
       );
       // console.log(
@@ -558,7 +558,7 @@ export default function Statistics() {
     if (nameClicked) {
       let isOnStat: boolean = true;
       const categoriesUpdated = categoriesFromServer.map((category) => {
-        let categoryCloned = { ...category };
+        const categoryCloned = { ...category };
         if (categoryCloned.name === nameClicked) {
           isOnStat = !categoryCloned.isOnStat;
           categoryCloned.isOnStat = isOnStat;
@@ -644,16 +644,16 @@ export default function Statistics() {
           if (!prev) {
             return prev;
           } else {
-            let today = new Date();
+            const today = new Date();
             const todayDateString = `${
               today.getMonth() + 1
             }/${today.getDate()}/${today.getFullYear()}`;
-            let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
             // const newSum = { ...sum };
 
-            let cloned = [...prev];
-            let doesTodayStatExist =
+            const cloned = [...prev];
+            const doesTodayStatExist =
               cloned.length !== 0 &&
               cloned[cloned.length - 1].date === todayDateString;
 
@@ -684,7 +684,7 @@ export default function Statistics() {
                 now.getDate()
               ).getTime();
 
-              let dayStat: DayStat = {
+              const dayStat: DayStat = {
                 date: todayDateString,
                 timestamp: startOfTodayTimestamp,
                 dayOfWeek: days[today.getDay()],
