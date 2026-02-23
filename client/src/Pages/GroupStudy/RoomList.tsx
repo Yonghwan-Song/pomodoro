@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useConnectionInfoContext } from "./hooks/useSocketInfoContext";
+import { useConnectionStore } from "../../zustand-stores/connectionStore";
 import * as EventNames from "../../common/webrtc/eventNames";
 import type { AckResponse } from "../../common/webrtc/payloadRelated";
 
@@ -11,12 +11,23 @@ interface RoomInfo {
 }
 
 export function RoomList() {
-  const { socket, connected, obtainStream } = useConnectionInfoContext();
+  const socket = useConnectionStore((s) => s.socket);
+  const connected = useConnectionStore((s) => s.connected);
+  const obtainStream = useConnectionStore((s) => s.obtainStream);
+  const currentRoomId = useConnectionStore((s) => s.currentRoomId);
+  const isRoomJoined = useConnectionStore((s) => s.isRoomJoined);
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [newRoomName, setNewRoomName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+
+  // 이미 방에 참가 중이면 해당 방으로 redirect
+  useEffect(() => {
+    if (isRoomJoined && currentRoomId) {
+      navigate(`room/${currentRoomId}`);
+    }
+  }, [isRoomJoined, currentRoomId, navigate]);
 
   // 방 목록 조회
   useEffect(() => {
