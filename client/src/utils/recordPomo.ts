@@ -31,6 +31,17 @@ export async function recordPomo(
   sessionData: Omit<RecType, "kind">
 ) {
   try {
+    const invalidTaskChangeInfo = taskChangeInfoArray.filter(
+      (info) => typeof info.id !== "string"
+    );
+    if (invalidTaskChangeInfo.length > 0) {
+      console.warn("[recordPomo] invalid taskChangeInfoArray.id detected", {
+        invalidTaskChangeInfo,
+        taskChangeInfoArray,
+        sessionStartTime: sessionData.startTime,
+      });
+    }
+
     //#region Prepare some values: Raw data -> timestamps -> segments -> durations -> pomoRecords
     const timestamps: InfoOfSessionStateChange[] = makeTimestampsFromRawData(
       categoryChangeInfoArray,
