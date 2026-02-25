@@ -255,15 +255,15 @@ export function TimerController({
 
   //
   const durationInSeconds = durationInMinutes * 60;
-  let isBeforeStartOfCycles =
+  const isBeforeStartOfCycles =
     repetitionCount === 0 && timerState.startTime === 0;
-  let cycleCount = calculateCycleCount(
+  const cycleCount = calculateCycleCount(
     isBeforeStartOfCycles,
     numOfPomo,
     numOfCycle,
     repetitionCount
   );
-  let repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
+  const repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
     numOfPomo,
     numOfCycle,
     repetitionCount,
@@ -298,9 +298,9 @@ export function TimerController({
     let timeCountedDown = 0; // timeCountedDown = timePassed - pause.totalLength
 
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      let { duration, pause, running, startTime } =
+      const { duration, pause, running, startTime } =
         statesRelatedToTimer as TimersStatesType;
-      let durationInSeconds = duration * 60;
+      const durationInSeconds = duration * 60;
 
       if (running) {
         timePassed = Date.now() - startTime;
@@ -579,7 +579,7 @@ export function TimerController({
   }) {
     // console.log("SESSION inside wrapUpSession", SESSION[prevSession]);
 
-    let { sessionData } = data;
+    const { sessionData } = data;
     if (user) {
       const infoArr = [
         {
@@ -675,18 +675,27 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
         if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
+          const copiedCategoryChangeInfoArray = structuredClone(
             categoryChangeInfoArray
           );
-          let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+          const copiedTaskChangeInfoArray =
+            structuredClone(taskChangeInfoArray);
 
           // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
-          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
-            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-              sessionData.startTime;
-          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
-            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
-              sessionData.startTime;
+          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+          if (
+            firstCategoryChange !== undefined &&
+            firstCategoryChange.categoryChangeTimestamp === 0
+          ) {
+            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+          }
+          const firstTaskChange = copiedTaskChangeInfoArray[0];
+          if (
+            firstTaskChange !== undefined &&
+            firstTaskChange.taskChangeTimestamp === 0
+          ) {
+            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+          }
 
           // console.log("sessionData.startTime", sessionData.startTime);
           // console.log(
@@ -795,17 +804,26 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
         if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
+          const copiedCategoryChangeInfoArray = structuredClone(
             categoryChangeInfoArray
           );
-          let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+          const copiedTaskChangeInfoArray =
+            structuredClone(taskChangeInfoArray);
 
-          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
-            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-              sessionData.startTime;
-          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
-            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
-              sessionData.startTime;
+          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+          if (
+            firstCategoryChange !== undefined &&
+            firstCategoryChange.categoryChangeTimestamp === 0
+          ) {
+            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+          }
+          const firstTaskChange = copiedTaskChangeInfoArray[0];
+          if (
+            firstTaskChange !== undefined &&
+            firstTaskChange.taskChangeTimestamp === 0
+          ) {
+            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+          }
 
           sessionData.startTime !== 0 &&
             (await recordPomo(
@@ -861,8 +879,7 @@ export function TimerController({
             cycleDuration: cycleDurationTargetedInSec,
             cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles:
-              cycleDurationTargetedInSec * numOfCycle,
+            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle,
           },
         });
         // A - 2: B.E
@@ -888,17 +905,26 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
         if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
+          const copiedCategoryChangeInfoArray = structuredClone(
             categoryChangeInfoArray
           );
-          let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+          const copiedTaskChangeInfoArray =
+            structuredClone(taskChangeInfoArray);
 
-          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
-            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-              sessionData.startTime;
-          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
-            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
-              sessionData.startTime;
+          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+          if (
+            firstCategoryChange !== undefined &&
+            firstCategoryChange.categoryChangeTimestamp === 0
+          ) {
+            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+          }
+          const firstTaskChange = copiedTaskChangeInfoArray[0];
+          if (
+            firstTaskChange !== undefined &&
+            firstTaskChange.taskChangeTimestamp === 0
+          ) {
+            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+          }
 
           sessionData.startTime !== 0 &&
             (await recordPomo(
@@ -1006,7 +1032,7 @@ export function TimerController({
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        let states = await obtainStatesFromIDB("withoutSettings");
+        const states = await obtainStatesFromIDB("withoutSettings");
         const progress = getProgress(states as TimersStatesType);
 
         if (
@@ -1313,9 +1339,9 @@ export function TimerController({
     check(timerState.startTime);
 
     async function doesFailedReqInfoExistInIDB() {
-      let userEmail = user?.email;
+      const userEmail = user?.email;
       if (userEmail) {
-        let db = DB || (await openIndexedDB());
+        const db = DB || (await openIndexedDB());
         const store = db
           .transaction("failedReqInfo", "readonly")
           .objectStore("failedReqInfo");
@@ -1329,7 +1355,7 @@ export function TimerController({
 
     async function check(startTime: number) {
       if (startTime !== 0) {
-        let flag = await doesFailedReqInfoExistInIDB();
+        const flag = await doesFailedReqInfoExistInIDB();
         if (
           remainingDurationInSec === 0 ||
           (remainingDurationInSec < 0 && flag === false) //! 앱 다시 열자마자 이 함수가 호출되니까... 만약 failedReq이 있다면.. 그것을 처리하고 판이 다시 짜지기 때문에..
@@ -1431,7 +1457,7 @@ export function TimerController({
       // 2.
       let gapForLateStartInMs = startTime - endTimeRef.current; // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
       if (gapForLateStartInMs < 0) gapForLateStartInMs = 0;
-      let gapForLateStartInSec = msToSec(gapForLateStartInMs);
+      const gapForLateStartInSec = msToSec(gapForLateStartInMs);
       // console.log(
       //   "[gapForLateStartInMs, gapForLateStartInSec] at autoStartCurrentSession()",
       //   [gapForLateStartInMs, gapForLateStartInSec]
@@ -1621,13 +1647,13 @@ export function TimerController({
         //* 다른 페이지로 갔다가 다시 돌아오면 endTimeRef는 0으로 초기화 된다는 것. 그런데 신기한점은, 어차피 다른 페이지 갔다오면 endTimeRef가 필요한 경우가 아니게 된다.
         //* 그만큼 늦게 시작할 수 밖에 없기 때문에, records가 이미 최근에 종료된 session을 반영한 이후일 것임. 그래서 둘다 사용하자.
         //! 만약 endTimeRef가 0이 아니면, 그냥 그거 쓰면 되고 0이면 records의 마지막 값 이용하면 된다.
-        let lastSessionEndTime =
+        const lastSessionEndTime =
           endTimeRef.current !== 0
             ? endTimeRef.current
             : records[records.length - 1].endTime;
         let gapForLateStartInMs = momentTimerIsToggled - lastSessionEndTime; // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
         if (gapForLateStartInMs < 0) gapForLateStartInMs = 0;
-        let gapForLateStartInSec = msToSec(gapForLateStartInMs); //* Whether the current session is a focus session or break session does not matter. In both cases, what only changes is the cycleDuration.
+        const gapForLateStartInSec = msToSec(gapForLateStartInMs); //* Whether the current session is a focus session or break session does not matter. In both cases, what only changes is the cycleDuration.
 
         // console.log(
         //   "[gapForLateStartInMs, gapForLateStartInSec] at toggleTimer()",
@@ -1706,7 +1732,7 @@ export function TimerController({
       setTimersStatesPartial({
         running: true,
       });
-      let pause = {
+      const pause = {
         record: timerState.pause!.record.map((obj) => {
           if (obj.end === undefined) {
             return {
@@ -1875,7 +1901,7 @@ export function TimerController({
     }
 
     if (isThisSessionPaused()) {
-      let stateCloned = { ...timerState };
+      const stateCloned = { ...timerState };
       stateCloned.pause.totalLength +=
         now -
         stateCloned.pause.record[stateCloned.pause.record.length - 1].start;
@@ -2096,7 +2122,7 @@ export function TimerController({
   }
 
   //#region from CountDownTimer
-  let durationRemaining =
+  const durationRemaining =
     remainingDurationInSec < 0 ? (
       <h2>ending session...</h2>
     ) : (
@@ -2108,7 +2134,7 @@ export function TimerController({
         <Time seconds={remainingDurationInSec} />
       </h2>
     );
-  let durationBeforeStart =
+  const durationBeforeStart =
     !!(durationInSeconds / 60) === false ? (
       <h2>"loading data..."</h2>
     ) : (
@@ -2292,6 +2318,3 @@ export function TimerController({
     </div>
   );
 }
-
-
-

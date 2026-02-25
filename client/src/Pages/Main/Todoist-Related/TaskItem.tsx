@@ -221,9 +221,11 @@ export const TaskItem = ({
         "taskChangeInfoArray in the handleTaskClick",
         taskChangeInfoArray
       );
+      const preservedTaskChangeTimestamp =
+        taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0;
       newTaskChange = {
         id: task.id,
-        taskChangeTimestamp: taskChangeInfoArray[0].taskChangeTimestamp,
+        taskChangeTimestamp: preservedTaskChangeTimestamp,
       };
       shouldSetTaskChangeArray = true;
       patchUrl = RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY;
