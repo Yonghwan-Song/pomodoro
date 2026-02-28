@@ -85,9 +85,11 @@ export function useTaskSelectionHandler() {
       //   "taskChangeInfoArray inside the useTaskSelectionHandler",
       //   taskChangeInfoArray
       // );
+      const preservedTaskChangeTimestamp =
+        taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0;
       newTaskChange = {
         id: taskId,
-        taskChangeTimestamp: taskChangeInfoArray[0].taskChangeTimestamp,
+        taskChangeTimestamp: preservedTaskChangeTimestamp,
       };
       shouldSetTaskChangeArray = true;
       patchUrl = RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY;

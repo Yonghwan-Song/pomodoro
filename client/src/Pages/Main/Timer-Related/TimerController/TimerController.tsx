@@ -698,12 +698,20 @@ export function TimerController({
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
 
           // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
-          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
-            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-              sessionData.startTime;
-          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
-            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
-              sessionData.startTime;
+          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+          if (
+            firstCategoryChange !== undefined &&
+            firstCategoryChange.categoryChangeTimestamp === 0
+          ) {
+            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+          }
+          const firstTaskChange = copiedTaskChangeInfoArray[0];
+          if (
+            firstTaskChange !== undefined &&
+            firstTaskChange.taskChangeTimestamp === 0
+          ) {
+            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+          }
 
           // console.log("sessionData.startTime", sessionData.startTime);
           // console.log(
@@ -829,12 +837,20 @@ export function TimerController({
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
 
-          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
-            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-              sessionData.startTime;
-          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
-            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
-              sessionData.startTime;
+          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+          if (
+            firstCategoryChange !== undefined &&
+            firstCategoryChange.categoryChangeTimestamp === 0
+          ) {
+            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+          }
+          const firstTaskChange = copiedTaskChangeInfoArray[0];
+          if (
+            firstTaskChange !== undefined &&
+            firstTaskChange.taskChangeTimestamp === 0
+          ) {
+            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+          }
 
           sessionData.startTime !== 0 &&
             (await recordPomo2(
@@ -931,12 +947,20 @@ export function TimerController({
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
 
-          if (copiedCategoryChangeInfoArray[0].categoryChangeTimestamp === 0)
-            copiedCategoryChangeInfoArray[0].categoryChangeTimestamp =
-              sessionData.startTime;
-          if (copiedTaskChangeInfoArray[0].taskChangeTimestamp === 0)
-            copiedTaskChangeInfoArray[0].taskChangeTimestamp =
-              sessionData.startTime;
+          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+          if (
+            firstCategoryChange !== undefined &&
+            firstCategoryChange.categoryChangeTimestamp === 0
+          ) {
+            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+          }
+          const firstTaskChange = copiedTaskChangeInfoArray[0];
+          if (
+            firstTaskChange !== undefined &&
+            firstTaskChange.taskChangeTimestamp === 0
+          ) {
+            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+          }
 
           sessionData.startTime !== 0 &&
             (await recordPomo2(
@@ -1449,10 +1473,12 @@ export function TimerController({
       updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
       const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
-      taskChangeInfoArrayShallowCopied[0] = {
-        ...taskChangeInfoArrayShallowCopied[0],
-        taskChangeTimestamp: startTime,
-      };
+      if (taskChangeInfoArrayShallowCopied.length > 0) {
+        taskChangeInfoArrayShallowCopied[0] = {
+          ...taskChangeInfoArrayShallowCopied[0],
+          taskChangeTimestamp: startTime,
+        };
+      }
       setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
 
       setTimersStatesPartial({
@@ -1471,9 +1497,11 @@ export function TimerController({
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
         );
-        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-          taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-        });
+        if (taskChangeInfoArrayShallowCopied.length > 0) {
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
+          });
+        }
       }
 
       // 2.
@@ -1600,10 +1628,12 @@ export function TimerController({
         updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
         const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
-        taskChangeInfoArrayShallowCopied[0] = {
-          ...taskChangeInfoArrayShallowCopied[0],
-          taskChangeTimestamp: momentTimerIsToggled,
-        };
+        if (taskChangeInfoArrayShallowCopied.length > 0) {
+          taskChangeInfoArrayShallowCopied[0] = {
+            ...taskChangeInfoArrayShallowCopied[0],
+            taskChangeTimestamp: momentTimerIsToggled,
+          };
+        }
         setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
         setTimersStatesPartial({
           running: true,
@@ -1642,9 +1672,14 @@ export function TimerController({
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
             { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
           );
-          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-          });
+          if (taskChangeInfoArrayShallowCopied.length > 0) {
+            axiosInstance.patch(
+              RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
+              {
+                taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
+              }
+            );
+          }
         }
       }
 
@@ -1661,10 +1696,12 @@ export function TimerController({
         updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
         const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
-        taskChangeInfoArrayShallowCopied[0] = {
-          ...taskChangeInfoArrayShallowCopied[0],
-          taskChangeTimestamp: momentTimerIsToggled,
-        };
+        if (taskChangeInfoArrayShallowCopied.length > 0) {
+          taskChangeInfoArrayShallowCopied[0] = {
+            ...taskChangeInfoArrayShallowCopied[0],
+            taskChangeTimestamp: momentTimerIsToggled,
+          };
+        }
 
         setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
         setTimersStatesPartial({
@@ -1683,9 +1720,14 @@ export function TimerController({
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
             { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
           );
-          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-          });
+          if (taskChangeInfoArrayShallowCopied.length > 0) {
+            axiosInstance.patch(
+              RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
+              {
+                taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
+              }
+            );
+          }
         }
 
         //TODO - if a user clicks the start button as soon as a break ends, the same problem we had when it comes to auto-start will occur.

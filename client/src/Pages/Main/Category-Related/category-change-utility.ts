@@ -259,11 +259,19 @@ export function makeTimestampsFromRawData(
   function transformTaskChangesArray(
     taskChangeInfoArray: TaskChangeInfo[]
   ): InfoOfSessionStateChange[] {
-    return taskChangeInfoArray.map((val) => ({
-      kind: "task",
-      subKind: val.id,
-      timestamp: val.taskChangeTimestamp,
-    }));
+    return taskChangeInfoArray.map((val, idx) => {
+      if (typeof val.id !== "string") {
+        console.warn("[makeTimestampsFromRawData] invalid task change id", {
+          index: idx,
+          taskChangeInfo: val,
+        });
+      }
+      return {
+        kind: "task",
+        subKind: typeof val.id === "string" ? val.id : "",
+        timestamp: val.taskChangeTimestamp,
+      };
+    });
   }
 
   function transformPauseRecords(
@@ -504,9 +512,17 @@ export function makePomoRecordsFromDurations(
   }/${today.getDate()}/${today.getFullYear()}`;
 
   return convertMilliSecToMin2(durations).map(
-    (val: DurationOfCategoryTaskCombination) => {
+    (val: DurationOfCategoryTaskCombination, idx: number) => {
       // 카테고리가 uncategorized인 경우 category field를 넣지 않고,
       // 마찬가지로 taskId가 ""인 경우 task field를 넣지 않는다.
+      if (typeof val.taskId !== "string") {
+        console.warn("[makePomoRecordsFromDurations] invalid taskId", {
+          index: idx,
+          durationRecord: val,
+        });
+      }
+      const normalizedTaskId =
+        typeof val.taskId === "string" ? val.taskId.trim() : "";
 
       let pomoRecord: PomodoroSessionDocument = {
         // userEmail, //! <-------------- 지웠음.
@@ -526,11 +542,11 @@ export function makePomoRecordsFromDurations(
       }
 
       //! none task is removed
-      if (val.taskId !== "") {
+      if (normalizedTaskId !== "") {
         pomoRecord = {
           ...pomoRecord,
           task: {
-            id: val.taskId,
+            id: normalizedTaskId,
           },
         };
       }

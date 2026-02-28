@@ -374,10 +374,10 @@ const createSharedSlice: StateCreator<
 
         // [{ id: null, taskChangeTimestamp: 0 }] - default value
         let taskChangeInfoArray: TaskChangeInfo[] = [];
-        if (data.isTodoistIntegrationEnabled) {
-          if (data.taskChangeInfoArray.length === 0)
-            taskChangeInfoArray = [{ id: "", taskChangeTimestamp: 0 }];
-          else taskChangeInfoArray = data.taskChangeInfoArray;
+        if (data.taskChangeInfoArray.length === 0) {
+          taskChangeInfoArray = [{ id: "", taskChangeTimestamp: 0 }];
+        } else {
+          taskChangeInfoArray = data.taskChangeInfoArray;
         }
 
         const todoistTasksTreeAndMap = generateTaskDictionaryAndTree(
