@@ -7,6 +7,7 @@ import {
   Req,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TodoistService } from './todoist.service';
@@ -14,6 +15,8 @@ import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 
 @Controller('todoist')
 export class TodoistController {
+  private readonly logger = new Logger(TodoistController.name);
+
   constructor(
     private readonly todoistService: TodoistService,
     private readonly configService: ConfigService,
@@ -98,6 +101,10 @@ export class TodoistController {
         };
       }
     } catch (error) {
+      this.logger.error(
+        `Failed to revoke Todoist token for user ${request.userEmail}: ${error.message}`,
+        error.stack,
+      );
       throw new HttpException(
         error.message || 'Error revoking token',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -112,6 +119,10 @@ export class TodoistController {
       const tasks = await this.todoistService.getTasks(userEmail);
       return { tasks };
     } catch (error) {
+      this.logger.error(
+        `Failed to fetch Todoist tasks for user ${request.userEmail}: ${error.message}`,
+        error.stack,
+      );
       throw new HttpException(
         error.message || 'Failed to fetch Todoist tasks',
         HttpStatus.INTERNAL_SERVER_ERROR,

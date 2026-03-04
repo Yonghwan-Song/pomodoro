@@ -5,6 +5,7 @@ import { useAuthContext } from "../../Context/AuthContext";
 import { ChatBox } from "./components/chat/ChatBox";
 import { RoomControls } from "./components/room/RoomControls";
 import { VideoGrid } from "./components/room/VideoGrid";
+import { RoomTimer } from "./RoomTimer";
 
 export function Room() {
   const socket = useConnectionStore((s) => s.socket);
@@ -27,7 +28,10 @@ export function Room() {
   const endSharing = useConnectionStore((s) => s.endSharing);
   const sendChatMessage = useConnectionStore((s) => s.sendChatMessage);
 
-  const { user } = useAuthContext();
+  // useAuthContext()가 초기화 전이거나 Provider 외부일 때 null을 반환할 수 있습니다.
+  // null에서 { user }를 구조 분해(destructuring)하려고 하면 런타임 에러(Cannot destructure property...)가 발생하여 앱이 다운됩니다.
+  // 이를 방지하고 TypeScript 에러를 해결하기 위해 `|| {}`를 추가하여 null일 경우 빈 객체에서 분해하도록 안전하게 처리했습니다.
+  const { user } = useAuthContext() || {};
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
 
@@ -90,6 +94,8 @@ export function Room() {
         onSendMessage={handleSendMessage}
         mySocketId={socket?.id ?? ""}
       />
+
+      <RoomTimer />
     </>
   );
 }

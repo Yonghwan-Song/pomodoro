@@ -374,10 +374,14 @@ const createSharedSlice: StateCreator<
 
         // [{ id: null, taskChangeTimestamp: 0 }] - default value
         let taskChangeInfoArray: TaskChangeInfo[] = [];
-        if (data.isTodoistIntegrationEnabled) {
-          if (data.taskChangeInfoArray.length === 0)
-            taskChangeInfoArray = [{ id: "", taskChangeTimestamp: 0 }];
-          else taskChangeInfoArray = data.taskChangeInfoArray;
+        // WARNING: ORIGIN/MAIN의 7b78feeec4afd1450d8f64a462c499848bc14d62 commit과 겹침.
+        // branch history가 상당히 많이 꼬여서 어찌 할지 모르겠으니 우선 아래의 변화는 무조건 commit의 대상에서 제외하겠음.
+        // 추후에 기능 마무리 지은 후에 pull origin할 때, 적당히 잘 conflict 해결할 수 있도록 메모를 남김.
+        // 위의 commit은 지금 이 branch의 911b26798d5439060dd2ff57e474267e51df018d, e783b62469885f8a8d11fc0f6023dd4cbe9a4d80를 포함. :::...
+        if (data.taskChangeInfoArray.length === 0) {
+          taskChangeInfoArray = [{ id: "", taskChangeTimestamp: 0 }];
+        } else {
+          taskChangeInfoArray = data.taskChangeInfoArray;
         }
 
         const todoistTasksTreeAndMap = generateTaskDictionaryAndTree(

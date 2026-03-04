@@ -150,6 +150,7 @@ pubsub.subscribe("successOfPersistingRecordsOfTodayToIDB", (data) => {
   deciderOfWhetherDataForRunningTimerFetched[1] = true;
 });
 
+// TODO: 이제 아예 이 BroadcastChannel은 필요 없는거 아니야?.. 확인하고 필요 없으면 지우기.
 const BC = new BroadcastChannel("pomodoro");
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 //#endregion

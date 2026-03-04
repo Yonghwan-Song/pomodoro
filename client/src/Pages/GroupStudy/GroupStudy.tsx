@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useConnectionStore } from "../../zustand-stores/connectionStore";
 import { Outlet } from "react-router-dom";
+import { countDown } from "../..";
 
 export default function GroupStudy() {
   const socket = useConnectionStore((s) => s.socket);
@@ -18,6 +19,11 @@ export default function GroupStudy() {
       initDevice();
     }
   }, [connected, socket, isDeviceLoaded, initDevice]);
+
+  // NOTE: When a user enters a room, this should be stopped as if a Timer component is rendered in the "/main"
+  useEffect(() => {
+    countDown(localStorage.getItem("idOfSetInterval"));
+  }, []);
 
   return <Outlet />;
 }

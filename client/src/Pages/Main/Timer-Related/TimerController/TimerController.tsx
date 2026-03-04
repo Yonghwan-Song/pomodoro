@@ -1346,6 +1346,7 @@ export function TimerController({
           .transaction("failedReqInfo", "readonly")
           .objectStore("failedReqInfo");
         const info = await store.get(userEmail);
+        console.log("failedReqInfo in doesFailedReqInfoExistInIDB()", info);
         return !!info;
       } else {
         // it should be always false for unlogged-in user.
