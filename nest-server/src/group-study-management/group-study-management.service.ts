@@ -2,7 +2,7 @@ import {
   Injectable,
   Logger,
   OnModuleInit,
-  OnModuleDestroy,
+  OnModuleDestroy
 } from '@nestjs/common';
 import * as EventNames from 'src/common/webrtc/event-names';
 import { Room } from './entities/room.entity';
@@ -26,7 +26,7 @@ export class GroupStudyManagementService
   constructor(
     private readonly mediasoupService: MediasoupService,
     @InjectModel(RoomSchemaClass.name)
-    private readonly roomModel: Model<RoomDocument>, // TODO: RoomDocument는 대체 정체가 뭐임...
+    private readonly roomModel: Model<RoomDocument> // TODO: RoomDocument는 대체 정체가 뭐임...
   ) {}
 
   async onModuleInit() {
@@ -62,7 +62,7 @@ export class GroupStudyManagementService
   private logCurrentState(prefix: string) {
     console.log(`${prefix} ========== STATE SNAPSHOT ==========`);
     console.log(
-      `${prefix} Total peers: ${this.peersMap.size}, Total rooms: ${this.roomsMap.size}`,
+      `${prefix} Total peers: ${this.peersMap.size}, Total rooms: ${this.roomsMap.size}`
     );
 
     if (this.peersMap.size > 0) {
@@ -84,8 +84,8 @@ export class GroupStudyManagementService
           producers: producers.map((p) => ({
             id: p.producerId,
             socketId: p.socketId,
-            kind: p.kind,
-          })),
+            kind: p.kind
+          }))
         });
       });
     }
@@ -96,11 +96,11 @@ export class GroupStudyManagementService
   removePeer(socketId: string) {
     if (this.peersMap.delete(socketId)) {
       console.log(
-        `[group-study-management.service:removePeer] Peer ${socketId} removed from peersMap`,
+        `[group-study-management.service:removePeer] Peer ${socketId} removed from peersMap`
       );
     } else {
       console.warn(
-        `[group-study-management.service:removePeer] Peer ${socketId} not found in peersMap`,
+        `[group-study-management.service:removePeer] Peer ${socketId} not found in peersMap`
       );
     }
   }
@@ -119,12 +119,12 @@ export class GroupStudyManagementService
 
     transport.on('dtlsstatechange', (dtlsState) => {
       console.log(
-        `[group-study-management.service:establishTransport] [${type}-Transport ${transport.id}] DTLS state changed: ${dtlsState}`,
+        `[group-study-management.service:establishTransport] [${type}-Transport ${transport.id}] DTLS state changed: ${dtlsState}`
       );
     });
     transport.on('icestatechange', (iceState) => {
       console.log(
-        `[group-study-management.service:establishTransport] [${type}-Transport ${transport.id}] ICE state changed: ${iceState}`,
+        `[group-study-management.service:establishTransport] [${type}-Transport ${transport.id}] ICE state changed: ${iceState}`
       );
     });
 
@@ -132,14 +132,14 @@ export class GroupStudyManagementService
 
     console.log(
       `[group-study-management.service:establishTransport] verify: remote ${type}-transport has been created`,
-      transport.id,
+      transport.id
     );
 
     const transportOptions = {
       id: transport.id,
       iceParameters: transport.iceParameters,
       iceCandidates: transport.iceCandidates,
-      dtlsParameters: transport.dtlsParameters,
+      dtlsParameters: transport.dtlsParameters
     };
 
     return transportOptions;
@@ -148,7 +148,7 @@ export class GroupStudyManagementService
   async createConsumer(
     consumingPeerId: string,
     producingPeerId: string,
-    producerId: string,
+    producerId: string
   ) {
     try {
       const consumingPeer = this.peersMap.get(consumingPeerId);
@@ -161,7 +161,7 @@ export class GroupStudyManagementService
       if (!consumingPeer || !consumingPeer.rtpCapabilities) {
         return {
           success: false,
-          error: 'RTP capabilities not set. Please join room first.',
+          error: 'RTP capabilities not set. Please join room first.'
         };
       }
 
@@ -169,41 +169,41 @@ export class GroupStudyManagementService
         return {
           success: false,
           error:
-            'Receive transport not created. Please create recv transport first.',
+            'Receive transport not created. Please create recv transport first.'
         };
       }
       if (
         !this.mediasoupService.checkIfClientCanConsume(
           producerId,
-          consumingPeer.rtpCapabilities,
+          consumingPeer.rtpCapabilities
         )
       ) {
         return {
           success: false,
           error:
-            'Client cannot consume the producer due to RTP capabilities issue',
+            'Client cannot consume the producer due to RTP capabilities issue'
         };
       }
 
       const consumer = await this.mediasoupService.createConsumer(
         consumingPeer.recvTransport,
         producerId,
-        consumingPeer.rtpCapabilities,
+        consumingPeer.rtpCapabilities
       );
 
       consumer.on('producerclose', () => {
         console.log(
-          `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} closed due to producer close`,
+          `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} closed due to producer close`
         );
         consumingPeer.consumers.delete(consumer.id);
         console.log(
-          `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} removed from peer ${consumingPeer.id}`,
+          `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} removed from peer ${consumingPeer.id}`
         );
       });
 
       consumer.on('transportclose', () => {
         console.log(
-          `[group-study-management.service:createConsumer:transportclose] Consumer ${consumer.id} closed due to transport close`,
+          `[group-study-management.service:createConsumer:transportclose] Consumer ${consumer.id} closed due to transport close`
         );
       });
 
@@ -216,17 +216,17 @@ export class GroupStudyManagementService
           producerId,
           kind: consumer.kind,
           rtpParameters: consumer.rtpParameters,
-          peerId: producingPeer.id,
-        },
+          peerId: producingPeer.id
+        }
       };
     } catch (error) {
       console.warn(
         '[group-study-management.service:createConsumer] Error is thrown in the createConsumer of groupStudyManagementService',
-        error,
+        error
       );
       return {
         success: false,
-        error: 'Failed to create consumer',
+        error: 'Failed to create consumer'
       };
     }
   }
@@ -239,14 +239,14 @@ export class GroupStudyManagementService
     const consumer = peer.consumers.get(consumerId);
     if (!consumer) {
       console.error(
-        `[group-study-management.service:resumeConsumer] Consumer ${consumerId} not found for peer ${socketId}`,
+        `[group-study-management.service:resumeConsumer] Consumer ${consumerId} not found for peer ${socketId}`
       );
       return { success: false, error: 'Consumer not found' };
     }
 
     await consumer.resume();
     console.log(
-      `[group-study-management.service:resumeConsumer] Consumer ${consumerId} resumed for peer ${socketId}`,
+      `[group-study-management.service:resumeConsumer] Consumer ${consumerId} resumed for peer ${socketId}`
     );
 
     return { success: true, data: { resumed: true } };
@@ -255,35 +255,35 @@ export class GroupStudyManagementService
   async connectTransport(
     socketId: string,
     dtlsParameters: any,
-    type: 'send' | 'recv',
+    type: 'send' | 'recv'
   ) {
     const peer = this.peersMap.get(socketId);
     if (!peer) {
       console.error(
-        `[group-study-management.service:connectTransport] Peer not found for client ${socketId}`,
+        `[group-study-management.service:connectTransport] Peer not found for client ${socketId}`
       );
       return { success: false, error: 'Peer transport not found' };
     }
     if (!peer.sendTransport) {
       console.error(
-        `[group-study-management.service:connectTransport] Send transport not found for client ${socketId}`,
+        `[group-study-management.service:connectTransport] Send transport not found for client ${socketId}`
       );
       return { success: false, error: 'Send transport not found' };
     }
     if (!peer.recvTransport) {
       console.error(
-        `[group-study-management.service:connectTransport] Receive transport not found for client ${socketId}`,
+        `[group-study-management.service:connectTransport] Receive transport not found for client ${socketId}`
       );
       return { success: false, error: 'Receive transport not found' };
     }
     if (type === 'send') {
       await peer.sendTransport.connect({
-        dtlsParameters: dtlsParameters,
+        dtlsParameters: dtlsParameters
       });
     }
     if (type === 'recv') {
       await peer.recvTransport.connect({
-        dtlsParameters: dtlsParameters,
+        dtlsParameters: dtlsParameters
       });
     }
     return { success: true };
@@ -292,32 +292,32 @@ export class GroupStudyManagementService
   async createProducer(
     clientSocket: Socket,
     kind: 'video' | 'audio',
-    rtpParameters: any,
+    rtpParameters: any
   ) {
     try {
       const peer = this.peersMap.get(clientSocket.id);
 
       if (!peer) {
         console.error(
-          `[group-study-management.service:createProducer] Peer not found for client ${clientSocket.id}`,
+          `[group-study-management.service:createProducer] Peer not found for client ${clientSocket.id}`
         );
         return { success: false, error: 'Peer transport not found' };
       }
       if (!peer.sendTransport) {
         console.error(
-          `[group-study-management.service:createProducer] Send transport not found for client ${clientSocket.id}`,
+          `[group-study-management.service:createProducer] Send transport not found for client ${clientSocket.id}`
         );
         return { success: false, error: 'Send transport not found' };
       }
 
       const producer = await peer.sendTransport.produce({
         kind,
-        rtpParameters,
+        rtpParameters
       });
 
       producer.addListener('transportclose', () => {
         console.log(
-          '[group-study-management.service:createProducer:transportclose] sendTransport has been closed',
+          '[group-study-management.service:createProducer:transportclose] sendTransport has been closed'
         );
         const roomId = peer.room?.id;
         if (roomId) {
@@ -328,18 +328,18 @@ export class GroupStudyManagementService
       peer.addProducer(producer);
 
       console.log(
-        `[group-study-management.service:createProducer] Producer created: ${producer.id} for client ${clientSocket.id} of kind ${kind}`,
+        `[group-study-management.service:createProducer] Producer created: ${producer.id} for client ${clientSocket.id} of kind ${kind}`
       );
 
       const producerPayload: ProducerPayload = {
         producerId: producer.id,
         socketId: clientSocket.id,
         kind,
-        displayName: peer.userNickname,
+        displayName: peer.userNickname
       };
       console.log(
         '[group-study-management.service:createProducer] producerPayload',
-        producerPayload,
+        producerPayload
       );
 
       const roomId = peer.room?.id;
@@ -347,14 +347,14 @@ export class GroupStudyManagementService
       if (roomId) {
         console.log(
           '[group-study-management.service:createProducer] broadcasting new producer to room',
-          roomId,
+          roomId
         );
         clientSocket
           .to(roomId)
           .emit(EventNames.ROOM_GET_PRODUCER, [producerPayload]);
       } else {
         console.warn(
-          `[group-study-management.service:createProducer] Peer ${clientSocket.id} is not in any room, producer not broadcast`,
+          `[group-study-management.service:createProducer] Peer ${clientSocket.id} is not in any room, producer not broadcast`
         );
       }
 
@@ -362,12 +362,12 @@ export class GroupStudyManagementService
     } catch (error) {
       console.error(
         '[group-study-management.service:createProducer] Error in produce:',
-        error,
+        error
       );
 
       return {
         success: false,
-        error: 'Error occurred while creating a producer',
+        error: 'Error occurred while creating a producer'
       };
     }
   }
@@ -375,12 +375,12 @@ export class GroupStudyManagementService
   closeProducer(
     clientSocket: Socket,
     producerId?: string,
-    kind?: 'video' | 'audio',
+    kind?: 'video' | 'audio'
   ) {
     const peer = this.peersMap.get(clientSocket.id);
     if (!peer) {
       console.warn(
-        `[group-study-management.service:closeProducer] Peer not found for client ${clientSocket.id} during producer close.`,
+        `[group-study-management.service:closeProducer] Peer not found for client ${clientSocket.id} during producer close.`
       );
       return;
     }
@@ -389,16 +389,16 @@ export class GroupStudyManagementService
 
     if (!targetProducerId && kind) {
       console.log(
-        `[group-study-management.service:closeProducer] Searching for producer by kind '${kind}' in peer ${clientSocket.id}. Producers count: ${peer.producers.size}`,
+        `[group-study-management.service:closeProducer] Searching for producer by kind '${kind}' in peer ${clientSocket.id}. Producers count: ${peer.producers.size}`
       );
       for (const [id, producer] of peer.producers) {
         console.log(
-          `[group-study-management.service:closeProducer] Checking producer ${id}: kind=${producer.kind}`,
+          `[group-study-management.service:closeProducer] Checking producer ${id}: kind=${producer.kind}`
         );
         if (producer.kind === kind) {
           targetProducerId = id;
           console.log(
-            `[group-study-management.service:closeProducer] Found producer ${id} by kind ${kind}`,
+            `[group-study-management.service:closeProducer] Found producer ${id} by kind ${kind}`
           );
           break;
         }
@@ -407,7 +407,7 @@ export class GroupStudyManagementService
 
     if (!targetProducerId) {
       console.warn(
-        `[group-study-management.service:closeProducer] No producerId provided and could not find producer by kind ${kind} for peer ${clientSocket.id}`,
+        `[group-study-management.service:closeProducer] No producerId provided and could not find producer by kind ${kind} for peer ${clientSocket.id}`
       );
       return;
     }
@@ -417,18 +417,18 @@ export class GroupStudyManagementService
       producer.close();
       peer.producers.delete(targetProducerId);
       console.log(
-        `[group-study-management.service:closeProducer] Producer ${targetProducerId} closed for peer ${clientSocket.id}`,
+        `[group-study-management.service:closeProducer] Producer ${targetProducerId} closed for peer ${clientSocket.id}`
       );
 
       const roomId = peer.room?.id;
       if (roomId) {
         clientSocket.to(roomId).emit(EventNames.PRODUCER_CLOSED, {
-          producerId: targetProducerId,
+          producerId: targetProducerId
         });
       }
     } else {
       console.warn(
-        `[group-study-management.service:closeProducer] Producer ${targetProducerId} not found for peer ${clientSocket.id}`,
+        `[group-study-management.service:closeProducer] Producer ${targetProducerId} not found for peer ${clientSocket.id}`
       );
     }
   }
@@ -437,14 +437,14 @@ export class GroupStudyManagementService
   //#region Only Room
   getRoomList() {
     return Array.from(this.roomsMap.values()).map((room) =>
-      room.toClientInfo(),
+      room.toClientInfo()
     );
   }
 
   async createRoom(name: string) {
     // 1. Create room in DB
     const newRoomDoc = await new this.roomModel({
-      name: name || 'Untitled Room',
+      name: name || 'Untitled Room'
     }).save();
     const roomId = newRoomDoc._id.toString();
 
@@ -453,7 +453,7 @@ export class GroupStudyManagementService
     this.roomsMap.set(roomId, room);
 
     console.log(
-      `[group-study-management.service:createRoom] Room created: ${roomId} (${room.name})`,
+      `[group-study-management.service:createRoom] Room created: ${roomId} (${room.name})`
     );
 
     return roomId;
@@ -461,14 +461,23 @@ export class GroupStudyManagementService
   //#endregion
 
   //#region Peer & Room
-  async joinRoom(clientSocket: Socket, roomId: string) {
+  // [Server -> Client] 방에 입장하고자 하는 클라이언트의 요청(JOIN_ROOM)을 처리하고,
+  // 그 방에 이미 있던 다른 사람들에게 '새로운 유저가 들어왔어!(ROOM_PEER_JOINED)'라고 알립니다.
+  async joinRoom(
+    clientSocket: Socket,
+    roomId: string,
+    todayTotalDuration: number = 0
+  ) {
     const peer = this.peersMap.get(clientSocket.id);
     if (!peer) {
       return {
         success: false,
-        error: `peer ${clientSocket.id} does not exist`,
+        error: `peer ${clientSocket.id} does not exist`
       };
     }
+
+    // 새롭게 방에 입장는 클라이언트의 오늘 집중 시간을 저장.
+    peer.todayTotalDuration = todayTotalDuration;
 
     const room = this.roomsMap.get(roomId);
     if (!room) {
@@ -480,24 +489,38 @@ export class GroupStudyManagementService
 
     await clientSocket.join(roomId);
     console.log(
-      `[group-study-management.service:joinRoom] Peer ${peer.id} joined room ${room.id}`,
+      `[group-study-management.service:joinRoom] Peer ${peer.id} joined room ${room.id} with ${todayTotalDuration} mins today`
     );
     console.log(
-      `[group-study-management.service:joinRoom] The room ${room.id} has ${room.getPeers().length} members`,
+      `[group-study-management.service:joinRoom] The room ${room.id} has ${room.getPeers().length} members`
     );
 
-    clientSocket
-      .to(roomId)
-      .emit(EventNames.ROOM_PEER_JOINED, { peerId: clientSocket.id });
+    // [Server -> Client(s)] 이 방에 이미 들어와 있던 다른 사람들에게만 '나(clientSocket) 방금 들어왔어!'라고 통지합니다.
+    // EventNames.JOIN_ROOM (요청): "저 이 방에 들어갈게요" (Client -> Server)
+    // EventNames.ROOM_PEER_JOINED (알림): "얘 방금 우리 방에 들어왔어요" (Server -> Clients in Room)
+    clientSocket.to(roomId).emit(EventNames.ROOM_PEER_JOINED, {
+      peerId: clientSocket.id,
+      todayTotalDuration: peer.todayTotalDuration // DESIGN: 내 todayTotalDuration을 participants가 최초 인식하도록 하게 하는 지점.
+    });
+    // NOTE: Socket.IO에서 broadcasting 문법 두가지 패턴:
+    // Socket.IO에서 .to(roomId).emit(...) 패턴 자체가 특정 방(room)에 있는 자신(발신자)을 제외한 나머지 모든 사람들에게 메시지를 뿌리는 방송(Broadcast) 행위를 의미합니다.
+    // 명시적으로 broadcast라는 단어가 안 쓰여 있어서 헷갈리실 수 있는데, Socket.IO의 메서드 체이닝 구조상 아래의 두 코드는 완전히 같은 동작을 합니다.
+    // 1번 방식 (현재 작성하신 코드 - 가장 권장/일반적인 방식) -> clientSocket.to(roomId).emit('EVENT', data);
+    // 2번 방식 (명시적 broadcast 사용 - 옛날 버전이나 특정 상황에서 쓰임) -> clientSocket.broadcast.to(roomId).emit('EVENT', data);
 
     const existingProducers = room
       .getAllProducers()
       .filter((p) => p.socketId !== clientSocket.id);
     const routerRtpCapabilities = this.mediasoupService.getRtcCapabilities();
+
+    // 방에 이미 존재하던 사람들의 id와 오늘 집중 시간을 묶어서 방금 입장한 사람에게 반환합니다.
     const peers = room
       .getPeers()
-      .map((p) => p.id)
-      .filter((id) => id !== clientSocket.id);
+      .filter((p) => p.id !== clientSocket.id)
+      .map((p) => ({
+        id: p.id,
+        todayTotalDuration: p.todayTotalDuration
+      }));
 
     return {
       success: true,
@@ -505,8 +528,8 @@ export class GroupStudyManagementService
         roomId,
         routerRtpCapabilities,
         existingProducers,
-        peers,
-      },
+        peers
+      }
     };
   }
 
@@ -533,12 +556,12 @@ export class GroupStudyManagementService
         try {
           await this.roomModel.findByIdAndDelete(room.id).exec();
           console.log(
-            `[group-study-management.service:leaveRoom] Room ${room.id} deleted from DB as it is empty`,
+            `[group-study-management.service:leaveRoom] Room ${room.id} deleted from DB as it is empty`
           );
         } catch (dbErr) {
           console.error(
             `[group-study-management.service:leaveRoom] Failed to delete room ${room.id} from DB`,
-            dbErr,
+            dbErr
           );
         }
       }
@@ -549,26 +572,26 @@ export class GroupStudyManagementService
 
       peer.removeRoom();
       console.log(
-        `[group-study-management.service:leaveRoom] Peer ${clientSocket.id} left room ${room.id}`,
+        `[group-study-management.service:leaveRoom] Peer ${clientSocket.id} left room ${room.id}`
       );
 
       return { success: true, data: { left: true } };
     } catch (error) {
       console.warn(
         '[group-study-management.service:leaveRoom] Error in handlePeerLeaveRoom in the SignalingGateway',
-        error,
+        error
       );
 
       return {
         success: false,
-        error: 'Unknown error occurred while a peer leaving a room',
+        error: 'Unknown error occurred while a peer leaving a room'
       };
     }
   }
 
   handleChatMessage(
     clientSocket: Socket,
-    message: string,
+    message: string
   ): { success: boolean; error?: string } {
     const peer = this.peersMap.get(clientSocket.id);
     if (!peer) {
@@ -585,7 +608,7 @@ export class GroupStudyManagementService
       // senderNickname: ... // peer에 nickname을 등록해야
       senderNickname: peer.userNickname,
       message: message,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     };
 
     clientSocket.to(room.id).emit(EventNames.CHAT_MESSAGE, chatPayload);
@@ -594,6 +617,26 @@ export class GroupStudyManagementService
   }
 
   //#endregion
+
+  // [Real-time Duration Sync]
+  updatePeerTodayTotalDuration(
+    clientSocket: Socket,
+    todayTotalDuration: number
+  ) {
+    const peer = this.peersMap.get(clientSocket.id);
+    if (!peer || !peer.room) return;
+
+    // 서버 메모리에 있는 해당 Peer의 최신 통계를 갱신.
+    peer.todayTotalDuration = todayTotalDuration;
+
+    // 같은 방에 있는 다른 사람들에게 이 Peer의 최신 통계를 Broadcast 합니다.
+    clientSocket
+      .to(peer.room.id)
+      .emit(EventNames.PEER_TODAY_TOTAL_DURATION_UPDATED, {
+        peerId: peer.id,
+        todayTotalDuration
+      });
+  }
 
   //#region Kind of helpers
   private notifyPeerLeft(clientSocket: Socket, roomId: string) {
@@ -605,10 +648,10 @@ export class GroupStudyManagementService
   private notifyProducerClosed(
     clientSocket: Socket,
     roomId: string,
-    producerId: string,
+    producerId: string
   ) {
     clientSocket.to(roomId).emit(EventNames.PRODUCER_CLOSED, {
-      producerId,
+      producerId
     });
   }
   //#endregion

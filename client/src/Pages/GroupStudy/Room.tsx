@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useConnectionStore } from "../../zustand-stores/connectionStore";
+import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 import { useAuthContext } from "../../Context/AuthContext";
 import { ChatBox } from "./components/chat/ChatBox";
 import { RoomControls } from "./components/room/RoomControls";
@@ -21,12 +22,19 @@ export function Room() {
   );
   const remoteStreams = useConnectionStore((s) => s.remoteStreams);
   const peerNicknames = useConnectionStore((s) => s.peerNicknames);
+  const peerTodayTotalDurations = useConnectionStore(
+    (s) => s.peerTodayTotalDurations
+  );
   const chatMessages = useConnectionStore((s) => s.chatMessages);
   const joinRoom = useConnectionStore((s) => s.joinRoom);
   const leaveRoom = useConnectionStore((s) => s.leaveRoom);
   const createTransports = useConnectionStore((s) => s.createTransports);
   const endSharing = useConnectionStore((s) => s.endSharing);
   const sendChatMessage = useConnectionStore((s) => s.sendChatMessage);
+
+  const myTodayTotalDuration = useBoundedPomoInfoStore(
+    (state) => state.todayTotalDuration
+  );
 
   // useAuthContext()가 초기화 전이거나 Provider 외부일 때 null을 반환할 수 있습니다.
   // null에서 { user }를 구조 분해(destructuring)하려고 하면 런타임 에러(Cannot destructure property...)가 발생하여 앱이 다운됩니다.
@@ -87,6 +95,8 @@ export function Room() {
         localStream={stream}
         remoteStreams={remoteStreams}
         peerNicknames={peerNicknames}
+        myTodayTotalDuration={myTodayTotalDuration}
+        peerTodayTotalDurations={peerTodayTotalDurations}
       />
 
       <ChatBox

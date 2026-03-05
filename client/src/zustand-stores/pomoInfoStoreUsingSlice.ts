@@ -10,16 +10,16 @@ import {
   Goals,
   PomoSettingType,
   TaskTrackingDocument,
-  TimersStatesType,
+  TimersStatesType
 } from "../types/clientStatesType";
 import {
   TaskChangeInfo,
   TodoistTasksWithFocusDuration,
-  TaskWithFocusDurationAndChildren,
+  TaskWithFocusDurationAndChildren
 } from "../types/todoistRelatedTypes";
 import {
   generateTaskDictionaryAndTree,
-  updateMatchingTaskInTree,
+  updateMatchingTaskInTree
 } from "../Pages/Main/Todoist-Related/todoist-utility";
 
 /**
@@ -41,9 +41,13 @@ interface CycleInfoSliceStates {
     veryFirstCycleStartTimestamp: number;
     totalDurationOfSetOfCycles: number;
   };
+  todayTotalDuration: number;
 }
 
-interface CycleInfoSlice extends CycleInfoSliceStates {}
+interface CycleInfoSlice extends CycleInfoSliceStates {
+  setTodayTotalDuration: (duration: number) => void;
+  incrementTodayTotalDuration: (duration: number) => number;
+}
 
 interface CategorySliceStates {
   categories: Category[];
@@ -143,7 +147,7 @@ const createTodoistIntegrationSlice: StateCreator<
     set(
       (state) => {
         return {
-          taskChangeInfoArray: [...state.taskChangeInfoArray, info],
+          taskChangeInfoArray: [...state.taskChangeInfoArray, info]
         };
       },
       undefined,
@@ -163,7 +167,7 @@ const createTodoistIntegrationSlice: StateCreator<
     );
   },
   setTaskTreeForUI: (tree) =>
-    set({ taskTreeForUI: tree }, undefined, "todoist/setTaskTreeUI"),
+    set({ taskTreeForUI: tree }, undefined, "todoist/setTaskTreeUI")
 });
 //#endregion
 
@@ -204,11 +208,11 @@ const createTimerSlice: StateCreator<
     duration: 25,
     pause: {
       totalLength: 0,
-      record: [],
+      record: []
     },
     repetitionCount: 0,
     running: false,
-    startTime: 0,
+    startTime: 0
   },
   cycleSettings: [],
   setPomoSetting: (pomoSetting) =>
@@ -226,7 +230,7 @@ const createTimerSlice: StateCreator<
   setTimersStatesPartial: (partial) =>
     set(
       (state) => ({
-        timersStates: { ...state.timersStates, ...partial },
+        timersStates: { ...state.timersStates, ...partial }
       }),
       undefined,
       "timer/updateTimersStatesPartial"
@@ -235,7 +239,7 @@ const createTimerSlice: StateCreator<
     const timersStates = get().timersStates;
     return !timersStates.running && timersStates.startTime === 0; //? I think running is always false when startTime is 0.
     //? startTime is not 0 -> 1) running === true: session is running 2) running === false: session is paused.
-  },
+  }
 });
 
 const createCycleInfoSlice: StateCreator<
@@ -254,8 +258,35 @@ const createCycleInfoSlice: StateCreator<
     cycleDuration: 130 * 60,
     cycleStartTimestamp: 0,
     veryFirstCycleStartTimestamp: 0,
-    totalDurationOfSetOfCycles: 130 * 60,
+    totalDurationOfSetOfCycles: 130 * 60
   },
+  todayTotalDuration: 0,
+  setTodayTotalDuration: (duration: number) =>
+    set(
+      (state) => {
+        console.log(
+          `[Zustand Store] todayTotalDuration updated: ${state.todayTotalDuration} -> ${duration}`
+        );
+        state.todayTotalDuration = duration;
+      },
+      false,
+      "cycleInfo/setTodayTotalDuration"
+    ),
+  incrementTodayTotalDuration: (duration: number) => {
+    let newTotal = 0;
+    set(
+      (state) => {
+        newTotal = state.todayTotalDuration + duration;
+        console.log(
+          `[Zustand Store] todayTotalDuration incremented by ${duration}: ${state.todayTotalDuration} -> ${newTotal}`
+        );
+        state.todayTotalDuration = newTotal;
+      },
+      false,
+      "cycleInfo/incrementTodayTotalDuration"
+    );
+    return newTotal;
+  }
 });
 
 const createCategorySlice: StateCreator<
@@ -299,7 +330,7 @@ const createCategorySlice: StateCreator<
       (state) => ({ doesItJustChangeCategory }),
       undefined,
       "category/setDoesItJustChangeCategory"
-    ),
+    )
 });
 
 const createGoalSlice: StateCreator<
@@ -316,7 +347,7 @@ const createGoalSlice: StateCreator<
   goals: {
     weeklyGoal: {
       minimum: 30,
-      ideal: 40,
+      ideal: 40
     },
     dailyGoals: [
       { minimum: 4, ideal: 6 },
@@ -325,8 +356,8 @@ const createGoalSlice: StateCreator<
       { minimum: 4, ideal: 6 },
       { minimum: 4, ideal: 6 },
       { minimum: 4, ideal: 6 },
-      { minimum: 4, ideal: 6 },
-    ],
+      { minimum: 4, ideal: 6 }
+    ]
   },
   setWeeklyMinimum: (minimum: number) =>
     set(
@@ -351,7 +382,7 @@ const createGoalSlice: StateCreator<
       },
       undefined,
       "goal/setDailyGoals"
-    ),
+    )
 });
 
 const createSharedSlice: StateCreator<
@@ -403,7 +434,7 @@ const createSharedSlice: StateCreator<
           isTodoistIntegrationEnabled: data.isTodoistIntegrationEnabled,
           taskTreeForUI: rootTasks,
           taskChangeInfoArray,
-          currentTaskId: data.currentTaskId,
+          currentTaskId: data.currentTaskId
         };
       },
       undefined,
@@ -416,12 +447,12 @@ const createSharedSlice: StateCreator<
         pomoSetting: data.pomoSetting,
         autoStartSetting: data.autoStartSetting,
         timersStates: data.timersStates,
-        currentCycleInfo: data.currentCycleInfo,
+        currentCycleInfo: data.currentCycleInfo
       }),
       undefined,
       "timer/populateNonSignInUserStates"
     );
-  },
+  }
 });
 
 export const useBoundedPomoInfoStore = create<
@@ -439,7 +470,7 @@ export const useBoundedPomoInfoStore = create<
       ...createCategorySlice(...a),
       ...createGoalSlice(...a),
       ...createTodoistIntegrationSlice(...a),
-      ...createSharedSlice(...a),
+      ...createSharedSlice(...a)
     }))
   )
 );

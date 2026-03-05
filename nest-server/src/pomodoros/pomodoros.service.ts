@@ -111,7 +111,20 @@ export class PomodorosService {
       .exec();
 
     return pomodoroDocs;
-    return { pomodoroDocs, cateInfoForStat };
+  }
+
+  async getTodayTotalDurationByUserEmail(userEmail: string, todayDateString: string) {
+    const todayRecords = await this.pomodoroModel
+      .find({ userEmail, date: todayDateString })
+      .select('duration')
+      .exec();
+
+    const todayTotal = todayRecords.reduce(
+      (acc, record) => acc + record.duration,
+      0
+    );
+
+    return { todayTotal };
   }
 
   createDemoData(createDemoDataDto: CreateDemoDataDto, userEmail: string) {

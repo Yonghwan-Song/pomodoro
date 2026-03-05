@@ -6,6 +6,7 @@ import {
   Delete,
   ValidationPipe,
   Req,
+  Query,
 } from '@nestjs/common';
 import { PomodorosService } from './pomodoros.service';
 import { CreatePomodoroDto } from './dto/create-pomodoro.dto';
@@ -26,6 +27,17 @@ export class PomodorosController {
     return await this.pomodorosService.persistPomodoroRecordsAndTaskTrackingDurations(
       createPomodoroDto,
       request.userEmail,
+    );
+  }
+
+  @Get('today/total')
+  async getTodayTotalDuration(
+    @Req() request: CustomRequest,
+    @Query('date') todayDateString: string,
+  ) {
+    return await this.pomodorosService.getTodayTotalDurationByUserEmail(
+      request.userEmail,
+      todayDateString,
     );
   }
 

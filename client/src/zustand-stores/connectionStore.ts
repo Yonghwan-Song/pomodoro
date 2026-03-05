@@ -1,3 +1,4 @@
+import { boundedPomoInfoStore } from "./pomoInfoStoreUsingSlice";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { io, Socket } from "socket.io-client";
@@ -10,7 +11,7 @@ import type {
   AckResponse,
   ConsumerOptionsExtended,
   ProducerPayload,
-  SocketID,
+  SocketID
 } from "../common/webrtc/payloadRelated";
 import type { ProducerInfo } from "../Pages/GroupStudy/typeDef";
 import type { ChatMessageData } from "../Pages/GroupStudy/components/chat/ChatMessage";
@@ -63,6 +64,11 @@ interface RoomState {
   consumersByPeerId: Map<string, mediasoupTypes.Consumer>;
   remoteStreams: Map<string, MediaStream>;
   peerNicknames: Map<string, string>;
+
+  // [Real-time Duration Sync]
+  // 방에 있는 다른 참가자들의 오늘 총 집중 시간(todayTotalDuration)을 관리하는 Map입니다.
+  peerTodayTotalDurations: Map<string, number>; // key: peerId(Socket ID), value: duration(minutes)
+
   chatMessages: ChatMessageData[];
 }
 
@@ -136,6 +142,7 @@ export const useConnectionStore = create<Store>()(
       consumersByPeerId: new Map(),
       remoteStreams: new Map(),
       peerNicknames: new Map(),
+      peerTodayTotalDurations: new Map(),
       chatMessages: [],
 
       // ─── Socket Actions ─────────────────────────────────
@@ -160,7 +167,7 @@ export const useConnectionStore = create<Store>()(
           const newSocket = io(BASE_URL, {
             auth: { token },
             reconnection: true,
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 5
           });
 
           newSocket.on("connect", () => {
@@ -283,7 +290,7 @@ export const useConnectionStore = create<Store>()(
       obtainStream: async (
         trackOption: { video: boolean; audio: boolean } = {
           video: true,
-          audio: false,
+          audio: false
         }
       ) => {
         const { stream } = get();
@@ -344,9 +351,86 @@ export const useConnectionStore = create<Store>()(
 
       // ─── Room Actions ───────────────────────────────────
 
+      // NOTE: 1. JOIN_ROOM을 emit해서 방에 입장함을 알리고, 2. 방에 입장했다면 listen해야할 다른 event들을 listen한다.
+      // DESIGN: todayTotalDuration의 관점에서, 내가 방에 입장하면
+      // 1) 내 todayTotalDuration을 participants에게 알려야 하고,
+      // 2) (내가 enter하는 시점에 이미 방에 참가하고 있던)participants의 todayTotalDuration를 내가 인식해야함.
+      // 3) 그리고 마지막으로, participants의 todayTotalDuration이 update되면 그것을 내 U.I에 반영해야한다.
+      // ----------------------------------------------------------------------------------------------------
+      // 1) `JOIN_ROOM` 이벤트를 emit할때 payload에 포함시킴. -> 이 데이터를 다시 `ROOM_PEER_JOINED` 이벤트를 groupStudyManagementService의 joinRoom함수에서 참가자들에게 broadcast한다.
+      // 2) `JOIN_ROOM` event emit의 AckResponse의 peers array에 포함된다.
+      // 3) `ROOM_PEER_JOINED` 이벤트를 listen해서 payload를 받아 global state을 update한다.
       joinRoom: (roomId, onError) => {
         const { socket, isRoomJoined } = get();
         if (!socket || isRoomJoined) return;
+
+        // JOIN_ROOM 요청 (방에 입장할 때 현재 내 총 집중 시간도 같이 보냅니다)
+        const todayTotalDuration =
+          boundedPomoInfoStore.getState().todayTotalDuration;
+
+        socket.emit(
+          EventNames.JOIN_ROOM,
+          { roomId, todayTotalDuration },
+          (
+            response: AckResponse<{
+              roomId: string;
+              routerRtpCapabilities: mediasoupTypes.RtpCapabilities;
+              existingProducers: {
+                producerId: string;
+                socketId: string;
+                kind: string;
+                displayName?: string;
+              }[];
+              peers: { id: string; todayTotalDuration: number }[]; // NOTE: 내가 입장하니까 이미 참여하고 있던 사람들의 정보를 받아오는 것.
+            }>
+          ) => {
+            if (response.success && response.data) {
+              console.log(
+                "[socketStore] Room joined successfully:",
+                response.data
+              );
+
+              const existingProducers = response.data.existingProducers.map(
+                (p) => ({
+                  ...p,
+                  kind: p.kind as "video" | "audio",
+                  isBeingConsumed: false
+                })
+              );
+
+              const nicknames = new Map<string, string>();
+              response.data.existingProducers.forEach((p) => {
+                if (p.displayName) nicknames.set(p.socketId, p.displayName);
+              });
+
+              const durations = new Map<string, number>();
+              response.data.peers.forEach((peer) => {
+                durations.set(peer.id, peer.todayTotalDuration);
+              });
+
+              set(
+                {
+                  isRoomJoined: true,
+                  currentRoomId: roomId,
+                  producersList: existingProducers,
+                  peerNicknames: nicknames,
+                  peerTodayTotalDurations: durations
+                },
+                false,
+                "room/joined"
+              );
+
+              // 조건이 맞으면 transport 생성 시도
+              get().createTransports();
+            } else {
+              console.error(
+                "[socketStore] Failed to join room:",
+                response.error
+              );
+              onError?.(response.error ?? "Unknown error");
+            }
+          }
+        );
 
         // 방 레벨 socket 리스너 등록
         // (leaveRoom에서 해제됨)
@@ -361,7 +445,7 @@ export const useConnectionStore = create<Store>()(
               (state) => {
                 const newProducers = payloads.map((p) => ({
                   ...p,
-                  isBeingConsumed: false,
+                  isBeingConsumed: false
                 }));
                 const updatedNicknames = new Map(state.peerNicknames);
                 payloads.forEach((p) => {
@@ -370,7 +454,7 @@ export const useConnectionStore = create<Store>()(
                 });
                 return {
                   producersList: [...state.producersList, ...newProducers],
-                  peerNicknames: updatedNicknames,
+                  peerNicknames: updatedNicknames
                 };
               },
               false,
@@ -382,11 +466,52 @@ export const useConnectionStore = create<Store>()(
           }
         );
 
-        // peer 입장 로그
+        // DESIGN: 새로운 peer가 room에 입장하는 event를 내가 room에 입장했다면 구독하고 있어야함.
+        // 이전에는 그냥 peerId 로그만 찍는 목적이였는데, 지금은 유의미한 todayTotalDuration라는 값을 전달받아서 peerTodayTotalDurations state을 update한다.
         socket.on(
           EventNames.ROOM_PEER_JOINED,
-          (payload: { peerId: string }) => {
+          (payload: { peerId: string; todayTotalDuration: number }) => {
             console.log("[socketStore] New peer joined:", payload);
+            set(
+              (state) => {
+                const updatedDurations = new Map(state.peerTodayTotalDurations);
+                updatedDurations.set(
+                  payload.peerId,
+                  payload.todayTotalDuration
+                );
+                return { peerTodayTotalDurations: updatedDurations };
+              },
+              false,
+              "room/peerJoined"
+            );
+          }
+        );
+
+        // [Real-time Duration Sync]
+        // 같은 방에 있는 다른 누군가의 집중 시간이 업데이트되었을 때 (뽀모도로 완료 시)
+        // [동시성 처리(Concurrency)에 대하여]
+        // 여러 peer가 동시에 duration을 업데이트하더라도 상태가 꼬이거나 충돌하지 않습니다.
+        // 상세한 아키텍처 설명은 아래 문서를 참고하세요:
+        // @see /docs/WIL/concurrency-and-event-loop.md
+        // 1. 서버: Node.js의 싱글 스레드 이벤트 루프가 네트워크 패킷을 도착한 순서대로 큐에 넣고 순차적으로(직렬로) 브로드캐스트합니다.
+        // 2. 클라이언트: 브라우저 역시 싱글 스레드 기반이므로 이벤트를 순차적으로 수신하며,
+        //    Zustand의 콜백 함수((state) => ...) 패턴이 항상 이전 이벤트의 처리가 끝난 최신 상태를 보장하므로 Race condition이 발생하지 않습니다.
+        socket.on(
+          EventNames.PEER_TODAY_TOTAL_DURATION_UPDATED,
+          (payload: { peerId: string; todayTotalDuration: number }) => {
+            console.log("[socketStore] Peer duration updated:", payload);
+            set(
+              (state) => {
+                const updatedDurations = new Map(state.peerTodayTotalDurations);
+                updatedDurations.set(
+                  payload.peerId,
+                  payload.todayTotalDuration
+                );
+                return { peerTodayTotalDurations: updatedDurations };
+              },
+              false,
+              "room/updatePeerDuration"
+            );
           }
         );
 
@@ -415,7 +540,7 @@ export const useConnectionStore = create<Store>()(
                 set(
                   {
                     consumersByPeerId: newConsumers,
-                    remoteStreams: newRemoteStreams,
+                    remoteStreams: newRemoteStreams
                   },
                   false,
                   "room/consumerCleanedUp"
@@ -427,13 +552,36 @@ export const useConnectionStore = create<Store>()(
               {
                 producersList: producersList.filter(
                   (p) => p.producerId !== producerId
-                ),
+                )
               },
               false,
               "room/producerRemoved"
             );
           }
         );
+
+        // 누군가 방을 완전히 나갔을 때 발생하는 이벤트입니다.
+        // 비디오 스트림 정리는 PRODUCER_CLOSED에서 처리하지만,
+        // 여기서는 해당 유저의 메타데이터(집중 시간, 닉네임 등)를 정리하여 메모리 누수와 UI 잔상을 방지합니다.
+        socket.on(EventNames.ROOM_PEER_LEFT, (payload: { peerId: string }) => {
+          console.log("[socketStore] Peer left room:", payload.peerId);
+          set(
+            (state) => {
+              const updatedDurations = new Map(state.peerTodayTotalDurations);
+              updatedDurations.delete(payload.peerId);
+
+              const updatedNicknames = new Map(state.peerNicknames);
+              updatedNicknames.delete(payload.peerId);
+
+              return {
+                peerTodayTotalDurations: updatedDurations,
+                peerNicknames: updatedNicknames
+              };
+            },
+            false,
+            "room/peerLeft"
+          );
+        });
 
         // 채팅 메시지 수신
         socket.on(EventNames.CHAT_MESSAGE, (payload: ChatMessageData) => {
@@ -444,65 +592,6 @@ export const useConnectionStore = create<Store>()(
             "room/chatMessageReceived"
           );
         });
-
-        // JOIN_ROOM 요청
-        socket.emit(
-          EventNames.JOIN_ROOM,
-          { roomId },
-          (
-            response: AckResponse<{
-              roomId: string;
-              routerRtpCapabilities: mediasoupTypes.RtpCapabilities;
-              existingProducers: {
-                producerId: string;
-                socketId: string;
-                kind: string;
-                displayName?: string;
-              }[];
-              peers: SocketID[];
-            }>
-          ) => {
-            if (response.success && response.data) {
-              console.log(
-                "[socketStore] Room joined successfully:",
-                response.data
-              );
-
-              const existingProducers = response.data.existingProducers.map(
-                (p) => ({
-                  ...p,
-                  kind: p.kind as "video" | "audio",
-                  isBeingConsumed: false,
-                })
-              );
-
-              const nicknames = new Map<string, string>();
-              response.data.existingProducers.forEach((p) => {
-                if (p.displayName) nicknames.set(p.socketId, p.displayName);
-              });
-
-              set(
-                {
-                  isRoomJoined: true,
-                  currentRoomId: roomId,
-                  producersList: existingProducers,
-                  peerNicknames: nicknames,
-                },
-                false,
-                "room/joined"
-              );
-
-              // 조건이 맞으면 transport 생성 시도
-              get().createTransports();
-            } else {
-              console.error(
-                "[socketStore] Failed to join room:",
-                response.error
-              );
-              onError?.(response.error ?? "Unknown error");
-            }
-          }
-        );
       },
 
       leaveRoom: () => {
@@ -531,6 +620,8 @@ export const useConnectionStore = create<Store>()(
         socket?.off(EventNames.ROOM_PEER_JOINED);
         socket?.off(EventNames.PRODUCER_CLOSED);
         socket?.off(EventNames.CHAT_MESSAGE);
+        socket?.off(EventNames.PEER_TODAY_TOTAL_DURATION_UPDATED);
+        socket?.off(EventNames.ROOM_PEER_LEFT);
 
         // 6. 상태 초기화
         set(
@@ -547,7 +638,8 @@ export const useConnectionStore = create<Store>()(
             consumersByPeerId: new Map(),
             remoteStreams: new Map(),
             peerNicknames: new Map(),
-            chatMessages: [],
+            peerTodayTotalDurations: new Map(),
+            chatMessages: []
           },
           false,
           "room/left"
@@ -562,7 +654,7 @@ export const useConnectionStore = create<Store>()(
           stream,
           isSendTransportReady,
           isRecvTransportReady,
-          isCreatingTransports,
+          isCreatingTransports
         } = get();
 
         if (!socket || !device || !isDeviceLoaded || !stream) return;
@@ -634,7 +726,7 @@ export const useConnectionStore = create<Store>()(
                     {
                       transportId: transport.id,
                       kind: "video",
-                      rtpParameters: parameters.rtpParameters,
+                      rtpParameters: parameters.rtpParameters
                     },
                     (ackResponse: AckResponse<{ producerId: string }>) => {
                       if (ackResponse.success && ackResponse.data) {
@@ -750,7 +842,7 @@ export const useConnectionStore = create<Store>()(
         try {
           const newProducer = await sendTransport.produce({
             track: videoTrack,
-            stopTracks: false,
+            stopTracks: false
           });
           console.log("[socketStore] Video Producer created:", newProducer.id);
           set({ producer: newProducer }, false, "room/produced");
@@ -777,7 +869,7 @@ export const useConnectionStore = create<Store>()(
           senderId: socket.id!,
           senderNickname,
           message,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         };
 
         set(
@@ -787,7 +879,7 @@ export const useConnectionStore = create<Store>()(
         );
 
         socket.emit(EventNames.CHAT_MESSAGE, { message });
-      },
+      }
     }),
     { name: "ConnectionStore" }
   )
@@ -803,7 +895,7 @@ function consumePendingProducers() {
     isRecvTransportReady,
     recvTransport,
     isDeviceLoaded,
-    producersList,
+    producersList
   } = useConnectionStore.getState();
 
   if (!socket || !isRecvTransportReady || !recvTransport || !isDeviceLoaded)
@@ -819,7 +911,7 @@ function consumePendingProducers() {
           p.producerId === producerInfo.producerId
             ? { ...p, isBeingConsumed: true }
             : p
-        ),
+        )
       }),
       false,
       "room/markingConsumed"
@@ -855,7 +947,7 @@ function consumePendingProducers() {
               consumersByPeerId: new Map(state.consumersByPeerId).set(
                 peerId,
                 consumer
-              ),
+              )
             }),
             false,
             "room/consumerCreated"
@@ -877,10 +969,7 @@ function consumePendingProducers() {
           const newStream = new MediaStream([track]);
           useConnectionStore.setState(
             (state) => ({
-              remoteStreams: new Map(state.remoteStreams).set(
-                peerId,
-                newStream
-              ),
+              remoteStreams: new Map(state.remoteStreams).set(peerId, newStream)
             }),
             false,
             "room/remoteStreamAdded"
@@ -899,7 +988,7 @@ function consumePendingProducers() {
                 newStreams.delete(peerId);
                 return {
                   consumersByPeerId: newConsumers,
-                  remoteStreams: newStreams,
+                  remoteStreams: newStreams
                 };
               },
               false,

@@ -6,14 +6,14 @@ import {
   WebSocketGateway,
   WebSocketServer,
   ConnectedSocket,
-  MessageBody,
+  MessageBody
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { MediasoupService } from 'src/mediasoup/mediasoup.service';
 import * as EventNames from 'src/common/webrtc/event-names';
 import type {
   AckResponse,
-  ConsumerOptionsExtended,
+  ConsumerOptionsExtended
 } from 'src/common/webrtc/payload-related';
 import { type RtpCapabilities } from 'mediasoup/node/lib/types';
 import { GroupStudyManagementService } from 'src/group-study-management/group-study-management.service';
@@ -25,10 +25,10 @@ import * as admin from 'firebase-admin';
       'http://localhost:5173',
       'https://pomodoro-yhs.vercel.app',
       'http://localhost:3001',
-      'http://localhost:3000',
+      'http://localhost:3000'
     ],
-    credentials: true,
-  },
+    credentials: true
+  }
 })
 export class SignalingGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -38,7 +38,7 @@ export class SignalingGateway
 
   constructor(
     private readonly mediasoupService: MediasoupService,
-    private readonly groupStudyManagementService: GroupStudyManagementService,
+    private readonly groupStudyManagementService: GroupStudyManagementService
   ) {}
 
   afterInit(server: Server) {
@@ -62,7 +62,7 @@ export class SignalingGateway
   handleConnection(clientSocket: Socket) {
     this.groupStudyManagementService.addPeer(
       clientSocket.id,
-      clientSocket.data.userNickname,
+      clientSocket.data.userNickname
     );
   }
 
@@ -82,19 +82,20 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.CREATE_ROOM)
   async handleCreateRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { name: string },
+    @MessageBody() payload: { name: string }
   ): Promise<AckResponse<{ roomId: string }>> {
     const roomId = await this.groupStudyManagementService.createRoom(
-      payload.name,
+      payload.name
     );
     this.broadcastRoomList();
     return { success: true, data: { roomId } };
   }
 
+  // [Client -> Server] 클라이언트가 "나 이 방에 들어갈래" 라고 서버에 요청하는 이벤트입니다.
   @SubscribeMessage(EventNames.JOIN_ROOM)
   async handleJoinRoom(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { roomId: string },
+    @MessageBody() payload: { roomId: string; todayTotalDuration: number }
   ): Promise<
     AckResponse<{
       roomId: string;
@@ -105,15 +106,22 @@ export class SignalingGateway
         kind: string;
         displayName?: string;
       }[];
-      peers: string[];
+      peers: { id: string; todayTotalDuration: number }[];
     }>
   > {
-    const { roomId } = payload;
+    const { roomId, todayTotalDuration } = payload;
+
+    // 이 시점에 내부적으로 방에 입장 처리(peersMap, roomsMap 업데이트) 및
+    // 방에 있는 다른 사람들에게 "새로운 유저가 들어왔음(ROOM_PEER_JOINED)"을 브로드캐스트 합니다.
     const result = await this.groupStudyManagementService.joinRoom(
       clientSocket,
       roomId,
+      todayTotalDuration
     );
+
     if (result.success) {
+      // 로비(메인 화면)에서 방 목록을 보고 있는 모든 유저들에게
+      // 해당 방의 참가자 수가 증가했음을 실시간으로 알리기 위해 전체 소켓에 갱신된 방 목록을 뿌려줍니다.
       this.broadcastRoomList();
     }
     return result;
@@ -121,7 +129,7 @@ export class SignalingGateway
 
   @SubscribeMessage(EventNames.LEAVE_ROOM)
   async handlePeerLeaveRoom(
-    @ConnectedSocket() clientSocket: Socket,
+    @ConnectedSocket() clientSocket: Socket
   ): Promise<AckResponse<{ left: boolean }>> {
     const result =
       await this.groupStudyManagementService.leaveRoom(clientSocket);
@@ -131,10 +139,24 @@ export class SignalingGateway
     return result;
   }
 
+  // [Real-time Duration Sync]
+  // 특정 Peer의 집중 시간이 증가했을 때, 이 이벤트를 받아서 서버 메모리에 반영하고 방에 있는 다른 사람들에게 뿌려줍니다.
+  @SubscribeMessage(EventNames.SYNC_MY_TODAY_TOTAL_DURATION)
+  handleUpdateTodayTotalDuration(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { todayTotalDuration: number }
+  ): void {
+    const { todayTotalDuration } = payload;
+    this.groupStudyManagementService.updatePeerTodayTotalDuration(
+      clientSocket,
+      todayTotalDuration
+    );
+  }
+
   @SubscribeMessage(EventNames.CHAT_MESSAGE)
   handleChatMessage(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { message: string },
+    @MessageBody() payload: { message: string }
   ): void {
     const { message } = payload;
     this.groupStudyManagementService.handleChatMessage(clientSocket, message);
@@ -150,11 +172,11 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.SET_DEVICE_RTP_CAPABILITIES)
   handleSetRtpCapabilities(
     clientSocket: Socket,
-    rtpCapabilities: RtpCapabilities,
+    rtpCapabilities: RtpCapabilities
   ): AckResponse {
     this.groupStudyManagementService.setPeerRtpCapabilities(
       clientSocket.id,
-      rtpCapabilities,
+      rtpCapabilities
     );
     return { success: true };
   }
@@ -164,7 +186,7 @@ export class SignalingGateway
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.id,
-        'send',
+        'send'
       );
 
     clientSocket.emit(EventNames.SEND_TRANSPORT_CREATED, transportOptions);
@@ -175,7 +197,7 @@ export class SignalingGateway
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.id,
-        'recv',
+        'recv'
       );
 
     clientSocket.emit(EventNames.RECV_TRANSPORT_CREATED, transportOptions);
@@ -184,23 +206,23 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.INTENT_TO_CONSUME)
   async handleIntentToConsume(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { producerId: string; peerId: string },
+    @MessageBody() payload: { producerId: string; peerId: string }
   ): Promise<AckResponse<ConsumerOptionsExtended>> {
     return await this.groupStudyManagementService.createConsumer(
       clientSocket.id,
       payload.peerId,
-      payload.producerId,
+      payload.producerId
     );
   }
 
   @SubscribeMessage(EventNames.RESUME_CONSUMER)
   async handleResumeConsumer(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { consumerId: string },
+    @MessageBody() payload: { consumerId: string }
   ): Promise<AckResponse<{ resumed: boolean }>> {
     return await this.groupStudyManagementService.resumeConsumer(
       clientSocket.id,
-      payload.consumerId,
+      payload.consumerId
     );
   }
 
@@ -209,49 +231,49 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.CONNECT_SEND_TRANSPORT)
   async handleSendTransportConnect(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { dtlsParameters: any },
+    @MessageBody() payload: { dtlsParameters: any }
   ): Promise<AckResponse> {
     return await this.groupStudyManagementService.connectTransport(
       clientSocket.id,
       payload.dtlsParameters,
-      'send',
+      'send'
     );
   }
 
   @SubscribeMessage(EventNames.CONNECT_RECV_TRANSPORT)
   async handleRecvTransportConnect(
     clientSocket: Socket,
-    payload: { dtlsParameters: any },
+    payload: { dtlsParameters: any }
   ): Promise<AckResponse> {
     return await this.groupStudyManagementService.connectTransport(
       clientSocket.id,
       payload.dtlsParameters,
-      'recv',
+      'recv'
     );
   }
 
   @SubscribeMessage(EventNames.PRODUCE)
   async handleMediaProduceRequest(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { kind: 'audio' | 'video'; rtpParameters: any },
+    @MessageBody() payload: { kind: 'audio' | 'video'; rtpParameters: any }
   ): Promise<AckResponse<{ producerId: string }>> {
     return await this.groupStudyManagementService.createProducer(
       clientSocket,
       payload.kind,
-      payload.rtpParameters,
+      payload.rtpParameters
     );
   }
 
   @SubscribeMessage(EventNames.PRODUCER_CLOSED)
   handleProducerClosed(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { producerId?: string; kind?: 'video' | 'audio' },
+    @MessageBody() payload: { producerId?: string; kind?: 'video' | 'audio' }
   ): void {
     const { producerId, kind } = payload;
     this.groupStudyManagementService.closeProducer(
       clientSocket,
       producerId,
-      kind,
+      kind
     );
   }
 

@@ -27,6 +27,9 @@ export const GET_ROOMS = "getRooms";
 export const ROOMS_LIST = "roomsList";
 export const ROOM_PEER_JOINED = "roomPeerJoined";
 export const ROOM_PEER_LEFT = "roomPeerLeft";
+export const SYNC_MY_TODAY_TOTAL_DURATION = "syncMyTodayTotalDuration";
+export const PEER_TODAY_TOTAL_DURATION_UPDATED =
+  "peerTodayTotalDurationUpdated";
 
 // Chat related
 export const WRITE_CHAT = "writeChat";

@@ -16,6 +16,11 @@ export class Peer {
   public readonly producers: Map<string, Producer> = new Map();
   public readonly consumers: Map<string, Consumer> = new Map();
 
+  // [Added for Real-time Duration Sync]
+  // Peer가 현재까지 집중한 오늘 총 시간(분)을 서버 메모리 상에 보관합니다.
+  // 방에 새로 들어오는 사람에게 이 값을 전달해주기 위해 필요합니다.
+  public todayTotalDuration: number = 0;
+
   constructor(socketId: string, userNickname: string) {
     this.id = socketId;
     this.userNickname = userNickname;
