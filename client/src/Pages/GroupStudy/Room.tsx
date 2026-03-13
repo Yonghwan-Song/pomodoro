@@ -1,4 +1,7 @@
-import { useEffect, useCallback } from "react";
+/** @jsxImportSource @emotion/react */
+/* eslint-disable react/no-unknown-property */
+import { css } from "@emotion/react";
+import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useConnectionStore } from "../../zustand-stores/connectionStore";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
@@ -7,8 +10,124 @@ import { ChatBox } from "./components/chat/ChatBox";
 import { RoomControls } from "./components/room/RoomControls";
 import { VideoGrid } from "./components/room/VideoGrid";
 import { RoomTimer } from "./RoomTimer";
+import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+
+const roomLayoutCss = css`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  padding: 12px;
+
+  @media (max-width: 1023px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const leftColumnCss = css`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const topBarCss = css`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+// ???:  0 ~ 1023px까지가 대상인건가?
+const desktopChatCss = css`
+  min-width: 0;
+  height: calc(100vh - 100px);
+
+  @media (max-width: 1023px) {
+    display: none;
+  }
+`;
+
+const topBarRightCss = css`
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+`;
+
+// 모바일에서만 보이는 floating chat FAB
+const mobileFloatingFabCss = css`
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 55;
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2c7be5, #4da3ff);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(16, 24, 40, 0.34);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px rgba(16, 24, 40, 0.4);
+  }
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+`;
+
+const mobileFabIconCss = css`
+  font-size: 22px;
+  line-height: 1;
+`;
+
+const mobileBackdropCss = css`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 45;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+`;
+
+const mobileOverlayStageCss = css`
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  pointer-events: none;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+`;
+
+const mobilePanelCss = css`
+  width: min(92vw, 480px);
+  height: clamp(480px, calc(100dvh - 180px), 700px);
+  max-height: calc(100dvh - 112px);
+  overflow: hidden;
+  pointer-events: auto;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+`;
 
 export function Room() {
+  const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
+
   const socket = useConnectionStore((s) => s.socket);
   const connected = useConnectionStore((s) => s.connected);
   const stream = useConnectionStore((s) => s.stream);
@@ -82,30 +201,95 @@ export function Room() {
     [sendChatMessage, user?.displayName]
   );
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileChatOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const handleDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setIsMobileChatOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleDesktop);
+    return () => {
+      mediaQuery.removeEventListener("change", handleDesktop);
+    };
+  }, []);
+
   return (
     <>
-      <RoomControls
-        onLeaveRoom={handleLeaveRoom}
-        isSharing={isSharing}
-        onToggleSharing={isSharing ? endSharing : startSharing}
-        canShare={isSendTransportReady}
-      />
+      <div css={roomLayoutCss}>
+        <section css={leftColumnCss}>
+          <BoxShadowWrapper>
+            <div css={topBarCss}>
+              <RoomTimer />
+              <div css={topBarRightCss}>
+                <RoomControls
+                  onLeaveRoom={handleLeaveRoom}
+                  isSharing={isSharing}
+                  onToggleSharing={isSharing ? endSharing : startSharing}
+                  canShare={isSendTransportReady}
+                />
+              </div>
+            </div>
+          </BoxShadowWrapper>
 
-      <VideoGrid
-        localStream={stream}
-        remoteStreams={remoteStreams}
-        peerNicknames={peerNicknames}
-        myTodayTotalDuration={myTodayTotalDuration}
-        peerTodayTotalDurations={peerTodayTotalDurations}
-      />
-
-      <ChatBox
-        messages={chatMessages}
-        onSendMessage={handleSendMessage}
-        mySocketId={socket?.id ?? ""}
-      />
-
-      <RoomTimer />
+          <VideoGrid
+            localStream={stream}
+            remoteStreams={remoteStreams}
+            peerNicknames={peerNicknames}
+            myTodayTotalDuration={myTodayTotalDuration}
+            peerTodayTotalDurations={peerTodayTotalDurations}
+          />
+        </section>
+        <aside css={desktopChatCss}>
+          <ChatBox
+            messages={chatMessages}
+            onSendMessage={handleSendMessage}
+            mySocketId={socket?.id ?? ""}
+            layout="sidebar"
+          />
+        </aside>
+      </div>
+      <button
+        type="button"
+        css={mobileFloatingFabCss}
+        onClick={() => setIsMobileChatOpen((v) => !v)}
+        aria-label={isMobileChatOpen ? "Close chat" : "Open chat"}
+      >
+        <span css={mobileFabIconCss}>{isMobileChatOpen ? "✕" : "💬"}</span>
+      </button>
+      {/* Mobile chat overlay */}
+      {isMobileChatOpen && (
+        <>
+          <div
+            css={mobileBackdropCss}
+            onClick={() => setIsMobileChatOpen(false)}
+          />
+          <div css={mobileOverlayStageCss}>
+            <section css={mobilePanelCss}>
+              <ChatBox
+                messages={chatMessages}
+                onSendMessage={handleSendMessage}
+                mySocketId={socket?.id ?? ""}
+                layout="sidebar"
+              />
+            </section>
+          </div>
+        </>
+      )}
     </>
   );
 }

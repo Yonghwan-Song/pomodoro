@@ -67,6 +67,7 @@ type TimerControllerProps = {
   autoStartSetting: AutoStartSettingType;
   records: RecType[];
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
+  variant?: "default" | "mini";
 };
 
 enum SESSION {
@@ -84,6 +85,7 @@ export function TimerController({
   autoStartSetting,
   records,
   setRecords,
+  variant = "default",
 }: TimerControllerProps) {
   //#region global states
   const categoriesFromStore = useBoundedPomoInfoStore(
@@ -2148,6 +2150,66 @@ export function TimerController({
       </h2>
     );
   //#endregion
+
+  if (variant === "mini") {
+    return (
+      <div
+        css={{
+          display: "flex",
+          alignItems: "center",
+          gap: "15px",
+          fontFamily: "monospace",
+          fontSize: "1.2rem",
+          color: "var(--colors-text-strong)",
+        }}
+      >
+        <span css={{ color: isThisFocusSession(repetitionCount) ? "var(--colors-status-break)" : "var(--colors-status-running)" }}>
+          {isThisFocusSession(repetitionCount) ? "🔥 POMO" : "☕️ BREAK"}
+        </span>
+        <span css={{ fontWeight: "bold" }}>
+          {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
+        </span>
+        <div css={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => toggleTimer(Date.now())}
+            css={{
+              background: "transparent",
+              border: "none",
+              color: "var(--colors-text-strong)",
+              cursor: "pointer",
+              fontSize: "1.2rem",
+              padding: "5px",
+              transition: "all 0.2s",
+              "&:hover": { transform: "scale(1.1)", color: "var(--colors-accent-secondary)" },
+            }}
+          >
+            {timerState.running === true
+              ? "⏸️"
+              : timerState.startTime === 0
+              ? "▶️"
+              : "▶️"}
+          </button>
+          <button
+            onClick={() => endTimer(Date.now())}
+            css={{
+              background: "transparent",
+              border: "none",
+              color: "var(--colors-text-strong)",
+              cursor: "pointer",
+              fontSize: "1.2rem",
+              padding: "5px",
+              transition: "all 0.2s",
+              "&:hover": { transform: "scale(1.1)", color: "var(--colors-accent-secondary)" },
+            }}
+          >
+            {isSessionNotStartedYet(timerState.running, timerState.startTime) === true
+              ? "⏭️"
+              : "⏹️"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

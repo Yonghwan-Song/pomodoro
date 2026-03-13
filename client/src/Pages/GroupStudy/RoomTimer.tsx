@@ -1,11 +1,10 @@
-/** @jsxImportSource @emotion/react */
-import { css } from "@emotion/react";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
 import { TimerController } from "../Main/Timer-Related/TimerController/TimerController";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
 import { Grid } from "../../ReusableComponents/Layouts/Grid";
 import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
 import { useTimerData } from "../../Custom-Hooks/useTimerData";
+import { css } from "../../../styled-system/css";
 
 /**
  * RoomTimer Component
@@ -25,7 +24,7 @@ export function RoomTimer() {
     records,
     setRecords,
     isStatesRelatedToTimerReady,
-    isCurrentCycleInfoReady,
+    isCurrentCycleInfoReady
   } = useTimerData({ skipPubSub: true });
 
   // 서버(혹은 로컬)에서 가져온 사용자 설정값들을 Zustand 스토어에서 읽어옵니다.
@@ -46,30 +45,39 @@ export function RoomTimer() {
 
   if (!isReady) {
     return (
-      <h2 css={{ textAlign: "center", padding: "20px" }}>loading timer...</h2>
+      <div
+        className={css({
+          padding: "4",
+          textAlign: "center",
+          color: "gray.500"
+        })}
+      >
+        loading timer...
+      </div>
     );
   }
 
   return (
     <div
-      css={{
+      className={css({
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        width: "100%",
-        padding: "20px 0",
-      }}
+        alignItems: "center"
+      })}
     >
       <Grid
         placeContent="center"
         placeItems="center"
         rowGap="14px"
-        maxWidth="687px"
-        style={{ width: "100%" }}
+        padding="0px"
+        style={{ width: "auto" }}
       >
-        <GridItem width="100%">
-          <BoxShadowWrapper>
+        <GridItem width="auto">
+          <BoxShadowWrapper
+            boxShadowColor="transparent"
+            border="2px solid black"
+          >
             <TimerController
+              variant="mini"
               statesRelatedToTimer={statesRelatedToTimer!}
               currentCycleInfo={currentCycleInfo!}
               pomoSetting={pomoSetting}

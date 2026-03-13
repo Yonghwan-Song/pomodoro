@@ -11,28 +11,19 @@ export function RoomControls({
   onLeaveRoom,
   isSharing,
   onToggleSharing,
-  canShare,
+  canShare
 }: RoomControlsProps) {
   return (
-    <div className={css({ display: "flex", gap: "3", marginBottom: "4" })}>
-      <button
-        type="button"
-        onClick={onLeaveRoom}
-        className={css({
-          paddingX: "4",
-          paddingY: "2",
-          backgroundColor: "red.500",
-          color: "white",
-          borderRadius: "md",
-          fontWeight: "medium",
-          cursor: "pointer",
-          border: "none",
-          _hover: { backgroundColor: "red.600" },
-        })}
-      >
-        Leave Room
-      </button>
-
+    <div
+      className={css({
+        // Room.tsx에서 "어디에 놓을지" 정렬을 담당하고,
+        // 여기서는 "내부 버튼들"의 배치(줄바꿈/간격/수직정렬)를 담당합니다.
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "3",
+        alignItems: "center"
+      })}
+    >
       {canShare && (
         <button
           type="button"
@@ -40,18 +31,36 @@ export function RoomControls({
           className={css({
             paddingX: "4",
             paddingY: "2",
-            backgroundColor: isSharing ? "gray.500" : "blue.500",
-            color: "white",
-            borderRadius: "md",
-            fontWeight: "medium",
+            backgroundColor: isSharing ? "text.muted" : "accent.secondary",
+            color: isSharing ? "text.main" : "bg.canvas",
+            borderRadius: "pill",
+            fontWeight: "bold",
             cursor: "pointer",
             border: "none",
-            _hover: { backgroundColor: isSharing ? "gray.600" : "blue.600" },
+            _hover: { opacity: 0.8 }
           })}
         >
           {isSharing ? "Stop Sharing" : "Start Sharing"}
         </button>
       )}
+
+      <button
+        type="button"
+        onClick={onLeaveRoom}
+        className={css({
+          paddingX: "4",
+          paddingY: "2",
+          backgroundColor: "status.error",
+          color: "bg.canvas",
+          borderRadius: "pill",
+          fontWeight: "bold",
+          cursor: "pointer",
+          border: "none",
+          _hover: { opacity: 0.8 }
+        })}
+      >
+        Leave Room
+      </button>
     </div>
   );
 }
