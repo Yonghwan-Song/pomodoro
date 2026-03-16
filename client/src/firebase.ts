@@ -7,7 +7,7 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBkogia4Wk0L8PGBmBUe8nchmnTUCP12So",
+  apiKey: "AIzaSyCKDJk6BEPhMJ__QXnxjV5dnyG9VFgs69U",
   authDomain: "pomodoro-ef5e0.firebaseapp.com",
   projectId: "pomodoro-ef5e0",
   storageBucket: "pomodoro-ef5e0.appspot.com",
