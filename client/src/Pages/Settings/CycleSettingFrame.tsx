@@ -38,6 +38,9 @@ type CycleSettingFrameProps = {
     ev: React.ChangeEvent<HTMLInputElement>
   ) => void;
   handlePomoSettingChange: (ev: React.ChangeEvent<HTMLInputElement>) => void;
+  handlePomoSettingArrowKeyDown: (
+    ev: React.KeyboardEvent<HTMLInputElement>
+  ) => void;
   handlePomoSettingBlur: (ev: React.FocusEvent<HTMLInputElement>) => void;
   pomoSettingInputs: PomoSettingType;
   ratioTargetedCalculated: number;
@@ -83,6 +86,7 @@ export function CycleSettingFrame({
   handleSubmitToEditCycleSetting,
   handleCycleSettingNameChange,
   handlePomoSettingChange,
+  handlePomoSettingArrowKeyDown,
   handlePomoSettingBlur,
   pomoSettingInputs,
   ratioTargetedCalculated,
@@ -566,6 +570,7 @@ export function CycleSettingFrame({
                 className={styles.arrangeInput}
                 value={displayValues.pomoDuration}
                 onChange={handlePomoSettingChange}
+                onKeyDown={handlePomoSettingArrowKeyDown}
                 onBlur={handlePomoSettingBlur}
                 ref={pomoDurationInputRef}
                 readOnly={isInputLocked}
@@ -581,6 +586,7 @@ export function CycleSettingFrame({
                 className={styles.arrangeInput}
                 value={displayValues.shortBreakDuration}
                 onChange={handlePomoSettingChange}
+                onKeyDown={handlePomoSettingArrowKeyDown}
                 onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
@@ -595,6 +601,7 @@ export function CycleSettingFrame({
                 className={styles.arrangeInput}
                 value={displayValues.longBreakDuration}
                 onChange={handlePomoSettingChange}
+                onKeyDown={handlePomoSettingArrowKeyDown}
                 onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
@@ -609,6 +616,7 @@ export function CycleSettingFrame({
                 className={styles.arrangeInput}
                 value={displayValues.numOfPomo}
                 onChange={handlePomoSettingChange}
+                onKeyDown={handlePomoSettingArrowKeyDown}
                 onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />
@@ -623,6 +631,7 @@ export function CycleSettingFrame({
                 className={styles.arrangeInput}
                 value={displayValues.numOfCycle}
                 onChange={handlePomoSettingChange}
+                onKeyDown={handlePomoSettingArrowKeyDown}
                 onBlur={handlePomoSettingBlur}
                 readOnly={isInputLocked}
               />

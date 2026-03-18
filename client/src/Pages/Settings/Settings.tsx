@@ -318,6 +318,13 @@ function Settings() {
       return;
     }
 
+    applyPomoSettingFieldValue(fieldName, targetValue);
+  }
+
+  function applyPomoSettingFieldValue(
+    fieldName: keyof typeof pomoSettingInputs,
+    targetValue: number
+  ) {
     const { pomoDuration, shortBreakDuration, longBreakDuration, numOfPomo } =
       pomoSettingInputs;
 
@@ -408,6 +415,28 @@ function Settings() {
       default:
         break;
     }
+  }
+
+  function handlePomoSettingArrowKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+
+    event.preventDefault();
+
+    const fieldName = event.currentTarget.name as keyof typeof pomoSettingInputs;
+    const [min, max] = POMO_SETTING_RANGES[fieldName];
+    const step = event.key === "ArrowUp" ? 1 : -1;
+    const nextValue = Math.min(
+      max,
+      Math.max(min, pomoSettingInputs[fieldName] + step)
+    );
+
+    setDisplayValues((prev) => ({
+      ...prev,
+      [fieldName]: nextValue.toString(),
+    }));
+    applyPomoSettingFieldValue(fieldName, nextValue);
   }
 
   // onBlur 핸들러 (빈 값일 때 기본값으로 복원)
@@ -770,6 +799,7 @@ function Settings() {
             handleSubmitToEditCycleSetting={handleSubmitToEditCycleSetting}
             handleCycleSettingNameChange={handleCycleSettingNameChange}
             handlePomoSettingChange={handlePomoSettingChange}
+            handlePomoSettingArrowKeyDown={handlePomoSettingArrowKeyDown}
             handlePomoSettingBlur={handlePomoSettingBlur}
             pomoSettingInputs={pomoSettingInputs}
             displayValues={displayValues}

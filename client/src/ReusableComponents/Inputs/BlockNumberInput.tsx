@@ -2,8 +2,10 @@ import styled from "styled-components";
 
 interface NumberInputProps {
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   value: number;
   index?: number;
+  name?: string;
 }
 
 const StyledBlockNumberInput = styled.input`
@@ -22,14 +24,18 @@ const StyledBlockNumberInput = styled.input`
 
 const BlockNumberInput: React.FC<NumberInputProps> = ({
   onChange,
+  onKeyDown,
   value,
   index,
+  name,
 }) => {
   return (
     <StyledBlockNumberInput
       type="number"
       value={value}
       onChange={onChange}
+      onKeyDown={onKeyDown}
+      name={name}
       data-index={index}
     />
   );

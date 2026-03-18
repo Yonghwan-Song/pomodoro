@@ -48,21 +48,30 @@ export default function GoalForm() {
   function handleWeeklyMinimumInputChange(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const newMinimum = +event.target.value;
+    const rawValue = event.target.value;
+    if (rawValue === "") return;
+    const newMinimum = Number(rawValue);
+    if (Number.isNaN(newMinimum)) return;
     setWeeklyMinimumInput(newMinimum);
   }
 
   function handleWeeklyIdealInputChange(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const newIdeal = +event.target.value;
+    const rawValue = event.target.value;
+    if (rawValue === "") return;
+    const newIdeal = Number(rawValue);
+    if (Number.isNaN(newIdeal)) return;
     setWeeklyIdealInput(newIdeal);
   }
 
   function handleDailyMinimumInputsChange(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const newMinimum = +event.target.value;
+    const rawValue = event.target.value;
+    if (rawValue === "") return;
+    const newMinimum = Number(rawValue);
+    if (Number.isNaN(newMinimum)) return;
     const idxOfCurrentTarget = event.currentTarget.dataset.index as string;
     index.current = Number(idxOfCurrentTarget);
     typeToUpdate.current = "minimum";
@@ -98,7 +107,10 @@ export default function GoalForm() {
   function handleDailyIdealInputsChange(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const newIdeal = +event.target.value;
+    const rawValue = event.target.value;
+    if (rawValue === "") return;
+    const newIdeal = Number(rawValue);
+    if (Number.isNaN(newIdeal)) return;
     const idxOfCurrentTarget = event.currentTarget.dataset.index as string;
     index.current = Number(idxOfCurrentTarget);
     typeToUpdate.current = "ideal";
@@ -111,6 +123,57 @@ export default function GoalForm() {
       return goal;
     }) as DailyGoals;
     setDailyGoalsInputs(inputsUpdated);
+  }
+
+  function handleGoalInputArrowKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+
+    event.preventDefault();
+
+    const step = event.key === "ArrowUp" ? 1 : -1;
+    const inputName = event.currentTarget.name;
+
+    if (inputName === "daily-minimum" || inputName === "daily-ideal") {
+      const idx = Number(event.currentTarget.dataset.index);
+      if (Number.isNaN(idx)) return;
+
+      const currentGoal = dailyGoalsInputs[idx];
+      const currentValue =
+        inputName === "daily-minimum" ? currentGoal.minimum : currentGoal.ideal;
+      const nextValue = Math.min(24, Math.max(0, currentValue + step));
+
+      index.current = idx;
+      typeToUpdate.current =
+        inputName === "daily-minimum" ? "minimum" : "ideal";
+
+      const inputsCloned = structuredClone(dailyGoalsInputs);
+      const inputsUpdated = inputsCloned.map((goal, goalIdx) => {
+        if (goalIdx === idx) {
+          if (inputName === "daily-minimum") {
+            goal.minimum = nextValue;
+          } else {
+            goal.ideal = nextValue;
+          }
+        }
+        return goal;
+      }) as DailyGoals;
+
+      setDailyGoalsInputs(inputsUpdated);
+      return;
+    }
+
+    if (inputName === "weekly-minimum") {
+      const nextValue = Math.min(168, Math.max(0, weeklyMinimumInput + step));
+      setWeeklyMinimumInput(nextValue);
+      return;
+    }
+
+    if (inputName === "weekly-ideal") {
+      const nextValue = Math.min(168, Math.max(0, weeklyIdealInput + step));
+      setWeeklyIdealInput(nextValue);
+    }
   }
   //#endregion
 
@@ -278,12 +341,16 @@ export default function GoalForm() {
             <BlockNumberInput
               value={goal.minimum}
               index={idx}
+              name="daily-minimum"
               onChange={handleDailyMinimumInputsChange}
+              onKeyDown={handleGoalInputArrowKeyDown}
             />
             <BlockNumberInput
               value={goal.ideal}
               index={idx}
+              name="daily-ideal"
               onChange={handleDailyIdealInputsChange}
+              onKeyDown={handleGoalInputArrowKeyDown}
             />
           </div>
         ))}
@@ -301,11 +368,15 @@ export default function GoalForm() {
           <div style={{ fontWeight: "bold", fontStyle: "italic" }}>Weekly</div>
           <BlockNumberInput
             value={weeklyMinimumInput}
+            name="weekly-minimum"
             onChange={handleWeeklyMinimumInputChange}
+            onKeyDown={handleGoalInputArrowKeyDown}
           />
           <BlockNumberInput
             value={weeklyIdealInput}
+            name="weekly-ideal"
             onChange={handleWeeklyIdealInputChange}
+            onKeyDown={handleGoalInputArrowKeyDown}
           />
         </div>
       </div>
@@ -341,8 +412,8 @@ function validateGoalInputs(
     message = "You can't focus more than 24h per day";
     flag = false;
   }
-  if (type === "weekly" && (minimum > 100 || ideal > 100)) {
-    message = "Focusing more than 100h per week is unhealthy. Please don't";
+  if (type === "weekly" && (minimum > 168 || ideal > 168)) {
+    message = "You can't focus more than 168h per week";
     flag = false;
   }
 
