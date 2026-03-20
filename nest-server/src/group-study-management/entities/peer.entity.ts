@@ -3,7 +3,7 @@ import {
   Producer,
   Consumer,
   RtpCapabilities,
-} from 'mediasoup/node/lib/types';
+} from 'mediasoup/types';
 import { Room } from './room.entity';
 
 export class Peer {

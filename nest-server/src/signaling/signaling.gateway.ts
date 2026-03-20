@@ -15,7 +15,7 @@ import type {
   AckResponse,
   ConsumerOptionsExtended
 } from 'src/common/webrtc/payload-related';
-import { type RtpCapabilities } from 'mediasoup/node/lib/types';
+import type { ProducerOptions, RtpCapabilities } from 'mediasoup/types';
 import { GroupStudyManagementService } from 'src/group-study-management/group-study-management.service';
 import * as admin from 'firebase-admin';
 
@@ -255,10 +255,16 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.PRODUCE)
   async handleMediaProduceRequest(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { kind: 'audio' | 'video'; rtpParameters: any }
+    @MessageBody()
+    payload: {
+      transportId: string;
+      kind: 'audio' | 'video';
+      rtpParameters: ProducerOptions['rtpParameters'];
+    }
   ): Promise<AckResponse<{ producerId: string }>> {
     return await this.groupStudyManagementService.createProducer(
       clientSocket,
+      payload.transportId,
       payload.kind,
       payload.rtpParameters
     );

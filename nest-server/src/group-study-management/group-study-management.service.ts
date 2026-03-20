@@ -9,7 +9,12 @@ import { Room } from './entities/room.entity';
 import { Peer } from './entities/peer.entity';
 import { MediasoupService } from 'src/mediasoup/mediasoup.service';
 import { Socket } from 'socket.io';
-import { RtpCapabilities } from 'mediasoup/node/lib/types';
+import type {
+  RtpCapabilities,
+  ProducerOptions,
+  DtlsParameters,
+  RtpEncodingParameters
+} from 'mediasoup/types';
 import { ProducerPayload } from 'src/common/webrtc/payload-related';
 import { InjectModel } from '@nestjs/mongoose';
 import { Room as RoomSchemaClass, RoomDocument } from 'src/schemas/room.schema';
@@ -254,7 +259,7 @@ export class GroupStudyManagementService
 
   async connectTransport(
     socketId: string,
-    dtlsParameters: any,
+    dtlsParameters: DtlsParameters,
     type: 'send' | 'recv'
   ) {
     const peer = this.peersMap.get(socketId);
@@ -291,8 +296,9 @@ export class GroupStudyManagementService
 
   async createProducer(
     clientSocket: Socket,
+    transportId: string,
     kind: 'video' | 'audio',
-    rtpParameters: any
+    rtpParameters: ProducerOptions['rtpParameters']
   ) {
     try {
       const peer = this.peersMap.get(clientSocket.id);
@@ -309,11 +315,111 @@ export class GroupStudyManagementService
         );
         return { success: false, error: 'Send transport not found' };
       }
+      if (peer.sendTransport.id !== transportId) {
+        console.error(
+          `[group-study-management.service:createProducer] Send transport mismatch for client ${clientSocket.id}. expected=${peer.sendTransport.id}, received=${transportId}`
+        );
+        return { success: false, error: 'Send transport mismatch' };
+      }
+
+      const shouldLog = process.env.NODE_ENV !== 'production';
+
+      const incomingEncodings: RtpEncodingParameters[] =
+        rtpParameters?.encodings ?? [];
+      if (shouldLog) {
+        console.log(
+          '[group-study-management.service:createProducer] incoming encoding summary',
+          {
+            count: incomingEncodings.length,
+            encodings: incomingEncodings.map((encoding, index) => {
+              // mediasoup 타입에는 없지만 WebRTC 클라이언트가 보내는 encodings에 올 수 있음
+              const e = encoding as RtpEncodingParameters & {
+                active?: boolean;
+                maxFramerate?: number;
+              };
+              return {
+                index,
+                rid: e.rid,
+                active: e.active,
+                maxBitrate: e.maxBitrate,
+                maxFramerate: e.maxFramerate,
+                scalabilityMode: e.scalabilityMode,
+                ssrc: e.ssrc
+              };
+            })
+          }
+        );
+      }
 
       const producer = await peer.sendTransport.produce({
         kind,
         rtpParameters
       });
+
+      const negotiatedEncodings = producer.rtpParameters?.encodings ?? [];
+      if (shouldLog) {
+        console.log(
+          '[group-study-management.service:createProducer] negotiated encoding summary',
+          {
+            count: negotiatedEncodings.length,
+            encodings: negotiatedEncodings.map((encoding, index) => ({
+              index,
+              rid: encoding.rid,
+              maxBitrate: encoding.maxBitrate,
+              dtx: encoding.dtx,
+              scalabilityMode: encoding.scalabilityMode,
+              ssrc: encoding.ssrc
+            }))
+          }
+        );
+      }
+
+      // 첫 전송이 시작된 직후 stats를 보면 simulcast 레이어별 SSRC 유입 여부를 확인하기 쉽다.
+      setTimeout(async () => {
+        try {
+          const stats = await producer.getStats();
+          const uniqueSsrcs = [
+            ...new Set(
+              stats
+                .map((stat) => stat.ssrc)
+                .filter((ssrc) => typeof ssrc === 'number')
+            )
+          ];
+          const streamCountBySsrc = uniqueSsrcs.length;
+          if (shouldLog) {
+            console.log(
+              '[group-study-management.service:createProducer] producer stats summary',
+              {
+                uniqueSsrcCount: streamCountBySsrc,
+                ssrcs: uniqueSsrcs
+              }
+            );
+            console.log(
+              '[group-study-management.service:createProducer] producer stats encoding-related',
+              stats
+                .filter((stat) => typeof stat.ssrc === 'number')
+                .map((stat) => ({
+                  type: stat.type,
+                  mimeType: stat.mimeType,
+                  rid: stat.rid,
+                  ssrc: stat.ssrc,
+                  kind: stat.kind,
+                  bitrate: stat.bitrate,
+                  score: stat.score,
+                  bitrateByLayer:
+                    'bitrateByLayer' in stat ? stat.bitrateByLayer : undefined
+                }))
+            );
+          }
+        } catch (statsError) {
+          if (shouldLog) {
+            console.warn(
+              '[group-study-management.service:createProducer] Failed to read producer stats',
+              statsError
+            );
+          }
+        }
+      }, 10000);
 
       producer.addListener('transportclose', () => {
         console.log(
@@ -327,28 +433,16 @@ export class GroupStudyManagementService
 
       peer.addProducer(producer);
 
-      console.log(
-        `[group-study-management.service:createProducer] Producer created: ${producer.id} for client ${clientSocket.id} of kind ${kind}`
-      );
-
       const producerPayload: ProducerPayload = {
         producerId: producer.id,
         socketId: clientSocket.id,
         kind,
         displayName: peer.userNickname
       };
-      console.log(
-        '[group-study-management.service:createProducer] producerPayload',
-        producerPayload
-      );
 
       const roomId = peer.room?.id;
 
       if (roomId) {
-        console.log(
-          '[group-study-management.service:createProducer] broadcasting new producer to room',
-          roomId
-        );
         clientSocket
           .to(roomId)
           .emit(EventNames.ROOM_GET_PRODUCER, [producerPayload]);

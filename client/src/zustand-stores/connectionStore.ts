@@ -21,6 +21,10 @@ import type { ChatMessageData } from "../Pages/GroupStudy/components/chat/ChatMe
  *
  * 페이지 이동해도 socket 연결, device, media stream, room 참여 상태가 유지됨.
  * disconnect()와 leaveRoom()은 명시적으로 호출할 때만 실행됨.
+ *
+ * mediasoup produce flow, transport "produce" event contract, and
+ * callback({ id }) signaling details:
+ * @see ./mediasoup-produce-flow.md
  */
 
 // ─── State Interfaces ───────────────────────────────────────
@@ -116,6 +120,97 @@ type Store = SocketState &
   DeviceActions &
   MediaActions &
   RoomActions;
+
+type SimulcastPolicyInput = Pick<
+  MediaTrackSettings, // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSettings
+  "width" | "height" | "frameRate"
+>;
+
+const VERY_LOW_RESOLUTION_MAX_BITRATE = 250_000;
+const SD_MAX_BITRATE_15FPS = 450_000;
+const SD_MAX_BITRATE_30FPS = 600_000;
+const QHD_MAX_BITRATE_15FPS = 800_000;
+const QHD_MAX_BITRATE_30FPS = 1_000_000;
+const HD_MAX_BITRATE_15FPS = 1_200_000;
+const HD_MAX_BITRATE_30FPS = 1_500_000;
+const FULL_HD_MAX_BITRATE_15FPS = 2_500_000;
+const FULL_HD_MAX_BITRATE_30FPS = 3_000_000;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function normalizeFrameRate(frameRate?: number) {
+  // `== null`은 null과 undefined를 함께 체크하는 의도적인 패턴이다.
+  // 실제 fps 값이 없거나 비정상이면 정책 기본값인 30fps로 fallback 한다.
+  if (frameRate == null || !Number.isFinite(frameRate)) return 30;
+  return clamp(Math.round(frameRate), 10, 30);
+}
+
+function getHighLayerMaxBitrate(height: number, frameRate: number) {
+  // NOTE:이 함수는 "현재 카메라가 실제로 잡힌 high layer 해상도"에 대해
+  // 어느 정도 bitrate cap을 줄지 정하는 정책표다.
+  // 여기서 반환하는 값은 목표 품질값이 아니라 upper bound(cap)다.
+  // low/mid layer는 이 high layer 값을 비율로 나눠서 파생한다.
+
+  // 1080p 이상 high layer
+  if (height >= 1080) {
+    return frameRate >= 30
+      ? FULL_HD_MAX_BITRATE_30FPS
+      : FULL_HD_MAX_BITRATE_15FPS;
+  }
+
+  // 720p 이상 high layer
+  if (height >= 720) {
+    return frameRate >= 30 ? HD_MAX_BITRATE_30FPS : HD_MAX_BITRATE_15FPS;
+  }
+
+  // 540p 이상 high layer
+  if (height >= 540) {
+    return frameRate >= 30 ? QHD_MAX_BITRATE_30FPS : QHD_MAX_BITRATE_15FPS;
+  }
+
+  // 360p 이상 high layer
+  if (height >= 360) {
+    return frameRate >= 30 ? SD_MAX_BITRATE_30FPS : SD_MAX_BITRATE_15FPS;
+  }
+
+  // 360p 미만이면 very low resolution fallback으로 본다.
+  // 이 경우 high layer라고 해도 실제 픽셀 수가 작으므로 cap을 보수적으로 둔다.
+  return VERY_LOW_RESOLUTION_MAX_BITRATE;
+}
+
+function createSimulcastEncodingsFromTrack(
+  settings: SimulcastPolicyInput
+): mediasoupTypes.RtpEncodingParameters[] {
+  const height = settings.height && settings.height > 0 ? settings.height : 720;
+  const frameRate = normalizeFrameRate(settings.frameRate);
+  const highMaxBitrate = getHighLayerMaxBitrate(height, frameRate);
+
+  // DESIGN: 실제 high layer 해상도(width/height)와 원본 fps는 현재 track settings가 정한다.
+  // 이 함수는 그 실제 값을 바탕으로 simulcast 각 layer에 정책값을 부여한다.
+  // 해상도는 scaleResolutionDownBy로 high layer 대비 축소하고,
+  // maxBitrate/maxFramerate는 high layer 기준 cap을 비율과 상한으로 나눠서 줄여나간다.
+  // 나름대로의 비율로 줄여나감. DownBy는 그냥... 원래 원본 해상도에 나누기값으로 하는것으로 알고있음.
+  // 나머지는 그냥... 모르겠어 저렇게 보통 줄여나간데 ... 단순하게 계산된게 아닌듯. 영향을 주고받는 인자가 굉장히 많은듯.
+  return [
+    {
+      scaleResolutionDownBy: 4,
+      maxBitrate: Math.round(highMaxBitrate * 0.12),
+      maxFramerate: Math.min(frameRate, 15)
+    },
+    {
+      scaleResolutionDownBy: 2,
+      maxBitrate: Math.round(highMaxBitrate * 0.4),
+      maxFramerate: Math.min(frameRate, 30)
+    },
+    {
+      scaleResolutionDownBy: 1,
+      maxBitrate: highMaxBitrate,
+      maxFramerate: Math.min(frameRate, 30)
+    }
+  ];
+}
 
 // ─── Store ──────────────────────────────────────────────────
 
@@ -301,6 +396,14 @@ export const useConnectionStore = create<Store>()(
             trackOption
           );
           console.log("[socketStore] obtainStream SUCCESS", newStream.id);
+
+          const initialVideoTrack = newStream.getVideoTracks()[0];
+          if (initialVideoTrack) {
+            console.log(
+              "[socketStore] obtained video track settings:",
+              initialVideoTrack.getSettings()
+            );
+          }
 
           newStream.getTracks().forEach((track) => {
             track.addEventListener("ended", () => {
@@ -716,8 +819,18 @@ export const useConnectionStore = create<Store>()(
                   }
                 );
 
-                // mediasoup transport "produce" 이벤트
+                //  DESIGN: 아래 NOTE에 동일한 내용 한글로 설명되어있음.
+                // - mediasoup-client needs callback({ id }) to continue its internal produce sequence
+                // - that server-side producerId becomes the id associated with the Producer resolved from await sendTransport.produce(...)
+                // - without that callback, the produce() Promise cannot complete normally
                 transport.on("produce", (parameters, callback, errback) => {
+                  // mediasoup transport "produce" 이벤트: transport.produce()함수가 시작되고 그것이 종료 되기 전에 이 이벤트가 dispatch되어 ev handler가 작동.
+                  // Parameters -> RtpSendParameters (https://mediasoup.org/documentation/v3/mediasoup/rtp-parameters-and-capabilities/#RtpSendParameters)
+                  //               => 조상 - RtpParameters (https://mediasoup.org/documentation/v3/mediasoup/rtp-parameters-and-capabilities/#RtpParameters)
+                  console.log(
+                    "[socketStore] mediasoup transport's Produce event received:",
+                    parameters
+                  );
                   const sock = get().socket;
                   if (!sock) return errback(new Error("No socket"));
 
@@ -734,6 +847,12 @@ export const useConnectionStore = create<Store>()(
                           "[socketStore] Produce success",
                           ackResponse.data
                         );
+                        // NOTE: mediasoup-client는 transport "produce" 이벤트의 callback({ id })
+                        // 으로 "서버가 만든 Producer의 id"를 전달받아야 내부 produce 절차를
+                        // 계속 진행할 수 있다. 이 id가 나중에 await sendTransport.produce()
+                        // 가 resolve한 Producer 인스턴스의 id로 연결된다.
+                        // 즉 callback이 호출되어야 sendTransport.produce()의 Promise가
+                        // 정상 완료될 수 있다.
                         callback({ id: ackResponse.data.producerId });
                       } else {
                         errback(
@@ -832,6 +951,7 @@ export const useConnectionStore = create<Store>()(
         }
       },
 
+      // start sharing button을 눌러야지 비로소 시작됨. 방에 들어가자마자 시작되는것은 아님.
       produce: async () => {
         const { stream, isSharing, sendTransport, producer } = get();
         if (!stream || !isSharing || !sendTransport || producer) return;
@@ -840,11 +960,51 @@ export const useConnectionStore = create<Store>()(
         if (!videoTrack) return;
 
         try {
+          const videoTrackSettings = videoTrack.getSettings();
+          const dynamicEncodings =
+            createSimulcastEncodingsFromTrack(videoTrackSettings);
+
+          if (import.meta.env.DEV) {
+            console.log(
+              "[socketStore] producing with video track settings:",
+              videoTrackSettings
+            );
+            console.log(
+              "[socketStore] computed simulcast encodings:",
+              dynamicEncodings
+            );
+          }
+
+          // 여기에서 arg로 제공되는 값들을 기반으로 transport.produce ev의 handler함수의 중
+          // parameters: { kind: mediasoupTypes.MediaKind; rtpParameters: mediasoupTypes.RtpParameters; appData: mediasoupTypes.AppData; }가 결정되는게 아닐까?
           const newProducer = await sendTransport.produce({
             track: videoTrack,
-            stopTracks: false
+            stopTracks: false,
+            encodings: dynamicEncodings,
+            // NOTE: 앱이 layer 정책값을 정하고, 브라우저/libwebrtc가
+            // 최종 rid/active/dtx 등의 RTP 파라미터를 채운다.
+            // `videoGoogleStartBitrate`는 Chrome/libwebrtc 계열에서만 주로 반영되는
+            // "초기 시작점" 힌트다. 고정값이 아니라 시작 시점 기준이며, 이후에는
+            // 네트워크 피드백에 따라 오르내린다. Firefox에서는 무시될 수 있다.
+            // 참고: bitrate/fps/resolution 관련 값은 모두 정책용 cap이다.
+            codecOptions: {
+              videoGoogleStartBitrate: 1000
+            }
           });
-          console.log("[socketStore] Video Producer created:", newProducer.id);
+          if (import.meta.env.DEV) {
+            console.log(
+              "[socketStore] Video Producer created:",
+              newProducer.id
+            );
+            console.log(
+              "[socketStore] Producer codecs:",
+              newProducer.rtpParameters.codecs
+            );
+            console.log(
+              "[socketStore] Producer encodings:",
+              newProducer.rtpParameters.encodings
+            );
+          }
           set({ producer: newProducer }, false, "room/produced");
         } catch (err) {
           console.error("[socketStore] Produce failed:", err);

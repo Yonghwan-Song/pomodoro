@@ -1,4 +1,4 @@
-import type { RtpParameters, MediaKind } from 'mediasoup/node/lib/types';
+import type { RtpParameters, MediaKind } from 'mediasoup/types';
 
 export type ProducerPayload = {
   producerId: string;

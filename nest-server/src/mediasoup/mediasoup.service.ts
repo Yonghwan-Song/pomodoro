@@ -1,6 +1,6 @@
 import { Injectable, Inject, OnModuleInit } from '@nestjs/common';
 import * as mediasoup from 'mediasoup';
-import { WebRtcTransport } from 'mediasoup/node/lib/types';
+import type { WebRtcTransport } from 'mediasoup/types';
 import { LOCAL_IP } from 'src/common/webrtc/constants';
 
 @Injectable()
