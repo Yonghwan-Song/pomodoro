@@ -14,6 +14,10 @@ export const ROOM_GET_PRODUCER = 'newProducerAvailable';
 export const SET_DEVICE_RTP_CAPABILITIES = 'setDeviceRtpCapabilities';
 export const INTENT_TO_CONSUME = 'intentToConsume';
 export const RESUME_CONSUMER = 'resumeConsumer';
+export const SET_CONSUMER_PREFERRED_LAYERS = 'setConsumerPreferredLayers';
+export const SET_COMMON_PREFERRED_LAYERS_FOR_ALL_CONSUMERS =
+  'setCommonPreferredLayersForAllConsumers';
+export const CONSUMER_LAYERS_CHANGED = 'consumerLayersChanged';
 export const PRODUCER_CLOSED = 'producerClosed';
 
 // Room 관련 이벤트
@@ -27,7 +31,8 @@ export const ROOMS_LIST = 'roomsList';
 export const ROOM_PEER_JOINED = 'roomPeerJoined';
 export const ROOM_PEER_LEFT = 'roomPeerLeft';
 export const SYNC_MY_TODAY_TOTAL_DURATION = 'syncMyTodayTotalDuration';
-export const PEER_TODAY_TOTAL_DURATION_UPDATED = 'peerTodayTotalDurationUpdated';
+export const PEER_TODAY_TOTAL_DURATION_UPDATED =
+  'peerTodayTotalDurationUpdated';
 
 // Chat related
 export const WRITE_CHAT = 'writeChat';

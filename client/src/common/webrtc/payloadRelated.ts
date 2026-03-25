@@ -31,4 +31,20 @@ export type AckResponse<T = any> = {
   data?: T;
 };
 
+/** Ack `data` for batch preferred spatial layer on all of a peer's consumers (server shape). */
+export type CommonPreferredLayersForAllConsumersData = {
+  succeeded: number;
+  failed: Array<{ consumerId: string; reason: string }>;
+};
+
+export type ConsumerLayersPayload = {
+  spatialLayer: number;
+  temporalLayer?: number;
+};
+
+export type ConsumerLayersChangedPayload = {
+  consumerId: string;
+  layers?: ConsumerLayersPayload;
+};
+
 export type SocketID = string;

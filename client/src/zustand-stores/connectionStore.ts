@@ -9,9 +9,10 @@ import { auth } from "../firebase";
 import { BASE_URL } from "../constants";
 import type {
   AckResponse,
+  CommonPreferredLayersForAllConsumersData,
+  ConsumerLayersChangedPayload,
   ConsumerOptionsExtended,
-  ProducerPayload,
-  SocketID
+  ProducerPayload
 } from "../common/webrtc/payloadRelated";
 import type { ProducerInfo } from "../Pages/GroupStudy/typeDef";
 import type { ChatMessageData } from "../Pages/GroupStudy/components/chat/ChatMessage";
@@ -69,6 +70,19 @@ interface RoomState {
   remoteStreams: Map<string, MediaStream>;
   peerNicknames: Map<string, string>;
 
+  // Consumer layer info keyed by consumerId.
+  // `requestedSpatialLayer`는 사용자가 목표로 요청한 값이고,
+  // `currentSpatialLayer`는 mediasoup가 현재 실제로 forwarding 중인 값이다.
+  consumerLayers: Map<string, ConsumerLayerState>; // TODO: 방에 consumer가 여러개 필요했던가?... 그런것 같은데,
+
+  /**
+   * "All streams" 일괄 UI 전용 마지막 선택값.
+   * `setCommonPreferredLayersForAllConsumers` 호출 시에만 설정하고,
+   * `setConsumerPreferredLayers`(VideoPlayer 타일)는 건드리지 않는다 — per-consumer 요청과 UI 하이라이트를 분리하기 위함.
+   */
+  lastGlobalPreferredSpatialLayer: number | undefined;
+  // 그런데 그렇다면 이게... consumersByPeerId와 연결시킬 수도 있었을텐데... 딱히 그렇게 좀더 구도를 잡지는 않았음.
+
   // [Real-time Duration Sync]
   // 방에 있는 다른 참가자들의 오늘 총 집중 시간(todayTotalDuration)을 관리하는 Map입니다.
   peerTodayTotalDurations: Map<string, number>; // key: peerId(Socket ID), value: duration(minutes)
@@ -110,6 +124,18 @@ interface RoomActions {
   endSharing: () => void;
   /** 채팅 메시지 전송. */
   sendChatMessage: (message: string, senderNickname: string) => void;
+  /** Consumer의 화질(spatial layer) 변경 요청 */
+  setConsumerPreferredLayers: (
+    consumerId: string,
+    spatialLayer: number
+    // TODO: What about temporal layer?
+    // https://mediasoup.org/documentation/v3/mediasoup/api/#consumer-setPreferredLayers
+    // 이거보면 temporalLayer도 선택할 수 있음.
+  ) => void;
+  /** 내 쪽 모든 consumer에 동일 spatial layer 요청 (서버 ack로 부분 실패 확인 가능) */
+  setCommonPreferredLayersForAllConsumers: (
+    spatialLayer: number
+  ) => Promise<AckResponse<CommonPreferredLayersForAllConsumersData> | null>;
 }
 
 type Store = SocketState &
@@ -125,6 +151,42 @@ type SimulcastPolicyInput = Pick<
   MediaTrackSettings, // https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackSettings
   "width" | "height" | "frameRate"
 >;
+
+// NOTE:
+// 서버가 emit하는 `consumerLayersChanged` payload의 `layers`는 optional이다.
+// 이유는 서버 원천인 mediasoup의 `consumer.on("layerschange")` 이벤트 시그니처가
+// `ConsumerLayers | undefined`이기 때문이다. 즉 mediasoup는 어떤 시점에는
+// "현재 forwarding 중인 layer 정보가 아직 없다"는 의미로 `undefined`를 줄 수 있다.
+//
+// 여기서 중요한 점은 `layers`가 "내가 요청한 preferred layer"가 아니라
+// "현재 실제로 선택되어 forwarding 중인 current layer"라는 것이다.
+// 따라서 클라이언트 UI는 preferred/requested 값보다 이 current 값을 더 신뢰해야 한다.
+//
+// 또한 mediasoup의 `ConsumerLayers`는 `{ spatialLayer, temporalLayer? }` 형태다.
+// 하지만 현재 우리 앱의 제품 정책은 temporal layer(fps 계층)를 직접 제어하지 않는다.
+// 현재 구현에서 사용자가 조절하는 것은 spatial layer(해상도 계층)뿐이고,
+// 서버에서도 `consumer.setPreferredLayers({ spatialLayer })`처럼 temporalLayer를
+// 생략해서 호출한다. 이 경우 mediasoup worker는 가능한 최대 temporal layer를
+// 내부 기본값으로 채운다.
+//
+// 그래서 현재 클라이언트 store는 아래 두 값만 저장한다.
+// - `requestedSpatialLayer`: 사용자가 마지막으로 요청한 목표 해상도 계층
+// - `currentSpatialLayer`: mediasoup가 실제로 보내고 있다고 알려준 현재 해상도 계층
+//
+// temporalLayer를 store에 저장하지 않는 이유:
+// 1. 현재 UI/정책에서 fps 계층을 따로 노출하거나 제어하지 않음
+// 2. 화면 공유가 "존재감 전달" 역할이라 spatial 제어만으로도 충분하다고 판단함
+// 3. payload 타입에서는 서버 원형을 보존하되, store state는 현재 제품이 실제로
+//    사용하는 최소 정보만 들고 가는 편이 더 단순하고 읽기 쉽기 때문
+//
+// 정리:
+// - payload 타입은 서버가 보낼 수 있는 전체 의미를 보존한다
+// - store 타입은 현재 앱이 실제로 사용하는 필드만 저장한다
+// - 향후 fps 제어나 디버깅이 필요해지면 temporalLayer를 store/UI에 확장할 수 있다
+type ConsumerLayerState = {
+  requestedSpatialLayer?: number;
+  currentSpatialLayer?: number;
+};
 
 const VERY_LOW_RESOLUTION_MAX_BITRATE = 250_000;
 const SD_MAX_BITRATE_15FPS = 450_000;
@@ -237,6 +299,8 @@ export const useConnectionStore = create<Store>()(
       consumersByPeerId: new Map(),
       remoteStreams: new Map(),
       peerNicknames: new Map(),
+      consumerLayers: new Map(),
+      lastGlobalPreferredSpatialLayer: undefined,
       peerTodayTotalDurations: new Map(),
       chatMessages: [],
 
@@ -276,6 +340,7 @@ export const useConnectionStore = create<Store>()(
 
           newSocket.on("disconnect", (reason) => {
             console.log("[socketStore] Socket disconnected:", reason);
+            get().leaveRoom();
             set({ connected: false }, false, "socket/disconnected");
           });
 
@@ -640,10 +705,13 @@ export const useConnectionStore = create<Store>()(
                 newConsumers.delete(producer.socketId);
                 const newRemoteStreams = new Map(get().remoteStreams);
                 newRemoteStreams.delete(producer.socketId);
+                const newConsumerLayers = new Map(get().consumerLayers);
+                newConsumerLayers.delete(consumer.id);
                 set(
                   {
                     consumersByPeerId: newConsumers,
-                    remoteStreams: newRemoteStreams
+                    remoteStreams: newRemoteStreams,
+                    consumerLayers: newConsumerLayers
                   },
                   false,
                   "room/consumerCleanedUp"
@@ -686,6 +754,30 @@ export const useConnectionStore = create<Store>()(
           );
         });
 
+        socket.on(
+          EventNames.CONSUMER_LAYERS_CHANGED,
+          (payload: ConsumerLayersChangedPayload) => {
+            console.log("[socketStore] Consumer layers changed:", payload);
+            set(
+              (state) => {
+                const updatedLayers = new Map(state.consumerLayers);
+                const existingLayerState =
+                  updatedLayers.get(payload.consumerId) ?? {};
+                // payload.layers.spatialLayer가 현재 재생 중인 실제 화질 레이어입니다.
+                if (payload.layers) {
+                  updatedLayers.set(payload.consumerId, {
+                    ...existingLayerState,
+                    currentSpatialLayer: payload.layers.spatialLayer
+                  });
+                }
+                return { consumerLayers: updatedLayers };
+              },
+              false,
+              "room/consumerLayersChanged"
+            );
+          }
+        );
+
         // 채팅 메시지 수신
         socket.on(EventNames.CHAT_MESSAGE, (payload: ChatMessageData) => {
           console.log("[socketStore] Incoming chat message:", payload);
@@ -725,6 +817,7 @@ export const useConnectionStore = create<Store>()(
         socket?.off(EventNames.CHAT_MESSAGE);
         socket?.off(EventNames.PEER_TODAY_TOTAL_DURATION_UPDATED);
         socket?.off(EventNames.ROOM_PEER_LEFT);
+        socket?.off(EventNames.CONSUMER_LAYERS_CHANGED);
 
         // 6. 상태 초기화
         set(
@@ -742,7 +835,9 @@ export const useConnectionStore = create<Store>()(
             remoteStreams: new Map(),
             peerNicknames: new Map(),
             peerTodayTotalDurations: new Map(),
-            chatMessages: []
+            chatMessages: [],
+            consumerLayers: new Map(),
+            lastGlobalPreferredSpatialLayer: undefined
           },
           false,
           "room/left"
@@ -1021,6 +1116,87 @@ export const useConnectionStore = create<Store>()(
         get().stopSharing();
       },
 
+      setConsumerPreferredLayers: (
+        consumerId: string,
+        spatialLayer: number
+      ) => {
+        const { socket } = get();
+        if (!socket) return;
+
+        set(
+          (state) => {
+            const updatedLayers = new Map(state.consumerLayers);
+            const existingLayerState = updatedLayers.get(consumerId) ?? {};
+
+            updatedLayers.set(consumerId, {
+              ...existingLayerState,
+              requestedSpatialLayer: spatialLayer
+            });
+
+            return { consumerLayers: updatedLayers };
+          },
+          false,
+          "room/requestConsumerLayer"
+        );
+
+        socket.emit(EventNames.SET_CONSUMER_PREFERRED_LAYERS, {
+          consumerId,
+          spatialLayer
+        });
+      },
+
+      setCommonPreferredLayersForAllConsumers: (spatialLayer: number) => {
+        const { socket } = get();
+        if (!socket) {
+          return Promise.resolve(null);
+        }
+
+        set(
+          (state) => {
+            const updatedLayers = new Map(state.consumerLayers);
+            for (const consumer of state.consumersByPeerId.values()) {
+              const existingLayerState = updatedLayers.get(consumer.id) ?? {};
+              updatedLayers.set(consumer.id, {
+                ...existingLayerState,
+                requestedSpatialLayer: spatialLayer
+              });
+            }
+            return {
+              consumerLayers: updatedLayers,
+              lastGlobalPreferredSpatialLayer: spatialLayer
+            };
+          },
+          false,
+          "room/requestAllConsumersLayer"
+        );
+
+        return new Promise<
+          AckResponse<CommonPreferredLayersForAllConsumersData>
+        >((resolve) => {
+          socket.emit(
+            EventNames.SET_COMMON_PREFERRED_LAYERS_FOR_ALL_CONSUMERS,
+            { spatialLayer },
+            (ack: AckResponse<CommonPreferredLayersForAllConsumersData>) => {
+              if (!ack.success) {
+                if (ack.data?.failed?.length) {
+                  console.warn(
+                    "[connectionStore] setCommonPreferredLayersForAllConsumers partial failure:",
+                    ack.error,
+                    ack.data
+                  );
+                } else {
+                  console.error(
+                    "[connectionStore] setCommonPreferredLayersForAllConsumers failed:",
+                    ack.error
+                  );
+                }
+              }
+              resolve(ack);
+            }
+          );
+        });
+      },
+
       sendChatMessage: (message, senderNickname) => {
         const { socket } = get();
         if (!message.trim() || !socket) return;
@@ -1096,6 +1272,7 @@ function consumePendingProducers() {
           const currentTransport = useConnectionStore.getState().recvTransport;
           if (!currentTransport) return;
 
+          // Produce할때는 transport.produce()함수 먼저 호출하면 produce event handler 내부에서 EventNames.PRODUCE message를 emit한다.
           const consumer = await currentTransport.consume(consumerOptions);
           console.log(
             `[socketStore] Consumer created: ${consumer.id} (kind: ${consumer.kind}) for peer: ${peerId}`
@@ -1146,9 +1323,12 @@ function consumePendingProducers() {
                 newConsumers.delete(peerId);
                 const newStreams = new Map(state.remoteStreams);
                 newStreams.delete(peerId);
+                const newConsumerLayers = new Map(state.consumerLayers);
+                newConsumerLayers.delete(consumer.id);
                 return {
                   consumersByPeerId: newConsumers,
-                  remoteStreams: newStreams
+                  remoteStreams: newStreams,
+                  consumerLayers: newConsumerLayers
                 };
               },
               false,

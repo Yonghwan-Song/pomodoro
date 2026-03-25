@@ -8,6 +8,7 @@ import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsing
 import { useAuthContext } from "../../Context/AuthContext";
 import { ChatBox } from "./components/chat/ChatBox";
 import { RoomControls } from "./components/room/RoomControls";
+import { GlobalLayerControls } from "./components/room/GlobalLayerControls";
 import { VideoGrid } from "./components/room/VideoGrid";
 import { RoomTimer } from "./RoomTimer";
 import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
@@ -32,10 +33,10 @@ const leftColumnCss = css`
 
 const topBarCss = css`
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  row-gap: 11px;
 `;
 // ???:  0 ~ 1023px까지가 대상인건가?
 const desktopChatCss = css`
@@ -45,12 +46,6 @@ const desktopChatCss = css`
   @media (max-width: 1023px) {
     display: none;
   }
-`;
-
-const topBarRightCss = css`
-  display: flex;
-  align-items: center;
-  margin-left: auto;
 `;
 
 // 모바일에서만 보이는 floating chat FAB
@@ -235,14 +230,13 @@ export function Room() {
           <BoxShadowWrapper>
             <div css={topBarCss}>
               <RoomTimer />
-              <div css={topBarRightCss}>
-                <RoomControls
-                  onLeaveRoom={handleLeaveRoom}
-                  isSharing={isSharing}
-                  onToggleSharing={isSharing ? endSharing : startSharing}
-                  canShare={isSendTransportReady}
-                />
-              </div>
+              <GlobalLayerControls />
+              <RoomControls
+                onLeaveRoom={handleLeaveRoom}
+                isSharing={isSharing}
+                onToggleSharing={isSharing ? endSharing : startSharing}
+                canShare={isSendTransportReady}
+              />
             </div>
           </BoxShadowWrapper>
 

@@ -1,6 +1,7 @@
 import { css } from "../../../../../styled-system/css";
 import VideoPlayer from "../media/VideoPlayer";
 import { getHHmm } from "../../../../utils/number-related-utils";
+import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
 
 const DUMMY_VIDEO_COUNT = 3;
 
@@ -19,6 +20,10 @@ export function VideoGrid({
   myTodayTotalDuration,
   peerTodayTotalDurations
 }: VideoGridProps) {
+  const consumersByPeerId = useConnectionStore(
+    (state) => state.consumersByPeerId
+  );
+
   const cardClassName = css({
     backgroundColor: "bg.surface",
     border: "1px solid",
@@ -82,29 +87,33 @@ export function VideoGrid({
         </div>
       )}
 
-      {[...remoteStreams.entries()].map(([peerId, stream]) => (
-        <div key={peerId} className={cardClassName}>
-          <div className={headingClassName}>
-            <h3 className={titleClassName}>
-              {peerNicknames.get(peerId) ?? peerId.substring(0, 6)}
-            </h3>
-            <span
-              className={css({
-                fontSize: "xs",
-                fontWeight: "bold",
-                color: "bg.canvas",
-                backgroundColor: "status.running",
-                paddingX: "2",
-                paddingY: "1",
-                borderRadius: "full"
-              })}
-            >
-              🔥 {getHHmm(peerTodayTotalDurations.get(peerId) || 0)}
-            </span>
+      {[...remoteStreams.entries()].map(([peerId, stream]) => {
+        const consumer = consumersByPeerId.get(peerId);
+
+        return (
+          <div key={peerId} className={cardClassName}>
+            <div className={headingClassName}>
+              <h3 className={titleClassName}>
+                {peerNicknames.get(peerId) ?? peerId.substring(0, 6)}
+              </h3>
+              <span
+                className={css({
+                  fontSize: "xs",
+                  fontWeight: "bold",
+                  color: "bg.canvas",
+                  backgroundColor: "status.running",
+                  paddingX: "2",
+                  paddingY: "1",
+                  borderRadius: "full"
+                })}
+              >
+                🔥 {getHHmm(peerTodayTotalDurations.get(peerId) || 0)}
+              </span>
+            </div>
+            <VideoPlayer stream={stream} consumerId={consumer?.id} />
           </div>
-          <VideoPlayer stream={stream} />
-        </div>
-      ))}
+        );
+      })}
 
       {DUMMY_VIDEO_COUNT > 0 &&
         Array.from({ length: DUMMY_VIDEO_COUNT }).map((_, idx) => (

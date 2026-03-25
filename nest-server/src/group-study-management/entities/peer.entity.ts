@@ -2,7 +2,7 @@ import {
   WebRtcTransport,
   Producer,
   Consumer,
-  RtpCapabilities,
+  RtpCapabilities
 } from 'mediasoup/types';
 import { Room } from './room.entity';
 
@@ -14,7 +14,7 @@ export class Peer {
   public sendTransport?: WebRtcTransport;
   public recvTransport?: WebRtcTransport;
   public readonly producers: Map<string, Producer> = new Map();
-  public readonly consumers: Map<string, Consumer> = new Map();
+  public readonly consumers: Map<string, Consumer> = new Map(); // TODO: 이거 가지고 공통 preferred layer 함수 호출하면 될듯. 그런데 아예 다른 함수가 있나?
 
   // [Added for Real-time Duration Sync]
   // Peer가 현재까지 집중한 오늘 총 시간(분)을 서버 메모리 상에 보관합니다.
@@ -24,6 +24,70 @@ export class Peer {
   constructor(socketId: string, userNickname: string) {
     this.id = socketId;
     this.userNickname = userNickname;
+  }
+  // QQQ: Why setPreferredLayer is not handled inside peer instance?
+  //
+
+  // TODO: 로직 옮겨버리기
+  async setPreferredLayersOfConsumer(spatialLayer: number, consumerId: string) {
+    const consumer = this.consumers.get(consumerId);
+    if (consumer !== undefined) {
+      await consumer.setPreferredLayers({ spatialLayer });
+      console.log(
+        `[peer.entity:setPreferredLayersOfConsumer] Consumer ${consumerId} preferred spatialLayer set to ${spatialLayer}`
+      );
+      return { success: true };
+    } else {
+      console.error(
+        `[peer.entity:setPreferredLayersOfConsumer] Consumer ${consumerId} not found for peer ${this.id}`
+      );
+      return {
+        success: false,
+        error: `Consumer ${consumerId} not found for peer ${this.id}`
+      };
+    }
+  }
+
+  async setCommonPreferredLayersForAllConsumer(spatialLayer: number) {
+    const entries = [...this.consumers.entries()];
+    const results = await Promise.allSettled(
+      entries.map(([, consumer]) =>
+        consumer.setPreferredLayers({ spatialLayer })
+      )
+    );
+
+    const failed: Array<{ consumerId: string; reason: string }> = [];
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const consumerId = entries[index][0];
+        const reason =
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason);
+        failed.push({ consumerId, reason });
+        console.error(
+          `[peer.entity:setCommonPreferredLayersForAllConsumer] consumer ${consumerId} (peer ${this.id}):`,
+          result.reason
+        );
+      }
+    });
+
+    const succeeded = entries.length - failed.length;
+    if (failed.length === 0) {
+      console.log(
+        `[peer.entity:setCommonPreferredLayersForAllConsumer] Set preferred spatialLayer=${spatialLayer} on ${succeeded} consumer(s) for peer ${this.id}`
+      );
+    } else {
+      console.error(
+        `[peer.entity:setCommonPreferredLayersForAllConsumer] Partial failure for peer ${this.id}: ${failed.length} failed, ${succeeded} succeeded (spatialLayer=${spatialLayer})`
+      );
+    }
+
+    return {
+      success: failed.length === 0,
+      succeeded,
+      failed
+    };
   }
 
   addTransport(transport: WebRtcTransport, type: 'send' | 'recv') {
@@ -47,12 +111,12 @@ export class Peer {
         : null,
       producers: Array.from(this.producers.entries()).map(([id, p]) => ({
         id,
-        kind: p.kind,
+        kind: p.kind
       })),
       consumers: Array.from(this.consumers.entries()).map(([id, c]) => ({
         id,
-        kind: c.kind,
-      })),
+        kind: c.kind
+      }))
     });
   }
 

@@ -10,12 +10,19 @@ import { Peer } from './entities/peer.entity';
 import { MediasoupService } from 'src/mediasoup/mediasoup.service';
 import { Socket } from 'socket.io';
 import type {
+  Consumer,
+  ConsumerLayers,
   RtpCapabilities,
   ProducerOptions,
   DtlsParameters,
   RtpEncodingParameters
 } from 'mediasoup/types';
-import { ProducerPayload } from 'src/common/webrtc/payload-related';
+import {
+  AckResponse,
+  CommonPreferredLayersForAllConsumersData,
+  ConsumerLayersChangedPayload,
+  ProducerPayload
+} from 'src/common/webrtc/payload-related';
 import { InjectModel } from '@nestjs/mongoose';
 import { Room as RoomSchemaClass, RoomDocument } from 'src/schemas/room.schema';
 import { Model } from 'mongoose';
@@ -110,14 +117,46 @@ export class GroupStudyManagementService
     }
   }
 
-  setPeerRtpCapabilities(socketId: string, rtpCapabilities: RtpCapabilities) {
+  private requirePeer(socketId: string, context: string): Peer | null {
     const peer = this.peersMap.get(socketId);
+
+    if (peer) {
+      return peer;
+    }
+
+    console.error(
+      `[group-study-management.service:${context}] Peer ${socketId} not found`
+    );
+
+    return null;
+  }
+
+  private requireConsumer(
+    peer: Peer,
+    consumerId: string,
+    context: string
+  ): Consumer | null {
+    const consumer = peer.consumers.get(consumerId);
+
+    if (consumer) {
+      return consumer;
+    }
+
+    console.error(
+      `[group-study-management.service:${context}] Consumer ${consumerId} not found for peer ${peer.id}`
+    );
+
+    return null;
+  }
+
+  setPeerRtpCapabilities(socketId: string, rtpCapabilities: RtpCapabilities) {
+    const peer = this.requirePeer(socketId, 'setPeerRtpCapabilities');
     if (!peer) return;
     peer.rtpCapabilities = rtpCapabilities;
   }
 
   async establishTransport(socketId: string, type: 'send' | 'recv') {
-    const peer = this.peersMap.get(socketId);
+    const peer = this.requirePeer(socketId, 'establishTransport');
     if (!peer) return;
 
     const transport = await this.mediasoupService.getWebRtcTransport();
@@ -151,11 +190,12 @@ export class GroupStudyManagementService
   }
 
   async createConsumer(
-    consumingPeerId: string,
+    clientSocket: Socket,
     producingPeerId: string,
     producerId: string
   ) {
     try {
+      const consumingPeerId = clientSocket.id;
       const consumingPeer = this.peersMap.get(consumingPeerId);
       const producingPeer = this.peersMap.get(producingPeerId);
 
@@ -212,6 +252,26 @@ export class GroupStudyManagementService
         );
       });
 
+      consumer.on('layerschange', (layers: ConsumerLayers | undefined) => {
+        // mediasoup의 `layerschange`는 "preferred layer를 이렇게 원한다"가 아니라
+        // "지금 실제로 forwarding 중인 current layer가 이렇게 바뀌었다"는 신호다.
+        // 그래서 UI 표시값은 preferredLayers보다 이 이벤트 payload를 신뢰하는 편이 맞다.
+        //
+        // 또한 이 이벤트는 품질이 바뀔 때만 오는 것이 아니라, consume 직후
+        // 초기 current layer가 처음 결정되는 시점에도 올 수 있다. 다만 항상
+        // 즉시 온다고 가정하면 안 되고, 실제 RTP 흐름이 잡힌 뒤에야 올 수도 있다.
+        console.log(
+          `[group-study-management.service:createConsumer:layerschange] Consumer ${consumer.id} layers changed:`,
+          layers
+        );
+        const payload: ConsumerLayersChangedPayload = {
+          consumerId: consumer.id,
+          layers
+        };
+
+        clientSocket.emit(EventNames.CONSUMER_LAYERS_CHANGED, payload);
+      });
+
       consumingPeer.addConsumer(consumer);
 
       return {
@@ -236,16 +296,83 @@ export class GroupStudyManagementService
     }
   }
 
-  async resumeConsumer(socketId: string, consumerId: string) {
-    const peer = this.peersMap.get(socketId);
+  async setConsumerPreferredLayers(
+    socketId: string,
+    consumerId: string,
+    spatialLayer: number
+  ) {
+    const peer = this.requirePeer(socketId, 'setConsumerPreferredLayers');
     if (!peer) {
       return { success: false, error: 'Peer does not exist' };
     }
-    const consumer = peer.consumers.get(consumerId);
-    if (!consumer) {
+
+    try {
+      // temporalLayer를 생략하면 mediasoup worker가 해당 consumer에서 가능한
+      // 최대 temporal layer를 기본값으로 채운다. 즉 현재 정책은
+      // "spatial(해상도)만 명시적으로 낮추고 temporal(fps 계층)은 최대 유지"다.
+      //
+      // 이 호출은 preferred layer를 바꾸는 것이고, 실제로 선택된 current layer는
+      // 네트워크 상태나 producer 상태에 따라 더 낮아질 수 있다. 실제 값은
+      // 위의 `layerschange` 이벤트를 통해 클라이언트에 전달된다.
+      return await peer.setPreferredLayersOfConsumer(spatialLayer, consumerId);
+    } catch (error) {
       console.error(
-        `[group-study-management.service:resumeConsumer] Consumer ${consumerId} not found for peer ${socketId}`
+        `[group-study-management.service:setConsumerPreferredLayers] Failed to set preferred layers for consumer ${consumerId}:`,
+        error
       );
+      return {
+        success: false,
+        error: `Failed to set preferred layers - message -> ${error.message}` // QQQ: 이거 message field가 존재하나?
+      };
+    }
+  }
+
+  async setCommonPreferredLayersForAllConsumers(
+    socketId: string,
+    spatialLayer: number
+  ): Promise<AckResponse<CommonPreferredLayersForAllConsumersData>> {
+    const peer = this.requirePeer(
+      socketId,
+      'setCommonPreferredLayersForAllConsumers'
+    );
+    if (!peer) {
+      return { success: false, error: 'Peer does not exist' };
+    }
+
+    try {
+      const result =
+        await peer.setCommonPreferredLayersForAllConsumer(spatialLayer);
+      return {
+        success: result.success,
+        error: result.success
+          ? undefined
+          : `${result.failed.length} consumer(s) failed to set preferred layers`,
+        data: {
+          succeeded: result.succeeded,
+          failed: result.failed
+        }
+      };
+    } catch (error) {
+      console.error(
+        '[group-study-management.service:setCommonPreferredLayersForAllConsumers] Failed:',
+        error
+      );
+      return {
+        success: false,
+        error: `Failed to set preferred layers for all consumers - message -> ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      };
+    }
+  }
+
+  async resumeConsumer(socketId: string, consumerId: string) {
+    const peer = this.requirePeer(socketId, 'resumeConsumer');
+    if (!peer) {
+      return { success: false, error: 'Peer does not exist' };
+    }
+    const consumer = this.requireConsumer(peer, consumerId, 'resumeConsumer');
+    if (!consumer) {
       return { success: false, error: 'Consumer not found' };
     }
 
@@ -262,11 +389,8 @@ export class GroupStudyManagementService
     dtlsParameters: DtlsParameters,
     type: 'send' | 'recv'
   ) {
-    const peer = this.peersMap.get(socketId);
+    const peer = this.requirePeer(socketId, 'connectTransport');
     if (!peer) {
-      console.error(
-        `[group-study-management.service:connectTransport] Peer not found for client ${socketId}`
-      );
       return { success: false, error: 'Peer transport not found' };
     }
     if (!peer.sendTransport) {
@@ -301,12 +425,9 @@ export class GroupStudyManagementService
     rtpParameters: ProducerOptions['rtpParameters']
   ) {
     try {
-      const peer = this.peersMap.get(clientSocket.id);
+      const peer = this.requirePeer(clientSocket.id, 'createProducer');
 
       if (!peer) {
-        console.error(
-          `[group-study-management.service:createProducer] Peer not found for client ${clientSocket.id}`
-        );
         return { success: false, error: 'Peer transport not found' };
       }
       if (!peer.sendTransport) {
@@ -471,11 +592,8 @@ export class GroupStudyManagementService
     producerId?: string,
     kind?: 'video' | 'audio'
   ) {
-    const peer = this.peersMap.get(clientSocket.id);
+    const peer = this.requirePeer(clientSocket.id, 'closeProducer');
     if (!peer) {
-      console.warn(
-        `[group-study-management.service:closeProducer] Peer not found for client ${clientSocket.id} during producer close.`
-      );
       return;
     }
 
@@ -562,7 +680,7 @@ export class GroupStudyManagementService
     roomId: string,
     todayTotalDuration: number = 0
   ) {
-    const peer = this.peersMap.get(clientSocket.id);
+    const peer = this.requirePeer(clientSocket.id, 'joinRoom');
     if (!peer) {
       return {
         success: false,
@@ -631,7 +749,7 @@ export class GroupStudyManagementService
   // 참조하는 주체 - 1)peer 2)roomsMap
   async leaveRoom(clientSocket: Socket) {
     try {
-      const peer = this.peersMap.get(clientSocket.id);
+      const peer = this.requirePeer(clientSocket.id, 'leaveRoom');
       if (!peer) {
         return { success: false, error: 'Peer not found' };
       }
@@ -687,7 +805,7 @@ export class GroupStudyManagementService
     clientSocket: Socket,
     message: string
   ): { success: boolean; error?: string } {
-    const peer = this.peersMap.get(clientSocket.id);
+    const peer = this.requirePeer(clientSocket.id, 'handleChatMessage');
     if (!peer) {
       return { success: false, error: 'Peer not found' };
     }
@@ -717,7 +835,10 @@ export class GroupStudyManagementService
     clientSocket: Socket,
     todayTotalDuration: number
   ) {
-    const peer = this.peersMap.get(clientSocket.id);
+    const peer = this.requirePeer(
+      clientSocket.id,
+      'updatePeerTodayTotalDuration'
+    );
     if (!peer || !peer.room) return;
 
     // 서버 메모리에 있는 해당 Peer의 최신 통계를 갱신.

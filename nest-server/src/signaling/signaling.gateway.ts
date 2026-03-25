@@ -13,6 +13,7 @@ import { MediasoupService } from 'src/mediasoup/mediasoup.service';
 import * as EventNames from 'src/common/webrtc/event-names';
 import type {
   AckResponse,
+  CommonPreferredLayersForAllConsumersData,
   ConsumerOptionsExtended
 } from 'src/common/webrtc/payload-related';
 import type { ProducerOptions, RtpCapabilities } from 'mediasoup/types';
@@ -209,9 +210,33 @@ export class SignalingGateway
     @MessageBody() payload: { producerId: string; peerId: string }
   ): Promise<AckResponse<ConsumerOptionsExtended>> {
     return await this.groupStudyManagementService.createConsumer(
-      clientSocket.id,
+      clientSocket,
       payload.peerId,
       payload.producerId
+    );
+  }
+
+  @SubscribeMessage(EventNames.SET_CONSUMER_PREFERRED_LAYERS)
+  async handleSetConsumerPreferredLayers(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { consumerId: string; spatialLayer: number }
+  ): Promise<AckResponse> {
+    // QQQ: Ack Callback 받아서 뭐... 딱히 사용하고 있지 않은데?..
+    return await this.groupStudyManagementService.setConsumerPreferredLayers(
+      clientSocket.id,
+      payload.consumerId,
+      payload.spatialLayer
+    );
+  }
+
+  @SubscribeMessage(EventNames.SET_COMMON_PREFERRED_LAYERS_FOR_ALL_CONSUMERS)
+  async handleSetCommonPreferredLayersForAllConsumers(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { spatialLayer: number }
+  ): Promise<AckResponse<CommonPreferredLayersForAllConsumersData>> {
+    return await this.groupStudyManagementService.setCommonPreferredLayersForAllConsumers(
+      clientSocket.id,
+      payload.spatialLayer
     );
   }
 

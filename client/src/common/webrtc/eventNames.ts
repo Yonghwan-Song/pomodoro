@@ -1,5 +1,5 @@
 // Purpose: 서버와 클라이언트 간의 이벤트 이름을 정의하는 파일
-export const SDP_OFFER = "sdpOffer"; // 이거는 이제 안쓰지 않냐..
+export const SDP_OFFER = "sdpOffer";
 export const GET_ROUTER_RTP_CAPABILITIES = "getRouterRtpCapabilities";
 export const SEND_ROUTER_RTP_CAPABILITIES = "routerRtpCapabilities";
 export const CREATE_SEND_TRANSPORT = "createSendTransport";
@@ -10,12 +10,16 @@ export const CONNECT_SEND_TRANSPORT = "connectSendTransport";
 export const CONNECT_RECV_TRANSPORT = "connectRecvTransport";
 export const SEND_TRANSPORT_CONNECTED = "sendTransportConnected";
 export const PRODUCE = "produce";
-export const PRODUCED = "produced"; // ISSUE: 이거는 지금 어디에서 안쓰이고있는데..
+export const PRODUCED = "produced";
 export const ROOM_GET_PRODUCER = "newProducerAvailable";
 export const SET_DEVICE_RTP_CAPABILITIES = "setDeviceRtpCapabilities";
 export const INTENT_TO_CONSUME = "intentToConsume";
 export const RESUME_CONSUMER = "resumeConsumer";
-export const PRODUCER_CLOSED = "producerClosed"; // 이거 edit해서 하면 :w했을때 강제로 종료되던데....
+export const SET_CONSUMER_PREFERRED_LAYERS = "setConsumerPreferredLayers";
+export const SET_COMMON_PREFERRED_LAYERS_FOR_ALL_CONSUMERS =
+  "setCommonPreferredLayersForAllConsumers";
+export const CONSUMER_LAYERS_CHANGED = "consumerLayersChanged";
+export const PRODUCER_CLOSED = "producerClosed";
 
 // Room 관련 이벤트
 export const CREATE_ROOM = "createRoom";
