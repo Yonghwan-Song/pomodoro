@@ -644,6 +644,42 @@ export class GroupStudyManagementService
       );
     }
   }
+
+  async pauseProducer(
+    socketId: string,
+    kind: 'video' | 'audio'
+  ): Promise<AckResponse> {
+    const peer = this.requirePeer(socketId, 'pauseProducer');
+    if (!peer) return { success: false, error: 'Peer not found' };
+
+    const producer = peer.getProducer(kind);
+    if (!producer)
+      return { success: false, error: `No ${kind} producer found` };
+
+    await producer.pause();
+    console.log(
+      `[group-study-management.service:pauseProducer] Producer ${producer.id} (${kind}) paused for peer ${socketId}`
+    );
+    return { success: true };
+  }
+
+  async resumeProducer(
+    socketId: string,
+    kind: 'video' | 'audio'
+  ): Promise<AckResponse> {
+    const peer = this.requirePeer(socketId, 'resumeProducer');
+    if (!peer) return { success: false, error: 'Peer not found' };
+
+    const producer = peer.getProducer(kind);
+    if (!producer)
+      return { success: false, error: `No ${kind} producer found` };
+
+    await producer.resume();
+    console.log(
+      `[group-study-management.service:resumeProducer] Producer ${producer.id} (${kind}) resumed for peer ${socketId}`
+    );
+    return { success: true };
+  }
   //#endregion
 
   //#region Only Room

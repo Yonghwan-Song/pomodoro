@@ -65,6 +65,7 @@ interface RoomState {
 
   // Producer/Consumer related -> 이것들은 이름이 따로 있지 않나?
   producer: mediasoupTypes.Producer | null;
+  isProducerPaused: boolean;
   producersList: ProducerInfo[];
   consumersByPeerId: Map<string, mediasoupTypes.Consumer>;
   remoteStreams: Map<string, MediaStream>;
@@ -122,6 +123,10 @@ interface RoomActions {
   produce: () => Promise<void>;
   /** producer 닫고 서버에 알린 뒤 stopSharing. */
   endSharing: () => void;
+  /** 서버에 producer pause 요청 (카메라 일시 중단). */
+  pauseProducer: () => void;
+  /** 서버에 producer resume 요청 (카메라 재개). */
+  resumeProducer: () => void;
   /** 채팅 메시지 전송. */
   sendChatMessage: (message: string, senderNickname: string) => void;
   /** Consumer의 화질(spatial layer) 변경 요청 */
@@ -292,6 +297,7 @@ export const useConnectionStore = create<Store>()(
       sendTransport: null,
       recvTransport: null,
       producer: null,
+      isProducerPaused: false,
       isSendTransportReady: false,
       isRecvTransportReady: false,
       isCreatingTransports: false,
@@ -763,13 +769,10 @@ export const useConnectionStore = create<Store>()(
                 const updatedLayers = new Map(state.consumerLayers);
                 const existingLayerState =
                   updatedLayers.get(payload.consumerId) ?? {};
-                // payload.layers.spatialLayer가 현재 재생 중인 실제 화질 레이어입니다.
-                if (payload.layers) {
-                  updatedLayers.set(payload.consumerId, {
-                    ...existingLayerState,
-                    currentSpatialLayer: payload.layers.spatialLayer
-                  });
-                }
+                updatedLayers.set(payload.consumerId, {
+                  ...existingLayerState,
+                  currentSpatialLayer: payload.layers?.spatialLayer
+                });
                 return { consumerLayers: updatedLayers };
               },
               false,
@@ -827,6 +830,7 @@ export const useConnectionStore = create<Store>()(
             sendTransport: null,
             recvTransport: null,
             producer: null,
+            isProducerPaused: false,
             isSendTransportReady: false,
             isRecvTransportReady: false,
             isCreatingTransports: false,
@@ -1111,9 +1115,81 @@ export const useConnectionStore = create<Store>()(
         if (producer) {
           producer.close();
           socket?.emit(EventNames.PRODUCER_CLOSED, { producerId: producer.id });
-          set({ producer: null }, false, "room/producerClosed");
+          set(
+            { producer: null, isProducerPaused: false },
+            false,
+            "room/producerClosed"
+          );
         }
         get().stopSharing();
+      },
+
+      pauseProducer: () => {
+        const { producer, socket, isProducerPaused } = get();
+        if (!producer || !socket || isProducerPaused) return;
+
+        producer.pause();
+        socket.emit(
+          EventNames.PAUSE_PRODUCER,
+          { kind: "video" },
+          (ack: AckResponse) => {
+            if (ack.success) {
+              console.log("[socketStore] Producer paused (server confirmed)");
+            } else {
+              console.error(
+                "[socketStore] Server failed to pause producer:",
+                ack.error
+              );
+              producer.resume();
+              set(
+                { isProducerPaused: false },
+                false,
+                "room/pauseProducerRollback"
+              );
+            }
+          }
+        );
+        // NOTE: 여기서 isProducerPaused를 즉시 true로 두는 것은 의도적인 optimistic update다.
+        // pause 버튼을 눌렀을 때 UI가 서버 ack 왕복을 기다리지 않고 바로 반응하게 하려는 목적이다.
+        // 이미 로컬 producer.pause()도 먼저 호출했으므로, 클라이언트 입장에서는 일단
+        // "paused로 전환되었다"고 보는 편이 자연스럽다. 만약 서버가 pause를 거절하면
+        // ack callback에서 producer.resume()과 상태 rollback(false)로 되돌린다.
+        set({ isProducerPaused: true }, false, "room/producerPaused");
+      },
+
+      resumeProducer: () => {
+        const { producer, socket, isProducerPaused } = get();
+        if (!producer || !socket || !isProducerPaused) return;
+
+        producer.resume();
+        socket.emit(
+          EventNames.RESUME_PRODUCER,
+          { kind: "video" },
+          (ack: AckResponse) => {
+            if (ack.success) {
+              console.log("[socketStore] Producer resumed (server confirmed)");
+            } else {
+              console.error(
+                "[socketStore] Server failed to resume producer:",
+                ack.error
+              );
+              producer.pause();
+              set(
+                { isProducerPaused: true },
+                false,
+                "room/resumeProducerRollback"
+              );
+            }
+          }
+        );
+        // NOTE: 이것도 pauseProducer와 같은 optimistic update다.
+        // resume 요청 직후 UI를 즉시 "camera on" 상태처럼 보이게 해서 반응성을 높인다.
+        // 로컬 producer.resume()를 먼저 실행했기 때문에 클라이언트 쪽 체감 상태도 이미
+        // resumed에 가깝다. 서버 ack가 실패하면 callback에서 producer.pause()와
+        // 상태 rollback(true)를 수행한다.
+        // 즉, ack.success 블록 안에서 set하지 않는 이유는 "성공 확정 후 반영"보다
+        // "먼저 반영하고 실패 시 복구"를 선택했기 때문이다.
+        set({ isProducerPaused: false }, false, "room/producerResumed");
       },
 
       setConsumerPreferredLayers: (

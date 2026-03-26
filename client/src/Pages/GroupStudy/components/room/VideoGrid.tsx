@@ -2,6 +2,7 @@ import { css } from "../../../../../styled-system/css";
 import VideoPlayer from "../media/VideoPlayer";
 import { getHHmm } from "../../../../utils/number-related-utils";
 import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
+import { useEffect } from "react";
 
 const DUMMY_VIDEO_COUNT = 3;
 
@@ -23,6 +24,15 @@ export function VideoGrid({
   const consumersByPeerId = useConnectionStore(
     (state) => state.consumersByPeerId
   );
+  const isSharing = useConnectionStore((state) => state.isSharing);
+  useEffect(() => {
+    console.log("isSharing", isSharing);
+  }, [isSharing]);
+  const isProducerPaused = useConnectionStore(
+    (state) => state.isProducerPaused
+  );
+  const pauseProducer = useConnectionStore((state) => state.pauseProducer);
+  const resumeProducer = useConnectionStore((state) => state.resumeProducer);
 
   const cardClassName = css({
     backgroundColor: "bg.surface",
@@ -83,7 +93,41 @@ export function VideoGrid({
               🔥 {getHHmm(myTodayTotalDuration)}
             </span>
           </div>
-          <VideoPlayer stream={localStream} isLocal={true} />
+          <div
+            className={css({
+              position: "relative"
+            })}
+          >
+            {isSharing && (
+              <button
+                onClick={isProducerPaused ? resumeProducer : pauseProducer}
+                className={css({
+                  position: "absolute",
+                  top: "2",
+                  right: "2",
+                  zIndex: 1,
+                  minWidth: "72px",
+                  paddingX: "3",
+                  paddingY: "1.5",
+                  fontSize: "xs",
+                  fontWeight: "medium",
+                  borderRadius: "full",
+                  cursor: "pointer",
+                  border: "none",
+                  color: "white",
+                  backgroundColor: isProducerPaused
+                    ? "status.running"
+                    : "status.error",
+                  boxShadow: "0 4px 12px rgba(15, 23, 42, 0.24)",
+                  _hover: { opacity: 0.9 },
+                  transition: "background-color 0.15s, opacity 0.15s"
+                })}
+              >
+                {isProducerPaused ? "Camera on" : "Camera off"}
+              </button>
+            )}
+            <VideoPlayer stream={localStream} isLocal={true} />
+          </div>
         </div>
       )}
 

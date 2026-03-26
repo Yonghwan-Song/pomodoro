@@ -295,6 +295,28 @@ export class SignalingGateway
     );
   }
 
+  @SubscribeMessage(EventNames.PAUSE_PRODUCER)
+  async handlePauseProducer(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { kind: 'video' | 'audio' }
+  ): Promise<AckResponse> {
+    return await this.groupStudyManagementService.pauseProducer(
+      clientSocket.id,
+      payload.kind
+    );
+  }
+
+  @SubscribeMessage(EventNames.RESUME_PRODUCER)
+  async handleResumeProducer(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { kind: 'video' | 'audio' }
+  ): Promise<AckResponse> {
+    return await this.groupStudyManagementService.resumeProducer(
+      clientSocket.id,
+      payload.kind
+    );
+  }
+
   @SubscribeMessage(EventNames.PRODUCER_CLOSED)
   handleProducerClosed(
     @ConnectedSocket() clientSocket: Socket,

@@ -15,6 +15,14 @@ function getLayerLabel(layer?: number) {
   return undefined;
 }
 
+function getCurrentLayerText(layer?: number) {
+  return layer == null ? "동기화 중" : `현재 ${getLayerLabel(layer)}`;
+}
+
+function getRequestedLayerText(layer?: number) {
+  return layer == null ? "요청 자동" : `요청 ${getLayerLabel(layer)}`;
+}
+
 const VideoPlayer = ({
   stream,
   isLocal = false,
@@ -29,8 +37,21 @@ const VideoPlayer = ({
   const layerState = useConnectionStore((state) =>
     consumerId ? state.consumerLayers?.get(consumerId) : undefined
   );
-  const requestedLayerLabel = getLayerLabel(layerState?.requestedSpatialLayer);
-  const currentLayerLabel = getLayerLabel(layerState?.currentSpatialLayer);
+  const requestedLayerLabel = getRequestedLayerText(
+    layerState?.requestedSpatialLayer
+  );
+  const currentLayerLabel = getCurrentLayerText(
+    layerState?.currentSpatialLayer
+  );
+
+  // layerState가 존재하지만 currentSpatialLayer가 undefined이면
+  // mediasoup가 현재 어떤 레이어도 forwarding하지 않고 있다는 뜻.
+  // 원인은 다양함 (producer pause, 대역폭 부족, 초기 연결 등).
+  const noActiveLayer =
+    !isLocal &&
+    consumerId != null &&
+    layerState != null &&
+    layerState.currentSpatialLayer === undefined;
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -64,81 +85,232 @@ const VideoPlayer = ({
 
   return (
     <div
-      className={css({ position: "relative", width: "100%", height: "100%" })}
+      className={css({
+        width: "100%"
+      })}
     >
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={isLocal}
+      <div
         className={css({
-          display: "block",
-          width: "100%",
-          maxWidth: "100%",
-          aspectRatio: "16 / 9",
-          objectFit: "cover",
-          borderRadius: "lg",
-          backgroundColor: "bg.canvas"
+          position: "relative",
+          width: "100%"
         })}
-      />
+      >
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={isLocal}
+          className={css({
+            display: "block",
+            width: "100%",
+            maxWidth: "100%",
+            aspectRatio: "16 / 9",
+            objectFit: "cover",
+            borderRadius: "lg",
+            backgroundColor: "bg.canvas"
+          })}
+        />
+        {noActiveLayer && (
+          <div
+            className={css({
+              position: "absolute",
+              inset: "0",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.55)",
+              borderRadius: "lg",
+              zIndex: 5,
+              gap: "3"
+            })}
+          >
+            <div
+              className={css({
+                width: "8",
+                height: "8",
+                border: "3px solid rgba(255, 255, 255, 0.25)",
+                borderTopColor: "white",
+                borderRadius: "full",
+                animation: "spin 1s linear infinite"
+              })}
+            />
+            <span
+              className={css({
+                color: "white",
+                fontSize: "sm",
+                fontWeight: "medium"
+              })}
+            >
+              영상 수신 대기 중
+            </span>
+          </div>
+        )}
+      </div>
       {!isLocal && consumerId && (
         <div
           className={css({
-            position: "absolute",
-            bottom: "2",
-            right: "2",
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
+            justifyContent: "center",
             gap: "2",
             padding: "2",
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            borderRadius: "md",
-            color: "white",
+            marginTop: "2",
+            width: "100%",
+            backgroundColor: "bg.canvas",
+            borderRadius: "lg",
+            border: "1px solid",
+            borderColor: "borders.subtle",
+            color: "text.main",
             fontSize: "xs",
-            zIndex: 10
+            minWidth: 0
           })}
         >
-          <span>현재: {currentLayerLabel ?? "확인 중"}</span>
-          <span className={css({ color: "whiteAlpha.700" })}>
-            요청: {requestedLayerLabel ?? "자동"}
-          </span>
-          <button
-            onClick={() => handleQualityChange(0)}
+          <div
             className={css({
-              paddingX: "1",
-              cursor: "pointer",
-              // QQQ: 색상은 왜 다 똑같은거야?...
-              color:
-                layerState?.requestedSpatialLayer === 0 ? "blue.300" : "white",
-              _hover: { color: "blue.300" }
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "1.5"
             })}
           >
-            Low
-          </button>
-          <button
-            onClick={() => handleQualityChange(1)}
+            <span
+              className={css({
+                paddingX: "2",
+                paddingY: "1",
+                borderRadius: "full",
+                backgroundColor: "bg.surface",
+                border: "1px solid",
+                borderColor: "borders.subtle",
+                color: "text.main",
+                whiteSpace: "nowrap"
+              })}
+            >
+              {currentLayerLabel}
+            </span>
+            <span
+              className={css({
+                paddingX: "2",
+                paddingY: "1",
+                borderRadius: "full",
+                backgroundColor: "bg.surface",
+                border: "1px solid",
+                borderColor: "borders.subtle",
+                color: "text.muted",
+                whiteSpace: "nowrap"
+              })}
+            >
+              {requestedLayerLabel}
+            </span>
+          </div>
+          <div
             className={css({
-              paddingX: "1",
-              cursor: "pointer",
-              color:
-                layerState?.requestedSpatialLayer === 1 ? "blue.300" : "white",
-              _hover: { color: "blue.300" }
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "1",
+              padding: "1",
+              borderRadius: "md",
+              backgroundColor: "bg.surface",
+              border: "1px solid",
+              borderColor: "borders.subtle"
             })}
           >
-            Mid
-          </button>
-          <button
-            onClick={() => handleQualityChange(2)}
-            className={css({
-              paddingX: "1",
-              cursor: "pointer",
-              color:
-                layerState?.requestedSpatialLayer === 2 ? "blue.300" : "white",
-              _hover: { color: "blue.300" }
-            })}
-          >
-            High
-          </button>
+            <button
+              type="button"
+              onClick={() => handleQualityChange(0)}
+              className={css({
+                minWidth: "11",
+                paddingX: "2",
+                paddingY: "1",
+                borderRadius: "sm",
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor:
+                  layerState?.requestedSpatialLayer === 0
+                    ? "blue.300"
+                    : "transparent",
+                backgroundColor:
+                  layerState?.requestedSpatialLayer === 0
+                    ? "bg.surface"
+                    : "transparent",
+                color:
+                  layerState?.requestedSpatialLayer === 0 ? "blue.300" : "text.main",
+                _hover: {
+                  borderColor:
+                    layerState?.requestedSpatialLayer === 0
+                      ? "blue.300"
+                      : "borders.subtle",
+                  backgroundColor: "bg.surface"
+                }
+              })}
+            >
+              Low
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQualityChange(1)}
+              className={css({
+                minWidth: "11",
+                paddingX: "2",
+                paddingY: "1",
+                borderRadius: "sm",
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor:
+                  layerState?.requestedSpatialLayer === 1
+                    ? "blue.300"
+                    : "transparent",
+                backgroundColor:
+                  layerState?.requestedSpatialLayer === 1
+                    ? "bg.surface"
+                    : "transparent",
+                color:
+                  layerState?.requestedSpatialLayer === 1 ? "blue.300" : "text.main",
+                _hover: {
+                  borderColor:
+                    layerState?.requestedSpatialLayer === 1
+                      ? "blue.300"
+                      : "borders.subtle",
+                  backgroundColor: "bg.surface"
+                }
+              })}
+            >
+              Mid
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQualityChange(2)}
+              className={css({
+                minWidth: "11",
+                paddingX: "2",
+                paddingY: "1",
+                borderRadius: "sm",
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor:
+                  layerState?.requestedSpatialLayer === 2
+                    ? "blue.300"
+                    : "transparent",
+                backgroundColor:
+                  layerState?.requestedSpatialLayer === 2
+                    ? "bg.surface"
+                    : "transparent",
+                color:
+                  layerState?.requestedSpatialLayer === 2 ? "blue.300" : "text.main",
+                _hover: {
+                  borderColor:
+                    layerState?.requestedSpatialLayer === 2
+                      ? "blue.300"
+                      : "borders.subtle",
+                  backgroundColor: "bg.surface"
+                }
+              })}
+            >
+              High
+            </button>
+          </div>
         </div>
       )}
     </div>
