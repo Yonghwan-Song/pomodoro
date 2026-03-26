@@ -39,5 +39,5 @@ export const pubsub: PubsubType = {
         f(data);
       });
     }
-  },
+  }
 };

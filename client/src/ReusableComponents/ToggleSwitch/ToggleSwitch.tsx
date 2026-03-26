@@ -41,13 +41,13 @@ export default function ToggleSwitch({
   backgroundColorForOff,
   backgroundColorForSwitch,
   isWithBorder = false,
-  onChange,
+  onChange
 }: ToggleSwitchPropsType) {
   return (
     <div
       style={{
         border: isWithBorder ? "1px solid black" : "none",
-        borderRadius: "0.5em",
+        borderRadius: "0.5em"
       }}
     >
       <input
@@ -60,7 +60,7 @@ export default function ToggleSwitch({
           opacity: 0,
           position: "absolute",
           left: "-9000px",
-          top: "-9000px",
+          top: "-9000px"
         }}
       />
 
@@ -75,7 +75,7 @@ export default function ToggleSwitch({
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
+            justifyContent: "space-between"
           }}
         >
           {/* 이런식으로 도면 링크 걸어주기 */}

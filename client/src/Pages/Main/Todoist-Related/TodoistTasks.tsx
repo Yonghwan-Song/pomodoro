@@ -8,7 +8,7 @@ import styled from "styled-components";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import {
   generateTaskDictionaryAndTree,
-  useTaskSelectionHandler,
+  useTaskSelectionHandler
 } from "./todoist-utility";
 import { Button } from "../../../ReusableComponents/Buttons/Button";
 

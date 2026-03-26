@@ -23,7 +23,7 @@ const StyledBlockNumberInput = styled.input`
 const BlockNumberInput: React.FC<NumberInputProps> = ({
   onChange,
   value,
-  index,
+  index
 }) => {
   return (
     <StyledBlockNumberInput

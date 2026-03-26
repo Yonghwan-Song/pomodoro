@@ -11,10 +11,10 @@ import { Pomodoro, PomodoroSchema } from 'src/schemas/pomodoro.schema';
     MongooseModule.forFeature([
       { name: Category.name, schema: CategorySchema },
       { name: User.name, schema: UserSchema },
-      { name: Pomodoro.name, schema: PomodoroSchema },
-    ]),
+      { name: Pomodoro.name, schema: PomodoroSchema }
+    ])
   ],
   controllers: [CategoriesController],
-  providers: [CategoriesService],
+  providers: [CategoriesService]
 })
 export class CategoriesModule {}

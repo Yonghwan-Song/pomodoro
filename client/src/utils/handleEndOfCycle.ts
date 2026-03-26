@@ -47,7 +47,7 @@ export function handleEndOfCycle(
       name,
       data: {
         cycleStat: cycleStatPayload,
-        averageAdherenceRate: averageAdherenceRatePayload,
-      },
+        averageAdherenceRate: averageAdherenceRatePayload
+      }
     });
 }

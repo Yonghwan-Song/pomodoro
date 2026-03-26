@@ -26,10 +26,12 @@ export function ChatBox({
     typeof layout === "string"
       ? layout === "sidebar"
         ? "100%"
-        : isOpen ? "400px" : "auto"
+        : isOpen
+        ? "400px"
+        : "auto"
       : {
-          base: layout.base === "sidebar" ? "100%" : (isOpen ? "400px" : "auto"),
-          lg: layout.lg === "sidebar" ? "100%" : (isOpen ? "400px" : "auto")
+          base: layout.base === "sidebar" ? "100%" : isOpen ? "400px" : "auto",
+          lg: layout.lg === "sidebar" ? "100%" : isOpen ? "400px" : "auto"
         };
 
   const handleSend = () => {
@@ -47,7 +49,10 @@ export function ChatBox({
     const latest = messages[messages.length - 1]!;
     const latestTime = new Date(latest.timestamp);
     if (Number.isNaN(latestTime.getTime())) return "기록 없음";
-    return latestTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return latestTime.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   }, [messages]);
 
   return (
@@ -106,7 +111,9 @@ export function ChatBox({
           />
           Chat
         </span>
-        <div className={css({ display: "flex", alignItems: "center", gap: "2" })}>
+        <div
+          className={css({ display: "flex", alignItems: "center", gap: "2" })}
+        >
           <span
             className={css({
               fontSize: "xs",
@@ -122,7 +129,14 @@ export function ChatBox({
           >
             {messages.length}
           </span>
-          <span className={css({ fontSize: "sm", color: "text.muted", width: "5", textAlign: "center" })}>
+          <span
+            className={css({
+              fontSize: "sm",
+              color: "text.muted",
+              width: "5",
+              textAlign: "center"
+            })}
+          >
             {isOpen ? "▾" : "▸"}
           </span>
         </div>
@@ -138,7 +152,7 @@ export function ChatBox({
             paddingY: "2",
             borderBottom: "1px solid",
             borderColor: "borders.subtle",
-            backgroundColor: "bg.canvas", 
+            backgroundColor: "bg.canvas",
             fontSize: "xs",
             color: "text.muted"
           })}
@@ -226,7 +240,9 @@ export function ChatBox({
                 paddingX: "4",
                 paddingY: "2",
                 minWidth: "68px",
-                backgroundColor: input.trim() ? "accent.secondary" : "bg.subtle",
+                backgroundColor: input.trim()
+                  ? "accent.secondary"
+                  : "bg.subtle",
                 color: input.trim() ? "bg.canvas" : "text.muted",
                 border: "1px solid",
                 borderColor: input.trim() ? "transparent" : "borders.subtle",
@@ -235,7 +251,12 @@ export function ChatBox({
                 fontSize: "sm",
                 fontWeight: "semibold",
                 transition: "all 0.2s",
-                _hover: input.trim() ? { transform: "translateY(-1px)", filter: "brightness(1.02)" } : {}
+                _hover: input.trim()
+                  ? {
+                      transform: "translateY(-1px)",
+                      filter: "brightness(1.02)"
+                    }
+                  : {}
               })}
             >
               Send

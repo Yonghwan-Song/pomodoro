@@ -25,7 +25,7 @@ export class Room {
     if (peer) {
       this.peers.delete(peerId);
       console.log(
-        `[room.entity:removePeer] Peer ${peerId} left room ${this.id}`,
+        `[room.entity:removePeer] Peer ${peerId} left room ${this.id}`
       );
     }
     return peer;
@@ -53,7 +53,7 @@ export class Room {
           producerId: producer.id,
           socketId: peer.id,
           kind: producer.kind,
-          displayName: peer.userNickname,
+          displayName: peer.userNickname
         });
       }
     }
@@ -70,7 +70,7 @@ export class Room {
     return {
       id: this.id,
       name: this.name,
-      peerCount: this.peers.size,
+      peerCount: this.peers.size
     };
   }
 }

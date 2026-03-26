@@ -1,7 +1,7 @@
 import {
   Category,
   CycleSetting,
-  PomoSettingType,
+  PomoSettingType
 } from "../../types/clientStatesType";
 import { roundTo_X_DecimalPoints } from "../../utils/number-related-utils";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
@@ -10,13 +10,13 @@ import {
   COLOR_FOR_CURRENT_STH,
   COLOR_FOR_SELECTED_SETTING,
   RESOURCE,
-  SUB_SET,
+  SUB_SET
 } from "../../constants";
 import {
   persistCategoryChangeInfoArrayToIDB,
   persistTimersStatesToServer,
   postMsgToSW,
-  stopCountDownInBackground,
+  stopCountDownInBackground
 } from "../..";
 import { useAuthContext } from "../../Context/AuthContext";
 import { Button } from "../../ReusableComponents/Buttons/Button";
@@ -51,7 +51,7 @@ export function CycleSettingList({
   setCycleSettingNameInput,
   setTargetFocusRatio,
   setIsInputLocked,
-  currentCycleSetting,
+  currentCycleSetting
 }: CycleSettingListProps) {
   const { user } = useAuthContext()!;
   const cycleSettings = useBoundedPomoInfoStore((state) => state.cycleSettings);
@@ -103,7 +103,7 @@ export function CycleSettingList({
         justifyContent: "space-around",
         flexDirection: "row",
         flexWrap: "wrap",
-        rowGap: "0.6rem",
+        rowGap: "0.6rem"
       }}
     >
       {cycleSettings.map((setting, index) => {
@@ -112,7 +112,7 @@ export function CycleSettingList({
           shortBreakDuration,
           longBreakDuration,
           numOfPomo,
-          numOfCycle,
+          numOfCycle
         } = setting.pomoSetting;
 
         const totalFocusDurationTargetedInSec = 60 * pomoDuration * numOfPomo;
@@ -145,7 +145,7 @@ export function CycleSettingList({
               borderRadius: "0.5em",
               paddingLeft: "5px",
               paddingRight: "5px",
-              cursor: "pointer",
+              cursor: "pointer"
               // transform: isSelected ? "scale(1.3)" : "scale(1)",
               // transform: isSelected ? "rotate(12deg)" : "rotate(0deg)",
             }}

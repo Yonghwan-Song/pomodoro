@@ -3,7 +3,7 @@ import {
   Validate,
   ValidateNested,
   ValidatorConstraint,
-  ValidatorConstraintInterface,
+  ValidatorConstraintInterface
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateCycleSettingDto } from './create-cycle-setting.dto';
@@ -18,7 +18,7 @@ import { PartialType } from '@nestjs/mapped-types';
 // }
 
 export class PartialCreateCycleSettingDto extends PartialType(
-  CreateCycleSettingDto,
+  CreateCycleSettingDto
 ) {}
 
 //#region New with PartialType

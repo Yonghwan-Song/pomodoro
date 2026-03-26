@@ -16,7 +16,7 @@ export async function persistRecOfTodayToServer(
     if (resOfRecordOfToday !== undefined) {
       let recordsOfToday = await resOfRecordOfToday.json();
       recordsOfToday.push({
-        record,
+        record
       });
       await cache.put(
         BASE_URL + RESOURCE.TODAY_RECORDS,
@@ -27,7 +27,7 @@ export async function persistRecOfTodayToServer(
     // http request
     authGuard &&
       (await axiosInstance.post(RESOURCE.TODAY_RECORDS, {
-        ...record,
+        ...record
       }));
   } catch (error) {
     console.warn(error);

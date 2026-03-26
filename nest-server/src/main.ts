@@ -11,11 +11,11 @@ async function bootstrap() {
   const adminConfig: ServiceAccount = {
     projectId: 'pomodoro-ef5e0',
     privateKey: configService.get<string>('FIREBASE_ADMIN_PRIVATE_KEY'),
-    clientEmail: configService.get<string>('FIREBASE_ADMIN_CLIENT_EMAIL'),
+    clientEmail: configService.get<string>('FIREBASE_ADMIN_CLIENT_EMAIL')
   };
 
   admin.initializeApp({
-    credential: admin.credential.cert(adminConfig),
+    credential: admin.credential.cert(adminConfig)
   });
 
   app.enableCors();

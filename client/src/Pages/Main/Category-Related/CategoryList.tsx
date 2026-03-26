@@ -4,7 +4,7 @@ import {
   COLOR_FOR_CURRENT_STH,
   CURRENT_CATEGORY_NAME,
   CURRENT_SESSION_TYPE,
-  RESOURCE,
+  RESOURCE
 } from "../../../constants";
 import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
 import ReactModal from "react-modal";
@@ -20,8 +20,8 @@ const customModalStyles = {
     right: "auto",
     bottom: "auto",
     marginRight: "-50%",
-    transform: "translate(-50%, -50%)",
-  },
+    transform: "translate(-50%, -50%)"
+  }
 };
 
 /**
@@ -65,7 +65,7 @@ export default function CategoryList() {
   async function selectCurrent({
     doesItJustChangeCategory,
     nameOfCategoryClicked,
-    _uuidOfCategoryClicked,
+    _uuidOfCategoryClicked
   }: {
     doesItJustChangeCategory: boolean; // To update the global state. The state's name is the same as this argument.
     // The global state is used in a if conditional statement at TimerController.tsx
@@ -96,7 +96,7 @@ export default function CategoryList() {
       try {
         await axiosInstance.patch(RESOURCE.CATEGORIES, {
           name: clickedName,
-          data: { isCurrent: true },
+          data: { isCurrent: true }
         });
       } catch (reqConfig: any) {
         if (_uuid) {
@@ -115,7 +115,7 @@ export default function CategoryList() {
 
   //#region New - utilize state variables
   function runSessionUncategorized({
-    doesItJustChangeCategory,
+    doesItJustChangeCategory
   }: {
     doesItJustChangeCategory: boolean;
   }) {
@@ -137,7 +137,7 @@ export default function CategoryList() {
       axiosInstance
         .patch(RESOURCE.CATEGORIES, {
           name: currentCategoryName,
-          data: { isCurrent: false },
+          data: { isCurrent: false }
         })
         .catch((reqConfig) => {
           currentCategoryUUID &&
@@ -164,7 +164,7 @@ export default function CategoryList() {
       selectCurrent({
         doesItJustChangeCategory: true,
         nameOfCategoryClicked,
-        _uuidOfCategoryClicked: _uuid,
+        _uuidOfCategoryClicked: _uuid
       });
     } else {
       runSessionUncategorized({ doesItJustChangeCategory: true });
@@ -206,7 +206,7 @@ export default function CategoryList() {
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              columnGap: "8px",
+              columnGap: "8px"
             }}
             onClick={() => {
               const currentSessionType =
@@ -237,13 +237,13 @@ export default function CategoryList() {
                 width: "50px",
                 height: "50px",
                 backgroundColor: `${category.color}`,
-                borderRadius: "50%",
+                borderRadius: "50%"
               }}
             ></div>
             <div
               style={{
                 color: category.isCurrent ? COLOR_FOR_CURRENT_STH : "black",
-                fontWeight: category.isCurrent ? "bold" : "normal",
+                fontWeight: category.isCurrent ? "bold" : "normal"
               }}
             >
               {category.name}
@@ -258,7 +258,7 @@ export default function CategoryList() {
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          columnGap: "8px",
+          columnGap: "8px"
         }}
         onClick={() => {
           const currentSessionType =
@@ -277,13 +277,13 @@ export default function CategoryList() {
             width: "50px",
             height: "50px",
             backgroundColor: colorForUnCategorized,
-            borderRadius: "50%",
+            borderRadius: "50%"
           }}
         ></div>
         <div
           style={{
             color: currentCategoryName === undefined ? "#ff8522" : "black",
-            fontWeight: currentCategoryName === undefined ? "bold" : "normal",
+            fontWeight: currentCategoryName === undefined ? "bold" : "normal"
           }}
         >
           Uncategorized
@@ -309,7 +309,7 @@ export default function CategoryList() {
             display: "flex",
             gap: "1.5rem",
             justifyContent: "space-around",
-            marginTop: "5px",
+            marginTop: "5px"
           }}
         >
           <Button

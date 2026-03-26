@@ -16,7 +16,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 import { Type } from 'class-transformer';
 

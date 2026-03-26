@@ -2,7 +2,7 @@ import {
   MiddlewareConsumer,
   Module,
   NestModule,
-  RequestMethod,
+  RequestMethod
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -21,9 +21,9 @@ import { SignalingModule } from './signaling/signaling.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('DATABASE_URL'),
+        uri: configService.get<string>('DATABASE_URL')
       }),
-      inject: [ConfigService],
+      inject: [ConfigService]
     }),
     // MongooseModule.forRoot(process.env.DATABASE_URL),
     UsersModule,
@@ -32,10 +32,10 @@ import { SignalingModule } from './signaling/signaling.module';
     CategoriesModule,
     CycleSettingModule,
     TodoistModule,
-    SignalingModule,
+    SignalingModule
   ],
   controllers: [],
-  providers: [],
+  providers: []
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
@@ -48,7 +48,7 @@ export class AppModule implements NestModule {
         'today-records',
         'categories',
         'cycle-settings',
-        'todoist',
+        'todoist'
       );
   }
 }

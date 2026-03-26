@@ -18,17 +18,17 @@ export class MediasoupService implements OnModuleInit {
           kind: 'audio',
           mimeType: 'audio/opus',
           clockRate: 48000,
-          channels: 2,
+          channels: 2
         },
         {
           kind: 'video',
           mimeType: 'video/VP8',
           clockRate: 90000,
           parameters: {
-            'x-google-start-bitrate': 1000,
-          },
-        },
-      ],
+            'x-google-start-bitrate': 1000
+          }
+        }
+      ]
     });
 
     console.log('this.worker process ID: ', this.worker.pid);
@@ -45,16 +45,16 @@ export class MediasoupService implements OnModuleInit {
         {
           protocol: 'udp',
           ip: '0.0.0.0',
-          announcedAddress: this.announcedIp,
-        },
+          announcedAddress: this.announcedIp
+        }
       ],
       enableUdp: true,
       enableTcp: true,
-      preferUdp: true,
+      preferUdp: true
     });
 
     console.log(
-      `Mediasoup transport created with announced Address: ${this.announcedIp}`,
+      `Mediasoup transport created with announced Address: ${this.announcedIp}`
     );
 
     return webRtcTransport;
@@ -62,7 +62,7 @@ export class MediasoupService implements OnModuleInit {
 
   checkIfClientCanConsume(
     producerId: string,
-    rtpCapabilities: mediasoup.types.RtpCapabilities,
+    rtpCapabilities: mediasoup.types.RtpCapabilities
   ) {
     return this.router.canConsume({ producerId, rtpCapabilities });
   }
@@ -70,12 +70,12 @@ export class MediasoupService implements OnModuleInit {
   async createConsumer(
     recvTransport: WebRtcTransport,
     producerId: string,
-    rtpCapabilities: mediasoup.types.RtpCapabilities,
+    rtpCapabilities: mediasoup.types.RtpCapabilities
   ) {
     return await recvTransport.consume({
       producerId,
       rtpCapabilities,
-      paused: true,
+      paused: true
     });
   }
 }

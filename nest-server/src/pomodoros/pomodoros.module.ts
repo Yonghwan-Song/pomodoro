@@ -6,7 +6,7 @@ import { Pomodoro, PomodoroSchema } from 'src/schemas/pomodoro.schema';
 import { Category, CategorySchema } from 'src/schemas/category.schema';
 import {
   TodoistTaskTracking,
-  TodoistTaskTrackingSchema,
+  TodoistTaskTrackingSchema
 } from 'src/schemas/todoistTaskTracking.schema';
 
 @Module({
@@ -14,10 +14,10 @@ import {
     MongooseModule.forFeature([
       { name: Pomodoro.name, schema: PomodoroSchema },
       { name: Category.name, schema: CategorySchema },
-      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema },
-    ]),
+      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema }
+    ])
   ],
   controllers: [PomodorosController],
-  providers: [PomodorosService],
+  providers: [PomodorosService]
 })
 export class PomodorosModule {}

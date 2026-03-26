@@ -6,7 +6,7 @@ import {
   Patch,
   Post,
   Req,
-  ValidationPipe,
+  ValidationPipe
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -35,25 +35,25 @@ export class UsersController {
   @Post()
   create(
     @Body(new ValidationPipe()) createUserDto: CreateUserDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(createUserDto);
     return this.usersService.create(
       createUserDto,
       request.userEmail,
-      request.userNickname,
+      request.userNickname
     );
   }
 
   @Patch('pomodoro-setting')
   async updatePomoSetting(
     @Body(new ValidationPipe()) updatePomoSettingDto: UpdatePomoSettingDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     // console.log(updatePomoSettingDto);
     return await this.usersService.updatePomoSetting(
       updatePomoSettingDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -61,12 +61,12 @@ export class UsersController {
   async updateAutoStartSetting(
     @Body(new ValidationPipe())
     updateAutoStartSettingDto: UpdateAutoStartSettingDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(updateAutoStartSettingDto);
     return await this.usersService.updateAutoStartSetting(
       updateAutoStartSettingDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -74,16 +74,16 @@ export class UsersController {
   async updateCurrentCycleInfo(
     @Body(new ValidationPipe())
     updateCurrentCycleInfoDto: UpdateCurrentCycleInfoDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(
       'updateCurrentCycleInfoDto at the user controller',
-      updateCurrentCycleInfoDto,
+      updateCurrentCycleInfoDto
     );
 
     return await this.usersService.updateCurrentCycleInfo(
       updateCurrentCycleInfoDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -91,22 +91,22 @@ export class UsersController {
   async updateGoals(
     @Body(new ValidationPipe())
     updateGoalsDto: UpdateGoalsDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     return await this.usersService.updateGoals(
       updateGoalsDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
   @Patch('timers-states')
   async updateTimersStates(
     @Body(new ValidationPipe()) updateTimersStatesDto: UpdateTimersStatesDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     return await this.usersService.updateTimersStates(
       updateTimersStatesDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -114,11 +114,11 @@ export class UsersController {
   async updateIsUnCategorizedOnStat(
     @Body(new ValidationPipe())
     updateIsUnCategorizedOnStatDto: UpdateIsUnCategorizedOnStatDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     return await this.usersService.updateIsUnCategorizedOnStat(
       updateIsUnCategorizedOnStatDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -126,11 +126,11 @@ export class UsersController {
   async updateColorForUnCategorized(
     @Body(new ValidationPipe())
     updateColorForUnCategorizedDto: UpdateColorForUnCategorizedDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     return await this.usersService.updateColorForUnCategorized(
       updateColorForUnCategorizedDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -138,15 +138,15 @@ export class UsersController {
   async updateCategoryChangeInfo(
     @Body(new ValidationPipe())
     updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(
       'updateCategoryChangeInfoArrayDto.categoryChangeInfoArray',
-      updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
+      updateCategoryChangeInfoArrayDto.categoryChangeInfoArray
     );
     return await this.usersService.updateCategoryChangeInfoArray(
       updateCategoryChangeInfoArrayDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -154,16 +154,16 @@ export class UsersController {
   async updateCurrentTaskId(
     @Body(new ValidationPipe())
     updateCurrentTaskIdAndTaskChangeInfoArrayDto: UpdateCurrentTaskIdAndTaskChangeInfoArrayDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(
       'updateCurrentTaskIdAndTaskChangeInfoArrayDto',
-      updateCurrentTaskIdAndTaskChangeInfoArrayDto,
+      updateCurrentTaskIdAndTaskChangeInfoArrayDto
     );
 
     return await this.usersService.updateCurrentTaskIdAndTaskChangeInfoArray(
       updateCurrentTaskIdAndTaskChangeInfoArrayDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -171,13 +171,13 @@ export class UsersController {
   async updateTaskChangeInfoArray(
     @Body(new ValidationPipe())
     updateTaskChangeInfoArrayDto: UpdateTaskChangeInfoArrayDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log('updateTaskChangeInfoArrayDto', updateTaskChangeInfoArrayDto);
 
     return await this.usersService.updateTaskChangeInfoArray(
       updateTaskChangeInfoArrayDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 

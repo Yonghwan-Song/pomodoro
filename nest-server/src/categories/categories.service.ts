@@ -6,7 +6,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { User } from 'src/schemas/user.schema';
 import {
   BatchUpdateCategoryDto,
-  UpdateCategoryDto,
+  UpdateCategoryDto
 } from './dto/update-category.dto';
 import { Pomodoro } from 'src/schemas/pomodoro.schema';
 
@@ -15,7 +15,7 @@ export class CategoriesService {
   constructor(
     @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
+    @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>
   ) {}
 
   private sessionCategory: HydratedDocument<Category> | null;
@@ -23,15 +23,15 @@ export class CategoriesService {
   async create(createCategoryDto: CreateCategoryDto, userEmail: string) {
     const dataToPersist = {
       ...createCategoryDto,
-      userEmail,
+      userEmail
     };
     const newCategory = new this.categoryModel(dataToPersist);
     const user = await this.userModel.findOne({ userEmail });
     const savedCategory = await newCategory.save();
     await user.updateOne({
       $push: {
-        categories: savedCategory._id,
-      },
+        categories: savedCategory._id
+      }
     });
 
     return savedCategory;
@@ -64,15 +64,15 @@ export class CategoriesService {
     }
 
     return {
-      categoryUpdated,
+      categoryUpdated
     };
   }
 
   async batchUpdate(batchUpdateDto: BatchUpdateCategoryDto, userEmail: string) {
     const results = await Promise.all(
       batchUpdateDto.categories.map((categoryDto) =>
-        this.update(categoryDto, userEmail),
-      ),
+        this.update(categoryDto, userEmail)
+      )
     );
 
     return results;
@@ -90,12 +90,12 @@ export class CategoriesService {
     const updatedUser = await this.userModel.findOneAndUpdate(
       { userEmail },
       { $pull: { categories: deletedDoc._id } },
-      { new: true },
+      { new: true }
     );
 
     await this.pomodoroModel.updateMany(
       { category: deletedDoc._id },
-      { $unset: { category: '' } },
+      { $unset: { category: '' } }
     );
 
     return { deletedDoc, updatedUser };
@@ -109,13 +109,13 @@ export class CategoriesService {
  */
 async function setCurrentCategoryToFalse(
   userEmail: string,
-  categoryModel: Model<Category>,
+  categoryModel: Model<Category>
 ) {
   return categoryModel
     .findOneAndUpdate(
       { userEmail, isCurrent: true },
       { $set: { isCurrent: false } },
-      { new: true },
+      { new: true }
     )
     .exec();
 }

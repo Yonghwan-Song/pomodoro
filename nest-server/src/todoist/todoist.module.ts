@@ -8,19 +8,19 @@ import { UserSchema } from '@doist/todoist-api-typescript';
 import { ConfigModule } from '@nestjs/config';
 import {
   TodoistTaskTracking,
-  TodoistTaskTrackingSchema,
+  TodoistTaskTrackingSchema
 } from 'src/schemas/todoistTaskTracking.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
-      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema },
+      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema }
     ]),
     ConfigModule.forRoot(),
-    HttpModule,
+    HttpModule
   ],
   controllers: [TodoistController],
-  providers: [TodoistService],
+  providers: [TodoistService]
 })
 export class TodoistModule {}

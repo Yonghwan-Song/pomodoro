@@ -5,7 +5,7 @@ import {
   emptyFailedReqInfo,
   getUserEmail,
   openIndexedDB,
-  persistFailedReqInfoToIDB,
+  persistFailedReqInfoToIDB
 } from "..";
 import { RESOURCE, SUB_SET } from "../constants";
 
@@ -77,7 +77,7 @@ export const errController: ERR_CONTROLLER = {
     GET: [],
     POST: [],
     PATCH: new Map<string, UrlAndData>(),
-    DELETE: [],
+    DELETE: []
   },
 
   registerFailedReqInfo(reqConfig: AxiosRequestConfig) {
@@ -89,7 +89,7 @@ export const errController: ERR_CONTROLLER = {
       case "POST":
         this.failedReqInfo.POST.push({
           url,
-          data: JSON.parse(data),
+          data: JSON.parse(data)
         });
         break;
 
@@ -149,28 +149,28 @@ export const errController: ERR_CONTROLLER = {
             ).data;
             matchingCategory.data = {
               ...dataOfMatchingCategoryCloned,
-              ...(parsedData.data as CategoryDTO),
+              ...(parsedData.data as CategoryDTO)
             };
             this.failedReqInfo.PATCH.set(batchUrl, {
               url: batchUrl,
               data: {
-                categories: existingEntry.data.categories,
-              },
+                categories: existingEntry.data.categories
+              }
             });
           } else {
             existingEntry.data.categories.push(parsedData);
             this.failedReqInfo.PATCH.set(batchUrl, {
               url: batchUrl,
               data: {
-                categories: existingEntry.data.categories,
-              },
+                categories: existingEntry.data.categories
+              }
             });
           }
         } else {
           // set initial entry
           this.failedReqInfo.PATCH.set(batchUrl, {
             url: batchUrl,
-            data: { categories: [parsedData] },
+            data: { categories: [parsedData] }
           });
         }
 
@@ -189,7 +189,7 @@ export const errController: ERR_CONTROLLER = {
 
     if (existingUrlAndData) {
       existingUrlAndData.data = this.mergeData(existingUrlAndData.data, {
-        data: JSON.stringify(newData),
+        data: JSON.stringify(newData)
       });
       this.failedReqInfo.PATCH.set(url, existingUrlAndData);
     } else {
@@ -225,7 +225,7 @@ export const errController: ERR_CONTROLLER = {
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "PATCH",
+          method: "PATCH"
         });
       })
     );
@@ -238,7 +238,7 @@ export const errController: ERR_CONTROLLER = {
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "POST",
+          method: "POST"
         });
       })
     );
@@ -285,7 +285,7 @@ export const errController: ERR_CONTROLLER = {
     if (userEmail) {
       persistFailedReqInfoToIDB({
         userEmail,
-        value: this.failedReqInfo,
+        value: this.failedReqInfo
       });
     }
   },
@@ -295,5 +295,5 @@ export const errController: ERR_CONTROLLER = {
     this.failedReqInfo.POST = [];
     this.failedReqInfo.PATCH.clear();
     this.failedReqInfo.DELETE = [];
-  },
+  }
 };

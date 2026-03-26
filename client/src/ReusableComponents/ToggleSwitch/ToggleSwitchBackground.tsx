@@ -1,7 +1,7 @@
 import {
   StyledLeftBox,
   StyledLeftRightBoxPropsType,
-  StyledRightBox,
+  StyledRightBox
 } from "../styles/ToggleSwitchLeftAndRightBox.styled";
 
 export default function ToggleSwitchBackground({
@@ -10,7 +10,7 @@ export default function ToggleSwitchBackground({
   backgroundColorForOn,
   backgroundColorForOff,
   unitSize,
-  xAxisEdgeWidth,
+  xAxisEdgeWidth
 }: StyledLeftRightBoxPropsType) {
   // console.log("for on", backgroundColorForOn);
   return (

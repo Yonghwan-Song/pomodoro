@@ -109,7 +109,7 @@ export function RoomList() {
             marginRight: "10px",
             borderRadius: "4px",
             border: "1px solid #ccc",
-            width: "200px",
+            width: "200px"
           }}
         />
         <button
@@ -121,7 +121,7 @@ export function RoomList() {
             backgroundColor: "#4CAF50",
             color: "white",
             border: "none",
-            cursor: "pointer",
+            cursor: "pointer"
           }}
         >
           {isCreating ? "생성 중..." : "방 만들기"}
@@ -134,7 +134,7 @@ export function RoomList() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "10px",
+          marginBottom: "10px"
         }}
       >
         <h3 style={{ margin: 0 }}>방 목록 ({rooms.length}개)</h3>
@@ -160,7 +160,7 @@ export function RoomList() {
                 padding: "12px 16px",
                 marginBottom: "8px",
                 backgroundColor: "#f5f5f5",
-                borderRadius: "8px",
+                borderRadius: "8px"
               }}
             >
               <div>
@@ -179,7 +179,7 @@ export function RoomList() {
                   backgroundColor: isJoining ? "#ccc" : "#2196F3",
                   color: "white",
                   border: "none",
-                  cursor: isJoining ? "not-allowed" : "pointer",
+                  cursor: isJoining ? "not-allowed" : "pointer"
                 }}
               >
                 {isJoining ? "접속 중..." : "참가"}

@@ -1,7 +1,7 @@
 import React, { ForwardedRef, PropsWithoutRef } from "react";
 import {
   StyledUnorderedList,
-  StyledUnorderedListProps,
+  StyledUnorderedListProps
 } from "./styles/UnorderedList.styled";
 
 type ForwardRefProps = StyledUnorderedListProps & { children: React.ReactNode };

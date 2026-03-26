@@ -7,10 +7,10 @@ import { TodayRecord, TodayRecordSchema } from 'src/schemas/todayRecord.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: TodayRecord.name, schema: TodayRecordSchema },
-    ]),
+      { name: TodayRecord.name, schema: TodayRecordSchema }
+    ])
   ],
   controllers: [TodayRecordsController],
-  providers: [TodayRecordsService],
+  providers: [TodayRecordsService]
 })
 export class TodayRecordsModule {}

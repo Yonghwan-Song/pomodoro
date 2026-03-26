@@ -6,7 +6,7 @@ import {
   Delete,
   ValidationPipe,
   Req,
-  Query,
+  Query
 } from '@nestjs/common';
 import { PomodorosService } from './pomodoros.service';
 import { CreatePomodoroDto } from './dto/create-pomodoro.dto';
@@ -20,31 +20,31 @@ export class PomodorosController {
   @Post()
   async create(
     @Body(new ValidationPipe()) createPomodoroDto: CreatePomodoroDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     // console.log('Received createPomodoroDto in controller:', createPomodoroDto);
 
     return await this.pomodorosService.persistPomodoroRecordsAndTaskTrackingDurations(
       createPomodoroDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
   @Get('today/total')
   async getTodayTotalDuration(
     @Req() request: CustomRequest,
-    @Query('date') todayDateString: string,
+    @Query('date') todayDateString: string
   ) {
     return await this.pomodorosService.getTodayTotalDurationByUserEmail(
       request.userEmail,
-      todayDateString,
+      todayDateString
     );
   }
 
   @Get()
   async getAllPomodoroRecordsByUserEmail(@Req() request: CustomRequest) {
     return await this.pomodorosService.getAllPomodoroRecordsByUserEmail(
-      request.userEmail,
+      request.userEmail
     );
   }
 
@@ -52,11 +52,11 @@ export class PomodorosController {
   @Post('demo-data')
   async createDemoData(
     @Body(new ValidationPipe()) createDemoDataDto: CreateDemoDataDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     const arrOfDemoPomodoroRecords = await this.pomodorosService.createDemoData(
       createDemoDataDto,
-      request.userEmail,
+      request.userEmail
     );
     console.log(arrOfDemoPomodoroRecords);
 

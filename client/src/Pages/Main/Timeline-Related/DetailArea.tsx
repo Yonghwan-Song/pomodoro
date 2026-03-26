@@ -5,7 +5,7 @@ import {
   tabletRange,
   fhdRange,
   qhdRange,
-  uhdRange,
+  uhdRange
 } from "./mediaQueryLists";
 import { MINIMUMS, PIXEL, VH_RATIO } from "../../../constants";
 
@@ -218,7 +218,7 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
         bottom: `min(-${MINIMUMS.DETAIL_AREA}px,-${VH_RATIO.DETAIL_AREA}vh)`,
         height: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`,
         backgroundColor: "#9ca0bb",
-        width: fullWidthOfTimeline.current + "px",
+        width: fullWidthOfTimeline.current + "px"
       }}
     >
       <div
@@ -230,7 +230,7 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
           left: "0px",
           transform: "translateX(-50%)",
           textAlign: "center",
-          lineHeight: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`,
+          lineHeight: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`
         }}
       >
         {message}

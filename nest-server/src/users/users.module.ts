@@ -8,11 +8,11 @@ import { TodayRecord, TodayRecordSchema } from 'src/schemas/todayRecord.schema';
 import { Category, CategorySchema } from 'src/schemas/category.schema';
 import {
   CycleSetting,
-  CycleSettingSchema,
+  CycleSettingSchema
 } from 'src/schemas/cycleSetting.schema';
 import {
   TodoistTaskTracking,
-  TodoistTaskTrackingSchema,
+  TodoistTaskTrackingSchema
 } from 'src/schemas/todoistTaskTracking.schema';
 
 @Module({
@@ -23,10 +23,10 @@ import {
       { name: TodayRecord.name, schema: TodayRecordSchema },
       { name: Category.name, schema: CategorySchema },
       { name: CycleSetting.name, schema: CycleSettingSchema },
-      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema },
-    ]),
+      { name: TodoistTaskTracking.name, schema: TodoistTaskTrackingSchema }
+    ])
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService]
 })
 export class UsersModule {}

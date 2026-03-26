@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   RecType,
   SessionType,
-  DurationType,
+  DurationType
 } from "../../../types/clientStatesType";
 import Timeline from "./Timeline";
 import { MINIMUMS, VH_RATIO } from "../../../constants";
@@ -59,8 +59,8 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
                     startTime: curVal,
                     endTime: arr[curIndex + 1],
                     subject,
-                    duration: arr[curIndex + 1] - curVal,
-                  },
+                    duration: arr[curIndex + 1] - curVal
+                  }
                 ];
               } else {
                 return [...accu];
@@ -82,7 +82,7 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
         position: "relative",
         height: `max(${VH_RATIO.TIMELINE + VH_RATIO.DETAIL_AREA}vh, ${
           MINIMUMS.TIMELINE + MINIMUMS.DETAIL_AREA
-        }px)`,
+        }px)`
       }}
     >
       <Timeline arrOfSessions={arrOfSessions} />

@@ -21,7 +21,9 @@ export type MediaContextType = {
   releaseStream: () => void;
 };
 
-export type ConnectionInfoContextType = SocketContextType & DeviceContextType & MediaContextType;
+export type ConnectionInfoContextType = SocketContextType &
+  DeviceContextType &
+  MediaContextType;
 
 export const useConnectionInfoContext = () => {
   return useOutletContext<ConnectionInfoContextType>();

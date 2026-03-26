@@ -8,7 +8,7 @@ describe('PomodorosController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PomodorosController],
-      providers: [PomodorosService],
+      providers: [PomodorosService]
     }).compile();
 
     controller = module.get<PomodorosController>(PomodorosController);

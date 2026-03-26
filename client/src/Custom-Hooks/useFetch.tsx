@@ -3,7 +3,7 @@ import {
   useEffect,
   Dispatch,
   SetStateAction,
-  DependencyList,
+  DependencyList
 } from "react";
 import { useAuthContext } from "../Context/AuthContext";
 import { DynamicCache, openCache } from "..";
@@ -47,7 +47,7 @@ export function useFetch<T, S = undefined>({
   callbacks,
   additionalDeps,
   additionalCondition,
-  params,
+  params
 }: ArgType<T, S>): CustomReturnType<T, S> {
   const [data, setData] = useState<DataType<T, S> | null>(null);
   const { user } = useAuthContext()!;

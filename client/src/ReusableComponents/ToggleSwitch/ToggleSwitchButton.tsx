@@ -1,13 +1,13 @@
 import {
   StyledToggleSwitchButton,
-  StyledToggleSwitchButtonPropsType,
+  StyledToggleSwitchButtonPropsType
 } from "../styles/ToggleSwitchButton.styled";
 
 export default function ToggleSwitchButton({
   isSwitchOn,
   unitSize,
   xAxisEdgeWidth,
-  backgroundColorForSwitch,
+  backgroundColorForSwitch
 }: StyledToggleSwitchButtonPropsType) {
   // console.log("doesPomoAutoStart", isSwitchOn);
   return (

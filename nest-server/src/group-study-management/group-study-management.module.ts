@@ -7,11 +7,11 @@ import { Room, RoomSchema } from 'src/schemas/room.schema';
 @Module({
   imports: [
     MediasoupModule,
-    MongooseModule.forFeature([{ name: Room.name, schema: RoomSchema }]),
+    MongooseModule.forFeature([{ name: Room.name, schema: RoomSchema }])
   ],
   controllers: [],
   providers: [GroupStudyManagementService],
-  exports: [GroupStudyManagementService],
+  exports: [GroupStudyManagementService]
 })
 export class GroupStudyManagementModule {}
 

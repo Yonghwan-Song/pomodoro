@@ -24,14 +24,14 @@ export function TotalComparison({ thisTotal, lastTotal, target }: TotalProps) {
     opt1: {
       color: "#6272a4",
       fontWeight: "bold",
-      fontSize: "1.2em",
+      fontSize: "1.2em"
     },
     opt2: {
       fontSize: "1.5em",
-      fontWeight: "bold",
+      fontWeight: "bold"
     },
     opt3: { color: sign === "+" ? "blue" : "red", fontWeight: "bold" },
-    opt4: { color: sign === "+" ? "blue" : "red" },
+    opt4: { color: sign === "+" ? "blue" : "red" }
   };
 
   const ABSOLUTE_DIFF = `${Math.floor(Math.abs(thisTotal - lastTotal) / 60)}h ${

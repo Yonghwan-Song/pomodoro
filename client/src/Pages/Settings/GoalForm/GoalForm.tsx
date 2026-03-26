@@ -240,7 +240,7 @@ export default function GoalForm() {
           display: "flex",
           flexDirection: "row",
           flexWrap: "wrap",
-          rowGap: "6px",
+          rowGap: "6px"
         }}
       >
         <div>
@@ -252,7 +252,7 @@ export default function GoalForm() {
               fontStyle: "italic",
               fontWeight: "bold",
               textAlign: "center",
-              paddingRight: "6px",
+              paddingRight: "6px"
             }}
           >
             Min
@@ -265,7 +265,7 @@ export default function GoalForm() {
               fontStyle: "italic",
               fontWeight: "bold",
               textAlign: "center",
-              paddingRight: "6px",
+              paddingRight: "6px"
             }}
           >
             Ideal
@@ -294,7 +294,7 @@ export default function GoalForm() {
             border: "1px solid #8c8c8c",
             borderRadius: "2px",
             marginLeft: "10px",
-            marginRight: "10px",
+            marginRight: "10px"
           }}
         ></div>
         <div>

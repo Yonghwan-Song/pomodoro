@@ -12,7 +12,7 @@ export function LeftArrow({ handleClick }: ArrowsProps) {
         cursor: "pointer",
         width: "1em",
         height: "auto",
-        opacity: "0.7",
+        opacity: "0.7"
       }}
       onClick={handleClick}
     />
@@ -26,7 +26,7 @@ export function RightArrow({ handleClick }: ArrowsProps) {
         cursor: "pointer",
         width: "1em",
         height: "auto",
-        opacity: "0.7",
+        opacity: "0.7"
       }}
       onClick={handleClick}
     />

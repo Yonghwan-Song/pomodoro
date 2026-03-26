@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  ValidateNested,
+  ValidateNested
 } from 'class-validator';
 
 class Category {

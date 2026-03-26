@@ -1,6 +1,6 @@
 import {
   StyledLoadingMessageProps,
-  StyledLoadingMessage,
+  StyledLoadingMessage
 } from "../styles/LoadingMessage.styled";
 
 type LoadingMessageProps = StyledLoadingMessageProps & {

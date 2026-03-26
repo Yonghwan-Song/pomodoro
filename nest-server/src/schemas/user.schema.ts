@@ -52,8 +52,8 @@ export class User {
   @Prop(
     raw({
       type: [{ id: String, taskChangeTimestamp: Number }],
-      default: [],
-    }),
+      default: []
+    })
   )
   taskChangeInfoArray: {
     id: string;
@@ -70,7 +70,7 @@ export class User {
   userNickname: string;
 
   @Prop({
-    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CycleSetting' }],
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CycleSetting' }]
   })
   cycleSettings: ObjectId[];
 
@@ -78,8 +78,8 @@ export class User {
     raw({
       doesPomoStartAutomatically: { type: Boolean, default: false },
       doesBreakStartAutomatically: { type: Boolean, default: false },
-      doesCycleStartAutomatically: { type: Boolean, default: false },
-    }),
+      doesCycleStartAutomatically: { type: Boolean, default: false }
+    })
   )
   autoStartSetting: AutoStartSetting;
 
@@ -87,7 +87,7 @@ export class User {
     raw({
       weeklyGoal: {
         type: { minimum: Number, ideal: Number },
-        default: { minimum: 30, ideal: 40 },
+        default: { minimum: 30, ideal: 40 }
       },
       dailyGoals: {
         type: [{ minimum: Number, ideal: Number }],
@@ -98,10 +98,10 @@ export class User {
           { minimum: 4, ideal: 6 },
           { minimum: 4, ideal: 6 },
           { minimum: 4, ideal: 6 },
-          { minimum: 4, ideal: 6 },
-        ],
-      },
-    }),
+          { minimum: 4, ideal: 6 }
+        ]
+      }
+    })
   )
   goals: Goals;
 
@@ -111,14 +111,14 @@ export class User {
       pause: {
         type: {
           totalLength: Number,
-          record: [{ start: Number, end: Number }], // All fields in a mongoose schema are optional by default
+          record: [{ start: Number, end: Number }] // All fields in a mongoose schema are optional by default
         },
-        default: { totalLength: 0, record: [] },
+        default: { totalLength: 0, record: [] }
       },
       repetitionCount: { type: Number, default: 0 },
       running: { type: Boolean, default: false },
-      startTime: { type: Number, default: 0 },
-    }),
+      startTime: { type: Number, default: 0 }
+    })
   )
   timersStates: TimersStates;
 
@@ -128,8 +128,8 @@ export class User {
       cycleDuration: { type: Number, default: 130 * 60 },
       cycleStartTimestamp: { type: Number, default: 0 },
       veryFirstCycleStartTimestamp: { type: Number, default: 0 },
-      totalDurationOfSetOfCycles: { type: Number, default: 130 * 60 }, // because the default value of numOfCycle is one.
-    }),
+      totalDurationOfSetOfCycles: { type: Number, default: 130 * 60 } // because the default value of numOfCycle is one.
+    })
   )
   currentCycleInfo: CycleInfo;
 
@@ -149,18 +149,18 @@ export class User {
           categoryName: String,
           categoryChangeTimestamp: Number,
           color: String,
-          progress: { type: Number, default: 0 },
-        },
+          progress: { type: Number, default: 0 }
+        }
       ],
       default: [
         {
           categoryName: 'uncategorized',
           categoryChangeTimestamp: 0,
           color: '#f04005',
-          progress: 0,
-        },
-      ],
-    }),
+          progress: 0
+        }
+      ]
+    })
   )
   categoryChangeInfoArray: {
     categoryName: string;

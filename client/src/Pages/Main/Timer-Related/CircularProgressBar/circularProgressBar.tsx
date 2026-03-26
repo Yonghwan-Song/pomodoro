@@ -4,7 +4,7 @@ import styles from "./circularProgressBar.module.css";
 import {
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
-  persistTimersStatesToServer,
+  persistTimersStatesToServer
 } from "../../../..";
 import { useAuthContext } from "../../../../Context/AuthContext";
 import { CategoryChangeInfoForCircularProgressBar } from "../../../../types/clientStatesType";
@@ -66,7 +66,7 @@ const CircularProgressBar = ({
   totalDurationOfSetOfCyclesInSec,
   setTotalFocusDurationInSec,
   setCycleDurationInSec,
-  setTotalDurationOfSetOfCyclesInSec,
+  setTotalDurationOfSetOfCyclesInSec
 }: CircularProgressBarProps) => {
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.categoryChangeInfoArray
@@ -117,8 +117,8 @@ const CircularProgressBar = ({
           {
             categoryName: categoryChangeInfoArray[lastIndex].categoryName,
             color: categoryChangeInfoArray[lastIndex].color,
-            progress: categoryChangeInfoArray[lastIndex].progress,
-          },
+            progress: categoryChangeInfoArray[lastIndex].progress
+          }
         ];
       } else if (categoryChangeInfoArray.length === 1) {
         return [
@@ -126,20 +126,20 @@ const CircularProgressBar = ({
           {
             categoryName: categoryChangeInfoArray[0].categoryName,
             color: categoryChangeInfoArray[0].color,
-            progress: categoryChangeInfoArray[0].progress,
-          },
+            progress: categoryChangeInfoArray[0].progress
+          }
         ];
       } else {
         // for new users who do not have any categories yet.
         return [
           [],
-          { categoryName: "uncategorized", color: "#f04005", progress: 0 },
+          { categoryName: "uncategorized", color: "#f04005", progress: 0 }
         ];
       }
     } else {
       return [
         [],
-        { categoryName: "uncategorized", color: "#f04005", progress: 0 },
+        { categoryName: "uncategorized", color: "#f04005", progress: 0 }
       ];
     }
   }, [categoryChangeInfoArray, user]);
@@ -148,11 +148,11 @@ const CircularProgressBar = ({
     const timeToAddInMinutes = 5 * addCount;
     const timeToAddInSeconds = timeToAddInMinutes * 60;
     await persistStatesToIDB({
-      duration: durationInSeconds / 60 + timeToAddInMinutes,
+      duration: durationInSeconds / 60 + timeToAddInMinutes
     });
     if (user) {
       await persistTimersStatesToServer({
-        duration: durationInSeconds / 60 + timeToAddInMinutes,
+        duration: durationInSeconds / 60 + timeToAddInMinutes
       });
     }
     setDurationInMinutes((prev) => prev + timeToAddInMinutes);
@@ -171,7 +171,7 @@ const CircularProgressBar = ({
         axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
           totalFocusDuration: newTotalFocusDuration,
           cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec
         });
       persistStatesToIDB({
         currentCycleInfo: {
@@ -179,8 +179,8 @@ const CircularProgressBar = ({
           cycleDuration: newCycleDuration,
           cycleStartTimestamp,
           veryFirstCycleStartTimestamp,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
-        },
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec
+        }
       });
     } else {
       const newCycleDuration = cycleDurationInSec + timeToAddInSeconds;
@@ -192,7 +192,7 @@ const CircularProgressBar = ({
         axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
           totalFocusDuration: totalFocusDurationInSec,
           cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec
         });
       persistStatesToIDB({
         currentCycleInfo: {
@@ -200,8 +200,8 @@ const CircularProgressBar = ({
           cycleDuration: newCycleDuration,
           cycleStartTimestamp,
           veryFirstCycleStartTimestamp,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec,
-        },
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCyclesInSec
+        }
       });
     }
 
@@ -231,7 +231,7 @@ const CircularProgressBar = ({
         axiosInstance.patch(
           C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           {
-            categoryChangeInfoArray: infoArray_upgraded,
+            categoryChangeInfoArray: infoArray_upgraded
           }
         );
     }
@@ -242,11 +242,11 @@ const CircularProgressBar = ({
     const timeToSubtractInSeconds = timeToSubtractInMinutes * 60;
     if (remainingDuration - timeToSubtractInSeconds > 0) {
       await persistStatesToIDB({
-        duration: durationInSeconds / 60 - timeToSubtractInMinutes,
+        duration: durationInSeconds / 60 - timeToSubtractInMinutes
       });
       if (user) {
         await persistTimersStatesToServer({
-          duration: durationInSeconds / 60 - timeToSubtractInMinutes,
+          duration: durationInSeconds / 60 - timeToSubtractInMinutes
         });
       }
       setDurationInMinutes((prev) => prev - timeToSubtractInMinutes);
@@ -265,7 +265,7 @@ const CircularProgressBar = ({
           axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
             totalFocusDuration: newTotalFocusDuration,
             cycleDuration: newCycleDuration,
-            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
           });
         persistStatesToIDB({
           currentCycleInfo: {
@@ -273,8 +273,8 @@ const CircularProgressBar = ({
             cycleDuration: newCycleDuration,
             cycleStartTimestamp,
             veryFirstCycleStartTimestamp,
-            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-          },
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+          }
         });
       } else {
         const newCycleDuration = cycleDurationInSec - timeToSubtractInSeconds;
@@ -286,7 +286,7 @@ const CircularProgressBar = ({
           axiosInstance.patch(C.RESOURCE.USERS + C.SUB_SET.CURRENT_CYCLE_INFO, {
             totalFocusDuration: totalFocusDurationInSec,
             cycleDuration: newCycleDuration,
-            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
           });
         persistStatesToIDB({
           currentCycleInfo: {
@@ -294,8 +294,8 @@ const CircularProgressBar = ({
             cycleDuration: newCycleDuration,
             cycleStartTimestamp,
             veryFirstCycleStartTimestamp,
-            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-          },
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+          }
         });
       }
 
@@ -314,7 +314,7 @@ const CircularProgressBar = ({
           axiosInstance.patch(
             C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
             {
-              categoryChangeInfoArray: upgradedInfoArray,
+              categoryChangeInfoArray: upgradedInfoArray
             }
           );
       }
@@ -369,7 +369,7 @@ const CircularProgressBar = ({
             style={{
               fill: "none",
               transform: "rotate(-0.25turn)",
-              transformOrigin: "center",
+              transformOrigin: "center"
             }}
             // className={styles.circletwo} <--  이렇게 하면 삑남
             r={C.RADIUS}

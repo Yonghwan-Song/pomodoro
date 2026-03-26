@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   CategoryDetail,
   WeekStat,
-  WeekStatWithGoal,
+  WeekStatWithGoal
 } from "../statRelatedTypes";
 import {
   Area,
@@ -13,24 +13,24 @@ import {
   Tooltip,
   TooltipProps,
   XAxis,
-  YAxis,
+  YAxis
 } from "recharts";
 import {
   LeftArrow,
-  RightArrow,
+  RightArrow
 } from "../../../ReusableComponents/Icons/ChevronArrows";
 import { endOfISOWeek, startOfISOWeek } from "date-fns";
 import { getHHmm } from "./StackedGraph";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import {
   getMessageForRemainingDuration,
-  roundTo_X_DecimalPoints,
+  roundTo_X_DecimalPoints
 } from "../../../utils/number-related-utils";
 
 export function WeeklyTrendStacked({
   weeklyTrend,
   listOfCategoryDetails,
-  colorForUnCategorized,
+  colorForUnCategorized
 }: {
   weeklyTrend: WeekStat[];
   listOfCategoryDetails: CategoryDetail[];
@@ -85,8 +85,8 @@ export function WeeklyTrendStacked({
         ...cloned,
         goal: {
           minimum: weeklyGoal.minimum * 60,
-          ideal: weeklyGoal.ideal * 60,
-        },
+          ideal: weeklyGoal.ideal * 60
+        }
       };
     }
   );
@@ -132,7 +132,7 @@ export function WeeklyTrendStacked({
           display: "flex",
           right: "5px",
           top: "6px",
-          zIndex: 2,
+          zIndex: 2
         }}
       >
         <LeftArrow handleClick={() => selectPreviousTenWeekData()} />
@@ -166,7 +166,7 @@ export function WeeklyTrendStacked({
             label={{
               position: "center",
               value: getHHmm(weeklyGoal.minimum * 60),
-              fill: "#12489e",
+              fill: "#12489e"
             }}
             stroke="#4081e9"
           />
@@ -176,7 +176,7 @@ export function WeeklyTrendStacked({
             label={{
               position: "center",
               value: getHHmm(weeklyGoal.ideal * 60),
-              fill: "#0e8b48",
+              fill: "#0e8b48"
             }}
             stroke="#5cca90"
           />
@@ -189,7 +189,7 @@ export function WeeklyTrendStacked({
                 dot={{
                   strokeWidth: 1.5,
                   r: 3,
-                  fill: "#ffffff",
+                  fill: "#ffffff"
                 }}
                 dataKey={`subtotalByCategory.${detail.name}.duration`}
                 stroke={detail.color}
@@ -207,7 +207,7 @@ export function WeeklyTrendStacked({
             dot={{
               strokeWidth: 1.5,
               r: 3,
-              fill: "#ffffff",
+              fill: "#ffffff"
             }}
             stroke={colorForUnCategorized}
             strokeWidth={2}
@@ -225,7 +225,7 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
   const {
     active,
     payload,
-    label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
+    label // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
   } = prop;
 
   if (active && payload && payload.length) {
@@ -259,7 +259,7 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
           padding: "1rem",
           boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
           textAlign: "left",
-          fontWeight: "bold",
+          fontWeight: "bold"
         }}
       >
         <p>
@@ -275,7 +275,7 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
                     style={{
                       fontWeight: "bold",
                       fontStyle: "italic",
-                      textAlign: "center",
+                      textAlign: "center"
                     }}
                   >
                     Total: {getHHmm(dayData.payload.total)}
@@ -297,7 +297,7 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
                   display: "flex",
                   justifyContent: "space-between",
                   columnGap: "6px",
-                  color: dayData.color,
+                  color: dayData.color
                 }}
               >
                 <p>{dayData.name}:</p>
@@ -305,7 +305,7 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
               </div>
               <p
                 style={{
-                  fontStyle: "italic",
+                  fontStyle: "italic"
                 }}
               >
                 {index === payload.length - 1 &&

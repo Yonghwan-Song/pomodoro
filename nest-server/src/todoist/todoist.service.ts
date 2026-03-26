@@ -8,7 +8,7 @@ import {
   getAuthToken,
   Permission,
   revokeAuthToken,
-  TodoistApi,
+  TodoistApi
 } from '@doist/todoist-api-typescript';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schemas/user.schema';
@@ -38,7 +38,7 @@ export class TodoistService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(TodoistTaskTracking.name)
     private todoistTaskTrackingModel: Model<TodoistTaskTracking>,
-    private readonly httpService: HttpService,
+    private readonly httpService: HttpService
   ) {
     // Retrieve clientId and clientSecret from environment variables
     this.clientId = this.configService.get<string>('TODOIST_CLIENT_ID');
@@ -96,7 +96,7 @@ export class TodoistService {
       const { accessToken } = await getAuthToken({
         clientId: this.clientId,
         clientSecret: this.clientSecret,
-        code,
+        code
       });
 
       const user = await this.userModel.findOne({ userEmail });
@@ -145,8 +145,8 @@ export class TodoistService {
 
       const response = await firstValueFrom(
         this.httpService.delete(
-          `https://todoist.com/api/v1/access_tokens?client_id=${this.clientId}&client_secret=${this.clientSecret}&access_token=${accessToken}`,
-        ),
+          `https://todoist.com/api/v1/access_tokens?client_id=${this.clientId}&client_secret=${this.clientSecret}&access_token=${accessToken}`
+        )
       );
 
       console.log('revoke token response', response);
@@ -165,7 +165,7 @@ export class TodoistService {
       if (error.response?.status === 403) {
         throw new HttpException(
           'Invalid or expired access token',
-          HttpStatus.FORBIDDEN,
+          HttpStatus.FORBIDDEN
         );
       }
       throw error;
@@ -186,7 +186,7 @@ export class TodoistService {
       const result = await revokeAuthToken({
         clientId: this.clientId,
         clientSecret: this.clientSecret,
-        accessToken: accessToken,
+        accessToken: accessToken
       });
 
       if (result) {
@@ -201,7 +201,7 @@ export class TodoistService {
       if (error.response?.status === 403) {
         throw new HttpException(
           'Invalid or expired access token',
-          HttpStatus.FORBIDDEN,
+          HttpStatus.FORBIDDEN
         );
       }
       throw error;
@@ -222,7 +222,7 @@ export class TodoistService {
     try {
       const api = new TodoistApi(accessToken);
       const incompleteTasks = (await api.getTasks()).results.filter(
-        (task) => task.isCompleted === false,
+        (task) => task.isCompleted === false
       );
 
       // trackingDocs 가져오기
@@ -230,13 +230,13 @@ export class TodoistService {
         .find({ userEmail })
         .lean();
       const trackingMap = new Map(
-        trackingDocs.map((doc) => [doc.taskId, doc.duration]),
+        trackingDocs.map((doc) => [doc.taskId, doc.duration])
       );
 
       // incompleteTasks에 taskFocusDuration 추가
       return incompleteTasks.map((task) => ({
         ...task,
-        taskFocusDuration: trackingMap.get(task.id) ?? 0,
+        taskFocusDuration: trackingMap.get(task.id) ?? 0
       }));
     } catch (error) {
       console.error('Error fetching tasks from Todoist:', error);

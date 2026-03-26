@@ -1,7 +1,7 @@
 import { BoxShadowWrapper } from "../../../ReusableComponents/Wrapper";
 import {
   LeftArrow,
-  RightArrow,
+  RightArrow
 } from "../../../ReusableComponents/Icons/ChevronArrows";
 import {
   AreaChart,
@@ -11,14 +11,14 @@ import {
   XAxis,
   YAxis,
   TooltipProps,
-  CartesianGrid,
+  CartesianGrid
 } from "recharts";
 import {
   CategoryDetail,
   CategorySubtotal,
   DayStat,
   DayStatForGraph,
-  StatDataForGraph_DailyPomoStat,
+  StatDataForGraph_DailyPomoStat
 } from "../statRelatedTypes";
 import { useState, useEffect } from "react";
 import { startOfWeek, endOfWeek } from "date-fns";
@@ -38,7 +38,7 @@ export function CategoryGraph({
   listOfCategoryDetails,
   weekRangeForThisWeek,
   isUnCategorizedOnStat,
-  colorForUnCategorized,
+  colorForUnCategorized
 }: GraphProps) {
   const [dailyStatOfWeek, setDailyStatOfWeek] = useState<DayStatForGraph[]>(
     structuredClone(dailyStatOfThisWeek)
@@ -121,7 +121,7 @@ export function CategoryGraph({
 
       let correspondingWeekData = extractWeekData(pomodoroDailyStat!, [
         newWeekStart,
-        newWeekEnd,
+        newWeekEnd
       ]);
 
       fillWeekCloned(weekCloned, correspondingWeekData);
@@ -173,7 +173,7 @@ export function CategoryGraph({
 
     let correspondingWeekData = extractWeekData(pomodoroDailyStat!, [
       newWeekStart,
-      newWeekEnd,
+      newWeekEnd
     ]);
     fillWeekCloned(weekCloned, correspondingWeekData);
 
@@ -270,7 +270,7 @@ export function CategoryGraph({
         previousValue[currentValue.name] = {
           _uuid: currentValue._uuid,
           duration: 0,
-          isOnStat: currentValue.isOnStat,
+          isOnStat: currentValue.isOnStat
         };
 
         return previousValue;
@@ -337,7 +337,7 @@ export function CategoryGraph({
           display: "flex",
           right: "5px",
           top: "6px",
-          zIndex: 2,
+          zIndex: 2
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
@@ -372,7 +372,7 @@ export function CategoryGraph({
                   dot={{
                     strokeWidth: 1.5,
                     r: 3,
-                    fill: "#ffffff",
+                    fill: "#ffffff"
                   }}
                   dataKey={`subtotalByCategory.${detail.name}.duration`}
                   stroke={detail.color}
@@ -391,7 +391,7 @@ export function CategoryGraph({
               dot={{
                 strokeWidth: 1.5,
                 r: 3,
-                fill: "#ffffff",
+                fill: "#ffffff"
               }}
               stroke={colorForUnCategorized}
               strokeWidth={1.5}
@@ -434,7 +434,7 @@ export function CategoryGraph({
 function CustomTooltip({
   active,
   payload,
-  label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
+  label // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
 }: TooltipProps<number, string>) {
   if (active && payload && payload.length) {
     return (
@@ -445,7 +445,7 @@ function CustomTooltip({
           padding: "1rem",
           boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
           textAlign: "left",
-          fontWeight: "bold",
+          fontWeight: "bold"
         }}
       >
         <p>
@@ -459,7 +459,7 @@ function CustomTooltip({
                 display: "flex",
                 justifyContent: "space-between",
                 columnGap: "6px",
-                color: dayData.color,
+                color: dayData.color
               }}
             >
               <p>{dayData.name}:</p>

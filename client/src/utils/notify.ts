@@ -40,7 +40,7 @@ export async function notify(which: string) {
 
   let options = {
     body,
-    silent: true,
+    silent: true
   };
 
   await makeSound();

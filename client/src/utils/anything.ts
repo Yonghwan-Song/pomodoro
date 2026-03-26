@@ -32,7 +32,7 @@ export function calculateTargetFocusRatio(
     shortBreakDuration,
     longBreakDuration,
     numOfPomo,
-    numOfCycle,
+    numOfCycle
   } = pomoSetting;
 
   const totalFocusDurationTargetedInSec = 60 * pomoDuration * numOfPomo;
@@ -64,14 +64,14 @@ export function assignStartTimeToChangeInfoArrays(startTime: number) {
     const updatedTaskChangeInfoArray = [...currentTaskChangeInfoArray];
     updatedTaskChangeInfoArray[0] = {
       ...updatedTaskChangeInfoArray[0],
-      taskChangeTimestamp: startTime,
+      taskChangeTimestamp: startTime
     };
     boundedPomoInfoStore
       .getState()
       .setTaskChangeInfoArray(updatedTaskChangeInfoArray);
 
     axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-      taskChangeInfoArray: updatedTaskChangeInfoArray,
+      taskChangeInfoArray: updatedTaskChangeInfoArray
     });
     // console.log(
     //   "updatedTaskChangeInfoArray at assignStartTimeToChangeInfoArrays",
@@ -86,14 +86,14 @@ export function assignStartTimeToChangeInfoArrays(startTime: number) {
     const updatedCategoryChangeInfoArray = [...currentCategoryChangeInfoArray];
     updatedCategoryChangeInfoArray[0] = {
       ...updatedCategoryChangeInfoArray[0],
-      categoryChangeTimestamp: startTime,
+      categoryChangeTimestamp: startTime
     };
     boundedPomoInfoStore
       .getState()
       .setCategoryChangeInfoArray(updatedCategoryChangeInfoArray);
 
     axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
-      categoryChangeInfoArray: updatedCategoryChangeInfoArray,
+      categoryChangeInfoArray: updatedCategoryChangeInfoArray
     });
     // console.log(
     //   "updatedCategoryChangeInfoArray at assignStartTimeToChangeInfoArrays",
@@ -135,6 +135,6 @@ export function getCycleRecord(
     ),
     start: endTime - cycleDurationInSec * 1000,
     end: endTime,
-    date: new Date(),
+    date: new Date()
   };
 }

@@ -20,11 +20,11 @@ const localIpProvider = {
       }
     }
     return '127.0.0.1';
-  },
+  }
 };
 
 @Module({
   providers: [MediasoupService, localIpProvider],
-  exports: [MediasoupService],
+  exports: [MediasoupService]
 })
 export class MediasoupModule {}

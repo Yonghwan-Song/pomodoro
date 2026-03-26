@@ -7,7 +7,7 @@ import {
   SegmentDurationsAndHelperFields,
   SegmentDurationsAndHelperFields2,
   SessionSegment,
-  TaskDuration,
+  TaskDuration
 } from "../../../types/clientStatesType";
 import { TaskChangeInfo } from "../../../types/todoistRelatedTypes";
 import { PomodoroSessionDocument } from "../../Statistics/statRelatedTypes";
@@ -32,7 +32,7 @@ export function createDataSortedByTimestamp(
     transformPauseRecords(pauseRecord);
   const data: InfoOfSessionStateChange[] = [
     ...categoryChanges,
-    ...pauseRecords,
+    ...pauseRecords
   ];
 
   data.sort((a, b) => a.timestamp - b.timestamp);
@@ -49,7 +49,7 @@ export function createDataSortedByTimestamp(
     return categoryChangeInfoArray.map((val) => ({
       kind: "category",
       subKind: val.categoryName,
-      timestamp: val.categoryChangeTimestamp,
+      timestamp: val.categoryChangeTimestamp
     }));
   }
 
@@ -58,7 +58,7 @@ export function createDataSortedByTimestamp(
   ): InfoOfSessionStateChange[] {
     return pauseRecords.flatMap((val) => [
       { kind: "pause", subKind: "start", timestamp: val.start },
-      { kind: "pause", subKind: "end", timestamp: val.end },
+      { kind: "pause", subKind: "end", timestamp: val.end }
     ]);
   }
 }
@@ -96,7 +96,7 @@ export function calculateDurationForEverySegment(
           owner: acc.currentOwner,
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: acc.currentStartTime
         });
         acc.currentType = "pause";
         acc.currentStartTime = val.timestamp;
@@ -106,7 +106,7 @@ export function calculateDurationForEverySegment(
           owner: acc.currentOwner,
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: acc.currentStartTime
         });
         acc.currentType = "focus";
         acc.currentStartTime = val.timestamp;
@@ -117,7 +117,7 @@ export function calculateDurationForEverySegment(
         owner: acc.currentOwner,
         duration: duration_in_ms,
         type: acc.currentType,
-        startTime: acc.currentStartTime,
+        startTime: acc.currentStartTime
       });
       acc.currentOwner = val.subKind!; // category가 바뀌었으므로, owner도 바꿔준다.
       acc.currentStartTime = val.timestamp;
@@ -129,7 +129,7 @@ export function calculateDurationForEverySegment(
           owner: acc.currentOwner,
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: acc.currentStartTime
         });
       break;
 
@@ -169,7 +169,7 @@ export function aggregateFocusDurations(
     acc.categoryDurationArr.push({
       categoryName: segmentDuration.owner, // 처음부터 pause로 시작할 수는 없으니까 index zero에서는 그냥 categoryName을 owner로 설정한다.
       duration: segmentDuration.duration,
-      startTime: segmentDuration.startTime,
+      startTime: segmentDuration.startTime
     });
     acc.currentCategoryName = segmentDuration.owner;
 
@@ -190,7 +190,7 @@ export function aggregateFocusDurations(
     const newDuration = {
       categoryName: segmentDuration.owner,
       duration: segmentDuration.type === "focus" ? segmentDuration.duration : 0, // pause 도중에 다른 카테고리로 바꿨다면, 처음 duration이 pause.
-      startTime: segmentDuration.startTime,
+      startTime: segmentDuration.startTime
     };
     acc.categoryDurationArr.push(newDuration);
     acc.currentCategoryName = segmentDuration.owner;
@@ -235,7 +235,7 @@ export function makeTimestampsFromRawData(
   const data: InfoOfSessionStateChange[] = [
     ...categoryChanges,
     ...taskChanges,
-    ...pauseRecords,
+    ...pauseRecords
   ];
 
   data.sort((a, b) => a.timestamp - b.timestamp);
@@ -252,7 +252,7 @@ export function makeTimestampsFromRawData(
     return categoryChangeInfoArray.map((val) => ({
       kind: "category",
       subKind: val.categoryName,
-      timestamp: val.categoryChangeTimestamp,
+      timestamp: val.categoryChangeTimestamp
     }));
   }
 
@@ -263,13 +263,13 @@ export function makeTimestampsFromRawData(
       if (typeof val.id !== "string") {
         console.warn("[makeTimestampsFromRawData] invalid task change id", {
           index: idx,
-          taskChangeInfo: val,
+          taskChangeInfo: val
         });
       }
       return {
         kind: "task",
         subKind: typeof val.id === "string" ? val.id : "",
-        timestamp: val.taskChangeTimestamp,
+        timestamp: val.taskChangeTimestamp
       };
     });
   }
@@ -279,7 +279,7 @@ export function makeTimestampsFromRawData(
   ): InfoOfSessionStateChange[] {
     return pauseRecords.flatMap((val) => [
       { kind: "pause", subKind: "start", timestamp: val.start },
-      { kind: "pause", subKind: "end", timestamp: val.end },
+      { kind: "pause", subKind: "end", timestamp: val.end }
     ]);
   }
 }
@@ -296,7 +296,7 @@ export function makeSegmentsFromTimestamps(
         segmentDurationArr: [],
         currentType: "focus",
         currentOwner: ["", ""],
-        currentStartTime: 0,
+        currentStartTime: 0
       }
     );
   return segArrAndHelper.segmentDurationArr;
@@ -342,7 +342,7 @@ export function timestamps_to_segments(
           owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: acc.currentStartTime
         });
         acc.currentType = "pause";
         acc.currentStartTime = val.timestamp;
@@ -352,7 +352,7 @@ export function timestamps_to_segments(
           owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: acc.currentStartTime
         });
         acc.currentType = "focus";
         acc.currentStartTime = val.timestamp;
@@ -363,7 +363,7 @@ export function timestamps_to_segments(
         owner: [acc.currentOwner[0], acc.currentOwner[1]],
         duration: duration_in_ms,
         type: acc.currentType,
-        startTime: acc.currentStartTime,
+        startTime: acc.currentStartTime
       });
       acc.currentOwner[0] = val.subKind!; // category가 바뀌었으므로, owner도 바꿔준다.
       acc.currentStartTime = val.timestamp;
@@ -373,7 +373,7 @@ export function timestamps_to_segments(
         owner: [acc.currentOwner[0], acc.currentOwner[1]],
         duration: duration_in_ms,
         type: acc.currentType,
-        startTime: acc.currentStartTime,
+        startTime: acc.currentStartTime
       });
       acc.currentOwner[1] = val.subKind!;
       acc.currentStartTime = val.timestamp;
@@ -385,7 +385,7 @@ export function timestamps_to_segments(
           owner: [acc.currentOwner[0], acc.currentOwner[1]],
           duration: duration_in_ms,
           type: acc.currentType,
-          startTime: acc.currentStartTime,
+          startTime: acc.currentStartTime
         });
       break;
 
@@ -407,7 +407,7 @@ export function makeDurationsFromSegmentsByCategoryAndTaskCombination(
       segments_to_durations,
       {
         durationArrOfCategoryTaskCombination: [],
-        currentCategoryTaskCombination: ["", ""],
+        currentCategoryTaskCombination: ["", ""]
       }
     );
   return durationAndHelper.durationArrOfCategoryTaskCombination;
@@ -422,7 +422,7 @@ export function segments_to_durations(
       categoryName: segment.owner[0],
       taskId: segment.owner[1],
       duration: segment.duration,
-      startTime: segment.startTime,
+      startTime: segment.startTime
     });
     acc.currentCategoryTaskCombination[0] = segment.owner[0];
     acc.currentCategoryTaskCombination[1] = segment.owner[1];
@@ -446,7 +446,7 @@ export function segments_to_durations(
       categoryName: segment.owner[0],
       taskId: segment.owner[1],
       duration: segment.type === "focus" ? segment.duration : 0,
-      startTime: segment.startTime,
+      startTime: segment.startTime
     };
     acc.durationArrOfCategoryTaskCombination.push(newDuration);
     acc.currentCategoryTaskCombination = [segment.owner[0], segment.owner[1]];
@@ -518,7 +518,7 @@ export function makePomoRecordsFromDurations(
       if (typeof val.taskId !== "string") {
         console.warn("[makePomoRecordsFromDurations] invalid taskId", {
           index: idx,
-          durationRecord: val,
+          durationRecord: val
         });
       }
       const normalizedTaskId =
@@ -529,15 +529,15 @@ export function makePomoRecordsFromDurations(
         duration: val.duration,
         startTime: val.startTime,
         date: LocaleDateString,
-        isDummy: false,
+        isDummy: false
       };
 
       if (val.categoryName !== "uncategorized") {
         pomoRecord = {
           ...pomoRecord,
           category: {
-            name: val.categoryName,
-          },
+            name: val.categoryName
+          }
         };
       }
 
@@ -546,8 +546,8 @@ export function makePomoRecordsFromDurations(
         pomoRecord = {
           ...pomoRecord,
           task: {
-            id: normalizedTaskId,
-          },
+            id: normalizedTaskId
+          }
         };
       }
 

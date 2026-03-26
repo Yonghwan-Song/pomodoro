@@ -1,7 +1,7 @@
 import {
   BadRequestException,
   Injectable,
-  NotFoundException,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -34,18 +34,18 @@ export class UsersService {
     @InjectModel(TodoistTaskTracking.name)
     private todoistTaskTrackingModel: Model<TodoistTaskTracking>,
     @InjectModel(CycleSetting.name)
-    private cycleSettingModel: Model<CycleSetting>,
+    private cycleSettingModel: Model<CycleSetting>
   ) {}
 
   async create(
     createUserDto: CreateUserDto,
     userEmail: string,
-    userNickname: string,
+    userNickname: string
   ) {
     const defaultCycleSettingForANewUser = new this.cycleSettingModel({
       userEmail,
       name: 'Default cycle setting',
-      isCurrent: true,
+      isCurrent: true
     });
 
     const settingSaved = await defaultCycleSettingForANewUser.save();
@@ -56,7 +56,7 @@ export class UsersService {
       ...createUserDto,
       userEmail,
       userNickname,
-      cycleSettings: [defaultCycleSettingForANewUser._id],
+      cycleSettings: [defaultCycleSettingForANewUser._id]
     });
 
     await newUser.save();
@@ -65,7 +65,7 @@ export class UsersService {
   }
 
   async getUserInfo(
-    userEmail: string,
+    userEmail: string
   ): Promise<Omit<User, 'todoistAccessToken'> & { todoistTasks: any[] }> {
     const userInfo = await this.userModel
       .findOne({ userEmail })
@@ -88,7 +88,7 @@ export class UsersService {
       try {
         const api = new TodoistApi(todoistAccessToken);
         const incompleteTasks = (await api.getTasks()).results.filter(
-          (task) => task.isCompleted === false,
+          (task) => task.isCompleted === false
         );
 
         // trackingDocs 가져오기
@@ -96,11 +96,11 @@ export class UsersService {
           .find({ userEmail })
           .lean();
         const trackingMap = new Map(
-          trackingDocs.map((doc) => [doc.taskId, doc.duration]),
+          trackingDocs.map((doc) => [doc.taskId, doc.duration])
         );
         todoistTasks = incompleteTasks.map((task) => ({
           ...task,
-          taskFocusDuration: trackingMap.get(task.id) ?? 0,
+          taskFocusDuration: trackingMap.get(task.id) ?? 0
         }));
       } catch (error) {
         console.error('Error fetching Todoist tasks:', error);
@@ -109,45 +109,45 @@ export class UsersService {
 
     console.log('A user doc by getUserInfo() in the UsersService class', {
       ...userInfoWithoutAccessToken,
-      todoistTasks,
+      todoistTasks
     });
 
     return {
       ...userInfoWithoutAccessToken,
-      todoistTasks,
+      todoistTasks
     };
   }
 
   updatePomoSetting(
     updatePomoSettingDto: UpdatePomoSettingDto,
-    userEmail: string,
+    userEmail: string
   ) {
     return this.userModel
       .findOneAndUpdate(
         {
-          userEmail,
+          userEmail
         },
         {
-          pomoSetting: updatePomoSettingDto,
+          pomoSetting: updatePomoSettingDto
         },
-        { new: true },
+        { new: true }
       )
       .exec();
   }
 
   updateAutoStartSetting(
     updateAutoStartSettingDto: UpdateAutoStartSettingDto,
-    userEmail: string,
+    userEmail: string
   ) {
     return this.userModel
       .findOneAndUpdate(
         {
-          userEmail,
+          userEmail
         },
         {
-          autoStartSetting: updateAutoStartSettingDto,
+          autoStartSetting: updateAutoStartSettingDto
         },
-        { new: true },
+        { new: true }
       )
       .exec();
   }
@@ -157,19 +157,19 @@ export class UsersService {
     return this.userModel
       .findOneAndUpdate(
         {
-          userEmail,
+          userEmail
         },
         {
-          goals: updateGoalsDto,
+          goals: updateGoalsDto
         },
-        { new: true },
+        { new: true }
       )
       .exec();
   }
 
   async updateTimersStates(
     updateTimersStatesDto: UpdateTimersStatesDto,
-    userEmail: string,
+    userEmail: string
   ) {
     console.log('updateTimersStates service');
     console.log(updateTimersStatesDto);
@@ -187,13 +187,13 @@ export class UsersService {
 
   async updateCurrentCycleInfo(
     updateCurrentCycleInfoDto: UpdateCurrentCycleInfoDto,
-    userEmail: string,
+    userEmail: string
   ) {
     const currentUser = await this.userModel.findOne({ userEmail });
 
     const newCurrentCycleInfo = {
       ...currentUser.currentCycleInfo,
-      ...updateCurrentCycleInfoDto,
+      ...updateCurrentCycleInfoDto
     };
 
     currentUser.currentCycleInfo = newCurrentCycleInfo;
@@ -205,7 +205,7 @@ export class UsersService {
 
   updateIsUnCategorizedOnStat(
     updateIsUnCategorizedOnStatDto: UpdateIsUnCategorizedOnStatDto,
-    userEmail: string,
+    userEmail: string
   ) {
     return this.userModel
       .findOneAndUpdate(
@@ -213,17 +213,17 @@ export class UsersService {
         {
           $set: {
             isUnCategorizedOnStat:
-              updateIsUnCategorizedOnStatDto.isUnCategorizedOnStat,
-          },
+              updateIsUnCategorizedOnStatDto.isUnCategorizedOnStat
+          }
         },
-        { new: true },
+        { new: true }
       )
       .exec();
   }
 
   async updateColorForUnCategorized(
     updateColorForUnCategorizedDto: UpdateColorForUnCategorizedDto,
-    userEmail: string,
+    userEmail: string
   ) {
     const user = await this.userModel.findOne({ userEmail });
     if (!user) {
@@ -254,7 +254,7 @@ export class UsersService {
 
   updateCategoryChangeInfoArray(
     updateCategoryChangeInfoArrayDto: UpdateCategoryChangeInfoArrayDto,
-    userEmail: string,
+    userEmail: string
   ) {
     try {
       return this.userModel
@@ -263,10 +263,10 @@ export class UsersService {
           {
             $set: {
               categoryChangeInfoArray:
-                updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
-            },
+                updateCategoryChangeInfoArrayDto.categoryChangeInfoArray
+            }
           },
-          { new: true, upsert: true },
+          { new: true, upsert: true }
         )
         .exec(); // I read that .exec() is not neccessary when using findByIdAnd_____ ... but cannot remember where I read it..
     } catch (error) {
@@ -278,7 +278,7 @@ export class UsersService {
 
   async updateTaskChangeInfoArray(
     updateTaskChangeInfoArrayDto: UpdateTaskChangeInfoArrayDto,
-    userEmail: string,
+    userEmail: string
   ) {
     try {
       const taskChangeInfoArray =
@@ -296,12 +296,12 @@ export class UsersService {
         {
           $set: {
             taskChangeInfoArray,
-            currentTaskId,
-          },
+            currentTaskId
+          }
         },
         {
-          new: true, // return the updated document
-        },
+          new: true // return the updated document
+        }
       );
 
       if (!updatedUser) {
@@ -310,7 +310,7 @@ export class UsersService {
 
       return {
         currentTaskId: updatedUser.currentTaskId,
-        taskChangeInfoArray: updatedUser.taskChangeInfoArray,
+        taskChangeInfoArray: updatedUser.taskChangeInfoArray
       };
     } catch (error) {
       console.log('error at updateTaskChangeInfoArray', error);
@@ -320,7 +320,7 @@ export class UsersService {
 
   async updateCurrentTaskIdAndTaskChangeInfoArray(
     updateCurrentTaskIdDto: UpdateCurrentTaskIdAndTaskChangeInfoArrayDto,
-    userEmail: string,
+    userEmail: string
   ) {
     try {
       const user = await this.userModel.findOne({ userEmail });
@@ -339,7 +339,7 @@ export class UsersService {
       } else {
         user.taskChangeInfoArray.push({
           id: updateCurrentTaskIdDto.currentTaskId,
-          taskChangeTimestamp: updateCurrentTaskIdDto.changeTimestamp,
+          taskChangeTimestamp: updateCurrentTaskIdDto.changeTimestamp
         });
       }
 
@@ -347,7 +347,7 @@ export class UsersService {
 
       return {
         currentTaskId: user.currentTaskId,
-        taskChangeInfoArray: user.taskChangeInfoArray,
+        taskChangeInfoArray: user.taskChangeInfoArray
       };
     } catch (error) {
       console.log('error at updateCurrentTaskIdAndTaskChangeInfoArray', error);
@@ -412,7 +412,7 @@ export class UsersService {
       deletedPomodoroRecords,
       deletedTodayRecords,
       deletedCycleSettings,
-      deletedCategories,
+      deletedCategories
     };
   }
 }

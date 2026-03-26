@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 export const useUserMedia = (
   trackOption: { video: boolean; audio: boolean } = {
     video: true,
-    audio: true,
+    audio: true
   }
 ) => {
   /**
@@ -97,6 +97,6 @@ export const useUserMedia = (
     obtainStream,
     startSharing,
     stopSharing,
-    releaseStream,
+    releaseStream
   };
 };

@@ -16,7 +16,7 @@ type OverviewProps = {
 
 export function Overview(props: OverviewProps) {
   const {
-    sum: { today, lastDay, thisWeek, lastWeek, thisMonth, lastMonth, allTime },
+    sum: { today, lastDay, thisWeek, lastWeek, thisMonth, lastMonth, allTime }
   } = props;
 
   return (
@@ -45,7 +45,7 @@ export function Overview(props: OverviewProps) {
             style={{
               color: "#6272a4",
               fontWeight: "bold",
-              fontSize: "1.2em",
+              fontSize: "1.2em"
             }}
           >
             {Math.floor(allTime / 60)}h {allTime % 60}m

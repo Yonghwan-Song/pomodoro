@@ -3,25 +3,25 @@ import {
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
-  deciderOfWhetherDataForRunningTimerFetched,
+  deciderOfWhetherDataForRunningTimerFetched
 } from "..";
 import {
   CycleInfoType,
   TimersStatesType,
   TimersStatesTypeWithCurrentCycleInfo,
-  RecType,
+  RecType
 } from "../types/clientStatesType";
 import { pubsub } from "../pubsub";
 import { SUCCESS_PersistingTimersStatesWithCycleInfoToIDB } from "../constants";
 
 /**
  * useTimerData Custom Hook
- * 
+ *
  * 기존 Main.tsx 파일에 존재하던 타이머 관련 데이터 페칭 및 구독 로직을 분리한 훅입니다.
- * IndexedDB에서 타이머 상태(statesRelatedToTimer, currentCycleInfo) 및 오늘자 기록(records)을 
+ * IndexedDB에서 타이머 상태(statesRelatedToTimer, currentCycleInfo) 및 오늘자 기록(records)을
  * 가져오고, PubSub 이벤트를 통해 상태를 최신으로 유지합니다.
- * 
- * @param options.skipPubSub 
+ *
+ * @param options.skipPubSub
  *  - true일 경우: PubSub 이벤트 구독을 생략하고 오직 마운트 시 IndexedDB에서 최신 데이터만 읽어옵니다.
  *    (예: RoomTimer에서는 이미 /timer 페이지 방문 시 전역 데이터 페칭이 완료되었다고 가정하고
  *    불필요한 중복 구독을 피하기 위해 사용됩니다.)
@@ -163,6 +163,6 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
     setRecords,
     isStatesRelatedToTimerReady,
     isCurrentCycleInfoReady,
-    areDataForRunningTimerFetchedCompletely,
+    areDataForRunningTimerFetchedCompletely
   };
 }

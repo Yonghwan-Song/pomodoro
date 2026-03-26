@@ -6,7 +6,7 @@ import {
   ValidationPipe,
   Req,
   Delete,
-  Param,
+  Param
 } from '@nestjs/common';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 import { CycleSettingService } from './cycle-setting.service';
@@ -20,22 +20,22 @@ export class CycleSettingController {
   @Post()
   async create(
     @Body(new ValidationPipe()) createCycleSettingDto: CreateCycleSettingDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(
       'createCycleSettingDto at create controller',
-      createCycleSettingDto,
+      createCycleSettingDto
     );
     return await this.cycleSettingService.create(
       createCycleSettingDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
   @Patch()
   async update(
     @Body(new ValidationPipe()) updateCycleSettingDto: UpdateCycleSettingDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log('<------------------------------update controller------');
     console.log('updateCycleSettingDto', updateCycleSettingDto);
@@ -44,7 +44,7 @@ export class CycleSettingController {
 
     return this.cycleSettingService.update(
       updateCycleSettingDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 

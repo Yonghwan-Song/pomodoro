@@ -11,12 +11,12 @@ import {
   CacheName,
   CURRENT_CATEGORY_NAME,
   RESOURCE,
-  SUB_SET,
+  SUB_SET
 } from "../../../constants";
 import { Category, NewCategory } from "../../../types/clientStatesType";
 import {
   delete_entry_of_cache,
-  persistCategoryChangeInfoArrayToIDB,
+  persistCategoryChangeInfoArrayToIDB
 } from "../../..";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import { AxiosRequestConfig } from "axios";
@@ -30,8 +30,8 @@ const customModalStyles = {
     right: "auto",
     bottom: "auto",
     marginRight: "-50%",
-    transform: "translate(-50%, -50%)",
-  },
+    transform: "translate(-50%, -50%)"
+  }
 };
 
 type NameInputType = {
@@ -69,7 +69,7 @@ export default function Categories() {
     useState<string>(colorForUnCategorized);
   const [
     debouncedColorInputForUnCategorized,
-    setDebouncedColorInputForUnCategorized,
+    setDebouncedColorInputForUnCategorized
   ] = useState<string>(colorForUnCategorized);
 
   const [categoriesInputs, setCategoriesInputs] =
@@ -88,7 +88,7 @@ export default function Categories() {
     name: "add a new category",
     color: "#F04005",
     isCurrent: false,
-    isOnStat: false,
+    isOnStat: false
   });
 
   const [indexOfDuplication, setIndexOfDuplication] = useState<number>(-1); // -1 means there is a duplication in the array[index]
@@ -110,7 +110,7 @@ export default function Categories() {
     setNameInput({
       index: ev.target.id,
       name: ev.target.value,
-      _uuid: ev.currentTarget.dataset.uuid,
+      _uuid: ev.currentTarget.dataset.uuid
     });
   }
 
@@ -126,7 +126,7 @@ export default function Categories() {
     setColorInput({
       index: ev.target.id,
       color: ev.target.value,
-      _uuid: ev.currentTarget.dataset.uuid,
+      _uuid: ev.currentTarget.dataset.uuid
     });
   }
 
@@ -144,19 +144,19 @@ export default function Categories() {
 
     if (!checkIfNameIsDuplicate(newCategoryInput.name)) {
       axiosInstance.post(RESOURCE.CATEGORIES, {
-        ...newCategoryInput,
+        ...newCategoryInput
       });
       delete_entry_of_cache(CacheName, BASE_URL + "/pomodoros");
 
       updateCategories([
         ...categoriesFromServer,
-        { ...newCategoryInput, _uuid: window.crypto.randomUUID() },
+        { ...newCategoryInput, _uuid: window.crypto.randomUUID() }
       ]);
       setNewCategoryInput({
         name: "add a new category",
         color: "#F04005",
         isCurrent: false,
-        isOnStat: false, // for the second Graph.
+        isOnStat: false // for the second Graph.
       });
     }
   }
@@ -242,12 +242,12 @@ export default function Categories() {
   useEffect(debounceNameInputChange, [nameInput]);
   useEffect(debounceColorInputChangeOfCategorized, [colorInput]);
   useEffect(debounceColorInputChangeOfUnCategorized, [
-    colorInputForUnCategorized,
+    colorInputForUnCategorized
   ]);
   useEffect(handleDebouncedNameInputChange, [debouncedNameInput]);
   useEffect(handleDebouncedColorInputChange, [debouncedColorInput]);
   useEffect(handleDebouncedColorInputChangeForUncategorized, [
-    debouncedColorInputForUnCategorized,
+    debouncedColorInputForUnCategorized
   ]);
   //#endregion
 
@@ -261,7 +261,7 @@ export default function Categories() {
       axiosInstance
         .patch(RESOURCE.CATEGORIES, {
           name: existingName,
-          data: { name: newName },
+          data: { name: newName }
         })
         .catch((reqConfig: AxiosRequestConfig<any>) => {
           errController.registerFailedReqInfo(
@@ -293,7 +293,7 @@ export default function Categories() {
       axiosInstance
         .patch(RESOURCE.CATEGORIES, {
           name: categoriesFromServer[parseInt(debouncedColorInput.index)].name,
-          data: { color: debouncedColorInput?.color },
+          data: { color: debouncedColorInput?.color }
         })
         .catch((reqConfig: AxiosRequestConfig<any>) => {
           errController.registerFailedReqInfo(
@@ -339,7 +339,7 @@ export default function Categories() {
       persistCategoryChangeInfoArrayToIDB(updatedCategoryChangeInfoArray);
 
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.COLOR_FOR_UNCATEGORIZED, {
-        colorForUnCategorized: debouncedColorInputForUnCategorized,
+        colorForUnCategorized: debouncedColorInputForUnCategorized
       });
 
       // uncomment한 이유: default값을 null이 아니라 globall state과 같은 값으로 해서
@@ -425,7 +425,7 @@ export default function Categories() {
                 display: "flex",
                 justifyContent: "space-between",
                 flexWrap: "wrap",
-                rowGap: "3px",
+                rowGap: "3px"
               }}
             >
               <label htmlFor={item.color} css={{ display: "grid" }}>
@@ -442,7 +442,7 @@ export default function Categories() {
               <label
                 htmlFor={item.name}
                 css={{
-                  display: "grid",
+                  display: "grid"
                 }}
               >
                 <input
@@ -459,7 +459,7 @@ export default function Categories() {
                       item.name === debouncedNameInput?.name
                         ? "red"
                         : "black"
-                    }`,
+                    }`
                   }}
                 />
               </label>
@@ -468,7 +468,7 @@ export default function Categories() {
                 style={{
                   cursor: "pointer",
                   width: "21px",
-                  height: "auto",
+                  height: "auto"
                 }}
                 onClick={() => openModal(item.name)}
               />
@@ -482,13 +482,13 @@ export default function Categories() {
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
-            rowGap: "3px",
+            rowGap: "3px"
           }}
         >
           <label
             htmlFor="colorForUnCategorized"
             css={{
-              display: "grid",
+              display: "grid"
             }}
           >
             <input
@@ -527,7 +527,7 @@ export default function Categories() {
           <label
             htmlFor="color"
             css={{
-              display: "grid",
+              display: "grid"
             }}
           >
             <input
@@ -591,7 +591,7 @@ export default function Categories() {
                 name: "",
                 color: "",
                 isCurrent: false,
-                isOnStat: true,
+                isOnStat: true
               });
             }}
             style={{ justifySelf: "right" }}
@@ -619,7 +619,7 @@ export default function Categories() {
               display: "flex",
               gap: "1.5rem",
               justifyContent: "space-around",
-              marginTop: "5px",
+              marginTop: "5px"
             }}
           >
             <Button onClick={closeModal}>Cancel</Button>

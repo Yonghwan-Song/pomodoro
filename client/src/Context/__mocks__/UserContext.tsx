@@ -3,6 +3,6 @@ export const UserInfo = () => ({
     pomoDuration: 5,
     shortBreakDuration: 1,
     longBreakDuration: 10,
-    numOfPomo: 3,
-  },
+    numOfPomo: 3
+  }
 });

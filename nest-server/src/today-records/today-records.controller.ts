@@ -6,7 +6,7 @@ import {
   Post,
   Query,
   Req,
-  ValidationPipe,
+  ValidationPipe
 } from '@nestjs/common';
 import { TodayRecordsService } from './today-records.service';
 import { CreateTodayRecordDto } from './dto/create-today-record.dto';
@@ -24,11 +24,11 @@ export class TodayRecordsController {
   @Post()
   async create(
     @Body(new ValidationPipe()) createRecordOfTodayDto: CreateTodayRecordDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     const docSaved = await this.todayRecordsService.createTodayRecord(
       createRecordOfTodayDto,
-      request.userEmail,
+      request.userEmail
     );
 
     return docSaved;
@@ -37,22 +37,22 @@ export class TodayRecordsController {
   @Get()
   async getTodayRecords(
     @Req() request: CustomRequest,
-    @Query('timestamp') timestamp: string,
+    @Query('timestamp') timestamp: string
   ) {
     return await this.todayRecordsService.findTodayRecords(
       request.userEmail,
-      parseInt(timestamp),
+      parseInt(timestamp)
     );
   }
 
   @Delete()
   async deleteRecordsBeforeToday(
     @Query('timestamp') timestamp: number,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     return await this.todayRecordsService.deleteRecordsBeforeToday(
       timestamp,
-      request.userEmail,
+      request.userEmail
     );
   }
 }

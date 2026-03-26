@@ -11,7 +11,7 @@ import {
   fhdRange,
   qhdRange,
   uhdRange,
-  calculateLeftAndRight,
+  calculateLeftAndRight
 } from "./mediaQueryLists";
 
 type TimelineProps = {
@@ -32,7 +32,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
   const fullWidthOfTimeline = useRef<number>(1920 * 6);
   let initialLeftAndRight = {
     left: "0px",
-    right: "",
+    right: ""
   };
   const currentRule = useRef<number>(8 / 60);
 
@@ -46,7 +46,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
       calculateNewLeft({
         prevRule: currentRule.current,
-        newRule: PIXEL.PER_SEC.IN_MOBILE,
+        newRule: PIXEL.PER_SEC.IN_MOBILE
       });
       currentRule.current = PIXEL.PER_SEC.IN_MOBILE;
 
@@ -62,7 +62,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
       calculateNewLeft({
         prevRule: currentRule.current,
-        newRule: PIXEL.PER_SEC.IN_TABLET,
+        newRule: PIXEL.PER_SEC.IN_TABLET
       });
       currentRule.current = PIXEL.PER_SEC.IN_TABLET;
 
@@ -78,7 +78,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
       calculateNewLeft({
         prevRule: currentRule.current,
-        newRule: PIXEL.PER_SEC.IN_FHD,
+        newRule: PIXEL.PER_SEC.IN_FHD
       });
       currentRule.current = PIXEL.PER_SEC.IN_FHD;
 
@@ -94,7 +94,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
       calculateNewLeft({
         prevRule: currentRule.current,
-        newRule: PIXEL.PER_SEC.IN_QHD,
+        newRule: PIXEL.PER_SEC.IN_QHD
       });
       currentRule.current = PIXEL.PER_SEC.IN_QHD;
 
@@ -110,7 +110,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
       calculateNewLeft({
         prevRule: currentRule.current,
-        newRule: PIXEL.PER_SEC.IN_UHD,
+        newRule: PIXEL.PER_SEC.IN_UHD
       });
       currentRule.current = PIXEL.PER_SEC.IN_UHD;
 
@@ -130,35 +130,35 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
   if (mobileRange.matches) {
     initialLeftAndRight = calculateLeftAndRight({
       slotHour: 3,
-      pixelPerHour: PIXEL.PER_HR.IN_MOBILE,
+      pixelPerHour: PIXEL.PER_HR.IN_MOBILE
     });
     fullWidthOfTimeline.current = PIXEL.PER_HR.IN_MOBILE * 24;
     currentRule.current = PIXEL.PER_SEC.IN_MOBILE;
   } else if (tabletRange.matches) {
     initialLeftAndRight = calculateLeftAndRight({
       slotHour: 3,
-      pixelPerHour: PIXEL.PER_HR.IN_TABLET,
+      pixelPerHour: PIXEL.PER_HR.IN_TABLET
     });
     fullWidthOfTimeline.current = PIXEL.PER_HR.IN_TABLET * 24;
     currentRule.current = PIXEL.PER_SEC.IN_TABLET;
   } else if (fhdRange.matches) {
     initialLeftAndRight = calculateLeftAndRight({
       slotHour: 4,
-      pixelPerHour: PIXEL.PER_HR.IN_FHD,
+      pixelPerHour: PIXEL.PER_HR.IN_FHD
     });
     fullWidthOfTimeline.current = PIXEL.PER_HR.IN_FHD * 24;
     currentRule.current = PIXEL.PER_SEC.IN_FHD;
   } else if (qhdRange.matches) {
     initialLeftAndRight = calculateLeftAndRight({
       slotHour: 4,
-      pixelPerHour: PIXEL.PER_HR.IN_QHD,
+      pixelPerHour: PIXEL.PER_HR.IN_QHD
     });
     fullWidthOfTimeline.current = PIXEL.PER_HR.IN_QHD * 24;
     currentRule.current = PIXEL.PER_SEC.IN_QHD;
   } else if (uhdRange.matches) {
     initialLeftAndRight = calculateLeftAndRight({
       slotHour: 4,
-      pixelPerHour: PIXEL.PER_HR.IN_UHD,
+      pixelPerHour: PIXEL.PER_HR.IN_UHD
     });
     fullWidthOfTimeline.current = PIXEL.PER_HR.IN_UHD * 24;
     currentRule.current = PIXEL.PER_SEC.IN_UHD;
@@ -383,7 +383,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
    */
   function calculateNewLeft({
     prevRule,
-    newRule,
+    newRule
   }: {
     prevRule: number;
     newRule: number;
@@ -451,7 +451,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
         left: initialLeftAndRight.left,
         right: initialLeftAndRight.right,
         width: `${fullWidthOfTimeline.current}px`,
-        touchAction: "none", // 브라우저 기본 터치 동작 비활성화
+        touchAction: "none" // 브라우저 기본 터치 동작 비활성화
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

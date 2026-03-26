@@ -2,7 +2,7 @@ import { Task } from "@doist/todoist-api-typescript";
 import styled from "styled-components";
 import {
   TaskChangeInfo,
-  TaskWithFocusDurationAndChildren,
+  TaskWithFocusDurationAndChildren
 } from "../../../types/todoistRelatedTypes";
 import React, { useEffect, useState } from "react";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
@@ -11,7 +11,7 @@ import {
   CURRENT_SESSION_TYPE,
   CURRENT_TASK_ID,
   RESOURCE,
-  SUB_SET,
+  SUB_SET
 } from "../../../constants";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
 import { useTaskSelectionHandler } from "./todoist-utility";
@@ -139,7 +139,7 @@ function formatDuration(minutes: number): string {
 export const TaskItem = ({
   task,
   expandedIds,
-  isExpanded,
+  isExpanded
 }: {
   task: TaskWithFocusDurationAndChildren;
   expandedIds: Set<string>;
@@ -209,7 +209,7 @@ export const TaskItem = ({
       patchData = {
         currentTaskId: task.id,
         doesItJustChangeTask: false,
-        changeTimestamp: moment,
+        changeTimestamp: moment
       };
     }
     //* 첫번째 조건 즉, focus session이지만 아직 시작하지 않은 경우에는, taskChangeTimestamp가 0인것이 문제가 없다.
@@ -225,12 +225,12 @@ export const TaskItem = ({
         taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0;
       newTaskChange = {
         id: task.id,
-        taskChangeTimestamp: preservedTaskChangeTimestamp,
+        taskChangeTimestamp: preservedTaskChangeTimestamp
       };
       shouldSetTaskChangeArray = true;
       patchUrl = RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY;
       patchData = {
-        taskChangeInfoArray: [newTaskChange], // id will be updated in the backend using the newly created taskChangeInfo
+        taskChangeInfoArray: [newTaskChange] // id will be updated in the backend using the newly created taskChangeInfo
       };
     } else {
       // Unknown session type, do nothing

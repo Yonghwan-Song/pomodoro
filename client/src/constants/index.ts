@@ -20,7 +20,7 @@ const ENV = "development"; // Change this to 'production' when deploying
 
 const BASE_URLS = {
   development: "http://localhost:3000",
-  production: "https://pomodoro-nest-apis.onrender.com",
+  production: "https://pomodoro-nest-apis.onrender.com"
 };
 
 export const BASE_URL = BASE_URLS[ENV];
@@ -31,7 +31,7 @@ export const RESOURCE = {
   TODAY_RECORDS: "/today-records",
   CATEGORIES: "/categories",
   CYCLE_SETTINGS: "/cycle-settings",
-  TODOIST: "/todoist",
+  TODOIST: "/todoist"
 };
 export const SUB_SET = {
   POMODORO_SETTING: "/pomodoro-setting",
@@ -48,7 +48,7 @@ export const SUB_SET = {
   OAUTH_REVOKE_SDK: "/oauth/revoke-sdk",
   TASKS: "/tasks",
   CURRENT_TASK_ID: "/current-task-id",
-  TASK_CHANGE_INFO_ARRAY: "/task-change-info-array",
+  TASK_CHANGE_INFO_ARRAY: "/task-change-info-array"
 };
 
 //#endregion
@@ -72,7 +72,7 @@ export const BREAK_POINTS = {
   TABLET: "768px",
   FHD: "1920px",
   QHD: "2560px",
-  UHD: "3840px",
+  UHD: "3840px"
 };
 
 export const PIXEL = {
@@ -81,29 +81,29 @@ export const PIXEL = {
     IN_TABLET: 16 / 225,
     IN_FHD: 8 / 60,
     IN_QHD: 16 / 90,
-    IN_UHD: 4 / 15,
+    IN_UHD: 4 / 15
   },
   PER_MIN: {
     IN_MOBILE: 16 / 5,
     IN_TABLET: 64 / 15,
     IN_FHD: 8,
     IN_QHD: 32 / 3,
-    IN_UHD: 16,
+    IN_UHD: 16
   },
   PER_HR: {
     IN_MOBILE: 192, // 576 <-> 3h
     IN_TABLET: 256, // 768 <-> 3h
     IN_FHD: 480, // 1920 <-> 4h
     IN_QHD: 640, // 2560 <-> 4h
-    IN_UHD: 960, // 3840 <-> 4h
-  },
+    IN_UHD: 960 // 3840 <-> 4h
+  }
 };
 
 export const VH_RATIO = {
   NAV_BAR: 10,
   TIMELINE: 8.5,
   SESSION: 6,
-  DETAIL_AREA: 5.5,
+  DETAIL_AREA: 5.5
 };
 
 export const MIN_BASE = 8;
@@ -112,7 +112,7 @@ export const MINIMUMS = {
   NAV_BAR: VH_RATIO.NAV_BAR * MIN_BASE,
   TIMELINE: VH_RATIO.TIMELINE * MIN_BASE,
   SESSION: VH_RATIO.SESSION * MIN_BASE,
-  DETAIL_AREA: VH_RATIO.DETAIL_AREA * MIN_BASE,
+  DETAIL_AREA: VH_RATIO.DETAIL_AREA * MIN_BASE
 };
 
 //#region Session storage item names
@@ -129,7 +129,7 @@ export const dayOfWeekArr: readonly string[] = [
   "Thu",
   "Fri",
   "Sat",
-  "Sun",
+  "Sun"
 ];
 
 export const _24h = 24 * 60 * 60 * 1000;
@@ -154,5 +154,5 @@ export const POMO_SETTING_RANGES = {
   shortBreakDuration: [1, 1000],
   longBreakDuration: [1, 1000],
   numOfPomo: [1, 100],
-  numOfCycle: [1, 100],
+  numOfCycle: [1, 100]
 };

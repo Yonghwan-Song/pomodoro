@@ -7,7 +7,7 @@ import {
   Req,
   HttpException,
   HttpStatus,
-  Logger,
+  Logger
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TodoistService } from './todoist.service';
@@ -19,7 +19,7 @@ export class TodoistController {
 
   constructor(
     private readonly todoistService: TodoistService,
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
   ) {}
 
   /** OAuth 시작: FE가 이 URL을 호출하면 Todoist 인증 화면으로 리디렉트 */
@@ -34,26 +34,26 @@ export class TodoistController {
   @Redirect()
   async handleCallback(
     @Query('code') code: string,
-    @Query('state') state: string,
+    @Query('state') state: string
   ) {
     try {
       await this.todoistService.exchangeCodeForToken(code, state);
       // error 안던지고 exit gracefully하면, 여기 이 controller에서는 그냥 success로 리디렉트되는데?...
       return {
-        url: `${this.configService.get('FRONTEND_URL')}/settings?oauth=success`,
+        url: `${this.configService.get('FRONTEND_URL')}/settings?oauth=success`
       };
     } catch (error) {
       // Handle user cancellation explicitly
       if (error.message === 'State validation failed: user_canceled') {
         return {
-          url: `${this.configService.get('FRONTEND_URL')}/settings?oauth=canceled`,
+          url: `${this.configService.get('FRONTEND_URL')}/settings?oauth=canceled`
         };
       }
 
       // Handle other errors
       const errorMessage = encodeURIComponent(error.message);
       return {
-        url: `${this.configService.get('FRONTEND_URL')}/settings?oauth=failed&error=${errorMessage}`,
+        url: `${this.configService.get('FRONTEND_URL')}/settings?oauth=failed&error=${errorMessage}`
       };
     }
   }
@@ -67,18 +67,18 @@ export class TodoistController {
       if (result) {
         return {
           success: true,
-          message: 'Todoist integration successfully disabled',
+          message: 'Todoist integration successfully disabled'
         };
       } else {
         return {
           success: false,
-          message: 'Failed to revoke Todoist access token',
+          message: 'Failed to revoke Todoist access token'
         };
       }
     } catch (error) {
       return {
         success: false,
-        message: error.message || 'An error occurred while revoking token',
+        message: error.message || 'An error occurred while revoking token'
       };
     }
   }
@@ -92,22 +92,22 @@ export class TodoistController {
       if (result) {
         return {
           success: true,
-          message: 'Todoist integration successfully disabled using SDK',
+          message: 'Todoist integration successfully disabled using SDK'
         };
       } else {
         return {
           success: false,
-          message: 'Failed to revoke Todoist access token using SDK',
+          message: 'Failed to revoke Todoist access token using SDK'
         };
       }
     } catch (error) {
       this.logger.error(
         `Failed to revoke Todoist token for user ${request.userEmail}: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw new HttpException(
         error.message || 'Error revoking token',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -121,11 +121,11 @@ export class TodoistController {
     } catch (error) {
       this.logger.error(
         `Failed to fetch Todoist tasks for user ${request.userEmail}: ${error.message}`,
-        error.stack,
+        error.stack
       );
       throw new HttpException(
         error.message || 'Failed to fetch Todoist tasks',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }

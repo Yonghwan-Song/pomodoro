@@ -6,7 +6,7 @@ export type StyledLabelForSwitchPropsType = {
 };
 
 export const StyledLabelForSwitch = styled.label.attrs((props) => ({
-  htmlFor: props.htmlFor,
+  htmlFor: props.htmlFor
 }))<StyledLabelForSwitchPropsType>`
   ${({ isHorizontal, marginBetweenLabelNameAndSwitch }) => {
     if (isHorizontal === true) {

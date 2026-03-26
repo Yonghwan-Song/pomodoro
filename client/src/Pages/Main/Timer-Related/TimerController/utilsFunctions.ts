@@ -73,12 +73,12 @@ enum Session {
   Pomo = 1,
   ShortBreak,
   LastPomo,
-  LongBreak,
+  LongBreak
 }
 
 function identifySession({
   howManyCountdown,
-  numOfPomo,
+  numOfPomo
 }: {
   howManyCountdown: number;
   numOfPomo: number;

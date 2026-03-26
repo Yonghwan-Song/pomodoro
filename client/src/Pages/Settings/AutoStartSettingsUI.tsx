@@ -21,7 +21,7 @@ export function AutoStartSettingsUI({
   doesBreakStartAutomatically,
   setDoesBreakStartAutomatically,
   doesCycleStartAutomatically,
-  setDoesCycleStartAutomatically,
+  setDoesCycleStartAutomatically
 }: AutoStartSettingsUIProps) {
   return (
     <BoxShadowWrapper>
@@ -33,7 +33,7 @@ export function AutoStartSettingsUI({
           flexWrap: "wrap",
           alignItems: "center",
           rowGap: "20px",
-          columnGap: "9px",
+          columnGap: "9px"
         }}
       >
         <ToggleSwitch

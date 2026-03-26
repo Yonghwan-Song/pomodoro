@@ -15,11 +15,11 @@ import {
   obtainStatesFromIDB,
   setStateStoreToDefault,
   stopCountDownInBackground,
-  persistTimersStatesToServer,
+  persistTimersStatesToServer
 } from "../..";
 import {
   TimersStatesType,
-  TimersStatesTypeWithCurrentCycleInfo,
+  TimersStatesTypeWithCurrentCycleInfo
 } from "../../types/clientStatesType";
 import { errController } from "../../axios-and-error-handling/errorController";
 import { pubsub } from "../../pubsub";

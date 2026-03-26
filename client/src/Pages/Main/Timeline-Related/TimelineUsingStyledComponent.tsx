@@ -18,7 +18,7 @@ type TimelineProps = {
  */
 
 export default function TimelineUsingStyledComponent({
-  arrOfSessions,
+  arrOfSessions
 }: TimelineProps) {
   const [dynamicLeftAndRight, setDynamicLeftAndRight] =
     useState(getCSSLeftAndRight);

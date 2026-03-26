@@ -39,8 +39,8 @@ export class CycleSetting extends Document {
       shortBreakDuration: { type: Number, default: 5, min: 1, max: 1000 },
       longBreakDuration: { type: Number, default: 15, min: 1, max: 1000 },
       numOfPomo: { type: Number, default: 4, min: 1, max: 100 },
-      numOfCycle: { type: Number, default: 1, min: 1, max: 100 },
-    }),
+      numOfCycle: { type: Number, default: 1, min: 1, max: 100 }
+    })
   )
   pomoSetting: PomoSetting;
 

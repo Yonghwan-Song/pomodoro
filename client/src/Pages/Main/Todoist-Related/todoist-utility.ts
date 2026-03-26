@@ -2,17 +2,17 @@ import {
   RESOURCE,
   SUB_SET,
   CURRENT_SESSION_TYPE,
-  CURRENT_TASK_ID,
+  CURRENT_TASK_ID
 } from "../../../constants";
 import {
   TaskChangeInfo,
-  TodoistTasksWithFocusDuration,
+  TodoistTasksWithFocusDuration
 } from "../../../types/todoistRelatedTypes";
 import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import {
   TaskWithFocusDurationAndChildren,
-  TodoistTasksTreeAndMap,
+  TodoistTasksTreeAndMap
 } from "../../../types/todoistRelatedTypes";
 
 /**
@@ -78,7 +78,7 @@ export function useTaskSelectionHandler() {
       patchData = {
         currentTaskId: taskId,
         doesItJustChangeTask: false,
-        changeTimestamp: moment,
+        changeTimestamp: moment
       };
     } else if ((isPomo && checkIfSessionIsNotStartedYet()) || isBreak) {
       // console.log(
@@ -89,12 +89,12 @@ export function useTaskSelectionHandler() {
         taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0;
       newTaskChange = {
         id: taskId,
-        taskChangeTimestamp: preservedTaskChangeTimestamp,
+        taskChangeTimestamp: preservedTaskChangeTimestamp
       };
       shouldSetTaskChangeArray = true;
       patchUrl = RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY;
       patchData = {
-        taskChangeInfoArray: [newTaskChange],
+        taskChangeInfoArray: [newTaskChange]
       };
     } else {
       // Unknown session type, do nothing

@@ -13,13 +13,13 @@ export class PomodorosService {
     @InjectModel(Pomodoro.name) private pomodoroModel: Model<Pomodoro>,
     @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(TodoistTaskTracking.name)
-    private todoistTaskTrackingModel: Model<TodoistTaskTracking>,
+    private todoistTaskTrackingModel: Model<TodoistTaskTracking>
   ) {}
 
   // task 끼리 계산해서 묶어주면,
   async persistPomodoroRecordsAndTaskTrackingDurations(
     createPomodoroDto: CreatePomodoroDto,
-    userEmail: string,
+    userEmail: string
   ) {
     console.log('Received createPomodoroDto in service:', createPomodoroDto);
 
@@ -33,7 +33,7 @@ export class PomodorosService {
         const currentCategory = await this.categoryModel
           .findOne({
             userEmail,
-            name: val.category.name,
+            name: val.category.name
           })
           .exec();
 
@@ -57,17 +57,17 @@ export class PomodorosService {
 
     console.log(
       'arrayOfObjectsModifiedForPomodoroDoc in persistPomodoroRecords',
-      arrayOfObjectsModifiedForPomodoroDoc,
+      arrayOfObjectsModifiedForPomodoroDoc
     );
 
     const pomodoroRecordPersistResult = await this.pomodoroModel.insertMany(
-      arrayOfObjectsModifiedForPomodoroDoc,
+      arrayOfObjectsModifiedForPomodoroDoc
     );
 
     const taskTrackingDurationsToPersist =
       createPomodoroDto.taskTrackingArr.map((tracking) => ({
         ...tracking,
-        userEmail, // Add userEmail property
+        userEmail // Add userEmail property
       }));
 
     // Instead of insertMany, use bulkWrite for upsert+inc
@@ -75,8 +75,8 @@ export class PomodorosService {
       updateOne: {
         filter: { userEmail: tracking.userEmail, taskId: tracking.taskId },
         update: { $inc: { duration: tracking.duration } },
-        upsert: true,
-      },
+        upsert: true
+      }
     }));
 
     const taskTrackingDurationsPersistResult =
@@ -84,7 +84,7 @@ export class PomodorosService {
 
     console.log(
       'taskTrackingDurationsPersistResult in persistPomodoroRecords<--------------------',
-      taskTrackingDurationsPersistResult,
+      taskTrackingDurationsPersistResult
     );
 
     // TODO - userEmail을 제외하고 보내기?
@@ -105,7 +105,7 @@ export class PomodorosService {
       .find({ userEmail })
       .populate({
         path: 'category',
-        select: '-_id -userEmail -__v',
+        select: '-_id -userEmail -__v'
       })
       .select('-_id -userEmail -isDummy -__v')
       .exec();
@@ -113,7 +113,10 @@ export class PomodorosService {
     return pomodoroDocs;
   }
 
-  async getTodayTotalDurationByUserEmail(userEmail: string, todayDateString: string) {
+  async getTodayTotalDurationByUserEmail(
+    userEmail: string,
+    todayDateString: string
+  ) {
     const todayRecords = await this.pomodoroModel
       .find({ userEmail, date: todayDateString })
       .select('duration')
@@ -144,7 +147,7 @@ export class PomodorosService {
       const aDate = {
         year: aDateInThePast.getFullYear(),
         month: aDateInThePast.getMonth(),
-        day: aDateInThePast.getDate(),
+        day: aDateInThePast.getDate()
       };
       const arrOfDemoPomodoroRecords = [
         ...createRecords({
@@ -155,7 +158,7 @@ export class PomodorosService {
           longBreak: 15,
           numOfPomo: 4,
           numOfCycle: Math.trunc(generateRandomNumOfCycle(0, 3)),
-          userEmail,
+          userEmail
         }),
         ...createRecords({
           when: { ...aDate, hours: 13 },
@@ -165,7 +168,7 @@ export class PomodorosService {
           longBreak: 15,
           numOfPomo: 4,
           numOfCycle: Math.trunc(generateRandomNumOfCycle(0, 3)),
-          userEmail,
+          userEmail
         }),
         ...createRecords({
           when: { ...aDate, hours: 18 },
@@ -175,8 +178,8 @@ export class PomodorosService {
           longBreak: 15,
           numOfPomo: 4,
           numOfCycle: Math.trunc(generateRandomNumOfCycle(0, 3)),
-          userEmail,
-        }),
+          userEmail
+        })
       ];
       pomodoroRecords = [...pomodoroRecords, ...arrOfDemoPomodoroRecords];
     }
@@ -193,7 +196,7 @@ export class PomodorosService {
     return this.pomodoroModel
       .deleteMany({
         isDummy: true,
-        userEmail,
+        userEmail
       })
       .exec();
   }
@@ -211,7 +214,7 @@ function createRecords({
   longBreak,
   numOfPomo,
   numOfCycle,
-  userEmail,
+  userEmail
 }: {
   when: { year: number; month: number; day: number; hours: number };
   timezoneOffset: number;
@@ -226,21 +229,21 @@ function createRecords({
     when.year,
     when.month,
     when.day,
-    when.hours,
+    when.hours
   ).getTime();
 
   // min -> millisec
   const timesInMilliSeconds = {
     pomoDuration: pomoDuration * 60 * 1000,
     shortBreak: shortBreak * 60 * 1000,
-    longBreak: longBreak * 60 * 1000,
+    longBreak: longBreak * 60 * 1000
   };
 
   const pomoRecordArr = [];
 
   // This is the timestamp to create a client's local date.
   const dateWithAdjustedTimestamp = new Date(
-    startTime - timezoneOffset * 60 * 1000,
+    startTime - timezoneOffset * 60 * 1000
   );
 
   for (let i = 0; i < numOfCycle; i++) {
@@ -251,7 +254,7 @@ function createRecords({
         startTime,
         date: `${
           dateWithAdjustedTimestamp.getUTCMonth() + 1
-        }/${dateWithAdjustedTimestamp.getUTCDate()}/${dateWithAdjustedTimestamp.getUTCFullYear()}`,
+        }/${dateWithAdjustedTimestamp.getUTCDate()}/${dateWithAdjustedTimestamp.getUTCFullYear()}`
       });
       if (j == numOfPomo - 1) {
         startTime +=

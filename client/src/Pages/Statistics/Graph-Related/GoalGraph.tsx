@@ -7,7 +7,7 @@ import {
   CartesianGrid,
   TooltipProps,
   BarChart,
-  Bar,
+  Bar
 } from "recharts";
 import {
   CategoryDetail,
@@ -15,20 +15,20 @@ import {
   DayStat,
   DayStatForGraph,
   DayStatWithGoal,
-  StatDataForGraph_DailyPomoStat,
+  StatDataForGraph_DailyPomoStat
 } from "../statRelatedTypes";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { BoxShadowWrapper } from "../../../ReusableComponents/Wrapper";
 import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
 import {
   LeftArrow,
-  RightArrow,
+  RightArrow
 } from "../../../ReusableComponents/Icons/ChevronArrows";
 import { _24h } from "../../../constants";
 import {
   getHHmm,
   getMessageForRemainingDuration,
-  roundTo_X_DecimalPoints,
+  roundTo_X_DecimalPoints
 } from "../../../utils/number-related-utils";
 
 type GoalGraphProps = {
@@ -46,7 +46,7 @@ export default function GoalGraph({
   listOfCategoryDetails,
   weekRangeForThisWeek,
   averageForThisWeek,
-  colorForUnCategorized,
+  colorForUnCategorized
 }: GoalGraphProps) {
   const dailyGoals = useBoundedPomoInfoStore((state) => state.goals.dailyGoals);
   const [dailyStatOfWeekWithGoal, setDailyStatOfWeekWithGoal] = useState<
@@ -60,8 +60,8 @@ export default function GoalGraph({
         goal: {
           minimum: dailyGoals[index].minimum * 60,
           ideal: dailyGoals[index].ideal * 60,
-          gap: dailyGoals[index].ideal * 60 - dailyGoals[index].minimum * 60,
-        },
+          gap: dailyGoals[index].ideal * 60 - dailyGoals[index].minimum * 60
+        }
       };
 
       return withGoals;
@@ -169,7 +169,7 @@ export default function GoalGraph({
 
       let correspondingWeekData = extractWeekData(pomodoroDailyStat!, [
         newWeekStart,
-        newWeekEnd,
+        newWeekEnd
       ]);
 
       fillWeekCloned(weekCloned, correspondingWeekData);
@@ -210,7 +210,7 @@ export default function GoalGraph({
 
     let correspondingWeekData = extractWeekData(pomodoroDailyStat!, [
       newWeekStart,
-      newWeekEnd,
+      newWeekEnd
     ]);
     fillWeekCloned(weekCloned, correspondingWeekData);
 
@@ -301,7 +301,7 @@ export default function GoalGraph({
         previousValue[currentValue.name] = {
           _uuid: currentValue._uuid,
           duration: 0,
-          isOnStat: currentValue.isOnStat,
+          isOnStat: currentValue.isOnStat
         };
 
         return previousValue;
@@ -320,7 +320,7 @@ export default function GoalGraph({
           display: "flex",
           right: "5px",
           top: "6px",
-          zIndex: 2,
+          zIndex: 2
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
@@ -356,7 +356,7 @@ export default function GoalGraph({
 function CustomTooltip({
   active,
   payload,
-  label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
+  label // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
 }: TooltipProps<number, string>) {
   if (active && payload && payload.length) {
     const minimum = payload[0].payload.goal.minimum;
@@ -384,7 +384,7 @@ function CustomTooltip({
           padding: "1rem",
           boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
           textAlign: "left",
-          fontWeight: "bold",
+          fontWeight: "bold"
         }}
       >
         <p>
@@ -422,7 +422,7 @@ function CustomTooltip({
                   display: "flex",
                   justifyContent: "space-between",
                   columnGap: "6px",
-                  color: dayData.color,
+                  color: dayData.color
                 }}
               >
                 <p>{name}:</p>
@@ -430,7 +430,7 @@ function CustomTooltip({
               </div>
               <p
                 style={{
-                  fontStyle: "italic",
+                  fontStyle: "italic"
                 }}
               >
                 {index === 2 &&

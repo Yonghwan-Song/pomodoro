@@ -20,8 +20,8 @@ export function useSocket() {
 
       const newSocket = io(BASE_URL, {
         auth: {
-          token: token,
-        },
+          token: token
+        }
       });
 
       setSocket(newSocket);
@@ -53,6 +53,6 @@ export function useSocket() {
 
   return {
     socket,
-    connected,
+    connected
   };
 }

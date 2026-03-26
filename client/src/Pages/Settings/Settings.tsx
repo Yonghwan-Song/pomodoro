@@ -14,13 +14,13 @@ import {
   SUB_SET,
   BASE_URL,
   VH_RATIO,
-  MINIMUMS,
+  MINIMUMS
 } from "../../constants/index";
 import {
   deleteUser,
   GoogleAuthProvider,
   reauthenticateWithPopup,
-  User,
+  User
 } from "firebase/auth";
 import {
   DynamicCache,
@@ -33,7 +33,7 @@ import {
   stopCountDownInBackground,
   persistAutoStartSettingToServer,
   persistTimersStatesToServer,
-  persistCategoryChangeInfoArrayToIDB,
+  persistCategoryChangeInfoArrayToIDB
 } from "../..";
 import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
 import Categories from "./Categories/Categories";
@@ -127,7 +127,7 @@ function Settings() {
     shortBreakDuration: 5,
     longBreakDuration: 15,
     numOfPomo: 4,
-    numOfCycle: 1,
+    numOfCycle: 1
   });
 
   // 표시용 state (string 타입)
@@ -136,7 +136,7 @@ function Settings() {
     shortBreakDuration: "5",
     longBreakDuration: "15",
     numOfPomo: "4",
-    numOfCycle: "1",
+    numOfCycle: "1"
   });
 
   const [targetFocusRatio, setTargetFocusRatio] = useState(0.77);
@@ -203,7 +203,7 @@ function Settings() {
         shortBreakDuration,
         longBreakDuration,
         numOfPomo,
-        numOfCycle,
+        numOfCycle
       } = newPomoSetting;
       let totalFocusDuration = numOfPomo * pomoDuration * 60;
       let cycleDuration =
@@ -223,8 +223,8 @@ function Settings() {
           cycleDuration,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-        },
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle
+        }
       });
       const infoArr = [
         {
@@ -236,8 +236,8 @@ function Settings() {
             currentCategory !== null
               ? currentCategory.color
               : colorForUnCategorized,
-          progress: 0,
-        },
+          progress: 0
+        }
       ];
       persistCategoryChangeInfoArrayToIDB(infoArr);
       stopCountDownInBackground();
@@ -248,13 +248,13 @@ function Settings() {
         repetitionCount: 0,
         running: false,
         startTime: 0,
-        pause: { totalLength: 0, record: [] },
+        pause: { totalLength: 0, record: [] }
       });
       user &&
         axiosInstance.patch(
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           {
-            categoryChangeInfoArray: infoArr,
+            categoryChangeInfoArray: infoArr
           }
         );
       user &&
@@ -263,7 +263,7 @@ function Settings() {
           cycleDuration,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle
         });
     } else {
       setCycleSettingSelected(currentCycleSetting);
@@ -293,7 +293,7 @@ function Settings() {
 
     setDisplayValues({
       ...displayValues,
-      [fieldName]: inputValue,
+      [fieldName]: inputValue
     });
 
     if (inputValue === "") return;
@@ -304,7 +304,7 @@ function Settings() {
     if (targetValue < min || targetValue > max) {
       setDisplayValues({
         ...displayValues,
-        [fieldName]: pomoSettingInputs[fieldName].toString(),
+        [fieldName]: pomoSettingInputs[fieldName].toString()
       });
       window.alert(`Allowed range: ${min} ~ ${max}`);
       return;
@@ -328,7 +328,7 @@ function Settings() {
       case "pomoDuration":
         setPomoSettingInputs({
           ...pomoSettingInputs,
-          pomoDuration: targetValue,
+          pomoDuration: targetValue
         });
         totalFocusDurationTargetedInSec = 60 * targetValue * numOfPomo;
         cycleDurationTargetedInSec =
@@ -345,7 +345,7 @@ function Settings() {
       case "shortBreakDuration":
         setPomoSettingInputs({
           ...pomoSettingInputs,
-          shortBreakDuration: targetValue,
+          shortBreakDuration: targetValue
         });
         cycleDurationTargetedInSec =
           60 *
@@ -361,7 +361,7 @@ function Settings() {
       case "longBreakDuration":
         setPomoSettingInputs({
           ...pomoSettingInputs,
-          longBreakDuration: targetValue,
+          longBreakDuration: targetValue
         });
         cycleDurationTargetedInSec =
           60 *
@@ -377,7 +377,7 @@ function Settings() {
       case "numOfPomo":
         setPomoSettingInputs({
           ...pomoSettingInputs,
-          numOfPomo: targetValue,
+          numOfPomo: targetValue
         });
         totalFocusDurationTargetedInSec = 60 * pomoDuration * targetValue;
         cycleDurationTargetedInSec =
@@ -394,7 +394,7 @@ function Settings() {
       case "numOfCycle":
         setPomoSettingInputs({
           ...pomoSettingInputs,
-          numOfCycle: targetValue,
+          numOfCycle: targetValue
         });
         break;
       default:
@@ -412,7 +412,7 @@ function Settings() {
     if (displayValue === "") {
       setDisplayValues({
         ...displayValues,
-        [fieldName]: actualValue.toString(),
+        [fieldName]: actualValue.toString()
       });
     }
   }
@@ -436,7 +436,7 @@ function Settings() {
         isCurrent: false,
         pomoSetting: structuredClone(pomoSettingInputs),
         cycleStat: [],
-        averageAdherenceRate: 1,
+        averageAdherenceRate: 1
       };
       clonedCycleSettings.push(newCycleSetting);
       updateCycleSettings(clonedCycleSettings);
@@ -473,7 +473,7 @@ function Settings() {
       shortBreakDuration,
       longBreakDuration,
       numOfPomo,
-      numOfCycle,
+      numOfCycle
     } = pomoSettingInputs;
     const totalFocusDuration = numOfPomo * pomoDuration * 60;
     const cycleDuration =
@@ -494,7 +494,7 @@ function Settings() {
         if (clonedCycleSettingArr[i].name === nameBeforeChange) {
           clonedCycleSettingArr[i] = {
             ...clonedCycleSettingArr[i],
-            ...clonedCycleSetting,
+            ...clonedCycleSetting
           };
         }
       }
@@ -506,8 +506,8 @@ function Settings() {
         name: nameBeforeChange,
         data: {
           pomoSetting: pomoSettingInputs,
-          name: cycleSettingNameInput,
-        },
+          name: cycleSettingNameInput
+        }
       });
       //#endregion edit
       //#region selected가 current라면 해줘야할 //!추가 작업. <==> reset cycle.
@@ -524,8 +524,8 @@ function Settings() {
               currentCategory !== null
                 ? currentCategory.color
                 : colorForUnCategorized,
-            progress: 0,
-          },
+            progress: 0
+          }
         ];
 
         // 새로운 설정으로 사이클을 시작해야 하므로.
@@ -543,8 +543,8 @@ function Settings() {
             cycleDuration,
             cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-          },
+            totalDurationOfSetOfCycles: cycleDuration * numOfCycle
+          }
         });
         persistCategoryChangeInfoArrayToIDB(infoArr);
         stopCountDownInBackground();
@@ -554,19 +554,19 @@ function Settings() {
           repetitionCount: 0,
           running: false,
           startTime: 0,
-          pause: { totalLength: 0, record: [] },
+          pause: { totalLength: 0, record: [] }
         });
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
           totalFocusDuration,
           cycleDuration,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle
         });
         axiosInstance.patch(
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           {
-            categoryChangeInfoArray: infoArr,
+            categoryChangeInfoArray: infoArr
           }
         );
       }
@@ -588,8 +588,8 @@ function Settings() {
           cycleDuration,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
-        },
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle
+        }
       });
       stopCountDownInBackground();
     }
@@ -605,8 +605,8 @@ function Settings() {
       autoStartSetting: {
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
-        doesCycleStartAutomatically,
-      },
+        doesCycleStartAutomatically
+      }
     });
 
     // 세션 reset을 안해도 되는건가? - 결국 세션이 종료될 때, 1)sw.js에 있는 wrapUpSession()에서 최신 정보를 가져올 수 있고,
@@ -619,18 +619,18 @@ function Settings() {
       persistAutoStartSettingToServer(user, {
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
-        doesCycleStartAutomatically,
+        doesCycleStartAutomatically
       });
       updateAutoStartSetting({
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
-        doesCycleStartAutomatically,
+        doesCycleStartAutomatically
       });
     } else {
       updateAutoStartSetting({
         doesPomoStartAutomatically,
         doesBreakStartAutomatically,
-        doesCycleStartAutomatically,
+        doesCycleStartAutomatically
       });
     }
   }
@@ -645,7 +645,7 @@ function Settings() {
       shortBreakDuration: pomoSettingInputs.shortBreakDuration.toString(),
       longBreakDuration: pomoSettingInputs.longBreakDuration.toString(),
       numOfPomo: pomoSettingInputs.numOfPomo.toString(),
-      numOfCycle: pomoSettingInputs.numOfCycle.toString(),
+      numOfCycle: pomoSettingInputs.numOfCycle.toString()
     });
   }, [pomoSettingInputs]);
 
@@ -657,7 +657,7 @@ function Settings() {
         shortBreakDuration: 5,
         longBreakDuration: 15,
         numOfPomo: 4,
-        numOfCycle: 1,
+        numOfCycle: 1
       });
       setCycleSettingNameInput("create new cycle setting");
       setTargetFocusRatio(0.77);
@@ -882,7 +882,7 @@ async function createDemoData(user: User) {
       RESOURCE.POMODOROS + SUB_SET.DEMO_DATA,
       {
         timestampForBeginningOfYesterday,
-        timezoneOffset: now.getTimezoneOffset(),
+        timezoneOffset: now.getTimezoneOffset()
       }
     );
     // console.log("res obj.data", res.data);
@@ -926,7 +926,7 @@ async function persistPomoSettingToServer(
     const res = await axiosInstance.patch(
       RESOURCE.USERS + SUB_SET.POMODORO_SETTING,
       {
-        ...pomoSetting,
+        ...pomoSetting
       }
     );
 

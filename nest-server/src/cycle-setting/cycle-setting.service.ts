@@ -1,12 +1,12 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
+  ConflictException
 } from '@nestjs/common';
 import { CreateCycleSettingDto } from './dto/create-cycle-setting.dto';
 import {
   PartialCreateCycleSettingDto,
-  UpdateCycleSettingDto,
+  UpdateCycleSettingDto
 } from './dto/update-cycle-setting.dto';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { CycleSetting } from 'src/schemas/cycleSetting.schema';
@@ -19,12 +19,12 @@ export class CycleSettingService {
     @InjectModel(CycleSetting.name)
     private cycleSettingModel: Model<CycleSetting>,
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectConnection() private connection: Connection,
+    @InjectConnection() private connection: Connection
   ) {}
 
   async create(
     createCycleSettingDto: CreateCycleSettingDto,
-    userEmail: string,
+    userEmail: string
   ) {
     try {
       // Set the current cycle setting's isCurrent to false
@@ -36,28 +36,28 @@ export class CycleSettingService {
 
       const newCycleSetting = new this.cycleSettingModel({
         ...createCycleSettingDto,
-        userEmail,
+        userEmail
       });
 
       const savedCycleSetting = await newCycleSetting.save();
       const currentUser = await this.userModel.findOne({
-        userEmail,
+        userEmail
       });
       const updatedUser = await currentUser.updateOne({
         $push: {
-          cycleSettings: savedCycleSetting._id,
-        },
+          cycleSettings: savedCycleSetting._id
+        }
       });
       console.log(
         'updatedUser at create method of CycleSettingService',
-        updatedUser,
+        updatedUser
       );
 
       return savedCycleSetting;
     } catch (error) {
       if (error.code === 11000) {
         throw new ConflictException(
-          'Cycle setting with this name already exists for this user.',
+          'Cycle setting with this name already exists for this user.'
         );
       }
       throw error;
@@ -66,7 +66,7 @@ export class CycleSettingService {
 
   async update(
     updateCycleSettingDto: UpdateCycleSettingDto,
-    userEmail: string,
+    userEmail: string
   ) {
     try {
       console.log('updateCycleSettingDto', updateCycleSettingDto);
@@ -75,7 +75,7 @@ export class CycleSettingService {
       const settingToModify = await this.cycleSettingModel
         .findOne({
           userEmail,
-          name,
+          name
         })
         .exec();
       console.log('settingToModify', settingToModify);
@@ -85,17 +85,17 @@ export class CycleSettingService {
           .findOneAndUpdate(
             { userEmail, isCurrent: true },
             { $set: { isCurrent: false } },
-            { new: true },
+            { new: true }
           )
           .exec();
         console.log(
           'prevCurrentUpdated at update() in the class CycleSttingService',
-          prevCurrentUpdated,
+          prevCurrentUpdated
         );
       }
 
       const updateQuery: UpdateQuery<PartialCreateCycleSettingDto> = {
-        $set: data,
+        $set: data
       };
 
       //* 그냥 cycleStat's length를 10으로 유지하기로 해서.. 아예 통짜로 client에서
@@ -115,7 +115,7 @@ export class CycleSettingService {
 
       console.log(
         'updated document at update() in the class CycleSttingService',
-        documentUpdated,
+        documentUpdated
       );
       return documentUpdated;
     } catch (error) {
@@ -137,7 +137,7 @@ export class CycleSettingService {
     // 2.
     await this.userModel.findOneAndUpdate(
       { userEmail },
-      { $pull: { cycleSettings: deletedDoc._id } },
+      { $pull: { cycleSettings: deletedDoc._id } }
     );
 
     // 3. Find the most recently created cycle setting to set it to current
@@ -153,7 +153,7 @@ export class CycleSettingService {
           .findOneAndUpdate(
             { _id: cycleSettingsArr[0]._id },
             { $set: { isCurrent: true } },
-            { new: true },
+            { new: true }
           )
           .exec();
       }

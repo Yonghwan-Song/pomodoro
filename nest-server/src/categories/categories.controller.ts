@@ -6,14 +6,14 @@ import {
   Patch,
   Post,
   Req,
-  ValidationPipe,
+  ValidationPipe
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 import {
   BatchUpdateCategoryDto,
-  UpdateCategoryDto,
+  UpdateCategoryDto
 } from './dto/update-category.dto';
 
 @Controller('categories')
@@ -23,39 +23,39 @@ export class CategoriesController {
   @Post()
   async create(
     @Body(new ValidationPipe()) createCategoryDto: CreateCategoryDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(createCategoryDto);
     // console.log(request);
     return await this.categoriesService.create(
       createCategoryDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
   @Patch()
   async update(
     @Body(new ValidationPipe()) updateCategoryDto: UpdateCategoryDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     console.log(
       '<------------------------updateCategoryDto in the controller------------------------>',
-      updateCategoryDto,
+      updateCategoryDto
     );
     return await this.categoriesService.update(
       updateCategoryDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 
   @Patch('batch')
   async batchUpdate(
     @Body(new ValidationPipe()) batchUpdateDto: BatchUpdateCategoryDto,
-    @Req() request: CustomRequest,
+    @Req() request: CustomRequest
   ) {
     return await this.categoriesService.batchUpdate(
       batchUpdateDto,
-      request.userEmail,
+      request.userEmail
     );
   }
 

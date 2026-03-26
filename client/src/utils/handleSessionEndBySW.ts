@@ -6,7 +6,7 @@ import { CategoryChangeInfo } from "../types/clientStatesType";
 
 export async function handleSessionEndBySW({
   categoryChangeInfoArrAfterReset,
-  userEmail,
+  userEmail
 }: {
   categoryChangeInfoArrAfterReset: CategoryChangeInfo[];
   userEmail: string | null;
@@ -21,7 +21,7 @@ export async function handleSessionEndBySW({
   // QQQ: 이 global state는 왜 udpate해주는거지?... 어차피 모두 main thread로 옮겨오니까... 만약에 sw.js에서 wrapUpSession이 state을 update해줘야하면 그냥 여기에서 다 해버리면 안되나?
   boundedPomoInfoStore.getState().setTimersStatesPartial({
     running: false,
-    startTime: 0,
+    startTime: 0
   });
 
   // TODO: 아래에 적어놓은것들이 실제로 그렇게 작동하는지 테스트 해봐야함. 당시에 약간 작업기억 후달리는 느낌이였음.
@@ -45,13 +45,13 @@ export async function handleSessionEndBySW({
     const currentTaskId = boundedPomoInfoStore.getState().currentTaskId; // the same value as the one in the sesionStorage.
     const newTaskChangeInfo = {
       id: currentTaskId,
-      taskChangeTimestamp: 0,
+      taskChangeTimestamp: 0
     };
     // NOTE: 3.
     boundedPomoInfoStore.getState().setTaskChangeInfoArray([newTaskChangeInfo]); //? 이게 먼저 실행되고, autoStartCurrentSession의 changeTimestamp할당이 일어나겠지?
     userEmail &&
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-        taskChangeInfoArray: [newTaskChangeInfo],
+        taskChangeInfoArray: [newTaskChangeInfo]
       });
   }
 }

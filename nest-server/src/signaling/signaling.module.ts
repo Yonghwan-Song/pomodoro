@@ -5,6 +5,6 @@ import { GroupStudyManagementModule } from 'src/group-study-management/group-stu
 
 @Module({
   imports: [MediasoupModule, GroupStudyManagementModule],
-  providers: [SignalingGateway],
+  providers: [SignalingGateway]
 })
 export class SignalingModule {}

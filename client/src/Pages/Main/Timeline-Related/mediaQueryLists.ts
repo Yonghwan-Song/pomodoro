@@ -20,7 +20,7 @@ export function calculateLeftAndRight({
   slotHour, // The amount of hour that corresponds to the full width of a target media/device.
   // e.g. how to calculate the slotHour of FHD => 1920px : x hr = 480px : 1hr => x = 4
   // Thus, what I need is the full width of a media and pixel per hour in the media.
-  pixelPerHour, // differs depending on target devices - TABLET(256), FHD(480), QHD(640), and UHD(960).
+  pixelPerHour // differs depending on target devices - TABLET(256), FHD(480), QHD(640), and UHD(960).
 }: {
   slotHour: number;
   pixelPerHour: number;

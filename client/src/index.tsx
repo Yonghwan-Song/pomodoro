@@ -17,7 +17,7 @@ import {
   CategoryChangeInfo,
   CycleInfoType,
   TimersStatesTypeWithCurrentCycleInfo,
-  CycleRecord,
+  CycleRecord
 } from "./types/clientStatesType";
 import { Vacant } from "./Pages/Vacant/Vacant";
 import { PomoSettingType } from "./types/clientStatesType";
@@ -36,7 +36,7 @@ import {
   RECORDS_OF_TODAY_STORE_NAME,
   FAILED_REQUESTS_STORE_NAME,
   CATEGORY_CHANGE_INFO_STORE_NAME,
-  TASK_DURATION_TRACKING_STORE_NAME,
+  TASK_DURATION_TRACKING_STORE_NAME
 } from "./constants";
 import { pubsub } from "./pubsub";
 import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
@@ -45,14 +45,14 @@ import { defineInterceptorsForAxiosInstance } from "./axios-and-error-handling/a
 import { axiosInstance } from "./axios-and-error-handling/axios-instances";
 import {
   ERR_CONTROLLER,
-  errController,
+  errController
 } from "./axios-and-error-handling/errorController";
 import { AxiosRequestConfig } from "axios";
 import { boundedPomoInfoStore } from "./zustand-stores/pomoInfoStoreUsingSlice";
 import { roundTo_X_DecimalPoints } from "./utils/number-related-utils";
 import {
   assignStartTimeToChangeInfoArrays,
-  getCycleRecord,
+  getCycleRecord
 } from "./utils/anything";
 import { TaskChangeInfo } from "./types/todoistRelatedTypes";
 import { notify, makeSound } from "./utils/notify";
@@ -141,7 +141,7 @@ export let TimerRelatedStates: TimersStatesType | null = null;
 // 아래 두 event들은 발생할 수 있기 때문에.
 export const deciderOfWhetherDataForRunningTimerFetched: [boolean, boolean] = [
   false, // for persisting timersStates to idb
-  false, // for persisting recordsOfToday to idb
+  false // for persisting recordsOfToday to idb
 ];
 pubsub.subscribe(SUCCESS_PersistingTimersStatesWithCycleInfoToIDB, (data) => {
   deciderOfWhetherDataForRunningTimerFetched[0] = true;
@@ -229,7 +229,7 @@ BC.addEventListener("message", async (ev) => {
       pubsub.publish(evName, payload); // This event is subscribed by NavBar's useEffect callback.
       boundedPomoInfoStore.getState().setTimersStatesPartial({
         running: false,
-        startTime: 0,
+        startTime: 0
       });
       const sessionTypeJustFinished =
         sessionStorage.getItem(CURRENT_SESSION_TYPE);
@@ -241,14 +241,14 @@ BC.addEventListener("message", async (ev) => {
         const currentTaskId = boundedPomoInfoStore.getState().currentTaskId;
         const newTaskChangeInfo = {
           id: currentTaskId,
-          taskChangeTimestamp: 0,
+          taskChangeTimestamp: 0
         };
         boundedPomoInfoStore
           .getState()
           .setTaskChangeInfoArray([newTaskChangeInfo]);
         userEmail &&
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-            taskChangeInfoArray: [newTaskChangeInfo],
+            taskChangeInfoArray: [newTaskChangeInfo]
           });
       }
 
@@ -264,7 +264,7 @@ BC.addEventListener("message", async (ev) => {
         currentCycleInfo,
         pomoSetting,
         endTime,
-        prevSessionType,
+        prevSessionType
       } = payload; // sw.js의 BC에 의해...
 
       console.log("payload is not including currentCategoryName", payload);
@@ -276,7 +276,7 @@ BC.addEventListener("message", async (ev) => {
         currentCycleInfo,
         pomoSetting,
         endTimeOfPrevSession: endTime,
-        prevSessionType,
+        prevSessionType
       });
       break;
 
@@ -350,7 +350,7 @@ window.addEventListener("beforeunload", async (event) => {
  */
 // TODO - 이거 이제 필요 없는듯? 다음 커밋에서 지우던가 하자
 export async function updateTimersStates_with_token({
-  states,
+  states
 }: {
   states: Partial<PatternTimerStatesType> & TimerStateType;
 }) {
@@ -371,7 +371,7 @@ export async function updateTimersStates_with_token({
     }
 
     await axiosInstance.patch(RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
-      ...states,
+      ...states
     });
     // console.log("res obj.data in updateTimersStates_with_token ===>", res.data);
   } catch (err) {
@@ -411,7 +411,7 @@ export async function persistTimersStatesToServer(
 
     // 함수 호출할 때 조건부로 호출해서 401 error 발생 안함
     await axiosInstance.patch(RESOURCE.USERS + SUB_SET.TIMERS_STATES, {
-      ...states,
+      ...states
     });
   } catch (err) {
     console.warn(err);
@@ -446,7 +446,7 @@ export async function persistAutoStartSettingToServer(
       RESOURCE.USERS + SUB_SET.AUTO_START_SETTING,
       {
         // autoStartSetting: autoStartSetting,
-        ...autoStartSetting,
+        ...autoStartSetting
       }
     );
     // console.log("res.data in updateAutoStartSetting ===>", res.data);
@@ -460,7 +460,7 @@ function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
     navigator.serviceWorker
       .register("/sw.js", {
         scope: "/",
-        type: "module",
+        type: "module"
       })
       .then(
         (registration) => {
@@ -543,8 +543,8 @@ export async function setStateStoreToDefault() {
           cycleDuration: 130 * 60,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: 130 * 60,
-        },
+          totalDurationOfSetOfCycles: 130 * 60
+        }
       }),
       tx.store.put({
         name: "pomoSetting",
@@ -553,18 +553,18 @@ export async function setStateStoreToDefault() {
           shortBreakDuration: 5,
           longBreakDuration: 15,
           numOfPomo: 4,
-          numOfCycle: 1,
-        },
+          numOfCycle: 1
+        }
       }),
       tx.store.put({
         name: "autoStartSetting",
         value: {
           doesPomoStartAutomatically: false,
           doesBreakStartAutomatically: false,
-          doesCycleStartAutomatically: false,
-        },
+          doesCycleStartAutomatically: false
+        }
       }),
-      tx.done,
+      tx.done
     ]);
   } catch (error) {
     console.warn(error);
@@ -614,42 +614,42 @@ export async function openIndexedDB() {
         db.deleteObjectStore(STATE_STORE_NAME);
       }
       db.createObjectStore(STATE_STORE_NAME, {
-        keyPath: "name",
+        keyPath: "name"
       });
 
       if (db.objectStoreNames.contains(RECORDS_OF_TODAY_STORE_NAME)) {
         db.deleteObjectStore(RECORDS_OF_TODAY_STORE_NAME);
       }
       db.createObjectStore(RECORDS_OF_TODAY_STORE_NAME, {
-        keyPath: ["startTime"], //TODO: 이거는 왜 array야?
+        keyPath: ["startTime"] //TODO: 이거는 왜 array야?
       });
 
       if (db.objectStoreNames.contains(FAILED_REQUESTS_STORE_NAME)) {
         db.deleteObjectStore(FAILED_REQUESTS_STORE_NAME);
       }
       db.createObjectStore(FAILED_REQUESTS_STORE_NAME, {
-        keyPath: "userEmail",
+        keyPath: "userEmail"
       });
 
       if (db.objectStoreNames.contains(CATEGORY_CHANGE_INFO_STORE_NAME)) {
         db.deleteObjectStore(CATEGORY_CHANGE_INFO_STORE_NAME);
       }
       db.createObjectStore(CATEGORY_CHANGE_INFO_STORE_NAME, {
-        keyPath: "name",
+        keyPath: "name"
       });
 
       if (db.objectStoreNames.contains(TASK_DURATION_TRACKING_STORE_NAME)) {
         db.deleteObjectStore(TASK_DURATION_TRACKING_STORE_NAME);
       }
       db.createObjectStore(TASK_DURATION_TRACKING_STORE_NAME, {
-        keyPath: "name",
+        keyPath: "name"
       });
     },
 
     blocking(currentVersion, blockedVersion, event) {
       console.log("blocking", event);
       window.location.reload();
-    },
+    }
   });
 
   db.onclose = async (ev) => {
@@ -786,7 +786,7 @@ export async function persistFailedReqInfoToIDB(
 
 export async function persistSingleTodaySessionToIDB({
   kind,
-  data,
+  data
 }: {
   kind: "pomo" | "break";
   data: Omit<TimerStateType, "running"> & {
@@ -972,7 +972,7 @@ function buildSessionData(timersStates: {
     pause,
     startTime,
     endTime: startTime + pause.totalLength + duration * 60 * 1000,
-    timeCountedDown: duration,
+    timeCountedDown: duration
   };
 }
 
@@ -993,7 +993,7 @@ function computeTargetedDurations(pomoSetting: PomoSettingType) {
     shortBreakDuration,
     longBreakDuration,
     numOfPomo,
-    numOfCycle,
+    numOfCycle
   } = pomoSetting;
   const totalFocusDurationTargeted = 60 * pomoDuration * numOfPomo;
   const cycleDurationTargeted =
@@ -1005,7 +1005,7 @@ function computeTargetedDurations(pomoSetting: PomoSettingType) {
   return {
     totalFocusDurationTargeted,
     cycleDurationTargeted,
-    totalDurationOfSetOfCyclesTargeted,
+    totalDurationOfSetOfCyclesTargeted
   };
 }
 
@@ -1014,8 +1014,8 @@ const statesOfTimerResetConstant = {
   startTime: 0,
   pause: {
     totalLength: 0,
-    record: [] as { start: number; end: number | undefined }[],
-  },
+    record: [] as { start: number; end: number | undefined }[]
+  }
 };
 
 async function loadSessionEndPrereqs(): Promise<{
@@ -1027,13 +1027,13 @@ async function loadSessionEndPrereqs(): Promise<{
   const [autoStartSetting, idToken, userEmail] = await Promise.all([
     retrieveAutoStartSettingFromIDB(),
     obtainIdToken(),
-    getUserEmail(),
+    getUserEmail()
   ]);
   return {
     autoStartSetting,
     idToken,
     userEmail,
-    statesOfTimerReset: statesOfTimerResetConstant,
+    statesOfTimerReset: statesOfTimerResetConstant
   };
 }
 
@@ -1072,14 +1072,14 @@ async function prepareCategoryChangeAndPersistForSessionEnd(params: {
           {
             ...lastCategoryChangeInfo,
             categoryChangeTimestamp: 0,
-            progress: 0,
-          },
+            progress: 0
+          }
         ]
       : [];
 
   handleSessionEndBySW({
     categoryChangeInfoArrAfterReset,
-    userEmail,
+    userEmail
   });
 
   persistCategoryChangeInfoArrayToIDB(categoryChangeInfoArrAfterReset);
@@ -1088,8 +1088,8 @@ async function prepareCategoryChangeAndPersistForSessionEnd(params: {
       categoryName: info.categoryName,
       categoryChangeTimestamp: info.categoryChangeTimestamp,
       color: info.color,
-      progress: info.progress,
-    })),
+      progress: info.progress
+    }))
   });
 
   return categoryChangeInfoArrayBeforeReset;
@@ -1106,8 +1106,8 @@ async function persistTimerStatesToIDB(options: {
     repetitionCount: options.repetitionCount,
     duration: options.duration,
     ...(options.currentCycleInfo !== undefined && {
-      currentCycleInfo: options.currentCycleInfo,
-    }),
+      currentCycleInfo: options.currentCycleInfo
+    })
   });
 }
 
@@ -1153,7 +1153,7 @@ export async function endTimer(action: "endTimer", payload: GoNextPayload) {
   const kindOfSessionJustFinished = identifyPrevSession({
     howManyCountdown: timersStates.repetitionCount + 1,
     numOfPomo: pomoSetting.numOfPomo,
-    numOfCycle: pomoSetting.numOfCycle,
+    numOfCycle: pomoSetting.numOfCycle
   });
 
   const timersStatesForNextSession =
@@ -1168,13 +1168,13 @@ export async function endTimer(action: "endTimer", payload: GoNextPayload) {
       idToken,
       userEmail,
       sessionData,
-      taskChangeInfoArray,
+      taskChangeInfoArray
     });
 
   const {
     totalFocusDurationTargeted,
     cycleDurationTargeted,
-    totalDurationOfSetOfCyclesTargeted,
+    totalDurationOfSetOfCyclesTargeted
   } = computeTargetedDurations(pomoSetting);
 
   const ctx: SessionWrapUpContext = {
@@ -1191,7 +1191,7 @@ export async function endTimer(action: "endTimer", payload: GoNextPayload) {
     totalFocusDurationTargeted,
     cycleDurationTargeted,
     totalDurationOfSetOfCyclesTargeted,
-    kindOfSessionJustFinished,
+    kindOfSessionJustFinished
   };
 
   switch (kindOfSessionJustFinished) {
@@ -1278,7 +1278,7 @@ export async function countDown(setIntervalId: number | string | null) {
             pomoSetting,
             timersStatesWithCurrentCycleInfo,
             taskChangeInfoArray:
-              boundedPomoInfoStore.getState().taskChangeInfoArray,
+              boundedPomoInfoStore.getState().taskChangeInfoArray
           });
         }
       }, 500);
@@ -1310,13 +1310,13 @@ const SESSION = {
   SHORT_BREAK: 2,
   LAST_POMO: 3,
   LONG_BREAK: 4,
-  VERY_LAST_POMO: 5,
+  VERY_LAST_POMO: 5
 };
 
 function identifyPrevSession({
   howManyCountdown,
   numOfPomo,
-  numOfCycle,
+  numOfCycle
 }: {
   howManyCountdown: number;
   numOfPomo: number;
@@ -1379,7 +1379,7 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
     userEmail,
     categoryChangeInfoArrayBeforeReset,
     taskChangeInfoArray,
-    statesOfTimerReset,
+    statesOfTimerReset
   } = ctx;
   notify("shortBreak");
 
@@ -1387,7 +1387,7 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
   await persistTimerStatesToIDB({
     statesOfTimerReset,
     repetitionCount: timersStatesForNextSession.repetitionCount,
-    duration: timersStatesForNextSession.duration,
+    duration: timersStatesForNextSession.duration
   });
 
   if (sessionData.startTime !== 0) {
@@ -1398,7 +1398,7 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
     );
     await persistSingleTodaySessionToIDB({
       kind: "pomo",
-      data: sessionData,
+      data: sessionData
     });
     persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
   }
@@ -1415,8 +1415,8 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
         currentCycleInfo,
         pomoSetting,
         endTimeOfPrevSession: sessionData.endTime,
-        prevSessionType: ctx.kindOfSessionJustFinished,
-      }),
+        prevSessionType: ctx.kindOfSessionJustFinished
+      })
   });
 }
 
@@ -1428,7 +1428,7 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
     pomoSetting,
     autoStartSetting,
     idToken,
-    statesOfTimerReset,
+    statesOfTimerReset
   } = ctx;
   notify("pomo");
 
@@ -1437,12 +1437,12 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
   await persistTimerStatesToIDB({
     statesOfTimerReset,
     repetitionCount: timersStatesForNextSession.repetitionCount,
-    duration: timersStatesForNextSession.duration,
+    duration: timersStatesForNextSession.duration
   });
 
   await persistSingleTodaySessionToIDB({
     kind: "break",
-    data: sessionData,
+    data: sessionData
   });
 
   handleAutoStartOrPersist({
@@ -1457,8 +1457,8 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
         currentCycleInfo,
         pomoSetting,
         endTimeOfPrevSession: sessionData.endTime,
-        prevSessionType: ctx.kindOfSessionJustFinished,
-      }),
+        prevSessionType: ctx.kindOfSessionJustFinished
+      })
   });
 
   sessionData.startTime !== 0 &&
@@ -1476,7 +1476,7 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
     userEmail,
     categoryChangeInfoArrayBeforeReset,
     taskChangeInfoArray,
-    statesOfTimerReset,
+    statesOfTimerReset
   } = ctx;
   notify("longBreak");
 
@@ -1485,7 +1485,7 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
   await persistTimerStatesToIDB({
     statesOfTimerReset,
     repetitionCount: timersStatesForNextSession.repetitionCount,
-    duration: timersStatesForNextSession.duration,
+    duration: timersStatesForNextSession.duration
   });
 
   if (sessionData.startTime !== 0) {
@@ -1497,7 +1497,7 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
     persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
     await persistSingleTodaySessionToIDB({
       kind: "pomo",
-      data: sessionData,
+      data: sessionData
     });
   }
 
@@ -1513,8 +1513,8 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
         currentCycleInfo,
         pomoSetting,
         endTimeOfPrevSession: sessionData.endTime,
-        prevSessionType: ctx.kindOfSessionJustFinished,
-      }),
+        prevSessionType: ctx.kindOfSessionJustFinished
+      })
   });
 }
 
@@ -1530,7 +1530,7 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     statesOfTimerReset,
     totalFocusDurationTargeted,
     cycleDurationTargeted,
-    totalDurationOfSetOfCyclesTargeted,
+    totalDurationOfSetOfCyclesTargeted
   } = ctx;
   notify("cyclesCompleted");
 
@@ -1558,8 +1558,8 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
       cycleDuration: cycleDurationTargeted,
       cycleStartTimestamp: 0,
       veryFirstCycleStartTimestamp: 0,
-      totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
-    },
+      totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted
+    }
   });
 
   persistTimersStatesToServer(timersStatesForNextSession);
@@ -1568,7 +1568,7 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     cycleDuration: cycleDurationTargeted,
     cycleStartTimestamp: 0,
     veryFirstCycleStartTimestamp: 0,
-    totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
+    totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted
   });
 
   if (sessionData.startTime !== 0) {
@@ -1579,7 +1579,7 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     );
     await persistSingleTodaySessionToIDB({
       kind: "pomo",
-      data: sessionData,
+      data: sessionData
     });
     persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
   }
@@ -1596,7 +1596,7 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
     userEmail,
     statesOfTimerReset,
     totalFocusDurationTargeted,
-    cycleDurationTargeted,
+    cycleDurationTargeted
   } = ctx;
   notify("nextCycle");
 
@@ -1624,13 +1624,13 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
       cycleStartTimestamp: 0,
       veryFirstCycleStartTimestamp:
         currentCycleInfo.veryFirstCycleStartTimestamp,
-      totalDurationOfSetOfCycles: currentCycleInfo.totalDurationOfSetOfCycles,
-    },
+      totalDurationOfSetOfCycles: currentCycleInfo.totalDurationOfSetOfCycles
+    }
   });
 
   await persistSingleTodaySessionToIDB({
     kind: "break",
-    data: sessionData,
+    data: sessionData
   });
 
   handleAutoStartOrPersist({
@@ -1641,7 +1641,7 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration: totalFocusDurationTargeted,
         cycleDuration: cycleDurationTargeted,
-        cycleStartTimestamp: 0,
+        cycleStartTimestamp: 0
       });
     },
     autoStart: () =>
@@ -1655,12 +1655,12 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
           veryFirstCycleStartTimestamp:
             currentCycleInfo.veryFirstCycleStartTimestamp,
           totalDurationOfSetOfCycles:
-            currentCycleInfo.totalDurationOfSetOfCycles,
+            currentCycleInfo.totalDurationOfSetOfCycles
         },
         pomoSetting,
         endTimeOfPrevSession: sessionData.endTime,
-        prevSessionType: ctx.kindOfSessionJustFinished,
-      }),
+        prevSessionType: ctx.kindOfSessionJustFinished
+      })
   });
 
   sessionData.startTime !== 0 &&
@@ -1680,7 +1680,7 @@ async function autoStartCurrentSession({
   currentCycleInfo,
   pomoSetting,
   endTimeOfPrevSession,
-  prevSessionType,
+  prevSessionType
 }: {
   userEmail: string | null;
   timersStates: TimerStateType & PatternTimerStatesType;
@@ -1701,7 +1701,7 @@ async function autoStartCurrentSession({
 
     boundedPomoInfoStore.getState().setTimersStatesPartial({
       running: true,
-      startTime: timersStates.startTime,
+      startTime: timersStates.startTime
     });
 
     assignStartTimeToChangeInfoArrays(timersStates.startTime);
@@ -1744,10 +1744,10 @@ async function autoStartCurrentSession({
           pomoSetting,
           timersStatesWithCurrentCycleInfo: {
             ...timersStates,
-            currentCycleInfo,
+            currentCycleInfo
           },
           taskChangeInfoArray:
-            boundedPomoInfoStore.getState().taskChangeInfoArray,
+            boundedPomoInfoStore.getState().taskChangeInfoArray
         });
       }
     }, 500);
@@ -1779,7 +1779,7 @@ async function autoStartCurrentSession({
     > = {
       startTime: timersStates.startTime,
       running: timersStates.running,
-      pause: timersStates.pause,
+      pause: timersStates.pause
     };
 
     if (prevSessionType === SESSION.LONG_BREAK) {
@@ -1797,7 +1797,7 @@ async function autoStartCurrentSession({
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
           cycleStartTimestamp: currentCycleInfo.cycleStartTimestamp,
           totalFocusDuration: currentCycleInfo.totalFocusDuration,
-          cycleDuration: currentCycleInfo.cycleDuration,
+          cycleDuration: currentCycleInfo.cycleDuration
         });
     }
     // 1. persist locally.
@@ -1829,8 +1829,8 @@ async function autoStartCurrentSession({
           running: timersStates.running,
           pause: timersStates.pause,
           repetitionCount: timersStates.repetitionCount,
-          duration: timersStates.duration,
-        },
+          duration: timersStates.duration
+        }
       });
     }
   } catch (error) {

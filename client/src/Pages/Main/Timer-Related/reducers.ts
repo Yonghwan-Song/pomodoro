@@ -36,14 +36,14 @@ export function reducer(
       persistStatesToIDB({
         startTime: action.payload,
         running: true,
-        pause: { totalLength: 0, record: [] },
+        pause: { totalLength: 0, record: [] }
       });
 
       return {
         ...state,
         running: true,
         // startTime: action.payload,
-        startTime: action.payload!,
+        startTime: action.payload!
       };
 
     case ACTION.PAUSE:
@@ -53,9 +53,9 @@ export function reducer(
           ...state.pause,
           record: [
             ...state.pause!.record,
-            { start: action.payload, end: undefined },
-          ],
-        },
+            { start: action.payload, end: undefined }
+          ]
+        }
       });
       return {
         ...state,
@@ -64,9 +64,9 @@ export function reducer(
           ...state.pause!,
           record: [
             ...state.pause!.record,
-            { start: action.payload, end: undefined },
-          ],
-        },
+            { start: action.payload, end: undefined }
+          ]
+        }
       };
 
     case ACTION.RESUME:
@@ -77,7 +77,7 @@ export function reducer(
             if (obj.end === undefined) {
               return {
                 ...obj,
-                end: action.payload,
+                end: action.payload
               };
             } else {
               return obj;
@@ -86,8 +86,8 @@ export function reducer(
           totalLength:
             state.pause!.totalLength +
             (action.payload! -
-              state.pause!.record[state.pause!.record.length - 1].start),
-        },
+              state.pause!.record[state.pause!.record.length - 1].start)
+        }
       });
       return {
         ...state,
@@ -97,7 +97,7 @@ export function reducer(
             if (obj.end === undefined) {
               return {
                 ...obj,
-                end: action.payload,
+                end: action.payload
               };
             } else {
               return obj;
@@ -106,25 +106,25 @@ export function reducer(
           totalLength:
             state.pause!.totalLength +
             (action.payload! -
-              state.pause!.record[state.pause!.record.length - 1].start),
-        },
+              state.pause!.record[state.pause!.record.length - 1].start)
+        }
       };
 
     case ACTION.RESET:
       persistStatesToIDB({
         startTime: 0,
         running: false,
-        pause: { totalLength: 0, record: [] },
+        pause: { totalLength: 0, record: [] }
       });
       return {
         running: false,
         startTime: 0,
-        pause: { totalLength: 0, record: [] },
+        pause: { totalLength: 0, record: [] }
       };
 
     case ACTION.CONTINUE:
       return {
-        ...action.payload,
+        ...action.payload
       };
 
     default:
@@ -143,5 +143,5 @@ export const ACTION: {
   PAUSE: "pause",
   RESUME: "resume",
   RESET: "reset",
-  CONTINUE: "continue",
+  CONTINUE: "continue"
 };

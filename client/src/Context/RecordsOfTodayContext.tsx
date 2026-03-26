@@ -10,7 +10,7 @@ import { RESOURCE } from "../constants";
 export const RecordsOfTodayContext = createContext<RecType[] | null>(null);
 
 export function RecordsOfTodayContextProvider({
-  children,
+  children
 }: {
   children: React.ReactNode;
 }) {
@@ -25,7 +25,7 @@ export function RecordsOfTodayContextProvider({
     urlSegment: RESOURCE.TODAY_RECORDS,
     modifier: removeRecordsBeforeToday, //? Double Check같은것?....
     callbacks: [persistRecordsOfTodayToIDB],
-    params: { timestamp: startOfTodayTimestamp },
+    params: { timestamp: startOfTodayTimestamp }
   });
   const { user } = useAuthContext()!;
 

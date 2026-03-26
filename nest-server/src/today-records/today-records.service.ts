@@ -8,17 +8,17 @@ import { CreateTodayRecordDto } from './dto/create-today-record.dto';
 export class TodayRecordsService {
   constructor(
     @InjectModel(TodayRecord.name)
-    private todayRecordModel: Model<TodayRecord>,
+    private todayRecordModel: Model<TodayRecord>
   ) {}
 
   createTodayRecord(
     createTodayRecordDto: CreateTodayRecordDto,
-    userEmail: string,
+    userEmail: string
   ) {
     console.log('createTodayRecordDto', createTodayRecordDto);
     const newRecordOfToday = new this.todayRecordModel({
       userEmail,
-      ...createTodayRecordDto,
+      ...createTodayRecordDto
     });
     return newRecordOfToday.save();
   }
@@ -36,7 +36,7 @@ export class TodayRecordsService {
       return this.todayRecordModel
         .find({
           userEmail,
-          startTime: { $gte: timestamp },
+          startTime: { $gte: timestamp }
         })
         .exec();
     }
@@ -46,7 +46,7 @@ export class TodayRecordsService {
   deleteRecordsBeforeToday(timestamp: number, userEmail: string) {
     return this.todayRecordModel.deleteMany({
       userEmail,
-      startTime: { $lt: timestamp },
+      startTime: { $lt: timestamp }
     });
   }
 
@@ -62,7 +62,7 @@ export class TodayRecordsService {
         startTime: YESTERDAY,
         endTime: YESTERDAY + 25 * 60 * 1000,
         timeCountedDown: 25 * 60,
-        pause: { pause: { totalLength: 0, record: [] } },
+        pause: { pause: { totalLength: 0, record: [] } }
       },
       {
         userEmail,
@@ -70,7 +70,7 @@ export class TodayRecordsService {
         startTime: YESTERDAY + 30 * 60 * 1000,
         endTime: YESTERDAY + 35 * 60 * 1000,
         timeCountedDown: 5 * 60,
-        pause: { pause: { totalLength: 0, record: [] } },
+        pause: { pause: { totalLength: 0, record: [] } }
       },
       {
         userEmail,
@@ -78,7 +78,7 @@ export class TodayRecordsService {
         startTime: NOW - 2 * 60 * 60 * 1000, // 2 hours ago
         endTime: NOW - 1.5 * 60 * 60 * 1000,
         timeCountedDown: 30 * 60,
-        pause: { pause: { totalLength: 0, record: [] } },
+        pause: { pause: { totalLength: 0, record: [] } }
       },
       {
         userEmail,
@@ -86,8 +86,8 @@ export class TodayRecordsService {
         startTime: NOW - 1 * 60 * 60 * 1000, // 1 hour ago
         endTime: NOW - 0.5 * 60 * 60 * 1000,
         timeCountedDown: 30 * 60,
-        pause: { pause: { totalLength: 0, record: [] } },
-      },
+        pause: { pause: { totalLength: 0, record: [] } }
+      }
     ];
 
     await this.todayRecordModel.insertMany(dummyData);

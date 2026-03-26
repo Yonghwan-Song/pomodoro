@@ -12,7 +12,7 @@ type PauseTimerProps = {
 export default function PauseTimer({
   isPaused,
   pauseData,
-  isOnSession,
+  isOnSession
 }: PauseTimerProps) {
   const [count, setCount] = useState<number>(() => {
     let timePassedInMilliSeconds = 0;

@@ -3,7 +3,7 @@ import {
   IsArray,
   ValidateNested,
   IsNumber,
-  Min,
+  Min
 } from 'class-validator';
 import { Type } from 'class-transformer';
 

@@ -5,18 +5,18 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from 'src/schemas/user.schema';
 import {
   CycleSetting,
-  CycleSettingSchema,
+  CycleSettingSchema
 } from 'src/schemas/cycleSetting.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: CycleSetting.name, schema: CycleSettingSchema },
-      { name: User.name, schema: UserSchema },
-    ]),
+      { name: User.name, schema: UserSchema }
+    ])
   ],
   controllers: [CycleSettingController],
-  providers: [CycleSettingService],
+  providers: [CycleSettingService]
   // exports: [CycleSettingService],
 })
 export class CycleSettingModule {}

@@ -8,7 +8,7 @@ import {
   IsBoolean,
   IsArray,
   ArrayMinSize,
-  IsNotEmpty,
+  IsNotEmpty
 } from 'class-validator';
 import { Type } from 'class-transformer';
 

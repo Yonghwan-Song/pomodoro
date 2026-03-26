@@ -1,0 +1,11 @@
+{
+  "trailingComma": "none",
+  "overrides": [
+    {
+      "files": "nest-server/**/*.{js,ts}",
+      "options": {
+        "singleQuote": true
+      }
+    }
+  ]
+}

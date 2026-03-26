@@ -15,8 +15,8 @@ import { useTimerData } from "../../Custom-Hooks/useTimerData";
 export default function Main() {
   const { user } = useAuthContext()!;
 
-  // 이전에 이 파일에 존재하던 타이머의 상태, 기록 페칭 로직 및 PubSub 구독 로직들은 
-  // 모두 useTimerData 훅 내부로 추출되었습니다. 이를 통해 Room.tsx 같은 다른 곳에서도 
+  // 이전에 이 파일에 존재하던 타이머의 상태, 기록 페칭 로직 및 PubSub 구독 로직들은
+  // 모두 useTimerData 훅 내부로 추출되었습니다. 이를 통해 Room.tsx 같은 다른 곳에서도
   // 핵심 타이머 로직을 재사용할 수 있게 되었습니다.
   const {
     statesRelatedToTimer,
@@ -25,7 +25,7 @@ export default function Main() {
     setRecords,
     isStatesRelatedToTimerReady,
     isCurrentCycleInfoReady,
-    areDataForRunningTimerFetchedCompletely,
+    areDataForRunningTimerFetchedCompletely
   } = useTimerData();
 
   //* At this point, it doesn't matter whether this setting comes from IDB or the server, as the AuthContextProvider handles it.

@@ -28,10 +28,10 @@ export class TodayRecord {
     raw({
       type: {
         totalLength: Number,
-        record: [{ start: Number, end: Number }],
+        record: [{ start: Number, end: Number }]
       },
-      default: { totalLength: 0, record: [] },
-    }),
+      default: { totalLength: 0, record: [] }
+    })
   )
   pause: Pause;
 }

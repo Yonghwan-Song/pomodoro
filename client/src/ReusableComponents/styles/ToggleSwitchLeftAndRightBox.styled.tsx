@@ -23,7 +23,7 @@ export const StyledLeftBox = styled.div<StyledLeftRightBoxPropsType>`
     isSwitchOn,
     borderWidth,
     backgroundColorForOn,
-    backgroundColorForOff,
+    backgroundColorForOff
   }) => {
     if (isSwitchOn === true) {
       return css`
@@ -74,7 +74,7 @@ export const StyledRightBox = styled.div<StyledLeftRightBoxPropsType>`
     isSwitchOn,
     borderWidth,
     backgroundColorForOn,
-    backgroundColorForOff,
+    backgroundColorForOff
   }) => {
     if (isSwitchOn === true) {
       return css`
