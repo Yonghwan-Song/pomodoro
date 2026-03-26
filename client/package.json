@@ -39,8 +39,7 @@
     "test": "echo 'Run vitest instead'",
     "lint": "eslint --ignore-path ../.gitignore .",
     "format": "prettier --ignore-path .gitignore --write \"**/*.{ts,tsx,css,scss}\"",
-    "coverage": "npm test -- --coverage --watchAll --collectCoverageFrom='src/components/**/*.{ts,tsx}' --collectCoverageFrom='!src/components/**/*.{types, stories, constants, test, sepc}.{ts,tsx}'",
-    "prepare": "cd .. && husky install client/.husky"
+    "coverage": "npm test -- --coverage --watchAll --collectCoverageFrom='src/components/**/*.{ts,tsx}' --collectCoverageFrom='!src/components/**/*.{types, stories, constants, test, sepc}.{ts,tsx}'"
   },
   "eslintConfig": {
     "extends": [
@@ -116,8 +115,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.26",
-    "husky": "^8.0.3",
-    "lint-staged": "^13.2.0",
     "msw": "^1.2.1",
     "prettier": "2.8.7",
     "rollup": "^2.79.1",
@@ -126,13 +123,5 @@
     "vite": "^5.0.12",
     "vite-plugin-svgr": "^4.2.0",
     "vite-tsconfig-paths": "^4.3.1"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint"
-    ],
-    "*.{ts,tsx,css,scss}": [
-      "prettier --write"
-    ]
   }
 }
