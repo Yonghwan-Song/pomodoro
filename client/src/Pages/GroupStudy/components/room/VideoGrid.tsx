@@ -2,7 +2,6 @@ import { css } from "../../../../../styled-system/css";
 import VideoPlayer from "../media/VideoPlayer";
 import { getHHmm } from "../../../../utils/number-related-utils";
 import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
-import { useEffect } from "react";
 
 const DUMMY_VIDEO_COUNT = 3;
 
@@ -25,9 +24,6 @@ export function VideoGrid({
     (state) => state.consumersByPeerId
   );
   const isSharing = useConnectionStore((state) => state.isSharing);
-  useEffect(() => {
-    console.log("isSharing", isSharing);
-  }, [isSharing]);
   const isProducerPaused = useConnectionStore(
     (state) => state.isProducerPaused
   );
@@ -154,7 +150,10 @@ export function VideoGrid({
                 🔥 {getHHmm(peerTodayTotalDurations.get(peerId) || 0)}
               </span>
             </div>
-            <VideoPlayer stream={stream} consumerId={consumer?.id} />
+            <VideoPlayer
+              stream={stream}
+              consumerId={consumer?.id}
+            />
           </div>
         );
       })}

@@ -8,7 +8,8 @@ module.exports = {
   plugins: ['@typescript-eslint/eslint-plugin'],
   extends: [
     'plugin:@typescript-eslint/recommended',
-    'plugin:prettier/recommended',
+    // Prettier는 포맷터로만 사용 (eslint-plugin-prettier 미사용).
+    'prettier',
   ],
   root: true,
   env: {

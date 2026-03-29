@@ -240,6 +240,17 @@ export class SignalingGateway
     );
   }
 
+  @SubscribeMessage(EventNames.PAUSE_CONSUMER)
+  async handlePauseConsumer(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { consumerId: string }
+  ): Promise<AckResponse<{ paused: boolean }>> {
+    return await this.groupStudyManagementService.pauseConsumer(
+      clientSocket.id,
+      payload.consumerId
+    );
+  }
+
   @SubscribeMessage(EventNames.RESUME_CONSUMER)
   async handleResumeConsumer(
     @ConnectedSocket() clientSocket: Socket,

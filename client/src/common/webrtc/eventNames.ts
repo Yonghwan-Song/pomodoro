@@ -22,6 +22,7 @@ export const CONSUMER_LAYERS_CHANGED = "consumerLayersChanged";
 export const PRODUCER_CLOSED = "producerClosed";
 export const PAUSE_PRODUCER = "pauseProducer";
 export const RESUME_PRODUCER = "resumeProducer";
+export const PAUSE_CONSUMER = "pauseConsumer";
 
 // Room 관련 이벤트
 export const CREATE_ROOM = "createRoom";

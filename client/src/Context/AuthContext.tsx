@@ -52,21 +52,31 @@ export function AuthContextProvider({
   const [isUserNewlyRegistered, setIsUserNewlyRegistered] = useState(false);
   const [isUserNew, setIsUserNew] = useState(false);
   const populateExistingUserStates = useBoundedPomoInfoStore(
-    (state) => state.populateExistingUserStates
+    (state) => state.populateExistingUserStates,
   );
   const populateNonSignInUserStates = useBoundedPomoInfoStore(
-    (state) => state.populateNonSignInUserStates
+    (state) => state.populateNonSignInUserStates,
   );
   const updatePomoSetting = useBoundedPomoInfoStore(
-    (state) => state.setPomoSetting
+    (state) => state.setPomoSetting,
   );
   const updateAutoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.setAutoStartSetting
+    (state) => state.setAutoStartSetting,
   );
 
   const googleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      // TODO: add it.
+      // NOTE: signInWithPopup -> authDomain (referer) -> 키 제한에 허용시켜야
+      // localhost:3001에서 앱을 열어도, Firebase Google 로그인은 내부적으로 authDomain(지금
+      // 은 pomodoro-ef5e0.firebaseapp.com)의 iframe/popup을 통해 통신합니다.
+      // 그래서 API 서버 입장에서는 요청 referer가
+      // https://pomodoro-ef5e0.firebaseapp.com/...로 보일 수 있어요.
+      // 즉:
+      // - 앱 시작: http://localhost:3001
+      // - 실제 인증 보조 요청: https://pomodoro-ef5e0.firebaseapp.com 쪽에서 발생
+      // - 그래서 키 제한에 firebaseapp.com 도메인도 허용 필요
       const result = await signInWithPopup(auth, provider);
       const details = getAdditionalUserInfo(result);
 
@@ -103,7 +113,7 @@ export function AuthContextProvider({
    */
   async function registerUser(user: User) {
     try {
-      let response = await axiosInstance.post(RESOURCE.USERS, {
+      const response = await axiosInstance.post(RESOURCE.USERS, {
         firebaseUid: user.uid,
       });
       setIsNewUserRegistered(true);
@@ -120,7 +130,7 @@ export function AuthContextProvider({
         const response = await axiosInstance.get(RESOURCE.USERS);
         const states = response.data as DataFromServer;
         const pomoSetting = states.cycleSettings.find(
-          (setting) => setting.isCurrent
+          (setting) => setting.isCurrent,
         )?.pomoSetting;
 
         // console.log("data from server", states);
@@ -139,7 +149,7 @@ export function AuthContextProvider({
         //3. to ensure that categories are uniquely identified on the client side.
         await addUUIDToCategory(
           states.categories,
-          states.categoryChangeInfoArray
+          states.categoryChangeInfoArray,
         );
 
         //4. assign states to the zustand store
@@ -159,7 +169,7 @@ export function AuthContextProvider({
 
         //
         await persistCategoryChangeInfoArrayToIDB(
-          states.categoryChangeInfoArray
+          states.categoryChangeInfoArray,
         );
         pubsub.publish(SUCCESS_PersistingTimersStatesWithCycleInfoToIDB, {
           timersStates: states.timersStates,
@@ -168,7 +178,7 @@ export function AuthContextProvider({
 
         //
         const currentCategory = states.categories.find(
-          (category) => category.isCurrent
+          (category) => category.isCurrent,
         );
         if (currentCategory) {
           sessionStorage.setItem(CURRENT_CATEGORY_NAME, currentCategory.name);
@@ -215,7 +225,7 @@ export function AuthContextProvider({
      */
 
     async function getAndSetStatesFromIDBForNonSignedInUsers() {
-      let states = await obtainStatesFromIDB("withSettings");
+      const states = await obtainStatesFromIDB("withSettings");
 
       // 1. non-signed-in user가 이전에 사용하던 정보가 Indexed DB에 존재하는 경우.
       if (Object.entries(states).length !== 0) {
@@ -296,7 +306,7 @@ export const useAuthContext = () => {
 
 async function addUUIDToCategory(
   categories: Category[],
-  categoryChangeInfoArray: CategoryChangeInfo[]
+  categoryChangeInfoArray: CategoryChangeInfo[],
 ) {
   categories.forEach((category) => {
     category._uuid = window.crypto.randomUUID();
@@ -304,7 +314,7 @@ async function addUUIDToCategory(
 
   for (const info of categoryChangeInfoArray) {
     const matchingCategory = categories.find(
-      (category) => category.name === info.categoryName
+      (category) => category.name === info.categoryName,
     );
     info._uuid = matchingCategory?._uuid;
   }

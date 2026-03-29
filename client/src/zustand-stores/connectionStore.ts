@@ -52,6 +52,8 @@ interface MediaState {
 // NOTE: This state seems to have room to separate some properties depending on their roles/concerns.
 // Simply put, everything we are talking about here is related to the Room feature. Thus, IMO RoomState is too broad.
 // TODO: Split the state into detailed ones according to their concerns.
+// NOTE: 이 안의 정보들이 너무 흩뿌려져있는 느낌. 뭔가 state들이 유기적으로 위계를 갖고 조직되어 있는 느낌이 아니기 때문에 뭔가...
+// 어떤 기능을 구현하고자 할때 뇌에 바로바로 이미지가 떠오르지 않음. 어디를 고쳐야하고 무엇을 추가하고 어떤게 필요할지...
 interface RoomState {
   currentRoomId: string | null;
   isRoomJoined: boolean;
@@ -66,8 +68,9 @@ interface RoomState {
   // Producer/Consumer related -> 이것들은 이름이 따로 있지 않나?
   producer: mediasoupTypes.Producer | null;
   isProducerPaused: boolean;
-  producersList: ProducerInfo[];
-  consumersByPeerId: Map<string, mediasoupTypes.Consumer>;
+  producersList: ProducerInfo[]; // 방에 존재하는 나 말고 다른 사람들이 produce하고 있는 미디어들의 리스트임. 그러니가 내가 consume할 수 있는 대상들을 말하는 것임.
+  //그런데
+  consumersByPeerId: Map<string, mediasoupTypes.Consumer>; // key는 peerId(Socket ID)이며, value는 해당 peer의 미디어를 소비하는 Consumer 객체
   remoteStreams: Map<string, MediaStream>;
   peerNicknames: Map<string, string>;
 
@@ -141,6 +144,8 @@ interface RoomActions {
   setCommonPreferredLayersForAllConsumers: (
     spatialLayer: number
   ) => Promise<AckResponse<CommonPreferredLayersForAllConsumersData> | null>;
+  /** 로컬 뷰어가 특정 consumer를 일시정지/재개 토글 */
+  toggleLocalConsumerPause: (consumerId: string) => void;
 }
 
 type Store = SocketState &
@@ -191,6 +196,8 @@ type SimulcastPolicyInput = Pick<
 type ConsumerLayerState = {
   requestedSpatialLayer?: number;
   currentSpatialLayer?: number;
+  isPausedByProducer?: boolean;
+  isPausedLocallyByViewer?: boolean;
 };
 
 const VERY_LOW_RESOLUTION_MAX_BITRATE = 250_000;
@@ -360,6 +367,67 @@ export const useConnectionStore = create<Store>()(
               "socket/connect_error"
             );
           });
+
+          newSocket.on(
+            "PRODUCER_PAUSED",
+            ({ producingPeerId }: { producingPeerId: string }) => {
+              const correspondingConsumer =
+                get().consumersByPeerId.get(producingPeerId);
+              correspondingConsumer?.pause();
+              if (!correspondingConsumer) return;
+
+              set(
+                (state) => {
+                  const updatedLayers = new Map(state.consumerLayers);
+                  const existingLayerState =
+                    updatedLayers.get(correspondingConsumer.id) ?? {};
+
+                  updatedLayers.set(correspondingConsumer.id, {
+                    ...existingLayerState,
+                    isPausedByProducer: true
+                  });
+
+                  return { consumerLayers: updatedLayers };
+                },
+                false,
+                "room/consumerProducerPaused"
+              );
+            }
+          );
+
+          newSocket.on(
+            "PRODUCER_RESUMED",
+            ({ producingPeerId }: { producingPeerId: string }) => {
+              const correspondingConsumer =
+                get().consumersByPeerId.get(producingPeerId);
+              if (!correspondingConsumer) return;
+
+              const isLocallyPaused = get().consumerLayers.get(
+                correspondingConsumer.id
+              )?.isPausedLocallyByViewer;
+
+              if (!isLocallyPaused) {
+                correspondingConsumer.resume();
+              }
+
+              set(
+                (state) => {
+                  const updatedLayers = new Map(state.consumerLayers);
+                  const existingLayerState =
+                    updatedLayers.get(correspondingConsumer.id) ?? {};
+
+                  updatedLayers.set(correspondingConsumer.id, {
+                    ...existingLayerState,
+                    isPausedByProducer: false
+                  });
+
+                  return { consumerLayers: updatedLayers };
+                },
+                false,
+                "room/consumerProducerResumed"
+              );
+            }
+          );
 
           set({ socket: newSocket }, false, "socket/initialized");
         } catch (error) {
@@ -1291,6 +1359,89 @@ export const useConnectionStore = create<Store>()(
         );
 
         socket.emit(EventNames.CHAT_MESSAGE, { message });
+      },
+
+      toggleLocalConsumerPause: (consumerId: string) => {
+        const { socket, consumersByPeerId, consumerLayers } = get();
+        if (!socket) return;
+
+        // 1. 상태에서 현재 consumer 찾기
+        let targetConsumer: mediasoupTypes.Consumer | undefined;
+        for (const consumer of consumersByPeerId.values()) {
+          if (consumer.id === consumerId) {
+            targetConsumer = consumer;
+            break; // <-- 오랜만이다!
+          }
+        }
+
+        if (!targetConsumer) {
+          console.warn(
+            `[socketStore] toggleLocalConsumerPause: consumer ${consumerId} not found`
+          );
+          return;
+        }
+
+        // 2. 현재 상태 확인
+        const currentState = consumerLayers.get(consumerId) ?? {};
+        const isCurrentlyPaused = currentState.isPausedLocallyByViewer === true;
+        const willBePaused = !isCurrentlyPaused;
+
+        // 3. 로컬 mediasoup consumer 일시정지/재개 (optimistic)
+        if (willBePaused) {
+          targetConsumer.pause();
+        } else {
+          targetConsumer.resume();
+        }
+
+        // 4. 스토어 상태 업데이트 (optimistic)
+        set(
+          (state) => {
+            const updatedLayers = new Map(state.consumerLayers);
+            updatedLayers.set(consumerId, {
+              ...currentState,
+              isPausedLocallyByViewer: willBePaused
+            });
+            return { consumerLayers: updatedLayers };
+          },
+          false,
+          "room/toggleLocalConsumerPause"
+        );
+
+        // 5. 서버에 시그널링 (실패 시 롤백)
+        const eventName = willBePaused
+          ? EventNames.PAUSE_CONSUMER
+          : EventNames.RESUME_CONSUMER;
+        socket.emit(eventName, { consumerId }, (ackResponse: AckResponse) => {
+          if (!ackResponse.success) {
+            console.error(
+              `[socketStore] Failed to ${
+                willBePaused ? "pause" : "resume"
+              } consumer on server:`,
+              ackResponse.error
+            );
+
+            // 롤백
+            if (willBePaused) {
+              targetConsumer?.resume();
+            } else {
+              targetConsumer?.pause();
+            }
+
+            set(
+              (state) => {
+                const layers = new Map(state.consumerLayers);
+                const current = layers.get(consumerId) ?? {};
+                layers.set(consumerId, {
+                  ...current,
+                  isPausedLocallyByViewer: isCurrentlyPaused
+                });
+                return { consumerLayers: layers };
+              },
+              false,
+              "room/toggleLocalConsumerPauseRollback"
+            );
+          }
+        });
       }
     }),
     { name: "ConnectionStore" }
@@ -1360,7 +1511,11 @@ function consumePendingProducers() {
               consumersByPeerId: new Map(state.consumersByPeerId).set(
                 peerId,
                 consumer
-              )
+              ),
+              consumerLayers: new Map(state.consumerLayers).set(consumer.id, {
+                ...state.consumerLayers.get(consumer.id),
+                isPausedByProducer: consumer.paused
+              })
             }),
             false,
             "room/consumerCreated"
@@ -1373,6 +1528,22 @@ function consumePendingProducers() {
             (ackResponse: AckResponse<{ resumed: boolean }>) => {
               if (ackResponse.success) {
                 console.log(`[socketStore] Consumer ${consumer.id} resumed`);
+                useConnectionStore.setState(
+                  (state) => {
+                    const updatedLayers = new Map(state.consumerLayers);
+                    const existingLayerState =
+                      updatedLayers.get(consumer.id) ?? {};
+
+                    updatedLayers.set(consumer.id, {
+                      ...existingLayerState,
+                      isPausedByProducer: false
+                    });
+
+                    return { consumerLayers: updatedLayers };
+                  },
+                  false,
+                  "room/consumerResumed"
+                );
               }
             }
           );

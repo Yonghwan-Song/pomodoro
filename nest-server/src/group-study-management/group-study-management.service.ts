@@ -236,6 +236,18 @@ export class GroupStudyManagementService
         consumingPeer.rtpCapabilities
       );
 
+      consumer.on('producerpause', () => {
+        // mediasoup implicitly stops RTP when a producer pauses.
+        // We do NOT explicitly call consumer.pause() here to avoid overwriting 
+        // the viewer-side local pause state.
+        clientSocket.emit('PRODUCER_PAUSED', { producingPeerId });
+      });
+
+      consumer.on('producerresume', () => {
+        // Same here, we do NOT explicitly call consumer.resume().
+        clientSocket.emit('PRODUCER_RESUMED', { producingPeerId });
+      });
+
       consumer.on('producerclose', () => {
         console.log(
           `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} closed due to producer close`
@@ -364,6 +376,24 @@ export class GroupStudyManagementService
         }`
       };
     }
+  }
+
+  async pauseConsumer(socketId: string, consumerId: string) {
+    const peer = this.requirePeer(socketId, 'pauseConsumer');
+    if (!peer) {
+      return { success: false, error: 'Peer does not exist' };
+    }
+    const consumer = this.requireConsumer(peer, consumerId, 'pauseConsumer');
+    if (!consumer) {
+      return { success: false, error: 'Consumer not found' };
+    }
+
+    await consumer.pause();
+    console.log(
+      `[group-study-management.service:pauseConsumer] Consumer ${consumerId} paused for peer ${socketId}`
+    );
+
+    return { success: true, data: { paused: true } };
   }
 
   async resumeConsumer(socketId: string, consumerId: string) {

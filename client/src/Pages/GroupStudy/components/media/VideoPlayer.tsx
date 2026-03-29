@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { css } from "../../../../../styled-system/css";
 import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
 
@@ -34,15 +34,16 @@ const VideoPlayer = ({
   const setQuality = useConnectionStore(
     (state) => state.setConsumerPreferredLayers
   );
-  const layerState = useConnectionStore((state) =>
+  const toggleLocalPause = useConnectionStore(
+    (state) => state.toggleLocalConsumerPause
+  );
+  const consumerState = useConnectionStore((state) =>
     consumerId ? state.consumerLayers?.get(consumerId) : undefined
   );
-  const requestedLayerLabel = getRequestedLayerText(
-    layerState?.requestedSpatialLayer
-  );
-  const currentLayerLabel = getCurrentLayerText(
-    layerState?.currentSpatialLayer
-  );
+  const { requestedSpatialLayer, currentSpatialLayer, isPausedByProducer, isPausedLocallyByViewer } =
+    consumerState ?? {};
+  const requestedLayerLabel = getRequestedLayerText(requestedSpatialLayer);
+  const currentLayerLabel = getCurrentLayerText(currentSpatialLayer);
 
   // layerState가 존재하지만 currentSpatialLayer가 undefined이면
   // mediasoup가 현재 어떤 레이어도 forwarding하지 않고 있다는 뜻.
@@ -50,17 +51,19 @@ const VideoPlayer = ({
   const noActiveLayer =
     !isLocal &&
     consumerId != null &&
-    layerState != null &&
-    layerState.currentSpatialLayer === undefined;
+    consumerState != null &&
+    currentSpatialLayer === undefined;
+
+  const showLocalPausedOverlay =
+    !isLocal && consumerId != null && isPausedLocallyByViewer === true;
+  const showProducerPausedOverlay =
+    !isLocal && consumerId != null && isPausedByProducer === true && !showLocalPausedOverlay;
+  const showWaitingOverlay = noActiveLayer && !showProducerPausedOverlay && !showLocalPausedOverlay;
 
   useEffect(() => {
     if (!videoRef.current) return;
 
-    if (stream) {
-      videoRef.current.srcObject = stream;
-    } else {
-      videoRef.current.srcObject = null;
-    }
+    videoRef.current.srcObject = stream ?? null;
   }, [stream]);
 
   const handleQualityChange = (layer: number) => {
@@ -110,7 +113,7 @@ const VideoPlayer = ({
             backgroundColor: "bg.canvas"
           })}
         />
-        {noActiveLayer && (
+        {showWaitingOverlay && (
           <div
             className={css({
               position: "absolute",
@@ -146,7 +149,56 @@ const VideoPlayer = ({
             </span>
           </div>
         )}
+        {showProducerPausedOverlay && (
+          <div
+            className={css({
+              position: "absolute",
+              inset: "0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.55)",
+              borderRadius: "lg",
+              zIndex: 6
+            })}
+          >
+            <span
+              className={css({
+                color: "white",
+                fontSize: "sm",
+                fontWeight: "medium"
+              })}
+            >
+              상대방이 영상을 일시중지함
+            </span>
+          </div>
+        )}
+        {showLocalPausedOverlay && (
+          <div
+            className={css({
+              position: "absolute",
+              inset: "0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(0, 0, 0, 0.55)",
+              borderRadius: "lg",
+              zIndex: 7
+            })}
+          >
+            <span
+              className={css({
+                color: "white",
+                fontSize: "sm",
+                fontWeight: "medium"
+              })}
+            >
+              내가 영상을 일시정지함
+            </span>
+          </div>
+        )}
       </div>
+      {/* layerStates and Buttons */}
       {!isLocal && consumerId && (
         <div
           className={css({
@@ -176,6 +228,7 @@ const VideoPlayer = ({
               gap: "1.5"
             })}
           >
+            {/* layerStates */}
             <span
               className={css({
                 paddingX: "2",
@@ -217,6 +270,32 @@ const VideoPlayer = ({
               borderColor: "borders.subtle"
             })}
           >
+            {/* Buttons */}
+            <button
+              type="button"
+              onClick={() => {
+                if (consumerId) toggleLocalPause(consumerId);
+              }}
+              title={isPausedLocallyByViewer ? "영상 재개" : "영상 일시정지"}
+              className={css({
+                minWidth: "7",
+                paddingX: "2",
+                paddingY: "1",
+                borderRadius: "sm",
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: "transparent",
+                backgroundColor: "transparent",
+                color: "text.main",
+                _hover: {
+                  borderColor: "borders.subtle",
+                  backgroundColor: "bg.surface"
+                }
+              })}
+            >
+              {isPausedLocallyByViewer ? "▶️" : "⏸️"}
+            </button>
+            <div className={css({ width: "1px", height: "4", backgroundColor: "borders.subtle", marginX: "0.5" })} />
             <button
               type="button"
               onClick={() => handleQualityChange(0)}
@@ -228,20 +307,13 @@ const VideoPlayer = ({
                 cursor: "pointer",
                 border: "1px solid",
                 borderColor:
-                  layerState?.requestedSpatialLayer === 0
-                    ? "blue.300"
-                    : "transparent",
+                  requestedSpatialLayer === 0 ? "blue.300" : "transparent",
                 backgroundColor:
-                  layerState?.requestedSpatialLayer === 0
-                    ? "bg.surface"
-                    : "transparent",
-                color:
-                  layerState?.requestedSpatialLayer === 0 ? "blue.300" : "text.main",
+                  requestedSpatialLayer === 0 ? "bg.surface" : "transparent",
+                color: requestedSpatialLayer === 0 ? "blue.300" : "text.main",
                 _hover: {
                   borderColor:
-                    layerState?.requestedSpatialLayer === 0
-                      ? "blue.300"
-                      : "borders.subtle",
+                    requestedSpatialLayer === 0 ? "blue.300" : "borders.subtle",
                   backgroundColor: "bg.surface"
                 }
               })}
@@ -259,20 +331,13 @@ const VideoPlayer = ({
                 cursor: "pointer",
                 border: "1px solid",
                 borderColor:
-                  layerState?.requestedSpatialLayer === 1
-                    ? "blue.300"
-                    : "transparent",
+                  requestedSpatialLayer === 1 ? "blue.300" : "transparent",
                 backgroundColor:
-                  layerState?.requestedSpatialLayer === 1
-                    ? "bg.surface"
-                    : "transparent",
-                color:
-                  layerState?.requestedSpatialLayer === 1 ? "blue.300" : "text.main",
+                  requestedSpatialLayer === 1 ? "bg.surface" : "transparent",
+                color: requestedSpatialLayer === 1 ? "blue.300" : "text.main",
                 _hover: {
                   borderColor:
-                    layerState?.requestedSpatialLayer === 1
-                      ? "blue.300"
-                      : "borders.subtle",
+                    requestedSpatialLayer === 1 ? "blue.300" : "borders.subtle",
                   backgroundColor: "bg.surface"
                 }
               })}
@@ -290,20 +355,13 @@ const VideoPlayer = ({
                 cursor: "pointer",
                 border: "1px solid",
                 borderColor:
-                  layerState?.requestedSpatialLayer === 2
-                    ? "blue.300"
-                    : "transparent",
+                  requestedSpatialLayer === 2 ? "blue.300" : "transparent",
                 backgroundColor:
-                  layerState?.requestedSpatialLayer === 2
-                    ? "bg.surface"
-                    : "transparent",
-                color:
-                  layerState?.requestedSpatialLayer === 2 ? "blue.300" : "text.main",
+                  requestedSpatialLayer === 2 ? "bg.surface" : "transparent",
+                color: requestedSpatialLayer === 2 ? "blue.300" : "text.main",
                 _hover: {
                   borderColor:
-                    layerState?.requestedSpatialLayer === 2
-                      ? "blue.300"
-                      : "borders.subtle",
+                    requestedSpatialLayer === 2 ? "blue.300" : "borders.subtle",
                   backgroundColor: "bg.surface"
                 }
               })}
