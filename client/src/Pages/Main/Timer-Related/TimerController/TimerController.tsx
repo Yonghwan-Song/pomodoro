@@ -1348,7 +1348,7 @@ export function TimerController({
           .transaction("failedReqInfo", "readonly")
           .objectStore("failedReqInfo");
         const info = await store.get(userEmail);
-        console.log("failedReqInfo in doesFailedReqInfoExistInIDB()", info);
+        // console.log("failedReqInfo in doesFailedReqInfoExistInIDB()", info); // ? 이거 왜 자꾸 undefined로 뜨는거야?
         return !!info;
       } else {
         // it should be always false for unlogged-in user.

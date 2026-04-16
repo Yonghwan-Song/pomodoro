@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthContextProvider } from "./Context/AuthContext";
 import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
@@ -6,6 +6,7 @@ import Navbar from "./Pages/NavBar/NavBar";
 import { DefaultTheme, ThemeProvider } from "styled-components";
 import { pubsub } from "./pubsub";
 import { ToastContainer } from "react-toastify";
+import { useConnectionStore } from "./zustand-stores/connectionStore";
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
     navBar: string;
@@ -26,9 +27,40 @@ const theme = {
   tablet: "1024px",
   mobile: "768px"
 };
-
 function App() {
+  const navigate = useNavigate();
+  const forcedRoomExitReason = useConnectionStore(
+    (state) => state.forcedRoomExitReason
+  );
+  const clearForcedRoomExitReason = useConnectionStore(
+    (state) => state.clearForcedRoomExitReason
+  );
+
   //#region side effects
+  useEffect(() => {
+    if (forcedRoomExitReason !== "transport-recovery-failed") return;
+
+    console.log(
+      "[App] forced room exit detected. Navigating to /group-study.",
+      {
+        forcedRoomExitReason
+      }
+    );
+    console.log("[App] calling navigate('/group-study', { replace: true })");
+    navigate("/group-study", { replace: true });
+    const alertTimer = window.setTimeout(() => {
+      alert(
+        "The network connection did not recover in time, so you were removed from the room."
+      );
+      console.log("[App] clearing forcedRoomExitReason after navigation");
+      clearForcedRoomExitReason();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(alertTimer);
+    };
+  }, [forcedRoomExitReason, clearForcedRoomExitReason, navigate]);
+
   useEffect(() => {
     function networkIsDown() {
       console.log("network is down");

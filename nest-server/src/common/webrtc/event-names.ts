@@ -37,6 +37,10 @@ export const SYNC_MY_TODAY_TOTAL_DURATION = 'syncMyTodayTotalDuration';
 export const PEER_TODAY_TOTAL_DURATION_UPDATED =
   'peerTodayTotalDurationUpdated';
 
+// Reconnection
+export const RECONNECT = 'reconnect';
+export const RESTART_ICE = 'restartIce';
+
 // Chat related
 export const WRITE_CHAT = 'writeChat';
 export const READ_CHAT = 'readChat';

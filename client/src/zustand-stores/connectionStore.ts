@@ -36,6 +36,7 @@ interface SocketState {
   socket: Socket | null;
   connected: boolean;
   isConnecting: boolean;
+  previousSocketId: string | null;
 }
 
 interface DeviceState {
@@ -57,6 +58,7 @@ interface MediaState {
 interface RoomState {
   currentRoomId: string | null;
   isRoomJoined: boolean;
+  forcedRoomExitReason: ForcedRoomExitReason;
 
   // Transport related
   sendTransport: mediasoupTypes.Transport | null;
@@ -146,6 +148,8 @@ interface RoomActions {
   ) => Promise<AckResponse<CommonPreferredLayersForAllConsumersData> | null>;
   /** 로컬 뷰어가 특정 consumer를 일시정지/재개 토글 */
   toggleLocalConsumerPause: (consumerId: string) => void;
+  /** 강제 퇴장 신호를 UI 계층이 소비한 뒤 초기화한다. */
+  clearForcedRoomExitReason: () => void;
 }
 
 type Store = SocketState &
@@ -167,6 +171,13 @@ type SimulcastPolicyInput = Pick<
 // 이유는 서버 원천인 mediasoup의 `consumer.on("layerschange")` 이벤트 시그니처가
 // `ConsumerLayers | undefined`이기 때문이다. 즉 mediasoup는 어떤 시점에는
 // "현재 forwarding 중인 layer 정보가 아직 없다"는 의미로 `undefined`를 줄 수 있다.
+//
+// [주의: Network Connection Drop과 layers의 undefined 관계]
+// 송출자(Producer)의 네트워크 연결이 일시적으로 끊기거나 불안정해져 미디어 패킷 전송이 중단되면,
+// mediasoup 서버는 이를 감지하고 해당 Consumer들에게 더 이상 포워딩할 활성 레이어가 없음을
+// 알리기 위해 `layerschange` 이벤트를 `layers: undefined`로 발생시킵니다.
+// 즉, layerschange에서 undefined가 수신된다는 것은 단순히 화질을 알 수 없다는 의미를 넘어
+// 실질적으로 상대방의 미디어 스트림 수신이 멈췄음(네트워크 드롭 또는 패킷 유실 상태)을 시사합니다.
 //
 // 여기서 중요한 점은 `layers`가 "내가 요청한 preferred layer"가 아니라
 // "현재 실제로 선택되어 forwarding 중인 current layer"라는 것이다.
@@ -200,6 +211,15 @@ type ConsumerLayerState = {
   isPausedLocallyByViewer?: boolean;
 };
 
+// 명시적 종료는 즉시 leaveRoom 한다.
+// - io client disconnect: 우리 코드가 socket.disconnect() 호출
+// - io server disconnect: 서버가 의도적으로 연결을 닫음
+// 이런 케이스까지 유예하면 "사용자가 나가려 했는데 남아있는" 역효과가 난다.
+const EXPLICIT_SOCKET_DISCONNECT_REASONS = new Set([
+  "io client disconnect",
+  "io server disconnect"
+]);
+
 const VERY_LOW_RESOLUTION_MAX_BITRATE = 250_000;
 const SD_MAX_BITRATE_15FPS = 450_000;
 const SD_MAX_BITRATE_30FPS = 600_000;
@@ -209,6 +229,228 @@ const HD_MAX_BITRATE_15FPS = 1_200_000;
 const HD_MAX_BITRATE_30FPS = 1_500_000;
 const FULL_HD_MAX_BITRATE_15FPS = 2_500_000;
 const FULL_HD_MAX_BITRATE_30FPS = 3_000_000;
+
+type TransportRole = "send" | "recv";
+
+type RestartIceAckData = {
+  iceParameters: mediasoupTypes.IceParameters;
+};
+
+type ForcedRoomExitReason = "transport-recovery-failed" | null;
+
+// restartIce를 최대 몇 번까지 연속으로 시도할지 정의한다.
+// 여기서 "1번 시도"는 서버에 새 ICE parameters를 요청하고,
+// 응답을 받아 transport.restartIce(...)를 적용하는 한 사이클 전체를 의미한다.
+const MAX_ICE_RESTART_ATTEMPTS = 10;
+
+// transport 상태를 로그 중요도로 매핑한다.
+// 상태 해석과 복구 정책을 분리해두면 아래 monitor 함수가 좀 더 읽기 쉬워진다.
+function getConnectionStateLogLevel(state: mediasoupTypes.ConnectionState) {
+  if (state === "connected") return "info";
+  if (state === "disconnected") return "warn";
+  if (state === "failed") return "error";
+  return "log";
+}
+
+// transport별 connection state 관찰과 ICE 복구 루프를 담당한다.
+// send/recv transport 각각에 대해 독립적으로 1회 등록된다.
+function registerTransportConnectionMonitor(
+  transport: mediasoupTypes.Transport,
+  role: TransportRole
+) {
+  const logPrefix = `[socketStore][${role}:${transport.id}]`;
+
+  // 이번 장애 구간에서 몇 번 restart를 시도했는지 누적한다.
+  // transport가 connected로 회복되면 0으로 초기화한다.
+  let iceRestartAttempts = 0;
+
+  // 파이어폭스(Firefox) 등 일부 브라우저에서 ICE Restart 적용(restartIce) 직후
+  // 내부적으로 다시 실패해도 connectionstatechange 이벤트(failed)가 재발생하지 않는
+  // 경우가 있어(failed -> failed 상태 변화가 없다고 간주되는 버그 혹은 특성),
+  // 일정 시간 후에도 connected가 안 되면 수동으로 재시도하도록 타이머를 둔다.
+  let iceRestartTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearIceRestartTimer = () => {
+    if (iceRestartTimer) {
+      clearTimeout(iceRestartTimer);
+      iceRestartTimer = null;
+    }
+  };
+
+  // 최대 재시도 횟수를 모두 소진했을 때의 최종 정책.
+  // 현재 앱 정책은 장기 복구 실패 시 방에서 나가며 세션을 정리하는 것이다.
+  const leaveRoomAfterRecoveryFailure = () => {
+    clearIceRestartTimer();
+    console.error(
+      `${logPrefix} Transport failed after ${MAX_ICE_RESTART_ATTEMPTS} ICE restart attempts. Leaving room.`
+    );
+    console.log(`${logPrefix} setting forcedRoomExitReason before leaveRoom()`);
+    useConnectionStore.setState(
+      { forcedRoomExitReason: "transport-recovery-failed" },
+      false,
+      "room/forcedExitAfterRecoveryFailure"
+    );
+    useConnectionStore.getState().leaveRoom();
+    console.log(`${logPrefix} forcedRoomExitReason was set`);
+  };
+
+  // ICE Restart은 서버에 새 ICE parameters 요청하여 ice parameters를 재설정하는 것이고, 재설정되면 다시 connectivity check를 한다. -> ./why-ice-restart.md
+  const attemptIceRestart = () => {
+    const socket = useConnectionStore.getState().socket;
+
+    // signaling socket이 없거나, transport가 이미 닫혔거나, 이미 회복됐으면 중단.
+    if (
+      !socket ||
+      transport.closed ||
+      transport.connectionState === "connected"
+    )
+      return;
+
+    if (iceRestartAttempts >= MAX_ICE_RESTART_ATTEMPTS) {
+      leaveRoomAfterRecoveryFailure();
+      return;
+    }
+
+    iceRestartAttempts += 1;
+    console.log(
+      `${logPrefix} Requesting ICE restart (${iceRestartAttempts}/${MAX_ICE_RESTART_ATTEMPTS})`
+    );
+
+    socket.emit(
+      EventNames.RESTART_ICE,
+      { role },
+      async (ackResponse: AckResponse<RestartIceAckData>) => {
+        if (ackResponse.success && ackResponse.data?.iceParameters) {
+          try {
+            await transport.restartIce({
+              iceParameters: ackResponse.data.iceParameters
+            });
+            console.log(
+              `${logPrefix} Applied new ICE parameters. Waiting for connectionstatechange.`
+            );
+
+            // NOTE: Firefox Workaround
+            // 새 ICE 파라미터를 적용했음에도, 수초 내에 connected로 회복되지 않고 어떠한 연결 이벤트도 없으면
+            // 다시 ICE Restart를 시도한다. Chromium은 failed 이벤트가 다시 발생하지만,
+            // Firefox는 이미 state이 failed일 경우 추가적인 failed 이벤트를 생략할 수 있다.
+            clearIceRestartTimer();
+            iceRestartTimer = setTimeout(() => {
+              //! 이렇게 예약하는 이유: 원래는 transport의 connectionstateChange event가 fire되어야 하는데, (failed -> disconnected) 중간에 그냥 firefox 선에서 뭔가 크롬과는 다르게 이 과정이 이어나가지 못하게 만들어 놓았음.
+              //! fire되어야 하는 이유는 원래 그냥 ufrag와 pwd가 다시 설정되면 그렇게 Connectivity check STUN binding request보내라고 씨발 되어있음.
+              //! 아무튼 그래서 저 아래 처음에 이 attemptIceRestart()가 invoke되었던 기점이 재방문 되지 않음... 원래는 Maximum trial을 채울때까지 방문이 되고 그다음에는 방에서 강제 퇴거된 후 transport자체가 close되는건데 씨발?...
+              if (
+                transport.connectionState !== "connected" &&
+                !transport.closed
+              ) {
+                console.warn(
+                  `${logPrefix} Fallback: No connection state change after restartIce in time. Retrying...`
+                );
+                attemptIceRestart();
+              }
+            }, 10000); // 10초 부여 (보통 ICE Gathering 및 Checking 대기 고려) //? vivaldi의 경우, 10초 이전에 disconnected에서 failed로 안바뀌면 시나리오가..?
+            //? 예를 들면 9초에 failed로 바뀌었다고해보면, 이 함수가 다시 호출되고 setTimeout에 의해 예약되어있는 이 함수는 clear된다.
+            //? 만약에 11초에 failed로 바뀐다고 하면, 실제로 failed까지 도달하지는 못한다 왜냐하면 10초에 이 함수가 실행된다. (state은 disconnected이다 vivaldi기준, firefox는 계속 failed일듯...?),
+            //? 그러니까 계속 11초로 바뀌는거로 되는거라면.. 시발?.. 그러면 우리 시나리오상 처음에는 무조건 연결되었을테니까 , connected이고 그다음에 맛탱이 가서 disconnected 그리고 failed.
+            //? 그 이후로는... 10초 설정과 11초 미래의 .. mismatch? 뭐 아무튼 그래서, 아까의 그 failed 이후에 물론 vivaldi는 Connectivity check할테고... 실패해서 10초이내에 실패한다고 가정... (그 이내에는 보내지 않을까? 그리고 판단하지 않을까?.... 맞나?.. 그 판단 시간이?... 이거 찾아봐야할지도?..)
+            //? 그래서 disconnected로 되고.. 그 이후에는 계속 시도해보다가 failed로 바뀌어야 하는데 거기까지 기회가 안닿는다며 (우리가 지금 상상으로는 11초 정도후에 그 일이 일어난다고 가정하는건데 10초에 다시 attemptIceRestart()가 호출되니까).
+            // 그래서 connected -> failed
+            //*                -> attemptIceRestart() -> (Connectivity Check 다시 시도) -> disconnected -> (keep sending STUN check)
+            //*                             | <------------------------------- 10초-----------------------------------------------
+            //*                -> attemptIceRestart() -> (Connectivity Check 다시 시도) -> disconnected -> (keep sending STUN check)
+            //*              ---> |
+            //위의 *로 시작하는 comment들이 반복... :::...
+            //! Firefox의 경우는 위의 vivaldi의 예에서 10초 이후에 failed가 나올 것이라고 가정한 usecase와 별반 다르지 않을 것 같음. (Except for it not attempting to send STUN Binding Request after ufrag and pwd are reset)
+            //! 그러니까 시발.. connected -> failed -> attemptIceRestart() -> (Does fucking nothing) and wait for fucking 10 seconds -> (scheduled) attemptIceRestart()
+            //!                  -> (Does fucking nothing) and wait for fucking 10 seconds -> (scheduled) attemptIceRestart()
+          } catch (error) {
+            console.error(`${logPrefix} Client-side restartIce failed:`, error);
+          }
+        } else {
+          console.error(
+            `${logPrefix} Signaling server rejected ICE restart:`,
+            ackResponse.error
+          );
+        }
+      }
+    );
+  };
+
+  transport.observer.on("close", () => {
+    console.log(`transport ${transport.id} is closed`);
+    clearIceRestartTimer();
+  });
+
+  transport.on("connectionstatechange", (state) => {
+    const ts = new Date().toISOString();
+    const tag = getConnectionStateLogLevel(state);
+    console[tag](`${logPrefix} conn=${state} ts=${ts}`);
+
+    if (state === "connected") {
+      iceRestartAttempts = 0;
+      clearIceRestartTimer();
+
+      // [Firefox Workaround]
+      // 파이어폭스의 경우 ICE Restart 직후 sendTransport가 connected가 되어도
+      // 내부 미디어 파이프라인 버그로 인해 RTP 패킷 송출이 재개되지 않는(Stuck) 현상이 있습니다.
+      // 이를 방지하기 위해 강제로 트랙을 교체(replaceTrack)하여 Firefox가 RTP 전송을 재개하도록 유도합니다.
+      console.log("role", role);
+      console.log("navigator.userAgent", navigator.userAgent);
+      if (role === "send" && navigator.userAgent.includes("Firefox")) {
+        const { producer } = useConnectionStore.getState();
+        console.log(
+          "producer inside connectionstatechange -> connected",
+          producer
+        );
+        if (producer && producer.track) {
+          // 레벨 5: Nuke and Rebuild (Producer 객체를 파괴하고 새로 생성)
+          // 기존 파이프라인 우회가 모두 실패하므로, 연결이 회복된 전송로(Transport) 위에서
+          // 아예 새로운 스트리밍 파이프라인(Producer)을 처음부터 다시 생성한다.
+          console.log(
+            `${logPrefix} [Firefox Fix] Nuke and rebuild producer ${producer.id}...`
+          );
+          const state = useConnectionStore.getState();
+          const { socket, stream, isSharing, sendTransport } = state;
+
+          if (stream && isSharing && sendTransport && socket) {
+            // 1. 기존 Producer 파괴 및 서버에 통보
+            producer.close();
+            socket.emit(EventNames.PRODUCER_CLOSED, {
+              producerId: producer.id
+            });
+            useConnectionStore.setState(
+              { producer: null, isProducerPaused: false },
+              false,
+              "room/producerNukedForFirefoxFix"
+            );
+
+            // 2. 약간의 텀을 두고 아예 새 Producer를 생성하도록 유도
+            setTimeout(() => {
+              console.log(
+                `${logPrefix} [Firefox Fix] Spawning new producer...`
+              );
+              useConnectionStore
+                .getState()
+                .produce()
+                .catch((err) => {
+                  console.error(
+                    `${logPrefix} [Firefox Fix] Failed to recreate producer:`,
+                    err
+                  );
+                });
+            }, 100);
+          }
+        }
+      }
+
+      return;
+    }
+
+    if (state === "failed") {
+      clearIceRestartTimer();
+      attemptIceRestart();
+    }
+  });
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -295,12 +537,14 @@ export const useConnectionStore = create<Store>()(
       socket: null,
       connected: false,
       isConnecting: false,
+      previousSocketId: null,
       device: null,
       isDeviceLoaded: false,
       stream: null,
       isSharing: false,
       currentRoomId: null,
       isRoomJoined: false,
+      forcedRoomExitReason: null,
       sendTransport: null,
       recvTransport: null,
       producer: null,
@@ -343,7 +587,23 @@ export const useConnectionStore = create<Store>()(
           });
 
           newSocket.on("connect", () => {
+            console.log("the id of the socket just connected", newSocket.id);
             console.log("[socketStore] socket.connected", newSocket.connected);
+
+            const { previousSocketId } = get();
+            if (previousSocketId) {
+              console.log(
+                "[socketStore] Socket reconnected! Sending previous socket ID to server:",
+                previousSocketId
+              );
+              newSocket.emit(EventNames.RECONNECT, { previousSocketId });
+              set(
+                { previousSocketId: null },
+                false,
+                "socket/previousIdCleared"
+              );
+            }
+
             set(
               { connected: true, isConnecting: false },
               false,
@@ -352,8 +612,30 @@ export const useConnectionStore = create<Store>()(
           });
 
           newSocket.on("disconnect", (reason) => {
+            // https://socket.io/docs/v4/client-socket-instance/#disconnect
             console.log("[socketStore] Socket disconnected:", reason);
-            get().leaveRoom();
+            const isExplicitDisconnect =
+              EXPLICIT_SOCKET_DISCONNECT_REASONS.has(reason);
+
+            if (isExplicitDisconnect) {
+              // 명시적 종료는 관측 대상이 아니므로 즉시 방 정리.
+              set({ previousSocketId: null }, false, "socket/clearPreviousId");
+              get().leaveRoom();
+            } else {
+              const disconnectedId = get().socket?.id || newSocket.id;
+              console.log(
+                "the id of the socket just disconnected",
+                disconnectedId
+              );
+              if (disconnectedId) {
+                set(
+                  { previousSocketId: disconnectedId },
+                  false,
+                  "socket/setPreviousId"
+                );
+              }
+            }
+
             set({ connected: false }, false, "socket/disconnected");
           });
 
@@ -831,7 +1113,25 @@ export const useConnectionStore = create<Store>()(
         socket.on(
           EventNames.CONSUMER_LAYERS_CHANGED,
           (payload: ConsumerLayersChangedPayload) => {
-            console.log("[socketStore] Consumer layers changed:", payload);
+            const prevSpatial = get().consumerLayers.get(
+              payload.consumerId
+            )?.currentSpatialLayer;
+            const ts = new Date().toISOString();
+            if (payload.layers === undefined) {
+              console.warn(
+                `[LAYER DROP ⚠] ${ts} consumer=${payload.consumerId} spatial: ${
+                  prevSpatial ?? "?"
+                } → NONE (network drop / BWE degraded)`
+              );
+            } else {
+              console.log(
+                `[LAYER CHANGE] ${ts} consumer=${payload.consumerId} spatial: ${
+                  prevSpatial ?? "?"
+                } → ${payload.layers.spatialLayer} temporal: ${
+                  payload.layers.temporalLayer ?? "max"
+                }`
+              );
+            }
             set(
               (state) => {
                 const updatedLayers = new Map(state.consumerLayers);
@@ -916,6 +1216,14 @@ export const useConnectionStore = create<Store>()(
         );
       },
 
+      clearForcedRoomExitReason: () => {
+        set(
+          { forcedRoomExitReason: null },
+          false,
+          "room/clearForcedExitReason"
+        );
+      },
+
       createTransports: () => {
         const {
           socket,
@@ -955,6 +1263,7 @@ export const useConnectionStore = create<Store>()(
                   "[socketStore] Send transport created",
                   transport.id
                 );
+                registerTransportConnectionMonitor(transport, "send");
 
                 // mediasoup transport "connect" 이벤트
                 transport.on(
@@ -1068,6 +1377,7 @@ export const useConnectionStore = create<Store>()(
                   "[socketStore] Recv transport created",
                   transport.id
                 );
+                registerTransportConnectionMonitor(transport, "recv");
 
                 // mediasoup transport "connect" 이벤트
                 transport.on(

@@ -131,6 +131,9 @@ export function Room() {
   const startSharing = useConnectionStore((s) => s.startSharing);
   const isDeviceLoaded = useConnectionStore((s) => s.isDeviceLoaded);
   const isRoomJoined = useConnectionStore((s) => s.isRoomJoined);
+  const forcedRoomExitReason = useConnectionStore(
+    (s) => s.forcedRoomExitReason
+  );
   const isSendTransportReady = useConnectionStore(
     (s) => s.isSendTransportReady
   );
@@ -167,13 +170,29 @@ export function Room() {
 
   // 방 입장
   useEffect(() => {
+    if (forcedRoomExitReason) {
+      console.log("[Room] skipping auto-join due to forced exit", {
+        forcedRoomExitReason,
+        roomId
+      });
+      return;
+    }
+
     if (socket && connected && roomId && !isRoomJoined) {
       joinRoom(roomId, (error) => {
         alert("방 참가에 실패했습니다: " + error);
         navigate("/group-study");
       });
     }
-  }, [socket, connected, roomId, isRoomJoined, joinRoom, navigate]);
+  }, [
+    socket,
+    connected,
+    roomId,
+    isRoomJoined,
+    forcedRoomExitReason,
+    joinRoom,
+    navigate
+  ]);
 
   // device loaded + stream 존재 + room joined 시 transport 생성
   useEffect(() => {

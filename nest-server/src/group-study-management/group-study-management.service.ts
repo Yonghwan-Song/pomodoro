@@ -65,6 +65,9 @@ export class GroupStudyManagementService
   }
 
   //#region Only Peer
+  // TODO: 대충 이전에 transport 에러로 disconnected된 socket의 id만 알 수 있다면...
+  // 그거로 peer entitiy의 socketId만 갈아끼우면 되긴 하거든?.. .그러면 이제 정체성이란게 다시 승계/연결되는거니까...
+  // Tlqkf 이런거 좀 물어보고싶은데 씨발 gemini cli가 대답을 안하네...
   addPeer(socketId: string, userNickname: string) {
     const newPeer = new Peer(socketId, userNickname);
     this.peersMap.set(socketId, newPeer);
@@ -72,20 +75,20 @@ export class GroupStudyManagementService
   }
 
   private logCurrentState(prefix: string) {
-    console.log(`${prefix} ========== STATE SNAPSHOT ==========`);
+    console.log(`========== STATE SNAPSHOT ========== ${prefix}`);
     console.log(
       `${prefix} Total peers: ${this.peersMap.size}, Total rooms: ${this.roomsMap.size}`
     );
 
     if (this.peersMap.size > 0) {
-      console.log(`${prefix} --- PEERS ---`);
+      console.log(`$--- PEERS --- {prefix}`);
       this.peersMap.forEach((peer) => {
         peer.logProperties(prefix);
       });
     }
 
     if (this.roomsMap.size > 0) {
-      console.log(`${prefix} --- ROOMS ---`);
+      console.log(`--- ROOMS --- ${prefix}`);
       this.roomsMap.forEach((room, roomId) => {
         const peers = room.getPeers();
         const producers = room.getAllProducers();
@@ -102,7 +105,7 @@ export class GroupStudyManagementService
       });
     }
 
-    console.log(`${prefix} =====================================`);
+    console.log(`===================================== ${prefix}`);
   }
 
   removePeer(socketId: string) {
@@ -161,22 +164,80 @@ export class GroupStudyManagementService
 
     const transport = await this.mediasoupService.getWebRtcTransport();
 
+    const logPrefix = `[group-study-management.service:transport:${type}:${transport.id}]`;
+    // With enableTcp: true, mediasoup emits UDP and TCP ICE candidates; [0] is not reliably UDP.
+    const udpIce = transport.iceCandidates.find((c) => c.protocol === 'udp');
+    const tcpIce = transport.iceCandidates.find((c) => c.protocol === 'tcp');
+    const createdAt = Date.now();
+    let lastObservedIceState = transport.iceState;
+    let lastIceStateChangedAt = createdAt;
+
+    const formatElapsedMs = (ms: number) => `${ms}ms`;
+    const buildLifecycleSuffix = (now: number) =>
+      `peer=${socketId} age=${formatElapsedMs(now - createdAt)} ts=${new Date(
+        now
+      ).toISOString()}`;
+    const getIceStateLog = (iceState: typeof transport.iceState) => {
+      if (iceState === 'disconnected') return console.warn;
+      if (iceState === 'connected' || iceState === 'completed') {
+        return console.info;
+      }
+      return console.log;
+    };
+
     transport.on('dtlsstatechange', (dtlsState) => {
+      const now = Date.now();
       console.log(
-        `[group-study-management.service:establishTransport] [${type}-Transport ${transport.id}] DTLS state changed: ${dtlsState}`
+        `${logPrefix} dtls=${dtlsState} ${buildLifecycleSuffix(now)}`
       );
     });
+
     transport.on('icestatechange', (iceState) => {
+      const now = Date.now();
+      const previousIceState = lastObservedIceState;
+      const transition =
+        previousIceState === iceState
+          ? iceState
+          : `${previousIceState} -> ${iceState}`;
+
+      getIceStateLog(iceState)(
+        `${logPrefix} ice=${transition} ` +
+          `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
+          buildLifecycleSuffix(now)
+      );
+
+      lastObservedIceState = iceState;
+      lastIceStateChangedAt = now;
+    });
+
+    transport.on('iceselectedtuplechange', (tuple) => {
+      const now = Date.now();
       console.log(
-        `[group-study-management.service:establishTransport] [${type}-Transport ${transport.id}] ICE state changed: ${iceState}`
+        `${logPrefix} tuple=${tuple.protocol} ` +
+          `local=${tuple.localIp}:${tuple.localPort} ` +
+          `remote=${tuple.remoteIp}:${tuple.remotePort} ` +
+          buildLifecycleSuffix(now)
+      );
+    });
+
+    transport.observer.on('close', () => {
+      const now = Date.now();
+      console.warn(
+        `${logPrefix} closed ` +
+          `lastIce=${lastObservedIceState} ` +
+          `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
+          buildLifecycleSuffix(now)
       );
     });
 
     peer.addTransport(transport, type);
 
     console.log(
-      `[group-study-management.service:establishTransport] verify: remote ${type}-transport has been created`,
-      transport.id
+      `${logPrefix} created peer=${socketId} ` +
+        `initialIce=${transport.iceState} ` +
+        `udpPort=${udpIce?.port ?? 'n/a'} ` +
+        (tcpIce ? `tcpPort=${tcpIce.port} ` : '') +
+        `iceCandidates=${transport.iceCandidates.length}`
     );
 
     const transportOptions = {
@@ -238,7 +299,7 @@ export class GroupStudyManagementService
 
       consumer.on('producerpause', () => {
         // mediasoup implicitly stops RTP when a producer pauses.
-        // We do NOT explicitly call consumer.pause() here to avoid overwriting 
+        // We do NOT explicitly call consumer.pause() here to avoid overwriting
         // the viewer-side local pause state.
         clientSocket.emit('PRODUCER_PAUSED', { producingPeerId });
       });
@@ -272,10 +333,23 @@ export class GroupStudyManagementService
         // 또한 이 이벤트는 품질이 바뀔 때만 오는 것이 아니라, consume 직후
         // 초기 current layer가 처음 결정되는 시점에도 올 수 있다. 다만 항상
         // 즉시 온다고 가정하면 안 되고, 실제 RTP 흐름이 잡힌 뒤에야 올 수도 있다.
-        console.log(
-          `[group-study-management.service:createConsumer:layerschange] Consumer ${consumer.id} layers changed:`,
-          layers
-        );
+
+        // [주의: BWE(Bandwidth Estimation) 기반 Network Drop 감지]
+        // Mediasoup는 내부적으로 RTCP 피드백(REMB, TWCC)을 통해 BWE(대역폭 추정)를 지속적으로 수행합니다.
+        // 송출자(Producer)나 수신자(Consumer)의 네트워크 상태가 악화되어 BWE 값이 심각하게 낮아지거나 패킷 유실이 심해지면,
+        // SFU 서버는 더 이상 적절한 미디어 레이어를 전송할 수 없다고 판단하여 스스로 할당할 공간 레이어(spatial layer)를 찾지 못하게 됩니다.
+        // 이때 Mediasoup는 Consumer에게 할당된 레이어가 없음을 알리기 위해 `layerschange` 이벤트를 발생시키며 `layers`를 `undefined`로 전달합니다.
+        // 즉, 이 undefined 값은 단순한 화질 정보 부재가 아니라, "네트워크 문제나 BWE 저하로 인해 해당 Consumer에 대한 미디어 포워딩이 사실상 중단된 상태(Network Drop)"임을 의미하는 중요한 Heartbeat와 같은 역할을 합니다.
+        const ts = new Date().toISOString();
+        if (layers === undefined) {
+          console.warn(
+            `[LAYER DROP ⚠] ${ts} consumer=${consumer.id} producerId=${consumer.producerId} consumingPeer=${consumingPeerId}`
+          );
+        } else {
+          console.log(
+            `[LAYER CHANGE] ${ts} consumer=${consumer.id} producerId=${consumer.producerId} consumingPeer=${consumingPeerId} spatial=${layers.spatialLayer} temporal=${layers.temporalLayer ?? 'max'}`
+          );
+        }
         const payload: ConsumerLayersChangedPayload = {
           consumerId: consumer.id,
           layers
@@ -285,6 +359,7 @@ export class GroupStudyManagementService
       });
 
       consumingPeer.addConsumer(consumer);
+      this.logCurrentState('[group-study-management.service:createConsumer]');
 
       return {
         success: true,
@@ -414,6 +489,47 @@ export class GroupStudyManagementService
     return { success: true, data: { resumed: true } };
   }
 
+  // [Client -> Server] 클라이언트가 "나 이 방에 들어갈래" 라고 서버에 요청하는 이벤트입니다.
+  // 전제: 1. socket이 끊어지지 않고, transport가 끊어진 경우에만 호출된다.
+  //      2. socket이 끊어졌던 경우에도, 다시 끊어졌던 client의 socketId에 의해 만들어졌던 peer라는 정체성을 좀비가 되지 않게 갖고 있다가 다시 연결해준 후를 가정한다.
+  // server쪽에서는 transport의 port number를 그대로 유지하려고 한데
+  async restartIce(socketId: string, role: 'send' | 'recv') {
+    // [ICE Restart (서버 측 처리)]
+    // 클라이언트가 네트워크 단절로 인해 ICE Restart를 요청했을 때 실행되는 메서드입니다.
+    // 기존의 연결 자원(UDP 포트 등)은 그대로 유지하되, 새로운 ICE Credentials (ufrag, pwd)만 갱신합니다.
+
+    // QQQ: this line assumes that the socket connection was not disconnected. In other words, only the UDP connection was disconnected.
+    // DESIGN: 만약에 우리가 ... socket이 재연결 된 경우 항상 기존에 disconnected되었던 것을 언제나 승계한다고 전제할 수 있다면 지금 이 코드에서 어떤 변화도 안줘도 괜찮은거 아니야?
+    const peer = this.requirePeer(socketId, 'restartIce');
+    if (!peer) return { success: false, error: 'Peer not found' };
+
+    const transport = role === 'send' ? peer.sendTransport : peer.recvTransport;
+    if (!transport) {
+      return { success: false, error: `No ${role} transport found` };
+    }
+
+    try {
+      console.log(
+        `[group-study-management.service:restartIce] Restarting ICE for peer ${socketId}, role: ${role}`
+      );
+      // transport.restartIce()를 호출하면 서버 측 mediasoup worker에서
+      // 해당 transport에 대한 새로운 iceParameters를 발급합니다. (포트 등 iceCandidates는 그대로 유지됨)
+      // QQQ: iceCandidates이 그냥 유지된다면, 만약 Wifi에서 LTE로 바꿔서 ip address가 바뀌는 경우에는 iceCandidates도 새롭게 생성되어야 하는거 아닌가?..
+      // 그런 경우에는 그러면 이 코드는 효과가 없는거 아니야?
+      const iceParameters = await transport.restartIce();
+
+      // 발급된 새로운 인증 정보를 클라이언트에게 반환합니다.
+      // 클라이언트는 이를 받아 자신의 transport에 적용(restartIce())하여 연결을 재개합니다.
+      return { success: true, data: { iceParameters } };
+    } catch (error) {
+      console.error(
+        `[group-study-management.service:restartIce] Error restarting ICE:`,
+        error
+      );
+      return { success: false, error: 'Failed to restart ICE' };
+    }
+  }
+
   async connectTransport(
     socketId: string,
     dtlsParameters: DtlsParameters,
@@ -507,6 +623,13 @@ export class GroupStudyManagementService
         rtpParameters
       });
 
+      producer.on('score', (score) => {
+        console.log(
+          `Producer ${producer.id} (peer: ${peer.id}) score updated in createProducer:scorechange of group-study-management.service`,
+          score
+        );
+      });
+
       const negotiatedEncodings = producer.rtpParameters?.encodings ?? [];
       if (shouldLog) {
         console.log(
@@ -583,6 +706,7 @@ export class GroupStudyManagementService
       });
 
       peer.addProducer(producer);
+      this.logCurrentState('[group-study-management.service:createProducer]');
 
       const producerPayload: ProducerPayload = {
         producerId: producer.id,

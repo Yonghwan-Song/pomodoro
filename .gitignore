@@ -6,6 +6,7 @@
 .cursor/
 zed-chat-md/
 scribble.md
+docs/
 
 # Dependencies
 client/node_modules

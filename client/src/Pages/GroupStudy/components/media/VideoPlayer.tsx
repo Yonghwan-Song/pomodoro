@@ -40,8 +40,12 @@ const VideoPlayer = ({
   const consumerState = useConnectionStore((state) =>
     consumerId ? state.consumerLayers?.get(consumerId) : undefined
   );
-  const { requestedSpatialLayer, currentSpatialLayer, isPausedByProducer, isPausedLocallyByViewer } =
-    consumerState ?? {};
+  const {
+    requestedSpatialLayer,
+    currentSpatialLayer,
+    isPausedByProducer,
+    isPausedLocallyByViewer
+  } = consumerState ?? {};
   const requestedLayerLabel = getRequestedLayerText(requestedSpatialLayer);
   const currentLayerLabel = getCurrentLayerText(currentSpatialLayer);
 
@@ -57,8 +61,12 @@ const VideoPlayer = ({
   const showLocalPausedOverlay =
     !isLocal && consumerId != null && isPausedLocallyByViewer === true;
   const showProducerPausedOverlay =
-    !isLocal && consumerId != null && isPausedByProducer === true && !showLocalPausedOverlay;
-  const showWaitingOverlay = noActiveLayer && !showProducerPausedOverlay && !showLocalPausedOverlay;
+    !isLocal &&
+    consumerId != null &&
+    isPausedByProducer === true &&
+    !showLocalPausedOverlay;
+  const showWaitingOverlay =
+    noActiveLayer && !showProducerPausedOverlay && !showLocalPausedOverlay;
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -295,7 +303,14 @@ const VideoPlayer = ({
             >
               {isPausedLocallyByViewer ? "▶️" : "⏸️"}
             </button>
-            <div className={css({ width: "1px", height: "4", backgroundColor: "borders.subtle", marginX: "0.5" })} />
+            <div
+              className={css({
+                width: "1px",
+                height: "4",
+                backgroundColor: "borders.subtle",
+                marginX: "0.5"
+              })}
+            />
             <button
               type="button"
               onClick={() => handleQualityChange(0)}

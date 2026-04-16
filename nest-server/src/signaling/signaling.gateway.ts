@@ -37,6 +37,10 @@ export class SignalingGateway
   @WebSocketServer()
   server: Server;
 
+  private static readonly DISCONNECT_GRACE_PERIOD_MS = 60_000;
+  private pendingDisconnectTimers: Map<string, NodeJS.Timeout> = new Map();
+  private disconnectReasons: Map<string, string> = new Map();
+
   constructor(
     private readonly mediasoupService: MediasoupService,
     private readonly groupStudyManagementService: GroupStudyManagementService
@@ -61,16 +65,89 @@ export class SignalingGateway
   // --- Connection and Disconnection ---
 
   handleConnection(clientSocket: Socket) {
+    clientSocket.on('disconnect', (reason) => {
+      this.disconnectReasons.set(clientSocket.id, reason);
+      console.log(
+        `[SignalingGateway:socketDisconnect] Socket ${clientSocket.id} disconnected with reason="${reason}"`
+      );
+    });
+
     this.groupStudyManagementService.addPeer(
       clientSocket.id,
       clientSocket.data.userNickname
     );
   }
 
-  async handleDisconnect(clientSocket: Socket) {
-    await this.groupStudyManagementService.leaveRoom(clientSocket);
-    this.groupStudyManagementService.removePeer(clientSocket.id);
-    this.broadcastRoomList();
+  handleDisconnect(clientSocket: Socket) {
+    const socketId = clientSocket.id;
+    const graceSec = SignalingGateway.DISCONNECT_GRACE_PERIOD_MS / 1000;
+    const reason = this.disconnectReasons.get(socketId) ?? 'unknown';
+
+    console.log(
+      `[SignalingGateway:handleDisconnect] Socket ${socketId} disconnected (reason="${reason}"). ` +
+        `Scheduling cleanup in ${graceSec}s to allow observing transport-level logs.`
+    );
+
+    const timer = setTimeout(async () => {
+      this.pendingDisconnectTimers.delete(socketId);
+      this.disconnectReasons.delete(socketId);
+      console.log(
+        `[SignalingGateway:handleDisconnect] Grace period expired for ${socketId}. Executing cleanup now.`
+      );
+      await this.groupStudyManagementService.leaveRoom(clientSocket);
+      this.groupStudyManagementService.removePeer(socketId);
+      this.broadcastRoomList();
+    }, SignalingGateway.DISCONNECT_GRACE_PERIOD_MS);
+
+    this.pendingDisconnectTimers.set(socketId, timer);
+  }
+
+  // --- Reconnection ---
+
+  @SubscribeMessage(EventNames.RECONNECT)
+  handleReconnect(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { previousSocketId: string }
+  ): AckResponse {
+    const { previousSocketId } = payload;
+    console.log(
+      `[SignalingGateway:handleReconnect] Socket ${clientSocket.id} claims to be reconnection of ${previousSocketId}`
+    );
+
+    const pendingTimer = this.pendingDisconnectTimers.get(previousSocketId);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer); // pendingTimer가 실행되면 이제 기존의 socket이 가지고 있던, 이 socket이 claim to obtain/suceed 하려는 데이터들이 clean up된다.
+      // 그래서 멈춰야함.
+      this.pendingDisconnectTimers.delete(previousSocketId);
+      this.disconnectReasons.delete(previousSocketId);
+      console.log(
+        `[SignalingGateway:handleReconnect] Cancelled pending disconnect cleanup for ${previousSocketId}. ` +
+          `Old peer resources are preserved.`
+      );
+    } else {
+      console.log(
+        `[SignalingGateway:handleReconnect] No pending disconnect timer found for ${previousSocketId}. ` +
+          `Either grace period already expired or it was an explicit disconnect.`
+      );
+    }
+
+    return { success: true };
+  }
+
+  // [ICE Restart 요청 수신]
+  // 클라이언트가 네트워크 문제로 연결에 실패(failed)했을 때, 연결을 복구하기 위해 새로운 인증 정보를 요청하는 이벤트
+  @SubscribeMessage(EventNames.RESTART_ICE)
+  async handleRestartIce(
+    @ConnectedSocket() clientSocket: Socket,
+    @MessageBody() payload: { role: 'send' | 'recv' }
+  ): Promise<AckResponse<{ iceParameters: any }>> {
+    console.log(
+      `[SignalingGateway:handleRestartIce] Socket ${clientSocket.id} requested ICE restart for its ${payload.role} transport`
+    );
+    return await this.groupStudyManagementService.restartIce(
+      clientSocket.id,
+      payload.role
+    );
   }
 
   // --- Room Management ---

@@ -115,6 +115,7 @@ export class Peer {
       })),
       consumers: Array.from(this.consumers.entries()).map(([id, c]) => ({
         id,
+        producerId: c.producerId,
         kind: c.kind
       }))
     });
