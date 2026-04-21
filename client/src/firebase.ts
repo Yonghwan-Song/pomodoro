@@ -2,12 +2,13 @@
 import { initializeApp } from "firebase/app";
 //import { getAuth, GoogleAuthProvider, onAuthStateChanged } from "firebase/auth";
 import { getAuth } from "firebase/auth";
+import { FIREBASE_API_KEY } from "./constants";
 // Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCKDJk6BEPhMJ__QXnxjV5dnyG9VFgs69U",
+  apiKey: FIREBASE_API_KEY,
   authDomain: "pomodoro-ef5e0.firebaseapp.com",
   projectId: "pomodoro-ef5e0",
   storageBucket: "pomodoro-ef5e0.appspot.com",

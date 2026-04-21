@@ -25,6 +25,13 @@ const BASE_URLS = {
 
 export const BASE_URL = BASE_URLS[ENV];
 
+const FIREBASE_API_KEYS = {
+  development: "AIzaSyCiHKGhXrC7lFx4yXDjweyz6moAa9S2pmA",
+  production: "AIzaSyCKDJk6BEPhMJ__QXnxjV5dnyG9VFgs69U",
+};
+
+export const FIREBASE_API_KEY = FIREBASE_API_KEYS[ENV];
+
 export const RESOURCE = {
   USERS: "/users",
   POMODOROS: "/pomodoros",
