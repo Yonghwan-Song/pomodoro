@@ -15,7 +15,6 @@ import {
 import {
   persistCategoryChangeInfoArrayToIDB,
   persistTimersStatesToServer,
-  postMsgToSW,
   stopCountDownInBackground,
 } from "../..";
 import { useAuthContext } from "../../Context/AuthContext";

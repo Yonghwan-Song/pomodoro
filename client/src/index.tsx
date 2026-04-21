@@ -132,7 +132,6 @@ export type dataCombinedFromIDB = {
 //#endregion
 
 //#region var and const
-export let SW: ServiceWorker | null = null;
 export let DB: IDBPDatabase<TimerRelatedDB> | null = null;
 export let DynamicCache: Cache | null = null;
 export let TimerRelatedStates: TimersStatesType | null = null;
@@ -298,7 +297,6 @@ BC.addEventListener("message", async (ev) => {
 document.addEventListener("DOMContentLoaded", async () => {
   // console.log("ev handler for DOMContentLoaded is called");
   try {
-    registerServiceWorker();
     defineInterceptorsForAxiosInstance();
     DB = await openIndexedDB();
     await deleteRecordsBeforeTodayInIDB();
@@ -452,56 +450,6 @@ export async function persistAutoStartSettingToServer(
     // console.log("res.data in updateAutoStartSetting ===>", res.data);
   } catch (error) {
     console.warn(error);
-  }
-}
-
-function registerServiceWorker(callback?: (sw: ServiceWorker) => void) {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-      .register("/sw.js", {
-        scope: "/",
-        type: "module",
-      })
-      .then(
-        (registration) => {
-          // console.log("registration", registration);
-
-          SW =
-            registration.installing ||
-            registration.waiting ||
-            registration.active;
-          // I think SW can't be null because the operands of || operator
-          // are representing a service worker in chronological order.
-          if (callback) {
-            callback(SW!);
-          }
-        },
-        (err) => {
-          console.warn("Service worker registration failed:", err);
-          prompt(
-            "An unexpected problem happened while registering a service worker script. Please refresh the current page",
-          );
-        },
-      );
-
-    navigator.serviceWorker.addEventListener("controllerchange", async () => {
-      SW = navigator.serviceWorker.controller;
-    });
-
-    navigator.serviceWorker.addEventListener("message", ({ data }) => {
-      if ("idOfSetInterval" in data) {
-        localStorage.setItem(
-          "idOfSetInterval",
-          data.idOfSetInterval.toString(),
-        );
-      } else if ("timerHasEnded" in data) {
-        localStorage.removeItem("idOfSetInterval");
-      } else {
-        TimerRelatedStates = data;
-      }
-    });
-  } else {
-    console.log("This browser does not support Service Workers.");
   }
 }
 
@@ -939,21 +887,6 @@ export async function emptyFailedReqInfo(userEmail: string) {
   } catch (error) {
     console.warn(error);
   }
-}
-
-export function postMsgToSW(action: "endTimer", payload: any) {
-  if (SW !== null && SW.state !== "redundant") {
-    SW.postMessage({ action, payload });
-    return;
-  }
-
-  if (SW?.state === "redundant") {
-    SW = null; //The redundant SW above is going to be garbage collected
-  }
-
-  registerServiceWorker((sw) => {
-    sw.postMessage({ action, payload });
-  });
 }
 
 type GoNextPayload = {
@@ -1804,13 +1737,6 @@ async function autoStartCurrentSession({
           cycleDuration: currentCycleInfo.cycleDuration,
         });
     }
-    // 1. persist locally.
-    // Problem:  We don't need to do assign this job to SW.
-    // It might be not enough fast since there are some steps to be done
-    // before the APIs of indexed db are actually called.
-    // postMsgToSW("saveStates", {
-    //   stateArr,
-    // });
     persistStatesToIDB(statesToPersist);
 
     // The Issue that currently is occuring
