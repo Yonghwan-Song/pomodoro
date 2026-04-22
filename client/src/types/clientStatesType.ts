@@ -46,11 +46,11 @@ export type AutoStartSettingType = {
 };
 
 export type CycleInfoType = {
-  totalFocusDuration: number;
-  cycleDuration: number;
-  cycleStartTimestamp: number;
-  veryFirstCycleStartTimestamp: number;
-  totalDurationOfSetOfCycles: number;
+  totalFocusDuration: number; // How much a user has been focused during the set of cycles that are supposed to be run at once togeter.
+  cycleDuration: number; // The focus duration target of the current cycle.
+  cycleStartTimestamp: number; // The start of the current cycle.
+  veryFirstCycleStartTimestamp: number; // The beginning of the very first cycle of all the cycles that are supposed to be run as a whole because they are set to be like that in the setting.
+  totalDurationOfSetOfCycles: number; // The sum of focus duration targets of the set of cycles.
 };
 
 export type CycleRecord = {

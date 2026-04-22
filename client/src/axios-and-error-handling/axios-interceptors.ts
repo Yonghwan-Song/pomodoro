@@ -63,6 +63,10 @@ export function defineInterceptorsForAxiosInstance() {
         // console.log(error.config);
         // console.log("navigator.online", navigator.onLine);
 
+        if (!error.config) {
+          return Promise.reject(error);
+        }
+
         if (
           error.config.method?.toUpperCase() === "PATCH" &&
           error.config.url === RESOURCE.CATEGORIES

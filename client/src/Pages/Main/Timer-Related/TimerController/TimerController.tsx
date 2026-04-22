@@ -877,8 +877,7 @@ export function TimerController({
             cycleDuration: cycleDurationTargetedInSec,
             cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles:
-              cycleDurationTargetedInSec * numOfCycle,
+            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle,
           },
         });
         // A - 2: B.E
@@ -972,6 +971,8 @@ export function TimerController({
             cycleStartTimestamp: 0,
             totalFocusDuration: totalFocusDurationTargetedInSec,
             cycleDuration: cycleDurationTargetedInSec,
+            veryFirstCycleStartTimestamp: veryFirstCycleStartTimestamp,
+            totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
           },
         });
 
@@ -1524,7 +1525,7 @@ export function TimerController({
           persistStatesToIDB({
             currentCycleInfo: {
               cycleDuration: newCycleDuration,
-              totalFocusDurationTargeted: newTotalDurationOfSetOfCycles,
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
               totalFocusDuration: totalFocusDurationInSec,
               cycleStartTimestamp,
               veryFirstCycleStartTimestamp,
@@ -2334,6 +2335,3 @@ export function TimerController({
     </div>
   );
 }
-
-
-
