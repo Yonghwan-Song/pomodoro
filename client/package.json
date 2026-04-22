@@ -34,7 +34,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "tsc && vite build",
+    "build": "panda codegen && tsc && vite build",
     "preview": "vite preview",
     "test": "echo 'Run vitest instead'",
     "lint": "eslint --ignore-path ../.gitignore .",
