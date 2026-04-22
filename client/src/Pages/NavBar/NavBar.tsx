@@ -177,7 +177,7 @@ function Navbar() {
             </StyledLink>
           </li>
         )}
-        {user !== null && (
+        {user !== null && CONSTANTS.FEATURES.groupStudy && (
           <li>
             <StyledLink
               to="/group-study"

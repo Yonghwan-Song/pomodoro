@@ -1,7 +1,7 @@
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Main, Signin, Settings, Statistics, GroupStudy } from "./Pages/index";
 import { RoomList } from "./Pages/GroupStudy/RoomList";
 import { Room } from "./Pages/GroupStudy/Room";
@@ -27,6 +27,7 @@ import {
   RESOURCE,
   SUB_SET,
   BASE_URL,
+  FEATURES,
   CURRENT_CATEGORY_NAME,
   SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
   CURRENT_SESSION_TYPE,
@@ -159,17 +160,21 @@ root.render(
       <Route path="/" element={<App />}>
         <Route path="timer" element={<Main />} />
         <Route path="settings" element={<Settings />} />
-        <Route
-          path="group-study"
-          element={
-            <Protected>
-              <GroupStudy />
-            </Protected>
-          }
-        >
-          <Route index element={<RoomList />} />
-          <Route path="room/:roomId" element={<Room />} />
-        </Route>
+        {FEATURES.groupStudy ? (
+          <Route
+            path="group-study"
+            element={
+              <Protected>
+                <GroupStudy />
+              </Protected>
+            }
+          >
+            <Route index element={<RoomList />} />
+            <Route path="room/:roomId" element={<Room />} />
+          </Route>
+        ) : (
+          <Route path="group-study/*" element={<Navigate to="/timer" replace />} />
+        )}
         <Route
           path="statistics"
           element={

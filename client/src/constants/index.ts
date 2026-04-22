@@ -15,8 +15,8 @@ export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
 //#endregion
 
 //#region URLs
-// const ENV = "production"; // Change this to 'production' when deploying
-const ENV = "development"; // Change this to 'production' when deploying
+const ENV = "production"; // Change this to 'production' when deploying
+// const ENV = "development"; // Change this to 'production' when deploying
 
 const BASE_URLS = {
   development: "http://localhost:3000",
@@ -31,6 +31,17 @@ const FIREBASE_API_KEYS = {
 };
 
 export const FIREBASE_API_KEY = FIREBASE_API_KEYS[ENV];
+
+const FEATURE_FLAGS = {
+  development: {
+    groupStudy: true,
+  },
+  production: {
+    groupStudy: false,
+  },
+};
+
+export const FEATURES = FEATURE_FLAGS[ENV];
 
 export const RESOURCE = {
   USERS: "/users",
