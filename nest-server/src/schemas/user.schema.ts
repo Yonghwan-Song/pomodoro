@@ -41,6 +41,8 @@ interface Goals {
 @Schema()
 export class User {
   @Prop({ unique: true })
+  // NOTE: A Firebase UID is a unique identifier assigned to a user within a specific Firebase project.
+  // It serves as the primary way to identify users across various services, including Authentication, Realtime Database, Cloud Storage, and Analytics.
   firebaseUid: string; // TODO: 이거 password처럼 생각해야하는거 아닌가 싶은데 흠..
 
   @Prop({ type: String, default: null, required: false })

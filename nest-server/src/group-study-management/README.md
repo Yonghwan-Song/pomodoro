@@ -1,3 +1,47 @@
+# Group Study Management Docs
+
+이 디렉터리 문서가 많아져서, 먼저 어디를 봐야 하는지 정리합니다.
+
+## 문서 인덱스
+
+### 재연결 / 단절 테스트를 바로 하고 싶을 때
+
+- [webrtc-reconnect-testing.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/webrtc-reconnect-testing.md)
+  실제 로컬 테스트 절차, 시나리오, 기대 타임라인, 실패 해석
+
+- [webrtc-debugging-cheatsheet.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/webrtc-debugging-cheatsheet.md)
+  `tcpdump`, `iptables`, `ip route get` 같은 명령어만 빠르게 확인
+
+- [disconnection-related-commands.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/disconnection-related-commands.md)
+  signaling/TCP 쪽 연결을 일부러 끊는 실험 메모
+
+### UDP drop 이후 이벤트 순서를 알고 싶을 때
+
+- [expected-event-ordering-for-iptables-udp-drop.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/expected-event-ordering-for-iptables-udp-drop.md)
+  client/server에서 어떤 순서로 상태가 변할지 설명
+
+- [what-the-30seconds-mean-in-icestatechange-event-state.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/what-the-30seconds-mean-in-icestatechange-event-state.md)
+  mediasoup server-side `ice=disconnected` 타이밍 해석
+
+### 구조를 이해하고 싶을 때
+
+- [how-one-server-port-handles-multiple-sockets.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/how-one-server-port-handles-multiple-sockets.md)
+  하나의 서버 포트에서 여러 연결이 어떻게 처리되는지
+
+- [room-integration-status.md](/home/yhs/Repos/pomodoro-from-arch/nest-server/src/group-study-management/room-integration-status.md)
+  room 관련 현재 통합 상태
+
+### 지금 README에 남겨둔 메모
+
+- producer 생성 직후 RTP stats 관찰 타이밍 관련 메모
+
+## 빠른 추천 경로
+
+1. 명령어가 급하면 `webrtc-debugging-cheatsheet.md`
+2. 실제 단절/복구 테스트를 돌리려면 `webrtc-reconnect-testing.md`
+3. 로그 해석이 막히면 `expected-event-ordering-for-iptables-udp-drop.md`
+4. server `ice=disconnected` 30초 근처 타이밍이 헷갈리면 `what-the-30seconds-mean-in-icestatechange-event-state.md`
+
 # 헷갈리는 것들 정리
 
 # producer 생성 후 RTP stream기다리기 (매우 짧은 시간동안) <- setTimeout()

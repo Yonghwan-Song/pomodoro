@@ -124,13 +124,14 @@ export function Room() {
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
 
   const socket = useConnectionStore((s) => s.socket);
-  const connected = useConnectionStore((s) => s.connected);
-  const stream = useConnectionStore((s) => s.stream);
-  const isSharing = useConnectionStore((s) => s.isSharing);
+  const connected = useConnectionStore((s) => s.isSocketConnected);
+  const stream = useConnectionStore((s) => s.mediaStream);
+  const isSharing = useConnectionStore((s) => s.isBeingShared);
   const obtainStream = useConnectionStore((s) => s.obtainStream);
   const startSharing = useConnectionStore((s) => s.startSharing);
+  const stopSharing = useConnectionStore((s) => s.stopSharing);
   const isDeviceLoaded = useConnectionStore((s) => s.isDeviceLoaded);
-  const isRoomJoined = useConnectionStore((s) => s.isRoomJoined);
+  const isRoomJoined = useConnectionStore((s) => s.isUserInRoom);
   const forcedRoomExitReason = useConnectionStore(
     (s) => s.forcedRoomExitReason
   );
@@ -145,8 +146,7 @@ export function Room() {
   const chatMessages = useConnectionStore((s) => s.chatMessages);
   const joinRoom = useConnectionStore((s) => s.joinRoom);
   const leaveRoom = useConnectionStore((s) => s.leaveRoom);
-  const createTransports = useConnectionStore((s) => s.createTransports);
-  const endSharing = useConnectionStore((s) => s.endSharing);
+  const createTransports = useConnectionStore((s) => s.createTransports); // NOTE: Moving state or actions out of RoomSlice does not require import changes here, since they are still accessed through the combined connection store.
   const sendChatMessage = useConnectionStore((s) => s.sendChatMessage);
 
   const myTodayTotalDuration = useBoundedPomoInfoStore(
@@ -170,7 +170,7 @@ export function Room() {
 
   // 방 입장
   useEffect(() => {
-    if (forcedRoomExitReason) {
+    if (forcedRoomExitReason) { // QQQ: App.tsx에서 `/group-study`로 navigate 했을 때, 사실 이 copmonent가 왜 마운트 되는지 잘 모르겠음. 그런데 그냥 넘어가겠음.
       console.log("[Room] skipping auto-join due to forced exit", {
         forcedRoomExitReason,
         roomId
@@ -179,6 +179,8 @@ export function Room() {
     }
 
     if (socket && connected && roomId && !isRoomJoined) {
+      // TODO: 저기 아래에 createTransports()를 직접적으로 호출하는게 있는데 (setup에서),
+      // joinRoom() 정의 안에서도 createTransports()를 호출한다. 누굴 죽이고 누굴 살리지?
       joinRoom(roomId, (error) => {
         alert("방 참가에 실패했습니다: " + error);
         navigate("/group-study");
@@ -194,11 +196,14 @@ export function Room() {
     navigate
   ]);
 
-  // device loaded + stream 존재 + room joined 시 transport 생성
   useEffect(() => {
-    if (isRoomJoined && isDeviceLoaded && stream) {
-      createTransports();
-    }
+    /** NOTE: (device loaded + stream 존재 + room joined 시 transport 생성)
+     * 1. Duplicated guards (here and in the createTransports()) are tolerated while still allowing setup to retry as inputs load.
+     * 2. CreateTransports reads the latest store state and is guarded internally.
+     **/
+    if (!isRoomJoined || !isDeviceLoaded || !stream) return;
+
+    createTransports();
   }, [isRoomJoined, isDeviceLoaded, stream, createTransports]);
 
   // 방 나가기 (UI → store action → navigate)
@@ -253,7 +258,7 @@ export function Room() {
               <RoomControls
                 onLeaveRoom={handleLeaveRoom}
                 isSharing={isSharing}
-                onToggleSharing={isSharing ? endSharing : startSharing}
+                onToggleSharing={isSharing ? stopSharing : startSharing}
                 canShare={isSendTransportReady}
               />
             </div>

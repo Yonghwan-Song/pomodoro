@@ -23,12 +23,12 @@ export function VideoGrid({
   const consumersByPeerId = useConnectionStore(
     (state) => state.consumersByPeerId
   );
-  const isSharing = useConnectionStore((state) => state.isSharing);
+  const isSharing = useConnectionStore((state) => state.isBeingShared);
   const isProducerPaused = useConnectionStore(
     (state) => state.isProducerPaused
   );
-  const pauseProducer = useConnectionStore((state) => state.pauseProducer);
-  const resumeProducer = useConnectionStore((state) => state.resumeProducer);
+  const toggleOffCamera = useConnectionStore((state) => state.toggleOffCamera);
+  const toggleOnCamera = useConnectionStore((state) => state.toggleOnCamera);
 
   const cardClassName = css({
     backgroundColor: "bg.surface",
@@ -96,7 +96,7 @@ export function VideoGrid({
           >
             {isSharing && (
               <button
-                onClick={isProducerPaused ? resumeProducer : pauseProducer}
+                onClick={isProducerPaused ? toggleOnCamera : toggleOffCamera}
                 className={css({
                   position: "absolute",
                   top: "2",
@@ -150,10 +150,7 @@ export function VideoGrid({
                 🔥 {getHHmm(peerTodayTotalDurations.get(peerId) || 0)}
               </span>
             </div>
-            <VideoPlayer
-              stream={stream}
-              consumerId={consumer?.id}
-            />
+            <VideoPlayer stream={stream} consumerId={consumer?.id} />
           </div>
         );
       })}

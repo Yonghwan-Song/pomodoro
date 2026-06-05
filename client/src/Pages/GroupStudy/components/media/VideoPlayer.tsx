@@ -31,11 +31,11 @@ const VideoPlayer = ({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // 화질 조절을 위한 store action 및 상태 가져오기
-  const setQuality = useConnectionStore(
-    (state) => state.setConsumerPreferredLayers
+  const setPreferredVideoQuality = useConnectionStore(
+    (state) => state.setPreferredVideoQuality
   );
-  const toggleLocalPause = useConnectionStore(
-    (state) => state.toggleLocalConsumerPause
+  const pauseOrResumeVideo = useConnectionStore(
+    (state) => state.pauseOrResumeVideo
   );
   const consumerState = useConnectionStore((state) =>
     consumerId ? state.consumerLayers?.get(consumerId) : undefined
@@ -74,9 +74,10 @@ const VideoPlayer = ({
     videoRef.current.srcObject = stream ?? null;
   }, [stream]);
 
+  // 이것도... 그냥 Room으로 넘겨서 한단계 더 추상화 하면 이해하기는 더 편할듯.
   const handleQualityChange = (layer: number) => {
     if (consumerId) {
-      setQuality(consumerId, layer);
+      setPreferredVideoQuality(consumerId, layer);
     }
   };
 
@@ -282,7 +283,7 @@ const VideoPlayer = ({
             <button
               type="button"
               onClick={() => {
-                if (consumerId) toggleLocalPause(consumerId);
+                if (consumerId) pauseOrResumeVideo(consumerId);
               }}
               title={isPausedLocallyByViewer ? "영상 재개" : "영상 일시정지"}
               className={css({

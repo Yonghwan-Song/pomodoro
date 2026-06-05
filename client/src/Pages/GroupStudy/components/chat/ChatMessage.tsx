@@ -1,15 +1,8 @@
 import { css } from "../../../../../styled-system/css";
-
-// TODO: 이거 type정의파일을 따로 만들
-export interface ChatMessageData {
-  senderId: string;
-  senderNickname: string;
-  message: string;
-  timestamp: string;
-}
+import { ChatMessageInfo } from "../../../../common/webrtc/payloadRelated";
 
 interface ChatMessageProps {
-  data: ChatMessageData;
+  data: ChatMessageInfo;
   mySocketId: string;
 }
 

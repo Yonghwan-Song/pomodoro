@@ -38,7 +38,8 @@ function App() {
 
   //#region side effects
   useEffect(() => {
-    if (forcedRoomExitReason !== "transport-recovery-failed") return;
+    if (forcedRoomExitReason === null) return;
+
 
     console.log(
       "[App] forced room exit detected. Navigating to /group-study.",

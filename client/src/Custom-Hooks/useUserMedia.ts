@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { useState, useCallback, useEffect } from "react";
 
+// ! WARNING: This is not used anymore. The UserMediaStreamStates and UserMediaStreamActions replaced it.
 export const useUserMedia = (
   trackOption: { video: boolean; audio: boolean } = {
     video: true,

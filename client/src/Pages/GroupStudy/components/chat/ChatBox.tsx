@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { css } from "../../../../../styled-system/css";
-import { ChatMessage, type ChatMessageData } from "./ChatMessage";
+import { ChatMessage } from "./ChatMessage";
+import { ChatMessageInfo } from "../../../../common/webrtc/payloadRelated";
 
 type ChatLayout = "sidebar" | "stacked";
 
 interface ChatBoxProps {
-  messages: ChatMessageData[];
+  messages: ChatMessageInfo[];
   onSendMessage: (message: string) => void;
   mySocketId: string;
   layout?: ChatLayout | { base: ChatLayout; lg?: ChatLayout };
@@ -192,6 +193,7 @@ export function ChatBox({
                 <br />첫 인사를 남겨보세요.
               </div>
             ) : (
+              // NOTE: We just trust that the order of timestamps of the messages are correct.
               messages.map((msg, idx) => (
                 <ChatMessage key={idx} data={msg} mySocketId={mySocketId} />
               ))

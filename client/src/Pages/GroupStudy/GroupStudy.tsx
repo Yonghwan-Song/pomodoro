@@ -7,7 +7,7 @@ import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsing
 
 export default function GroupStudy() {
   const socket = useConnectionStore((s) => s.socket);
-  const connected = useConnectionStore((s) => s.connected);
+  const connected = useConnectionStore((s) => s.isSocketConnected);
   const connect = useConnectionStore((s) => s.connect);
   const isDeviceLoaded = useConnectionStore((s) => s.isDeviceLoaded);
   const initDevice = useConnectionStore((s) => s.initDevice);
@@ -16,7 +16,20 @@ export default function GroupStudy() {
     (s) => s.setTodayTotalDuration
   );
 
+  // QQQ: 문제점 - tcpkill을 취소하고 adb reverse --remove tcp:3000에 대해서 다시 adb reverse tcp:3000 tcp:3000을 실행시켰음에도 불구하고
+  // firefox peer가 참여하고있는 (존재하는) 방이 목록에 나타나지 않았고
+  // `/timer`로 갔다가 다시 이 url로 돌아왔을때도 안보인 것으로 기억함. 그리고 방 목록 새로고침은 대체 뭐하는거임? 애초에 socket연결 자체가 안되어 있었기 때문에
+  // 제기능을 하지 못한것으로 생각됨.
+  // 마지막으로, 이 바로 아래에 connected를 의존성으로 갖는 initDevice() 이것도 지금 보니까 connect()과 같은 component에 있는것이
+  // 문제 있어보이는데?... 그냥 논리는 모르겠는데 직감이야.. 분리할 수 있다면 분리하는게 react에서는 안정적으로 보임.
+
+  // As soon as a user is removed from the room, this will be called.
+  // Connect -> failed -> and what?... keep trying?...
+  // The fact that a user is removed from the room means that the maximum attemps to reconnect have been done.
+  // I wonder if the socket is discarded after the failure of all the attempts
+  console.log("right before the connect() useEffect");
   useEffect(() => {
+    console.log("in the connect() useEffect");
     connect();
   }, [connect]);
 

@@ -7,6 +7,9 @@
 zed-chat-md/
 scribble.md
 docs/
+logs/
+bash_scripts/
+scribble/
 
 # Dependencies
 client/node_modules

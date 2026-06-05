@@ -12,10 +12,10 @@ interface RoomInfo {
 
 export function RoomList() {
   const socket = useConnectionStore((s) => s.socket);
-  const connected = useConnectionStore((s) => s.connected);
+  const connected = useConnectionStore((s) => s.isSocketConnected);
   const obtainStream = useConnectionStore((s) => s.obtainStream);
   const currentRoomId = useConnectionStore((s) => s.currentRoomId);
-  const isRoomJoined = useConnectionStore((s) => s.isRoomJoined);
+  const isRoomJoined = useConnectionStore((s) => s.isUserInRoom);
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [newRoomName, setNewRoomName] = useState("");

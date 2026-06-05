@@ -8,7 +8,7 @@ export class MediasoupService implements OnModuleInit {
   private worker: mediasoup.types.Worker;
   private router: mediasoup.types.Router;
 
-  constructor(@Inject(LOCAL_IP) private readonly announcedIp: string) {}
+  constructor(@Inject(LOCAL_IP) private readonly announcedIps: string[]) {}
 
   async onModuleInit() {
     this.worker = await mediasoup.createWorker();
@@ -35,26 +35,39 @@ export class MediasoupService implements OnModuleInit {
     console.log('this.router.id: ', this.router.id);
   }
 
-  getRtcCapabilities() {
+  getRtpCapabilities() {
     return this.router.rtpCapabilities;
   }
 
   async getWebRtcTransport(): Promise<WebRtcTransport> {
-    const webRtcTransport = await this.router.createWebRtcTransport({
-      listenInfos: [
+    // HACK: local reconnect 테스트 위해 TCP listenInfo 제거. 배포 시 TCP entry 다시 활성화할 것.
+    // listenInfos가 있으면 enableTcp 옵션은 무시되므로, TCP를 진짜 끄려면 여기서 제외해야 함.
+    const listenInfos: mediasoup.types.TransportListenInfo[] =
+      this.announcedIps.flatMap((ip) => [
         {
-          protocol: 'udp',
+          protocol: 'udp' as const,
           ip: '0.0.0.0',
-          announcedAddress: this.announcedIp
+          announcedAddress: ip
         }
-      ],
+        // {
+        //   protocol: 'tcp' as const,
+        //   ip: '0.0.0.0',
+        //   announcedAddress: ip
+        // }
+      ]);
+
+    const webRtcTransport = await this.router.createWebRtcTransport({
+      listenInfos,
       enableUdp: true,
-      enableTcp: true,
+      // enableTcp: true,
+      enableTcp: false,
       preferUdp: true
     });
 
     console.log(
-      `Mediasoup transport created with announced Address: ${this.announcedIp}`
+      `Mediasoup transport created with announced Addresses: ${this.announcedIps.join(
+        ', '
+      )}`
     );
 
     return webRtcTransport;
