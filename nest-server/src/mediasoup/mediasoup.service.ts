@@ -47,7 +47,8 @@ export class MediasoupService implements OnModuleInit {
         {
           protocol: 'udp' as const,
           ip: '0.0.0.0',
-          announcedAddress: ip
+          announcedAddress: ip,
+          portRange: { min: 20000, max: 20200 }
         }
         // {
         //   protocol: 'tcp' as const,
