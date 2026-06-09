@@ -46,6 +46,7 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
   cors: {
     origin: [
       'http://localhost:5173',
+      'http://localhost:4173',
       'https://pomodoro-yhs.vercel.app',
       'http://localhost:3001',
       'http://localhost:3000'

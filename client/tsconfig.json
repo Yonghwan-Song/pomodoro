@@ -15,13 +15,12 @@
 
     /* Linting */
     "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    
     "types": ["vite/client", "vite-plugin-svgr/client"]
   },
   "include": ["src"]

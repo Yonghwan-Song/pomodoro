@@ -973,9 +973,11 @@ export function TimerController({
           duration: pomoDuration,
           repetitionCount: repetitionCount + 1,
           currentCycleInfo: {
-            cycleStartTimestamp: 0,
             totalFocusDuration: totalFocusDurationTargetedInSec,
-            cycleDuration: cycleDurationTargetedInSec
+            cycleDuration: cycleDurationTargetedInSec,
+            cycleStartTimestamp: 0,
+            veryFirstCycleStartTimestamp: veryFirstCycleStartTimestamp,
+            totalDurationOfSetOfCycles: totalFocusDurationInSec
           }
         });
 
@@ -1525,7 +1527,7 @@ export function TimerController({
           persistStatesToIDB({
             currentCycleInfo: {
               cycleDuration: newCycleDuration,
-              totalFocusDurationTargeted: newTotalDurationOfSetOfCycles,
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
               totalFocusDuration: totalFocusDurationInSec,
               cycleStartTimestamp,
               veryFirstCycleStartTimestamp
@@ -1536,7 +1538,6 @@ export function TimerController({
               cycleDuration: newCycleDuration,
               totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
             });
-        } else {
         }
       }
     }

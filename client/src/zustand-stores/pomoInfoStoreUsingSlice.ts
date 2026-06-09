@@ -33,6 +33,17 @@ interface TimerSliceStates {
   cycleSettings: Array<CycleSetting>;
 }
 
+interface StatSliceStates {
+  // DESIGN: This is for the today total duration of this peer himself.
+  // And he also has a map of peerIds of participants and their todayTotalDurations defined in the roomslice.
+  todayTotalDuration: number;
+}
+
+interface StatSlice extends StatSliceStates {
+  setTodayTotalDuration: (duration: number) => void;
+  incrementTodayTotalDuration: (duration: number) => number;
+}
+
 interface CycleInfoSliceStates {
   currentCycleInfo: {
     totalFocusDuration: number;
@@ -41,13 +52,9 @@ interface CycleInfoSliceStates {
     veryFirstCycleStartTimestamp: number;
     totalDurationOfSetOfCycles: number;
   };
-  todayTotalDuration: number;
 }
 
-interface CycleInfoSlice extends CycleInfoSliceStates {
-  setTodayTotalDuration: (duration: number) => void;
-  incrementTodayTotalDuration: (duration: number) => number;
-}
+interface CycleInfoSlice extends CycleInfoSliceStates {}
 
 interface CategorySliceStates {
   categories: Category[];
@@ -117,6 +124,7 @@ interface TodoistIntegrationSlice extends TodoistIntegrationSliceStates {
 
 const createTodoistIntegrationSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -193,6 +201,7 @@ interface SharedSlice {
 
 const createTimerSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -242,8 +251,52 @@ const createTimerSlice: StateCreator<
   }
 });
 
+const createStatSlice: StateCreator<
+  TimerSlice &
+    StatSlice &
+    CycleInfoSlice &
+    CategorySlice &
+    GoalSlice &
+    TodoistIntegrationSlice &
+    SharedSlice,
+  [["zustand/devtools", never], ["zustand/immer", never]],
+  [],
+  StatSlice
+> = (set, get) => {
+  return {
+    todayTotalDuration: 0,
+    setTodayTotalDuration: (duration: number) =>
+      set(
+        (state) => {
+          console.log(
+            `[Zustand Store] todayTotalDuration updated: ${state.todayTotalDuration} -> ${duration}`
+          );
+          state.todayTotalDuration = duration;
+        },
+        false,
+        "cycleInfo/setTodayTotalDuration"
+      ),
+    incrementTodayTotalDuration: (duration: number) => {
+      let newTotal = 0;
+      set(
+        (state) => {
+          newTotal = state.todayTotalDuration + duration;
+          console.log(
+            `[Zustand Store] todayTotalDuration incremented by ${duration}: ${state.todayTotalDuration} -> ${newTotal}`
+          );
+          state.todayTotalDuration = newTotal;
+        },
+        false,
+        "cycleInfo/incrementTodayTotalDuration"
+      );
+      return newTotal;
+    }
+  };
+};
+
 const createCycleInfoSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -259,38 +312,12 @@ const createCycleInfoSlice: StateCreator<
     cycleStartTimestamp: 0,
     veryFirstCycleStartTimestamp: 0,
     totalDurationOfSetOfCycles: 130 * 60
-  },
-  todayTotalDuration: 0,
-  setTodayTotalDuration: (duration: number) =>
-    set(
-      (state) => {
-        console.log(
-          `[Zustand Store] todayTotalDuration updated: ${state.todayTotalDuration} -> ${duration}`
-        );
-        state.todayTotalDuration = duration;
-      },
-      false,
-      "cycleInfo/setTodayTotalDuration"
-    ),
-  incrementTodayTotalDuration: (duration: number) => {
-    let newTotal = 0;
-    set(
-      (state) => {
-        newTotal = state.todayTotalDuration + duration;
-        console.log(
-          `[Zustand Store] todayTotalDuration incremented by ${duration}: ${state.todayTotalDuration} -> ${newTotal}`
-        );
-        state.todayTotalDuration = newTotal;
-      },
-      false,
-      "cycleInfo/incrementTodayTotalDuration"
-    );
-    return newTotal;
   }
 });
 
 const createCategorySlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -335,6 +362,7 @@ const createCategorySlice: StateCreator<
 
 const createGoalSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -387,6 +415,7 @@ const createGoalSlice: StateCreator<
 
 const createSharedSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -457,6 +486,7 @@ const createSharedSlice: StateCreator<
 
 export const useBoundedPomoInfoStore = create<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -466,6 +496,7 @@ export const useBoundedPomoInfoStore = create<
   devtools(
     immer((...a) => ({
       ...createTimerSlice(...a),
+      ...createStatSlice(...a),
       ...createCycleInfoSlice(...a),
       ...createCategorySlice(...a),
       ...createGoalSlice(...a),

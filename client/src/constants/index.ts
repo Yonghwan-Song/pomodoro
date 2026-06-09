@@ -15,12 +15,14 @@ export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
 //#endregion
 
 //#region URLs
-// const ENV = "production"; // Change this to 'production' when deploying
-const ENV = "development"; // Change this to 'production' when deploying
+const ENV = "production"; // Change this to 'production' when deploying
+// const ENV = "development"; // Change this to 'production' when deploying
 
 const BASE_URLS = {
-  development: "http://localhost:3000",
-  production: "https://pomodoro-nest-apis.onrender.com"
+  // development: "http://localhost:3000",
+  // production: "https://pomodoro-nest-apis.onrender.com"
+  development: "https://pomodoro-nest.duckdns.org",
+  production: "https://pomodoro-nest.duckdns.org"
 };
 
 export const BASE_URL = BASE_URLS[ENV];
