@@ -15,6 +15,6 @@ export default defineConfig({
     host: true, // 로컬 네트워크 외부 IP에서 접속을 허용합니다 (0.0.0.0)
   },
   build: {
-    outDir: 'build',
+    outDir: 'dist',
   },
 });
