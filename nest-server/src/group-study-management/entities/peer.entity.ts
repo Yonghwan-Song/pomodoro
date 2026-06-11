@@ -19,7 +19,7 @@ export class Peer {
   public sendTransport?: WebRtcTransport;
   public recvTransport?: WebRtcTransport;
   public readonly producerMap: Map<string, Producer> = new Map();
-  public readonly consumerMap: Map<string, Consumer> = new Map(); // TODO: 이거 가지고 공통 preferred layer 함수 호출하면 될듯. 그런데 아예 다른 함수가 있나?
+  public readonly consumerMap: Map<string, Consumer> = new Map(); // consumerId, Consumer
 
   // [Added for Real-time Duration Sync]
   // Peer가 현재까지 집중한 오늘 총 시간(분)을 서버 메모리 상에 보관합니다.

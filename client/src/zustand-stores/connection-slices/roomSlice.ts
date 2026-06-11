@@ -142,6 +142,7 @@ export const createRoomSlice: StateCreator<
     );
 
     socket.on(EventNames.PRODUCER_CLOSED, ({ producerId }) => {
+      console.log("producerId inside PRODUCER_CLOSED", producerId);
       const {
         peerProducerList,
         consumersByPeerId,

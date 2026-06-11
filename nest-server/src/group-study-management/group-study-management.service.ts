@@ -32,8 +32,7 @@ import { Model } from 'mongoose';
 
 @Injectable()
 export class GroupStudyManagementService
-  implements OnModuleInit, OnModuleDestroy
-{
+  implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GroupStudyManagementService.name);
   // NOTE: 마치 이곳을 로비 정도로 생각하면 될듯. 사람들이 대기하고있고, 여러개의 방이 있고 (물론 지금은 공개방 하나 있음 30명으로 제한 예정)
   private peerMap: Map<string, Peer> = new Map();
@@ -43,7 +42,7 @@ export class GroupStudyManagementService
     private readonly mediasoupService: MediasoupService,
     @InjectModel(RoomSchemaClass.name)
     private readonly roomModel: Model<RoomDocument> // TODO: RoomDocument는 대체 정체가 뭐임...
-  ) {}
+  ) { }
 
   async onModuleInit() {
     this.logger.log('Service has been initialized.');
@@ -263,8 +262,8 @@ export class GroupStudyManagementService
 
       getIceStateLog(iceState)(
         `ice=${transition} ` +
-          `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
-          buildLifecycleSuffix(now)
+        `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
+        buildLifecycleSuffix(now)
       );
 
       lastObservedIceState = iceState;
@@ -278,9 +277,9 @@ export class GroupStudyManagementService
       const now = Date.now();
       console.log(
         `tuple=${tuple.protocol} ` +
-          `local=${tuple.localIp}:${tuple.localPort} ` +
-          `remote=${tuple.remoteIp}:${tuple.remotePort} ` +
-          buildLifecycleSuffix(now)
+        `local=${tuple.localIp}:${tuple.localPort} ` +
+        `remote=${tuple.remoteIp}:${tuple.remotePort} ` +
+        buildLifecycleSuffix(now)
       );
     });
 
@@ -288,9 +287,9 @@ export class GroupStudyManagementService
       const now = Date.now();
       console.warn(
         `closed ` +
-          `lastIce=${lastObservedIceState} ` +
-          `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
-          buildLifecycleSuffix(now)
+        `lastIce=${lastObservedIceState} ` +
+        `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
+        buildLifecycleSuffix(now)
       );
     });
 
@@ -298,10 +297,10 @@ export class GroupStudyManagementService
 
     console.log(
       `created peer=${uid} ` +
-        `initialIce=${transport.iceState} ` +
-        `udpPort=${udpIce?.port ?? 'n/a'} ` +
-        (tcpIce ? `tcpPort=${tcpIce.port} ` : '') +
-        `iceCandidates=${transport.iceCandidates.length} ${logPrefix}`
+      `initialIce=${transport.iceState} ` +
+      `udpPort=${udpIce?.port ?? 'n/a'} ` +
+      (tcpIce ? `tcpPort=${tcpIce.port} ` : '') +
+      `iceCandidates=${transport.iceCandidates.length} ${logPrefix}`
     );
 
     const transportOptions = {
@@ -366,6 +365,7 @@ export class GroupStudyManagementService
         // mediasoup implicitly stops RTP when a producer pauses.
         // We do NOT explicitly call consumer.pause() here to avoid overwriting
         // the viewer-side local pause state.
+        // TODO: 이것도 필요한게 맞아? observer event로 구독하면 되는거 아닌가
         clientSocket.emit('PRODUCER_PAUSED', { producingPeerId });
       });
 
@@ -381,11 +381,11 @@ export class GroupStudyManagementService
 
       consumer.on('producerclose', () => {
         console.log(
-          `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} closed due to producer close`
+          `Consumer ${consumer.id} closed due to producer close`
         );
-        consumingPeer.consumerMap.delete(consumer.id);
+        consumingPeer.removeConsumer(consumer)
         console.log(
-          `[group-study-management.service:createConsumer:producerclose] Consumer ${consumer.id} removed from peer ${consumingPeer.id}`
+          `Consumer ${consumer.id} removed from peer ${consumingPeer.id}`
         );
       });
 
@@ -481,9 +481,8 @@ export class GroupStudyManagementService
       );
       return {
         success: false,
-        error: `Failed to set preferred layers - message -> ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        error: `Failed to set preferred layers - message -> ${error instanceof Error ? error.message : String(error)
+          }`
       };
     }
   }
@@ -520,9 +519,8 @@ export class GroupStudyManagementService
       );
       return {
         success: false,
-        error: `Failed to set preferred layers for all consumers - message -> ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        error: `Failed to set preferred layers for all consumers - message -> ${error instanceof Error ? error.message : String(error)
+          }`
       };
     }
   }

@@ -48,7 +48,7 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
       'http://localhost:5173',
       'http://localhost:4173',
       'https://pomodoro-yhs.vercel.app',
-      'https://pomodoro-4sfpbz4x8-yhs-projects-00a441cb.vercel.app/timer',
+      'https://pomodoro-4sfpbz4x8-yhs-projects-00a441cb.vercel.app',
       'http://localhost:3001',
       'http://localhost:3000'
     ],
@@ -204,7 +204,7 @@ export class SignalingGateway
   handleDisconnect(clientSocket: Socket) {
     const uid = clientSocket.data.uid as string;
     const disconnectReason = clientSocket.data
-      .disconnectReason as DisconnectReason;
+      .disconnectReason as DisconnectReason; // Docs -> https://socket.io/docs/v4/server-socket-instance/#disconnect
     const peer: Peer | undefined =
       this.groupStudyManagementService.getPeer(uid);
     console.log('The peer just disconnected', peer);
@@ -224,7 +224,7 @@ export class SignalingGateway
 
         this.groupStudyManagementService.leaveRoom(clientSocket);
         this.groupStudyManagementService.removePeerFromPeerMap(uid);
-      } else {
+      } else if (disconnectReason === 'ping timeout') {
         // NOTE: Other cases; for example, NETWORK DISCONNECTION -> "transport close"
         // QQQ: What happens if the reasons for the network down (which we simulate currently) and browser close, client app reload are the same as transport close?
         // 어떻게 구분하지? -> "transport error" | "transport close" | "forced close" | "ping timeout" | "parse error" | "server shutting down" | "forced server close" | "client namespace disconnect" | "server namespace disconnect"
@@ -266,7 +266,6 @@ export class SignalingGateway
               this.groupStudyManagementService.removePeerFromPeerMap(uid);
             },
             30 * 60 * 1000
-            //4 * 60 * 1000 // 테스트용으로 4분짜리 만들고
           );
         } else {
           // Peer in a room
@@ -276,6 +275,7 @@ export class SignalingGateway
             `Preserving peer and room state for future reconnection.`
           );
 
+          //#region comments
           /** Peer was in a group study session when he was disconnected.
            * What happens if udp and tcp are disconnected and none of them are restored?
            *  - Client Side: (tcp, udp) connections
@@ -303,6 +303,7 @@ export class SignalingGateway
            * ping timeout이 언제 발생할지 뭐 그런거에 대한 생각 하지 말고, 그냥 30분 지나면 꺼지게 해야함. 서버쪽에서도 30분으로 해놓았는데,
            * 이게 동일하지는 않지만 뭐 언저리에서 비슷한 시간대에 끊길테니까 packet이 왔다 갔다할때 걸리는 그런 시간까지 고려하지는 못할듯 (아무튼 그런게 있다고 했음).
            */
+          //#endregion
 
           // 그냥 30분 지나서도 복구가 안되면 끝임. 방에서 나가고, socket정리하겠음.
           peer.removalTimer = setTimeout(
@@ -310,10 +311,22 @@ export class SignalingGateway
               this.groupStudyManagementService.leaveRoom(clientSocket);
               this.groupStudyManagementService.removePeerFromPeerMap(uid);
             },
-            // 3 * 60 * 1000
             30 * 60 * 1000
           );
         }
+      } else if (disconnectReason === "transport close") {
+        // NOTE: The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G).
+        peer.removalTimer = setTimeout(
+          () => {
+            this.groupStudyManagementService.leaveRoom(clientSocket);
+            this.groupStudyManagementService.removePeerFromPeerMap(uid);
+          },
+          3 * 60 * 1000
+        );
+      } else {
+        console.log(`due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`)
+        this.groupStudyManagementService.leaveRoom(clientSocket); // room이 없으면 알아서 early return해줌.
+        this.groupStudyManagementService.removePeerFromPeerMap(uid);
       }
     } else {
       // WARNING: dead path - it should not happen. But if this happens, it means that the client socket was connected without its server side identity, which means a "peer".

@@ -19,12 +19,16 @@ export const createSocketSlice: StateCreator<
   isSocketConnecting: false,
   socketResetTimer: null,
   initializeSocketSliceStates: () => {
-    set({
-      socket: null,
-      isSocketConnected: false,
-      isSocketConnecting: false,
-      socketResetTimer: null,
-    }, false, "socket/resetToInitialValues")
+    set(
+      {
+        socket: null,
+        isSocketConnected: false,
+        isSocketConnecting: false,
+        socketResetTimer: null
+      },
+      false,
+      "socket/resetToInitialValues"
+    );
   },
   // GroupStudy Component에서 side effect
   connect: async () => {
@@ -78,24 +82,39 @@ export const createSocketSlice: StateCreator<
         if (EXPLICIT_SOCKET_DISCONNECT_REASONS.has(reason)) {
           leaveRoom();
           set({ isSocketConnected: false }, false, "socket/disconnected");
-        } else {
-          //! ping timeout, transport close, and transport error -> automatic reconnection
-          const resetTimer = setTimeout(
-            () => {
-              if (isUserInRoom) {
-                leaveRoom();
-                set({ forcedRoomExitReason: "tcp-socket-prolonged-disconnect" })
-              }
-            },
-            // 3 * 60 * 1000
-            30 * 60 * 1000
-          );
+        } else if (reason === "ping timeout") {
+          // NOTE: The server did not send a PING within the pingInterval + pingTimeout range
+          const resetTimer = setTimeout(() => {
+            if (isUserInRoom) {
+              leaveRoom();
+              set({ forcedRoomExitReason: "tcp-socket-prolonged-disconnect" });
+            }
+          }, 30 * 60 * 1000);
 
           set(
             { socketResetTimer: resetTimer },
             false,
             "socket/assign-reset-timer"
           );
+        } else if (reason === "transport close") {
+          // NOTE: The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G)
+          const resetTimer = setTimeout(() => {
+            if (isUserInRoom) {
+              leaveRoom();
+              set({ forcedRoomExitReason: "tcp-socket-prolonged-disconnect" });
+            }
+          }, 3 * 60 * 1000);
+
+          set(
+            { socketResetTimer: resetTimer },
+            false,
+            "socket/assign-reset-timer"
+          );
+        } else if (reason === "transport error" || reason === "parse error") {
+          if (isUserInRoom) {
+            leaveRoom();
+            set({ forcedRoomExitReason: "tcp-socket-prolonged-disconnect" });
+          }
         }
       });
       //#endregion
@@ -114,18 +133,18 @@ export const createSocketSlice: StateCreator<
           attemptToRestartIce,
           sendTransport,
           recvTransport,
-          isUserInRoom
-          // socketResetTimer
+          isUserInRoom,
+          socketResetTimer
         } = get();
 
-        // if (socketResetTimer !== null) {
-        //   clearTimeout(socketResetTimer);
-        //   set(
-        //     { socketResetTimer: null },
-        //     false,
-        //     "socket/initialize-reset-timer"
-        //   );
-        // }
+        if (socketResetTimer !== null) {
+          clearTimeout(socketResetTimer);
+          set(
+            { socketResetTimer: null },
+            false,
+            "socket/initialize-reset-timer"
+          );
+        }
 
         //#region Scribble
         // 1. firefox 방어가 되는지 확인해야함. 아니면 시발 firefox쓰지 말라고해버리기...
