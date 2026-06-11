@@ -49,6 +49,7 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
       'http://localhost:4173',
       'https://pomodoro-yhs.vercel.app',
       'https://pomodoro-4sfpbz4x8-yhs-projects-00a441cb.vercel.app',
+      'https://pomodoro-git-feature-integrate-webrtc-yhs-projects-00a441cb.vercel.app',
       'http://localhost:3001',
       'http://localhost:3000'
     ],
