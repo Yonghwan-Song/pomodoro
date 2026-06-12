@@ -863,6 +863,8 @@ export class GroupStudyManagementService
 
       const roomId = peer.room?.id;
       if (roomId) {
+        // ASSUMPTION: (FIXED) I think sockets in each device are not in the same room after reconnection. The room actually they are staying is the same in terms of UX and Room entity calss instance.
+        // However, in terms of socket.io's room feature, they are not in the same room.
         clientSocket.to(roomId).emit(EventNames.PRODUCER_CLOSED, {
           producerId: targetProducerId
         });

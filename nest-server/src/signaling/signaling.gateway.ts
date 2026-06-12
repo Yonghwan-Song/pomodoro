@@ -124,7 +124,7 @@ export class SignalingGateway
     if (existingPeer) {
       // NOTE: reconnection
       console.log(
-        `[SignalingGateway:handleConnection] Reconnect detected for uid=${uid}. ` +
+        `Reconnect detected for uid=${uid}. ` +
         `Reusing existing peer and updating socket to ${clientSocket.id}.`
       );
 
@@ -141,13 +141,12 @@ export class SignalingGateway
       );
 
       if (existingPeer.room !== null) {
+        clientSocket.join(existingPeer.room.id)
+
         const dataToSync =
           this.groupStudyManagementService.prepareDataForSyncOfPeerReconnected(
-            // TODO: I need to add data about chat history to the retVal.
-            // 1. First I need to
             uid
           );
-
         dataToSync !== undefined &&
           clientSocket.emit(
             EventNames.SYNC_DATA_TO_PEER_RECONNECTED,

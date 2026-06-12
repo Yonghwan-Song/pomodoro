@@ -284,21 +284,15 @@ export const createTransportSlice: StateCreator<
       console.log(
         `${kind} transport ${transport.id} is starting ICE RESTART ATTEMPT inside attemptIceRestart()`
       );
-      //#region  소켓 조건은 밖으로 빼겠다.
-      // if (
-      //   !socket ||
-      //   isSocketConnected === false || // DECISION: 이제 buffer에 의한 자동 재전송은 포기하는 것.
-      //   transport.closed ||
-      //   transport.connectionState === "connected"
-      // ) {
-      //   return;
-      // }
-      //#endregion
+
       if (transport.closed || transport.connectionState === "connected") {
+        console.log(`[${kind}] attemptIceRestart() is early returned due to the following values`)
+        console.log(`[${kind}] transport.closed`, transport.closed)
+        console.log(`[${kind}] transport.connectionState`, transport.connectionState)
+
         return;
       }
 
-      //
       if (iceRestartAttemptCount[kind] >= MAX_ICE_RESTART_ATTEMPTS) {
         console.log(
           `${kind} transport ice restart attempt count -> ${iceRestartAttemptCount[kind]}`
@@ -328,11 +322,12 @@ export const createTransportSlice: StateCreator<
             { kind },
             async (ack: AckResponse<{ iceParameters: IceParameters }>) => {
               console.log(
-                `AckResponse has been received for ${kind} transport`
+                `[${kind}] transport AckResponse has been received.`
               );
               console.log(
-                `${kind} transport ${transport.id} RESTART_ICE_ACK_CB is invoked with res ${ack}`
+                `[${kind}] transport ${transport.id} RESTART_ICE_ACK_CB is invoked with res ${ack}`
               );
+
               if (ack.success && ack.data?.iceParameters) {
                 // QQQ: ack is undefined -> both in FF and vivaldi
                 try {
@@ -344,9 +339,10 @@ export const createTransportSlice: StateCreator<
                     // For example, additional RESTART_ICE message, which was actually unnecessary, might have been sent before one arrived because of abrupt socket connection up and down again.
                     // In that case, this callback is supposed to be invoked
                     console.log(
-                      "transport has been recovered already, inside RESTART_ICE Ack Callback"
+                      `[${kind}] transport has been recovered already, inside RESTART_ICE Ack Callback`
                     );
                   } else {
+                    console.log(`[${kind}] about to call restartIce`)
                     await transport.restartIce({
                       iceParameters: ack.data.iceParameters
                     });
@@ -374,7 +370,7 @@ export const createTransportSlice: StateCreator<
                             get().isSocketConnected !== false
                           )
                             console.log(
-                              "Right before attempting to restart ICE inside attemptToRestartIce itself (for FF)"
+                              `[${kind}] Right before attempting to restart ICE inside attemptToRestartIce itself (for FF)`
                             );
                           get().attemptToRestartIce(transport, kind, socket);
                         }
@@ -387,12 +383,12 @@ export const createTransportSlice: StateCreator<
                   }
                 } catch (e) {
                   console.error(
-                    "restartIce function call with the new iceParameters failed",
+                    `[${kind}] restartIce function call with the new iceParameters failed`,
                     e
                   );
                 }
               } else if (!ack.success) {
-                console.warn("ack error", ack.error);
+                console.warn(`[${kind}] ack error`, ack.error);
               }
             }
           );
