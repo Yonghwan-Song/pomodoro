@@ -40,31 +40,49 @@ export const createTransportSlice: StateCreator<
       }
     },
     initializeTransportSliceStates: () => {
-      set({
-        sendTransport: null,
-        recvTransport: null,
-        isSendTransportReady: false,
-        isRecvTransportReady: false,
-        isCreatingTransports: false,
-        iceRestartAttemptCount: {
-          send: 0,
-          recv: 0
-        },
-        timersForIceRestartAttempt: {
-          send: null,
-          recv: null
-        },
-        iceSignalingStatus: {
-          send: {
-            isIceRestartEmitted: false,
-            isAckResponseNotReceived: false
-          },
-          recv: {
-            isIceRestartEmitted: false,
-            isAckResponseNotReceived: false
-          }
+      const {
+        sendTransport,
+        recvTransport,
+      } = get();     // TODO: transport close하고 초기화 해야하는거 아닌가? device도 그렇고 다른 webRTC와 관계있는 객체들은 다 close하는 방법이 있지 않나
+
+      // 2. 리스너 제거 + close, send/recv 둘 다
+      [sendTransport, recvTransport].forEach((transport) => {
+        if (!transport) return;
+        transport.removeAllListeners();
+        if (!transport.closed) {
+          transport.close();
         }
-      }, false, "transport/resetToInitialValues")
+      });
+
+      set(
+        {
+          sendTransport: null,
+          recvTransport: null,
+          isSendTransportReady: false,
+          isRecvTransportReady: false,
+          isCreatingTransports: false,
+          iceRestartAttemptCount: {
+            send: 0,
+            recv: 0
+          },
+          timersForIceRestartAttempt: {
+            send: null,
+            recv: null
+          },
+          iceSignalingStatus: {
+            send: {
+              isIceRestartEmitted: false,
+              isAckResponseNotReceived: false
+            },
+            recv: {
+              isIceRestartEmitted: false,
+              isAckResponseNotReceived: false
+            }
+          }
+        },
+        false,
+        "transport/resetToInitialValues"
+      );
     },
     // NOTE: inside joinRoom
     createTransports: () => {
@@ -78,26 +96,57 @@ export const createTransportSlice: StateCreator<
         isCreatingTransports
       } = get();
 
+      //#region Early Fucking Returns
       if (
         !socket ||
         !device ||
         !isDeviceLoaded ||
         !mediaStream ||
         isCreatingTransports
-      )
+      ) {
+        console.log(
+          `createTransports() is early returned due to one of these values`
+        );
+        console.log("!socket", !socket);
+        console.log("!device", !device);
+        console.log("!isDeviceLoaded", !isDeviceLoaded);
+        console.log("!mediaStream", !mediaStream);
+        // console.log('isCreatingTransports', isCreatingTransports) // 여기서 걸려라~~
         return;
+      }
 
-      if (isSendTransportReady && isRecvTransportReady) return; // 사실 이 함수 자체는 send와 recv transport을 한번에 생성하도록 하고있는데,
+      if (isSendTransportReady && isRecvTransportReady) {
+        console.log(
+          `createTransports() is early returned due to one of these values`
+        );
+        console.log("isSendTransportReady", isSendTransportReady);
+        console.log("isRecvTransportReady", isRecvTransportReady);
+        return;
+      }
+
+      // 사실 이 함수 자체는 send와 recv transport을 한번에 생성하도록 하고있는데,
       // 둘중에 하나만 생성되고 하나는 생성 실패하는 경우가 있을지도 모른다는 가정이 지금 여기에 들어가있는듯.... 내가 안했는데..
       // T & T인 경우에만 early return되니까... 하나라도 false라면 아래에서 해당되는 것을 생성해버림.
       // 그렇다면 뭔가 중복생성되는 경우는 없나? -> 없음. 아래에 딱 그 두개의 작업만 이루어진다.
 
-      set({ isCreatingTransports: true });
+      set({ isCreatingTransports: true }); // 언제 false로 돌려놓지?... 그리고 왜 필요한지도 잘 모르겠다. 어차피 이 함수는 한번만 호출되는데?
+
+      //#endregion
 
       // Send Transport
       if (!isSendTransportReady) {
         socket.emit(EventNames.CREATE_SEND_TRANSPORT);
+        // QQQ: 왜 once? 왜 안적어놨어? on으로 바꿔도 되는지 모르잖아......................................................
+        // 존나 많이 호출되는데 왜그런지 모르겠음. 걍 once로 해보고 다시 로그 찍어보겠음
+        // TODO: 이전에 isCreatingTransports 때문에 early return되었다고 로그가 떴는데도 씨이발 아래의 once함수의 cb의 console.log가 실행되었다. remove를 해줘야한다는거야?
+        // ㅠㅠㅠㅠ disconnected일때 off를 해저야하나 이런게 아니라 우리의 의도에 따라 해줘야하는거라고 이 씨이...발아.. 방에서 나갔다가 다시 들어올 때마다 씨발 socket.once를 해주면 그게 존나 중복되니까 문제가 생기지 않을까?
+        // 그게 직접적인 이번 에러의 원인이 아닐지라도 entropy를 줄이라며.. 결국 이것도 joinRoom의 과정에 포함되니까 leaveRoom하면 off할꺼야 그리고 적어 off한다고
         socket.once(EventNames.SEND_TRANSPORT_CREATED, (options: any) => {
+          console.log(
+            "inside socket.on(EventNames.SEND_TRANSPORT_CREATED, options",
+            options
+          );
+
           const transport = device.createSendTransport(options);
           //addTransportHandlers(transport, "send");
           // TODO: 여기에 그냥 직접 on을 호출
@@ -155,11 +204,13 @@ export const createTransportSlice: StateCreator<
               console.log(
                 "inside send transport's connectionstatechange - failed"
               );
-              if (socket !== null && get().isSocketConnected !== false)
-                console.log(
-                  "Right before attempting to restart ICE inside connectionstatechange handler"
-                );
-              get().attemptToRestartIce(transport, "send", socket);
+
+              // if (socket !== null && get().isSocketConnected !== false)
+              console.log(
+                "Right before attempting to restart ICE inside connectionstatechange handler"
+              );
+
+              get().attemptToRestartIceWithGuards(transport, "send", socket); // IMPT: 내부에서 socket과 tranport를 이용해서 guard한다.
             }
 
             // TODO: 이것들은... 뭔지 알아보고, 필요하면 뭐라도 작성해보기?
@@ -196,7 +247,7 @@ export const createTransportSlice: StateCreator<
               (ack: AckResponse<any>) => {
                 ack.success
                   ? cb({ id: ack.data.producerId })
-                  : err(new Error(ack.error));
+                  : err(new Error(ack.error)); // ERROR: Produce failed Error: Send transport mismatch at Socket2.<anonymous> <-- 이딴것도 뜬다 씨이발..
               }
             );
           });
@@ -207,9 +258,15 @@ export const createTransportSlice: StateCreator<
       }
 
       // Recv Transport
+      console.log("isRecvTransportReady", isRecvTransportReady);
       if (!isRecvTransportReady) {
         socket.emit(EventNames.CREATE_RECV_TRANSPORT);
+        // QQQ: 왜 once? 왜 안적어놨어?
         socket.once(EventNames.RECV_TRANSPORT_CREATED, (options: any) => {
+          console.log(
+            "inside socket.on(EventNames.RECV_TRANSPORT_CREATED, options",
+            options
+          );
           const transport = device.createRecvTransport(options);
 
           transport.on("connectionstatechange", (state) => {
@@ -242,11 +299,13 @@ export const createTransportSlice: StateCreator<
               console.log(
                 "inside recv transport's connectionstatechange - failed"
               );
-              if (socket !== null && get().isSocketConnected !== false)
-                console.log(
-                  "Right before attempting to restart ICE inside connectionstatechange handler"
-                );
-              get().attemptToRestartIce(transport, "recv", socket);
+
+              // if (socket !== null && get().isSocketConnected !== false)
+              console.log(
+                "Right before attempting to restart ICE inside connectionstatechange handler"
+              );
+
+              get().attemptToRestartIceWithGuards(transport, "recv", socket);
             }
 
             // TODO: 이것들은... 뭔지 알아보고, 필요하면 뭐라도 작성해보기?
@@ -263,6 +322,10 @@ export const createTransportSlice: StateCreator<
           });
 
           transport.on("connect", ({ dtlsParameters }, cb, err) => {
+            console.log(
+              "inside transport's connect event listener, dtlsParameters",
+              dtlsParameters
+            );
             get().socket?.emit(
               EventNames.CONNECT_RECV_TRANSPORT,
               { transportId: transport.id, dtlsParameters },
@@ -277,7 +340,8 @@ export const createTransportSlice: StateCreator<
         });
       }
     },
-    attemptToRestartIce: (transport, kind, socket) => {
+
+    attemptToRestartIceWithGuards: (transport, kind, socket) => {
       const { iceRestartAttemptCount, leaveRoom, timersForIceRestartAttempt } =
         get();
 
@@ -285,14 +349,30 @@ export const createTransportSlice: StateCreator<
         `${kind} transport ${transport.id} is starting ICE RESTART ATTEMPT inside attemptIceRestart()`
       );
 
+      //#region Early Returns - transport, socket, max attempts
+      if (socket === null || !socket.connected) {
+        console.log(
+          `socket is not ready for ice restart socket -> ${socket}, socket.connected -> ${socket.connected}`
+        );
+        return;
+      }
+
+      // QQQ: connecting은 무엇이고, guard해야함?
+      // NOTE: transport.closed === true 는 발생하지 않는다 왜냐하면, 지금 commit시점에서 유일하게 transport.close()를 호출하는 경우는 leaveRoom에서인데, 애초에 close하고 바로 transport state에 null값을 할당하고 있음. 그러니까 다시 말하자면, transport을 재활용하고 있지 않기 때문.
       if (transport.closed || transport.connectionState === "connected") {
-        console.log(`[${kind}] attemptIceRestart() is early returned due to the following values`)
-        console.log(`[${kind}] transport.closed`, transport.closed)
-        console.log(`[${kind}] transport.connectionState`, transport.connectionState)
+        console.log(
+          `[${kind}] attemptIceRestart() is early returned due to the following values`
+        );
+        console.log(`[${kind}] transport.closed`, transport.closed);
+        console.log(
+          `[${kind}] transport.connectionState`,
+          transport.connectionState
+        );
 
         return;
       }
 
+      console.log(`current iceRestartAttemptCount[${kind}] - `, iceRestartAttemptCount[kind])
       if (iceRestartAttemptCount[kind] >= MAX_ICE_RESTART_ATTEMPTS) {
         console.log(
           `${kind} transport ice restart attempt count -> ${iceRestartAttemptCount[kind]}`
@@ -301,6 +381,7 @@ export const createTransportSlice: StateCreator<
         leaveRoom();
         return;
       }
+      //#endregion
 
       set((state) => {
         const newVal = state.iceRestartAttemptCount[kind] + 1;
@@ -321,9 +402,7 @@ export const createTransportSlice: StateCreator<
             EventNames.RESTART_ICE,
             { kind },
             async (ack: AckResponse<{ iceParameters: IceParameters }>) => {
-              console.log(
-                `[${kind}] transport AckResponse has been received.`
-              );
+              console.log(`[${kind}] transport AckResponse has been received.`);
               console.log(
                 `[${kind}] transport ${transport.id} RESTART_ICE_ACK_CB is invoked with res ${ack}`
               );
@@ -342,7 +421,7 @@ export const createTransportSlice: StateCreator<
                       `[${kind}] transport has been recovered already, inside RESTART_ICE Ack Callback`
                     );
                   } else {
-                    console.log(`[${kind}] about to call restartIce`)
+                    console.log(`[${kind}] about to call restartIce`);
                     await transport.restartIce({
                       iceParameters: ack.data.iceParameters
                     });
@@ -372,7 +451,11 @@ export const createTransportSlice: StateCreator<
                             console.log(
                               `[${kind}] Right before attempting to restart ICE inside attemptToRestartIce itself (for FF)`
                             );
-                          get().attemptToRestartIce(transport, kind, socket);
+                          get().attemptToRestartIceWithGuards(
+                            transport,
+                            kind,
+                            socket
+                          );
                         }
                       }, 10000); // 최초에 한번 호출되는 것은 무조건 socket연결성을 무시하고 호출된다. 그게 맞아. 다만 이 함수 내부에서 판단해주는거지.
 
@@ -402,6 +485,7 @@ export const createTransportSlice: StateCreator<
           state.iceSignalingStatus[kind].isIceRestartEmitted = false;
         });
       }
+      //#endregion
     }
   };
 };

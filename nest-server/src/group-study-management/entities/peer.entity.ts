@@ -113,6 +113,7 @@ export class Peer {
   logProperties(prefix = '') {
     const tag = prefix ? `${prefix} ` : '';
     console.log(`${tag}Peer [${this.id}]:`, {
+      currentSocketId: this.currentSocketId,
       room: this.room?.id ?? null,
       rtpCapabilities: this.rtpCapabilities ? 'set' : 'not set',
       sendTransport: this.sendTransport

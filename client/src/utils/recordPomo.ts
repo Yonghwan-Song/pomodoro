@@ -86,9 +86,9 @@ export async function recordPomo(
     // 내가 방에 들어와 있는 상태라면, 다른 사람들에게 내 새로운 집중 시간을 Broadcast 해달라고 서버에 알립니다.
     // 방에 들어가 있지 않은 상태여도, 언제 방에 들어갈지 모르니까 todayTotalDuration는 상시 업데이트를 해놓아야함.
     const socket = useConnectionStore.getState().socket;
-    const isRoomJoined = useConnectionStore.getState().isUserInRoom;
+    const isUserInRoom = useConnectionStore.getState().isUserInRoom;
 
-    if (socket && isRoomJoined) {
+    if (socket && isUserInRoom) {
       socket.emit(EventNames.SYNC_MY_TODAY_TOTAL_DURATION, {
         todayTotalDuration: updatedTodayTotalDuration
       });

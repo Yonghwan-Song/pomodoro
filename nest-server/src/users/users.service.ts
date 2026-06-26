@@ -35,7 +35,7 @@ export class UsersService {
     private todoistTaskTrackingModel: Model<TodoistTaskTracking>,
     @InjectModel(CycleSetting.name)
     private cycleSettingModel: Model<CycleSetting>
-  ) {}
+  ) { }
 
   async create(
     createUserDto: CreateUserDto,
@@ -107,10 +107,10 @@ export class UsersService {
       }
     }
 
-    console.log('A user doc by getUserInfo() in the UsersService class', {
-      ...userInfoWithoutAccessToken,
-      todoistTasks
-    });
+    // console.log('A user doc by getUserInfo() in the UsersService class', {
+    //   ...userInfoWithoutAccessToken,
+    //   todoistTasks
+    // });
 
     return {
       ...userInfoWithoutAccessToken,

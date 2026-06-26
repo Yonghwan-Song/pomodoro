@@ -48,7 +48,8 @@ function App() {
       }
     );
     console.log("[App] calling navigate('/group-study', { replace: true })");
-    navigate("/group-study", { replace: true });
+    // navigate("/group-study", { replace: true });
+    navigate("/timer", { replace: true });
     const alertTimer = window.setTimeout(() => {
       alert(
         "The network connection did not recover in time, so you were removed from the room."

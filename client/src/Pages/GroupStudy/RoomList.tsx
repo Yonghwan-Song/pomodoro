@@ -15,7 +15,7 @@ export function RoomList() {
   const connected = useConnectionStore((s) => s.isSocketConnected);
   const obtainStream = useConnectionStore((s) => s.obtainStream);
   const currentRoomId = useConnectionStore((s) => s.currentRoomId);
-  const isRoomJoined = useConnectionStore((s) => s.isUserInRoom);
+  const isUserInRoom = useConnectionStore((s) => s.isUserInRoom);
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<RoomInfo[]>([]);
   const [newRoomName, setNewRoomName] = useState("");
@@ -24,10 +24,10 @@ export function RoomList() {
 
   // 이미 방에 참가 중이면 해당 방으로 redirect
   useEffect(() => {
-    if (isRoomJoined && currentRoomId) {
+    if (isUserInRoom && currentRoomId) {
       navigate(`room/${currentRoomId}`);
     }
-  }, [isRoomJoined, currentRoomId, navigate]);
+  }, [isUserInRoom, currentRoomId, navigate]);
 
   // 방 목록 조회
   useEffect(() => {
@@ -57,7 +57,7 @@ export function RoomList() {
         setIsCreating(false);
         if (response.success && response.data) {
           // 생성 후 바로 입장
-          joinRoom(response.data.roomId);
+          enterRoom(response.data.roomId);
         } else {
           console.error("Failed to create room:", response.error);
           alert("방 생성에 실패했습니다.");
@@ -67,7 +67,7 @@ export function RoomList() {
   };
 
   // 방 참가 - 먼저 카메라 권한을 얻은 후 이동
-  const joinRoom = async (roomId: string) => {
+  const enterRoom = async (roomId: string) => {
     setIsJoining(true);
     try {
       const stream = await obtainStream();
@@ -171,7 +171,7 @@ export function RoomList() {
               </div>
               <button
                 // room.id만 어떻게 제대로 DB에서 가져와서 뿌려주기만 하면 될지도?...
-                onClick={() => joinRoom(room.id)}
+                onClick={() => enterRoom(room.id)}
                 disabled={isJoining}
                 style={{
                   padding: "6px 12px",

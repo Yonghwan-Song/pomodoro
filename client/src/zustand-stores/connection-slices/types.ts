@@ -63,13 +63,13 @@ export interface RoomSliceActions {
   /**
    * ! joinRoom과 leaveRoom에 개입되는 states -> 뭔가.... transport, socket, producer, consumer처럼 각각 혹은 이것들의 작은 조합보다는 조금더 큰 종합적인 관점의 어떤 조합들이 개입될듯. :::...
    * * joinRoom: socket, createTransports(), boundedPomoInfoStore's todayTotalDuration,
-   * *           isRoomJoined, currentRoomId, producerList, peerNicknames, peerTodayTotalDurations
+   * *           isUserInRoom, currentRoomId, producerList, peerNicknames, peerTodayTotalDurations
    * * leaveRoom:
    */
   initializeRoomSliceStates: () => void;
   // biggest ones
   joinRoom: (roomId: string, onError?: (error: string) => void) => void;
-  leaveRoom: () => void;
+  leaveRoom: (socketEmitFlag?: boolean) => void;
   removePeerFromRoomForLongDisconnection?: () => void; //
 
   // detailed ones
@@ -99,9 +99,8 @@ export interface SocketSliceStates {
   socketResetTimer: number | null;
 }
 export interface SocketSliceActions {
-
   initializeSocketSliceStates: () => void;
-  connect: () => Promise<void>;
+  connect: (caller: string) => Promise<void>;
   disconnect: () => void;
   informLogout: () => void;
 }
@@ -161,7 +160,7 @@ export interface TransportSliceStates {
 export interface TransportSliceActions {
   initializeTransportSliceStates: () => void;
   createTransports: () => void;
-  attemptToRestartIce: (
+  attemptToRestartIceWithGuards: (
     transport: mediasoupTypes.Transport,
     kind: "send" | "recv",
     socket: Socket

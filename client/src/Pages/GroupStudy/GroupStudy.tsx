@@ -27,10 +27,10 @@ export default function GroupStudy() {
   // Connect -> failed -> and what?... keep trying?...
   // The fact that a user is removed from the room means that the maximum attemps to reconnect have been done.
   // I wonder if the socket is discarded after the failure of all the attempts
-  console.log("right before the connect() useEffect");
+  // console.log("right before the connect() useEffect");
   useEffect(() => {
-    console.log("in the connect() useEffect");
-    connect();
+    // console.log("in the connect() useEffect");
+    connect("GroupStudy Component");
   }, [connect]);
 
   useEffect(() => {
@@ -49,9 +49,8 @@ export default function GroupStudy() {
     async function fetchTodayTotal() {
       try {
         const today = new Date();
-        const todayDateString = `${
-          today.getMonth() + 1
-        }/${today.getDate()}/${today.getFullYear()}`;
+        const todayDateString = `${today.getMonth() + 1
+          }/${today.getDate()}/${today.getFullYear()}`;
 
         // 서버에 오늘 날짜를 보내서 "오늘 하루 동안 집중한 총 시간(분)"을 가져옵니다.
         // GroupStudy 라우트에 진입할 때 딱 한 번만 호출하여 불필요한 API 요청을 줄입니다.

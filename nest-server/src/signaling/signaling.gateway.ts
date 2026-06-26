@@ -16,7 +16,8 @@ import type {
   AckResponse,
   CommonPreferredLayersForAllConsumersData,
   ConsumerOptionsExtended,
-  JOIN_ROOM_DATA
+  JOIN_ROOM_DATA,
+  PeerStatus
 } from 'src/common/webrtc/payload-related';
 import type {
   IceParameters,
@@ -55,6 +56,8 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
     ],
     credentials: true
   }
+  // transports: ['websocket'] // 👈 서버도 웹소켓 프로토콜만 사용하도록 제한
+  // path: '/socket.io' // 👈 명시적으로 경로 고정 (글로벌 프리픽스 간섭 무시)
 })
 export class SignalingGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -104,7 +107,8 @@ export class SignalingGateway
    *    sudo iptables -D INPUT -p tcp -i lo --sport <PORT> -j DROP
    *    sudo iptables -D OUTPUT -p tcp -o lo --dport <PORT> -j DROP
    */
-  handleConnection(clientSocket: Socket) {
+  handleConnection(clientSocket: Socket, ...args: any[]) {
+    console.log('Other args: any[] in handleConnection', args);
     const uid = clientSocket.data.uid as string;
 
     const clientPort = clientSocket.request.socket.remotePort;
@@ -120,7 +124,7 @@ export class SignalingGateway
     // Otherwise, this is a fresh connection — create a new Peer.
     const existingPeer = this.groupStudyManagementService.getPeer(uid);
 
-    // RECONNECTION
+    // NOTE: 이 함수의 입장에서 RECONNECTION
     if (existingPeer) {
       // NOTE: reconnection
       console.log(
@@ -141,7 +145,10 @@ export class SignalingGateway
       );
 
       if (existingPeer.room !== null) {
-        clientSocket.join(existingPeer.room.id)
+        console.log(
+          `The peer ${existingPeer.id} was  in the room - prepare for data sync`
+        );
+        clientSocket.join(existingPeer.room.id);
 
         const dataToSync =
           this.groupStudyManagementService.prepareDataForSyncOfPeerReconnected(
@@ -157,6 +164,7 @@ export class SignalingGateway
           `The peer ${existingPeer.id} was not joined in any room - no need for data sync`
         );
       }
+      this.logConnectedSockets('reconnect');
     } else {
       // NEW CONNECTION
       console.log('new peer just entered the lobby', uid);
@@ -207,132 +215,269 @@ export class SignalingGateway
       .disconnectReason as DisconnectReason; // Docs -> https://socket.io/docs/v4/server-socket-instance/#disconnect
     const peer: Peer | undefined =
       this.groupStudyManagementService.getPeer(uid);
-    console.log('The peer just disconnected', peer);
+
+    // 재연결로 이미 대체된 구 소켓의 disconnect는 무시
+    if (peer && clientSocket.id !== peer.currentSocketId) {
+      console.log(
+        `[SignalingGateway:handleDisconnect] Ignoring stale disconnect: ` +
+        `socket=${clientSocket.id}, current=${peer.currentSocketId}, ` +
+        `uid=${uid}, reason=${disconnectReason}`
+      );
+      this.logConnectedSockets('stale-disconnect-ignored');
+      return;
+    }
 
     if (peer) {
+      console.log('The peer just disconnected', peer.id);
       const room: Room | null = peer.room;
-
       // DESIGN: 두가지 전제/조건하에서 아래의 block이 logout기능을 할 수 있음. 하나라도 깨지면, event matching 방식으로 바꾼 후 event handler가 로직을 담당하도록 해야함.
       // 그 전제는 내가 깰 수도 있는것이고, socket.io의 api update에 의해서 깨질 수도 있는 것이다. 후자는 나의 통제를 벗어난다.
       // 그렇다면 그 확률에 맡길것인가? (그런데 만약 그것이 best practice라면.. ?)
       // 1. 'client namespace disconnect'는 오로지 client side의 socket의 disconnect() 호출에 의해서만 촉발된다.
       //     (https://socket.io/docs/v4/server-socket-instance/#disconnect)
       // 2. 나는 client side 코드에서, 오로지 logout할때만 이 socket의 disconnect()를 호출한다.
-      if (disconnectReason === 'client namespace disconnect') {
-        console.log('disconnectReason is client namespace disconnect');
-        console.log('about to call closeTransports on peer', peer.id);
+      switch (disconnectReason) {
+        case 'client namespace disconnect':
+          console.log('disconnectReason is client namespace disconnect');
+          console.log('about to call closeTransports on peer', peer.id);
 
-        this.groupStudyManagementService.leaveRoom(clientSocket);
-        this.groupStudyManagementService.removePeerFromPeerMap(uid);
-      } else if (disconnectReason === 'ping timeout') {
-        // NOTE: Other cases; for example, NETWORK DISCONNECTION -> "transport close"
-        // QQQ: What happens if the reasons for the network down (which we simulate currently) and browser close, client app reload are the same as transport close?
-        // 어떻게 구분하지? -> "transport error" | "transport close" | "forced close" | "ping timeout" | "parse error" | "server shutting down" | "forced server close" | "client namespace disconnect" | "server namespace disconnect"
-        // TODO: 위의 질문에 대한 대답 -> browser close 했을때, transport close였음. 그런데 지금 ping timeout 테스트 하기도 애매하고 하니까, 도커 도입하고 나서 생각해보겠음.
-        // DECISION: 그리고 사실 브라우저 닫거나 새로고침도 그냥 똑같이 30분 있다가 clean up해도 상관 없는거 아닌가?
-        // 예를 들면, 실제로 인터넷에 문제가 있어서 끊긴 경우 말고도, 브라우저 실수로 닫을 수도 있고, 어떻게 잘못해서 컴퓨터가 꺼지거나 할수도 있고,
-        // IMPT: 특히, 절전모드로 진입하는 경우도 transport close같은데... 그런 경우도 뭐.. 30분 유예를 주는것 나쁘지 않을듯...
-        // 절전모드 테스트는 심지어 실제 cloud에 올리고 나서 테스트 가능할듯. :::...
-        console.log(
-          `Socket ${clientSocket.id} (uid=${uid}) disconnected with reason="${disconnectReason}" - [SignalingGateway:handleDisconnect]`
-        );
+          setTimeout(async () => {
+            await this.groupStudyManagementService.leaveRoom(clientSocket);
+            this.groupStudyManagementService.removePeerFromPeerMap(uid);
+          }, 0);
+          break;
 
-        if (room === null || room === undefined) {
-          // TODO: check if room is reset to null when a peer leaving his room.
-          // This means the disconnected peer is in the lobby
-          console.log(
-            `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
-            `Preserving only peer state for future reconnection.`
-          );
-          console.log('existingPeer.room', room); // null
-
-          /** NOTE: Peer at the lobby.
-           *  If the peer is not reconnected for some amount of time, he should be removed from the lobby.
-           *  That means the peerMap is edited. I don't need to care about how client side handles this disconnection in the lobby.
-           *  JUst... pick x mins.. For example,
-           *  It seems that the 1 hour grace time does not benefit a client because.. lobby is just a lobby.
-           *  The data kept during the period does not have much impact on UX in my opinion unlike the usecase of users disconnected during group study session.
-           *  Just... be aware that the benefit from this disconnecting users completely, which
-           *  must be done!, is for server memory.
-           *  1. Create a method to remove a peer from the peerMap. 2. call it inside setTimeout with... 30*60*1000
-           */
-          console.log('about to call setTimeout in handleDisconnect()');
-          peer.removalTimer = setTimeout(
-            () => {
-              console.log(
-                '------------------------about to remove peer - ',
-                uid
-              );
-              this.groupStudyManagementService.removePeerFromPeerMap(uid);
-            },
-            30 * 60 * 1000
-          );
-        } else {
-          // Peer in a room
-          console.log('existingPeer.room.id', peer.room.id);
-          console.log(
-            `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
-            `Preserving peer and room state for future reconnection.`
-          );
-
-          //#region comments
-          /** Peer was in a group study session when he was disconnected.
-           * What happens if udp and tcp are disconnected and none of them are restored?
-           *  - Client Side: (tcp, udp) connections
-           *      1. (down, up) Even the Max ICE Restart Attempt Count will not increase if tcp is not restored, causing zero RESTART ICE emission.
-           *      2. (up, down) If tcp is restored but udp is not, the variable will hit MAX~COUNT and then LEAVE_ROOM event is going to be handled in this SignalingGateway.
-           *        - Since the tcp connection is up though, it is reasonable to keep the user in the peersMap in the server and let him stay at the lobby.
-           *      3. (down, down) Just... we need to clean this peer up from our room and lobby too!
-           *      4. (up, up) No prob - 최소 한번은 동시에 up, up인 경우가 발생해야 재연결이 되었었다고 볼 수 있다. 아니면 계속 (재)연결 되어있거나....
-           *
-           * Max count is reached -> user is removed from the room: only item 2 in the list above
-           * DESIGN: What about case 1 and 3? How should we handle these? <-- Both are problematic because tcp is not restored.
-           *  - case 1: 딱 한번 증가함. 최초 failed handling에서 attemptToRestartIce()를 호출하므로. (attemptToRestartIce()의 호출 횟수만큼 count는 증가)
-           *  - case 3: 이것은 그냥 인터넷이 나가버린거잖아....
-           * !그러니까 결국 tcp가 down이 x min만큼 지속되면 client쪽에서도 뭔가 조치를 취해야한다. //?(노트북 뚜껑 닫거나, 절전모드 이런거랑은 구분 해야하는데... 어떻게 하지?)
-           * tcp가 한번이라도 재연결 되어서 ICE negotitation이 일어나지 않는 한, 답이 없다. 연속이 아니더라도 된다.. udp가 up되었다고 판단할 수 있는
-           * udp가 up되었다고 internet이 up된것은 아니지만, internet이 up되었다면 udp는 무조건 up이 된것이라고 볼 수 있다. 라고 우리가 가정한다면,
-           * internet이 up되었다는 WebAPI를 활용한 어떤 인지 방법이 존재할 것이고, tcp가 딱 한번 잠시 연결되었다가 끊겼다고 가정했을때, 그 연결당시에 ICE params인가? (ufrag와 pwd)를
-           * 우리쪽으로 가져올 수만 있다면(client side로), 그것을 keep해두었다가 방금전에 말한 특정한 event에 반응하여 udp up을 가정할수 있을듯,
-           * * 그런데 udp가 up인지는 결국 packet을 던져봐야 알 수 있다고 하는데, 반면에 down인지는 그냥 인터넷 연결상태만 확인하면 되는거 아니야? 인터넷이 연결이 안되었늗네 어떻게
-           * * STUN Check packet이 서버쪽에 도달하고 또 뭔가를 받아서 우리가 up이라고 판단할 수 있느냐 이말이지. 그러니까..
-           * TODO: 위의 초록색에서 언급한 부분은 실제 서버를 배포한 후에 기존 방식 작동이 통과하고 나면, 그다음에 더 효과적인 방법으로서 시도 해보든 말든 하면 된다. :::...
-           *
-           */
-          /** 절전모드 - docker 도입 하기전에 대략 상상으로 전략 짜보기.
-           * ping timeout이 언제 발생할지 뭐 그런거에 대한 생각 하지 말고, 그냥 30분 지나면 꺼지게 해야함. 서버쪽에서도 30분으로 해놓았는데,
-           * 이게 동일하지는 않지만 뭐 언저리에서 비슷한 시간대에 끊길테니까 packet이 왔다 갔다할때 걸리는 그런 시간까지 고려하지는 못할듯 (아무튼 그런게 있다고 했음).
-           */
+        // TODO: setTimeout에 room을 넣어서 그 안에서 조건을 거시기 하면 되는거 아니야? 주석 존나많고 entropy개증가함.
+        case 'ping timeout':
+          //#region 주저리
+          // NOTE: Other cases; for example, NETWORK DISCONNECTION -> "transport close"
+          // QQQ: What happens if the reasons for the network down (which we simulate currently) and browser close, client app reload are the same as transport close?
+          // 어떻게 구분하지? -> "transport error" | "transport close" | "forced close" | "ping timeout" | "parse error" | "server shutting down" | "forced server close" | "client namespace disconnect" | "server namespace disconnect"
+          // TODO: 위의 질문에 대한 대답 -> browser close 했을때, transport close였음. 그런데 지금 ping timeout 테스트 하기도 애매하고 하니까, 도커 도입하고 나서 생각해보겠음.
+          // DECISION: 그리고 사실 브라우저 닫거나 새로고침도 그냥 똑같이 30분 있다가 clean up해도 상관 없는거 아닌가?
+          // 예를 들면, 실제로 인터넷에 문제가 있어서 끊긴 경우 말고도, 브라우저 실수로 닫을 수도 있고, 어떻게 잘못해서 컴퓨터가 꺼지거나 할수도 있고,
+          // IMPT: 특히, 절전모드로 진입하는 경우도 transport close같은데... 그런 경우도 뭐.. 30분 유예를 주는것 나쁘지 않을듯...
+          // 절전모드 테스트는 심지어 실제 cloud에 올리고 나서 테스트 가능할듯. :::...
+          //
           //#endregion
 
-          // 그냥 30분 지나서도 복구가 안되면 끝임. 방에서 나가고, socket정리하겠음.
+          console.log(
+            `Socket ${clientSocket.id} (uid=${uid}) disconnected with reason="${disconnectReason}" - [SignalingGateway:handleDisconnect]`
+          );
+
+          if (room === null || room === undefined) {
+            // TODO: check if room is reset to null when a peer leaving his room.
+            // This means the disconnected peer is in the lobby
+            console.log(
+              `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
+              `Preserving only peer state for future reconnection.`
+            );
+            console.log('existingPeer.room', room); // null
+
+            /** NOTE: Peer at the lobby.
+             *  If the peer is not reconnected for some amount of time, he should be removed from the lobby.
+             *  That means the peerMap is edited. I don't need to care about how client side handles this disconnection in the lobby.
+             *  JUst... pick x mins.. For example,
+             *  It seems that the 1 hour grace time does not benefit a client because.. lobby is just a lobby.
+             *  The data kept during the period does not have much impact on UX in my opinion unlike the usecase of users disconnected during group study session.
+             *  Just... be aware that the benefit from this disconnecting users completely, which
+             *  must be done!, is for server memory.
+             *  1. Create a method to remove a peer from the peerMap. 2. call it inside setTimeout with... 30*60*1000
+             */
+            console.log('about to call setTimeout in handleDisconnect()');
+
+            if (peer.removalTimer) clearTimeout(peer.removalTimer);
+            peer.removalTimer = setTimeout(
+              () => {
+                console.log(
+                  '------------------------about to remove peer - ',
+                  uid
+                );
+
+                this.groupStudyManagementService.removePeerFromPeerMap(uid);
+              },
+              3 * 60 * 1000
+              // 30 * 60 * 1000
+            );
+          } else {
+            // Peer in a room
+            console.log('existingPeer.room.id', peer.room.id);
+            console.log(
+              `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
+              `Preserving peer and room state for future reconnection.`
+            );
+
+            //#region comments
+            /** Peer was in a group study session when he was disconnected.
+             * What happens if udp and tcp are disconnected and none of them are restored?
+             *  - Client Side: (tcp, udp) connections
+             *      1. (down, up) Even the Max ICE Restart Attempt Count will not increase if tcp is not restored, causing zero RESTART ICE emission.
+             *      2. (up, down) If tcp is restored but udp is not, the variable will hit MAX~COUNT and then LEAVE_ROOM event is going to be handled in this SignalingGateway.
+             *        - Since the tcp connection is up though, it is reasonable to keep the user in the peersMap in the server and let him stay at the lobby.
+             *      3. (down, down) Just... we need to clean this peer up from our room and lobby too!
+             *      4. (up, up) No prob - 최소 한번은 동시에 up, up인 경우가 발생해야 재연결이 되었었다고 볼 수 있다. 아니면 계속 (재)연결 되어있거나....
+             *
+             * Max count is reached -> user is removed from the room: only item 2 in the list above
+             * DESIGN: What about case 1 and 3? How should we handle these? <-- Both are problematic because tcp is not restored.
+             *  - case 1: 딱 한번 증가함. 최초 failed handling에서 attemptToRestartIce()를 호출하므로. (attemptToRestartIce()의 호출 횟수만큼 count는 증가)
+             *  - case 3: 이것은 그냥 인터넷이 나가버린거잖아....
+             * !그러니까 결국 tcp가 down이 x min만큼 지속되면 client쪽에서도 뭔가 조치를 취해야한다. //?(노트북 뚜껑 닫거나, 절전모드 이런거랑은 구분 해야하는데... 어떻게 하지?)
+             * tcp가 한번이라도 재연결 되어서 ICE negotitation이 일어나지 않는 한, 답이 없다. 연속이 아니더라도 된다.. udp가 up되었다고 판단할 수 있는
+             * udp가 up되었다고 internet이 up된것은 아니지만, internet이 up되었다면 udp는 무조건 up이 된것이라고 볼 수 있다. 라고 우리가 가정한다면,
+             * internet이 up되었다는 WebAPI를 활용한 어떤 인지 방법이 존재할 것이고, tcp가 딱 한번 잠시 연결되었다가 끊겼다고 가정했을때, 그 연결당시에 ICE params인가? (ufrag와 pwd)를
+             * 우리쪽으로 가져올 수만 있다면(client side로), 그것을 keep해두었다가 방금전에 말한 특정한 event에 반응하여 udp up을 가정할수 있을듯,
+             * * 그런데 udp가 up인지는 결국 packet을 던져봐야 알 수 있다고 하는데, 반면에 down인지는 그냥 인터넷 연결상태만 확인하면 되는거 아니야? 인터넷이 연결이 안되었늗네 어떻게
+             * * STUN Check packet이 서버쪽에 도달하고 또 뭔가를 받아서 우리가 up이라고 판단할 수 있느냐 이말이지. 그러니까..
+             * TODO: 위의 초록색에서 언급한 부분은 실제 서버를 배포한 후에 기존 방식 작동이 통과하고 나면, 그다음에 더 효과적인 방법으로서 시도 해보든 말든 하면 된다. :::...
+             *
+             */
+            /** 절전모드 - docker 도입 하기전에 대략 상상으로 전략 짜보기.
+             * ping timeout이 언제 발생할지 뭐 그런거에 대한 생각 하지 말고, 그냥 30분 지나면 꺼지게 해야함. 서버쪽에서도 30분으로 해놓았는데,
+             * 이게 동일하지는 않지만 뭐 언저리에서 비슷한 시간대에 끊길테니까 packet이 왔다 갔다할때 걸리는 그런 시간까지 고려하지는 못할듯 (아무튼 그런게 있다고 했음).
+             */
+            //#endregion
+
+            // 그냥 30분 지나서도 복구가 안되면 끝임. 방에서 나가고, socket정리하겠음.
+            if (peer.currentSocketId === clientSocket.id) {
+              if (peer.removalTimer) clearTimeout(peer.removalTimer);
+              peer.removalTimer = setTimeout(
+                async () => {
+                  await this.groupStudyManagementService.leaveRoom(
+                    clientSocket
+                  );
+                  this.groupStudyManagementService.removePeerFromPeerMap(uid);
+                },
+                3 * 60 * 1000
+                // 30 * 60 * 1000
+              );
+            } else {
+              console.log(
+                `The disconnected socket ${clientSocket.id} is a zombie socket of the peer ${peer.id}`
+              );
+            }
+          }
+          break;
+
+        // TODO: test if this case also includes lost wifi... 시발 어디서?.. 핸드폰에서 끊어버리기...
+        // NOTE: The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G).
+        case 'transport close':
+          if (peer.removalTimer) {
+            clearTimeout(peer.removalTimer);
+          }
           peer.removalTimer = setTimeout(
-            () => {
-              this.groupStudyManagementService.leaveRoom(clientSocket);
+            async () => {
+              await this.groupStudyManagementService.leaveRoom(clientSocket);
               this.groupStudyManagementService.removePeerFromPeerMap(uid);
             },
-            30 * 60 * 1000
+            // 0 // ping timeout말고는 즉각 종료되게 ... 테스트 목적임
+            3 * 60 * 1000
           );
-        }
-      } else if (disconnectReason === "transport close") {
-        // NOTE: The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G).
-        peer.removalTimer = setTimeout(
-          () => {
-            this.groupStudyManagementService.leaveRoom(clientSocket);
-            this.groupStudyManagementService.removePeerFromPeerMap(uid);
-          },
-          3 * 60 * 1000
-        );
-      } else {
-        console.log(`due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`)
-        this.groupStudyManagementService.leaveRoom(clientSocket); // room이 없으면 알아서 early return해줌.
-        this.groupStudyManagementService.removePeerFromPeerMap(uid);
+          break;
+
+        case 'transport error': // NOTE: Closing a browser tab / Reloading the page
+          console.log(
+            `due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`
+          );
+          this.groupStudyManagementService.leaveRoom(clientSocket); // room이 없으면 알아서 early return해줌.
+          this.groupStudyManagementService.removePeerFromPeerMap(uid);
+
+          break;
+
+        default:
+          console.log(
+            `due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`
+          );
+          this.groupStudyManagementService.leaveRoom(clientSocket); // room이 없으면 알아서 early return해줌.
+          this.groupStudyManagementService.removePeerFromPeerMap(uid);
+          break;
       }
     } else {
+      console.log('The peer just disconnected is undefined');
       // WARNING: dead path - it should not happen. But if this happens, it means that the client socket was connected without its server side identity, which means a "peer".
     }
   }
+
+  private logConnectedSockets(context: string): void {
+    const activeSockets = this.server.sockets.sockets;
+    let mismatchedCurrentSocket = 0;
+    const activeUidsWithPeerRecord = new Set<string>();
+
+    console.log(`========== CONNECTED SOCKETS ========== ${context}`);
+    console.log(
+      `[SignalingGateway:logConnectedSockets] totalActiveSockets=${activeSockets.size}`
+    );
+
+    activeSockets.forEach((socket) => {
+      const uid = socket.data.uid as string | undefined;
+      const peer = uid
+        ? this.groupStudyManagementService.getPeer(uid)
+        : undefined;
+      const isPeerCurrentSocket =
+        peer === undefined ? null : socket.id === peer.currentSocketId;
+
+      if (peer && isPeerCurrentSocket === false) {
+        mismatchedCurrentSocket++;
+      }
+
+      if (peer && uid !== undefined) {
+        activeUidsWithPeerRecord.add(uid);
+      }
+
+      const rooms = [...socket.rooms].filter(
+        (room) => room !== socket.id && room !== '/'
+      );
+
+      console.log(`[SignalingGateway:logConnectedSockets] socket:`, {
+        socketId: socket.id,
+        uid: uid ?? 'unknown',
+        connected: socket.connected,
+        engineReadyState: socket.conn.readyState,
+        transport: socket.conn.transport.name,
+        rooms,
+        isPeerCurrentSocket,
+        hasRemovalTimer: peer?.removalTimer !== null
+      });
+    });
+
+    console.log(
+      `[SignalingGateway:logConnectedSockets] activeUidsWithPeerRecord=${activeUidsWithPeerRecord.size}, ` +
+      `mismatchedCurrentSocket=${mismatchedCurrentSocket}`
+    );
+    console.log(`======================================= ${context}`);
+  }
   //#endregion Socket connection/disconnection related
+
+  //#region Etc
+  @SubscribeMessage(EventNames.CHECK_PEER_STATUS_IN_SERVER)
+  async handleCheckPeerStatusInServer(
+    @ConnectedSocket() clientSocket: Socket
+  ): Promise<AckResponse<PeerStatus>> {
+    const uid = clientSocket.data.uid as string;
+
+    const peerStatus: PeerStatus = {
+      doesPeerExistInPeerMap: false,
+      isPeerInRoom: false
+    };
+
+    const existingPeer = this.groupStudyManagementService.getPeer(uid);
+    if (existingPeer) {
+      console.log(`peer with uid ${existingPeer.id} exists in the peerMap`);
+      peerStatus.doesPeerExistInPeerMap = true;
+      if (existingPeer.room) {
+        console.log(
+          `peer with uid ${existingPeer.id} exists in the room ${existingPeer.room.id}`
+        );
+        peerStatus.isPeerInRoom = true;
+      }
+    } else {
+      console.log(
+        `peer with uid ${existingPeer.id} does not exist in the peerMap`
+      );
+    }
+
+    return { success: true, data: peerStatus }; // TODO: success는 항상 true잖아 이 함수의 경우는.. AckResponse가 적합하지 않은것인지 아니면 그냥 상관 없는것인지... 그냥 내가 결정하면 되겠지?
+  }
+  //#endregion
 
   //#region Device related: 순서 1 -> 2 -> 3
   @SubscribeMessage(EventNames.GET_ROUTER_RTP_CAPABILITIES) // 1
@@ -400,6 +545,8 @@ export class SignalingGateway
     );
   }
 
+  // 만약 받지 못했다고 가정하면, 아니 씨발... 그게 말이 되나? 존나 빨리 두번 조지면
+  // 못받아?
   // [ICE Restart 요청 수신]
   // 클라이언트가 네트워크 문제로 연결에 실패(failed)했을 때, 연결을 복구하기 위해 새로운 인증 정보를 요청하는 이벤트
   @SubscribeMessage(EventNames.RESTART_ICE)
@@ -558,6 +705,8 @@ export class SignalingGateway
 
   // [Client -> Server] 클라이언트가 "나 이 방에 들어갈래" 라고 서버에 요청하는 이벤트입니다.
   @SubscribeMessage(EventNames.JOIN_ROOM)
+  //TODO: 1)유체이탈 후 영혼이 들어오는 것인지, 2)2)몸과 영혼이 일치하여 들어오는 것인지 구분. -> isUserInRoom state을 함께 payload로 보낸다.
+  // 2) 일반적인 경우. 1) 어떤 이유로 room에 존재하던 disconnected peer가 reconnect된 후 ()
   async handleJoinRoom(
     @ConnectedSocket() connectedSocket: Socket,
     @MessageBody() payload: { roomId: string; todayTotalDuration: number }
@@ -587,6 +736,7 @@ export class SignalingGateway
   async handlePeerLeaveRoom(
     @ConnectedSocket() clientSocket: Socket
   ): Promise<AckResponse<{ left: boolean }>> {
+    console.log('LEAVE_ROOM message is received');
     const result =
       await this.groupStudyManagementService.leaveRoom(clientSocket);
     if (result.success) {

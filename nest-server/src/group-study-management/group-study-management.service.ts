@@ -121,13 +121,15 @@ export class GroupStudyManagementService
     };
   }
 
+  // 그런데 clear peer를 안해서 socket이 남아있는게 아니지 않나? 왜... 남아있지?
   updatePeerCurrentSocket(uid: string, newSocketId: string) {
     const peer = this.peerMap.get(uid);
     if (peer) {
+      const prevSocketId = peer.currentSocketId;
       peer.currentSocketId = newSocketId;
       //QQQ: disconnected된 socket은 자동 폐기되는건가?
       console.log(
-        `[group-study-management.service:updatePeerCurrentSocket] Peer ${uid} socket updated to ${newSocketId}`
+        `[group-study-management.service:updatePeerCurrentSocket] Peer ${uid} socket updated from ${prevSocketId} to ${newSocketId}`
       );
     }
   }
@@ -167,9 +169,11 @@ export class GroupStudyManagementService
   }
 
   removePeerFromPeerMap(uid: string) {
+    const existingSocketId = this.peerMap.get(uid).currentSocketId;
+
     if (this.peerMap.delete(uid)) {
       console.log(
-        `[group-study-management.service:removePeer] Peer ${uid} removed from peersMap`
+        `[removePeerFromPeerMap()] Peer ${uid} removed from peersMap`
       );
       console.log('Remaining peers in the peerMap are like below');
       for (const key of this.peerMap.keys()) {
@@ -177,7 +181,7 @@ export class GroupStudyManagementService
       }
     } else {
       console.warn(
-        `[group-study-management.service:removePeer] Peer ${uid} not found in peersMap`
+        `[removePeerFromPeerMap()] Peer ${uid} not found in peersMap`
       );
     }
   }
@@ -296,7 +300,7 @@ export class GroupStudyManagementService
     peer.addTransport(transport, type);
 
     console.log(
-      `created peer=${uid} ` +
+      `owner peer=${uid} ` +
       `initialIce=${transport.iceState} ` +
       `udpPort=${udpIce?.port ?? 'n/a'} ` +
       (tcpIce ? `tcpPort=${tcpIce.port} ` : '') +
@@ -361,7 +365,9 @@ export class GroupStudyManagementService
       );
 
       consumer.on('producerpause', () => {
-        console.log(`producerpause for ${consumer.id}`);
+        console.log(
+          `producerpause for peer ${consumingPeer}'s consumer ${consumer.id}`
+        );
         // mediasoup implicitly stops RTP when a producer pauses.
         // We do NOT explicitly call consumer.pause() here to avoid overwriting
         // the viewer-side local pause state.
@@ -369,9 +375,12 @@ export class GroupStudyManagementService
         clientSocket.emit('PRODUCER_PAUSED', { producingPeerId });
       });
 
-      consumer.on('score', (score) => {
-        console.log(`consumer score change of ${consumer.id}`, score);
-      });
+      // consumer.on('score', (score) => {
+      //   console.log(
+      //     `consumer score change of peer ${consumingPeer}'s consumer ${consumer.id}`,
+      //     score
+      //   );
+      // });
 
       consumer.on('producerresume', () => {
         console.log(`producerresume for ${consumer.id}`);
@@ -380,18 +389,16 @@ export class GroupStudyManagementService
       });
 
       consumer.on('producerclose', () => {
+        console.log(`Consumer ${consumer.id} closed due to producer close`);
+        consumingPeer.removeConsumer(consumer);
         console.log(
-          `Consumer ${consumer.id} closed due to producer close`
-        );
-        consumingPeer.removeConsumer(consumer)
-        console.log(
-          `Consumer ${consumer.id} removed from peer ${consumingPeer.id}`
+          `Peer ${consumingPeer}'s Consumer ${consumer.id} removed from peer ${consumingPeer.id}`
         );
       });
 
       consumer.on('transportclose', () => {
         console.log(
-          `[group-study-management.service:createConsumer:transportclose] Consumer ${consumer.id} closed due to transport close`
+          `Peer ${consumingPeer}'s Consumer ${consumer.id} closed due to transport close`
         );
       });
 
@@ -412,16 +419,16 @@ export class GroupStudyManagementService
         // SFU 서버는 더 이상 적절한 미디어 레이어를 전송할 수 없다고 판단하여 스스로 할당할 공간 레이어(spatial layer)를 찾지 못하게 됩니다.
         // 이때 Mediasoup는 Consumer에게 할당된 레이어가 없음을 알리기 위해 `layerschange` 이벤트를 발생시키며 `layers`를 `undefined`로 전달합니다.
         // 즉, 이 undefined 값은 단순한 화질 정보 부재가 아니라, "네트워크 문제나 BWE 저하로 인해 해당 Consumer에 대한 미디어 포워딩이 사실상 중단된 상태(Network Drop)"임을 의미하는 중요한 Heartbeat와 같은 역할을 합니다.
-        const ts = new Date().toISOString();
-        if (layers === undefined) {
-          console.warn(
-            `[LAYER DROP ⚠] ${ts} consumer=${consumer.id} producerId=${consumer.producerId} consumingPeer=${consumingPeerId}`
-          );
-        } else {
-          console.log(
-            `[LAYER CHANGE] ${ts} consumer=${consumer.id} producerId=${consumer.producerId} consumingPeer=${consumingPeerId} spatial=${layers.spatialLayer} temporal=${layers.temporalLayer ?? 'max'}`
-          );
-        }
+        // const ts = new Date().toISOString();
+        // if (layers === undefined) {
+        //   console.warn(
+        //     `[LAYER DROP ⚠] ${ts} consumer=${consumer.id} producerId=${consumer.producerId} consumingPeer=${consumingPeerId}`
+        //   );
+        // } else {
+        //   console.log(
+        //     `[LAYER CHANGE] ${ts} consumer=${consumer.id} producerId=${consumer.producerId} consumingPeer=${consumingPeerId} spatial=${layers.spatialLayer} temporal=${layers.temporalLayer ?? 'max'}`
+        //   );
+        // }
         const payload: ConsumerLayersChangedPayload = {
           consumerId: consumer.id,
           layers
@@ -576,9 +583,40 @@ export class GroupStudyManagementService
     if (!peer) return { success: false, error: 'Peer not found' };
 
     const transport = role === 'send' ? peer.sendTransport : peer.recvTransport;
+
+    //#region Transport guards
+    // NOTE: https://mediasoup.org/documentation/v3/mediasoup/api/#WebRtcTransportIceState
+    // 'connected': Valid ICE Binding Request have been received, but none with USE-CANDIDATE attribute. Outgoing media is allowed.
+    // 'completed': ICE Binding Request with USE_CANDIDATE attribute has been received. Media in both directions is now allowed.
+    // QQQ: 'completed' definitely indicates that we don't need to invoke the restartIce(). But I am not sure about 'connected'.
+    // IMPT: `nest-server/src/group-study-management/readme/Mediasoup-ICE-연결-상태-이해.md`
     if (!transport) {
       return { success: false, error: `No ${role} transport found` };
     }
+    if (
+      transport.iceState === 'connected' ||
+      transport.iceState === 'completed'
+    ) {
+      // WARNING: 클라이언트에서 failed가 너무 빨리 뜨는거야?... 만약 그렇다면... 위의 iceState이 좀 늦게 반영되는거 같은데... 곧 disconnected로 변하지 않나?
+      // 서로 비동기라... 아니 씨발 서로 통신하고 하나 둘 셋 하고 state을 바꾸는게 아니지 않나?... 각자 즈그들 (transport instance)의 기준따라 거시기 하겠지.
+      // 그래서 약간 ... 클라이언트가 더 빨리 판단해서 failed로 된거고... ...
+      // 라고 생각해보면 말이 되긴함. 그런데 애초에 이렇게 방어해놓은것은 왜...
+      // 빡대가리새끼야... completed에서 disconnected되고나서 다시 connected -> completed된 딱 그 찰나의 경우만 방어하고싶은건데 대놓고 completed와 connected로 guard를 만들면 중간에 한번 disconnected되었었는지 아닌지 어떻게 아냐고...
+      // 그냥 씨발 조져...
+      // 0|pomodoro-nest  | [SignalingGateway:handleRestartIce] Socket sb_GzYEKgNEPOWq-AAAj requested ICE restart for its recv transport
+      // 0|pomodoro-nest  | [SignalingGateway:handleRestartIce] Socket sb_GzYEKgNEPOWq-AAAj requested ICE restart for its send transport
+      // 0|pomodoro-nest  | ice=completed -> disconnected sinceLastIce=50843ms peer=r013y8V4e1TbWrZkrsOsagS3oa22 age=106297ms ts=2026-06-23T11:36:45.201Z [recv:f437cb2a-810e-4ddb-89c9-3eeb4707c2e6]
+      // 0|pomodoro-nest  | ice=completed -> disconnected sinceLastIce=106610ms peer=r013y8V4e1TbWrZkrsOsagS3oa22 age=107847ms ts=2026-06-23T11:36:46.748Z [send:82964e19-2423-4dcb-8342-b3ed2871e001]
+      // return {
+      //   success: false,
+      //   error: `ICE process for the ${role} transport has already been started`
+      // };
+      console.log(
+        `ICE Restart request has been received though server transport's iceState is still ${transport.iceState}`
+      );
+    }
+
+    //#endregion
 
     try {
       console.log(
@@ -696,12 +734,12 @@ export class GroupStudyManagementService
         rtpParameters
       });
 
-      producer.on('score', (score) => {
-        console.log(
-          `Producer ${producer.id} (peer: ${peer.id}) score updated in createProducer:scorechange of group-study-management.service`,
-          score
-        );
-      });
+      // producer.on('score', (score) => {
+      //   console.log(
+      //     `Producer ${producer.id} (peer: ${peer.id}) score updated in createProducer:scorechange of group-study-management.service`,
+      //     score
+      //   );
+      // });
 
       const negotiatedEncodings = producer.rtpParameters?.encodings ?? [];
       if (shouldLog) {
@@ -1040,8 +1078,20 @@ export class GroupStudyManagementService
         clientSocket.data.uid as string,
         'leaveRoom'
       );
+
+      // ghost socket의 요청인지 확인해보자
+      if (clientSocket.id !== peer.currentSocketId) {
+        console.log(
+          `The request of ghost socket(${clientSocket.id}) of ${peer.id} to leaveRoom() is ignored`
+        );
+        return { success: false, error: 'Ghost socket' };
+        // 그런데 어떻게 지우는거야? disconnect이 transport close에 의해 발생했는데, 이게 ping timeout이 이어서 발생하거든? 같은 소켓에 대해...
+        // 내가 기대했던 것은 disconnect event 가 발생했으면 그냥.. recover안되고 그냥 memory에서 deallocate되는거지.. 무슨 왜 남아서 event fire하고 지랄임?
+      }
+
       if (!peer) {
         return { success: false, error: 'Peer not found' };
+        // NOTE: 만약에, 재연결 되어서 뒤늦은 LEAVE_ROOM 메시지가 도착했을때, server에서 이미 user를 room에서 방출했다면, 이 분기점까지 도달한다(고 생각한다 (아직 테스트 안해봤음)).
       }
 
       const room = peer.room;
@@ -1053,6 +1103,7 @@ export class GroupStudyManagementService
       room.removePeer(peer.id);
 
       this.notifyPeerLeft(clientSocket, room.id, peer.id);
+
       if (room.isEmpty() && !room.isPermanent) {
         this.roomMap.delete(room.id);
         // Also remove from DB to keep sync
@@ -1072,7 +1123,7 @@ export class GroupStudyManagementService
       peer.closeTransports();
       peer.chatMessages = [];
 
-      await clientSocket.leave(room.id);
+      await clientSocket.leave(room.id); // IMPT
 
       peer.removeRoom();
       console.log(

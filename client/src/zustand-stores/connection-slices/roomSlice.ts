@@ -85,6 +85,43 @@ export const createRoomSlice: StateCreator<
       }
     );
 
+    socket.on(EventNames.PRODUCER_CLOSED, ({ producerId }) => {
+      console.log("producerId inside PRODUCER_CLOSED", producerId);
+      const {
+        peerProducerList,
+        consumersByPeerId,
+        remoteStreams,
+        consumerLayers
+      } = get();
+      const producerInfo = peerProducerList.find(
+        (p) => p.producerId === producerId
+      );
+      if (!producerInfo) return;
+
+      if (producerInfo.isBeingConsumed) {
+        const consumer = consumersByPeerId.get(producerInfo.peerId);
+        if (consumer) {
+          consumer.close();
+          const newConsumers = new Map(consumersByPeerId);
+          newConsumers.delete(producerInfo.peerId);
+          const newStreams = new Map(remoteStreams);
+          newStreams.delete(producerInfo.peerId);
+          const newLayers = new Map(consumerLayers);
+          newLayers.delete(consumer.id);
+          set({
+            consumersByPeerId: newConsumers,
+            remoteStreams: newStreams,
+            consumerLayers: newLayers
+          });
+        }
+      }
+      set({
+        peerProducerList: peerProducerList.filter(
+          (p) => p.producerId !== producerId
+        )
+      });
+    });
+
     socket.on(
       EventNames.PEER_TODAY_TOTAL_DURATION_UPDATED,
       (payload: { peerId: string; todayTotalDuration: number }) => {
@@ -141,43 +178,6 @@ export const createRoomSlice: StateCreator<
       }
     );
 
-    socket.on(EventNames.PRODUCER_CLOSED, ({ producerId }) => {
-      console.log("producerId inside PRODUCER_CLOSED", producerId);
-      const {
-        peerProducerList,
-        consumersByPeerId,
-        remoteStreams,
-        consumerLayers
-      } = get();
-      const producerInfo = peerProducerList.find(
-        (p) => p.producerId === producerId
-      );
-      if (!producerInfo) return;
-
-      if (producerInfo.isBeingConsumed) {
-        const consumer = consumersByPeerId.get(producerInfo.peerId);
-        if (consumer) {
-          consumer.close();
-          const newConsumers = new Map(consumersByPeerId);
-          newConsumers.delete(producerInfo.peerId);
-          const newStreams = new Map(remoteStreams);
-          newStreams.delete(producerInfo.peerId);
-          const newLayers = new Map(consumerLayers);
-          newLayers.delete(consumer.id);
-          set({
-            consumersByPeerId: newConsumers,
-            remoteStreams: newStreams,
-            consumerLayers: newLayers
-          });
-        }
-      }
-      set({
-        peerProducerList: peerProducerList.filter(
-          (p) => p.producerId !== producerId
-        )
-      });
-    });
-
     socket.on(EventNames.ROOM_PEER_LEFT, ({ peerId }) => {
       set((state) => {
         const d = new Map(state.peerTodayTotalDurations);
@@ -217,10 +217,14 @@ export const createRoomSlice: StateCreator<
     socket.off(EventNames.ROOM_GET_PRODUCER);
     socket.off(EventNames.ROOM_PEER_JOINED);
     socket.off(EventNames.PRODUCER_CLOSED);
-    socket.off(EventNames.CHAT_MESSAGE);
     socket.off(EventNames.PEER_TODAY_TOTAL_DURATION_UPDATED);
+    socket.off(EventNames.SYNC_DATA_TO_PEER_RECONNECTED);
     socket.off(EventNames.ROOM_PEER_LEFT);
+    socket.off(EventNames.CHAT_MESSAGE);
     socket.off(EventNames.CONSUMER_LAYERS_CHANGED);
+    // inside createTransports()
+    // socket.off(EventNames.SEND_TRANSPORT_CREATED);
+    // socket.off(EventNames.RECV_TRANSPORT_CREATED);
   };
 
   return {
@@ -274,8 +278,8 @@ export const createRoomSlice: StateCreator<
        * NOTE: 여기에서의 guard들중 일부와 Room.tsx의 setup함수에서의 guard들중 일부가 겹치긴 하는데,
        * 그냥 cheap이라 괜찮다며..
        */
-      const { socket, isUserInRoom: isRoomJoined } = get();
-      if (!socket || isRoomJoined) return;
+      const { socket, isUserInRoom } = get();
+      if (!socket || !socket.connected || isUserInRoom) return;
 
       const todayTotalDuration =
         boundedPomoInfoStore.getState().todayTotalDuration;
@@ -293,9 +297,29 @@ export const createRoomSlice: StateCreator<
             const { selfPeerId, existingProducers, peersTodayTotalFocusArray } =
               response.data;
             console.log("selfPeerId", selfPeerId);
-            existingProducers.forEach((p: ProducerPayload) => {
-              if (p.displayName) nicknames.set(p.peerId, p.displayName);
+
+            const peerProducerList = existingProducers.map(
+              (p: ProducerPayload) => {
+                if (p.displayName) nicknames.set(p.peerId, p.displayName);
+                const retVal = {
+                  ...p,
+                  isBeingConsumed: false
+                };
+                return retVal;
+              }
+            );
+
+            peerProducerList.forEach((p) => {
+              console.log("peerId", p.peerId);
+              console.log("producerId", p.producerId);
+              console.log("kind", p.kind);
+              console.log("isBeingConsumed", p.isBeingConsumed);
             });
+
+            // 위에것으로 합친다.
+            // existingProducers.forEach((p: ProducerPayload) => {
+            //   if (p.displayName) nicknames.set(p.peerId, p.displayName);
+            // });
 
             const durations = new Map();
             peersTodayTotalFocusArray.forEach(
@@ -310,21 +334,20 @@ export const createRoomSlice: StateCreator<
               {
                 isUserInRoom: true,
                 currentRoomId: roomId,
-                peerProducerList: existingProducers.map(
-                  (p: ProducerPayload) => ({
-                    ...p,
-                    isBeingConsumed: false
-                  })
-                ) as ProducerInfo[],
+                peerProducerList,
+                // 위에것으로 합친다.
+                // existingProducers.map(
+                //   (p: ProducerPayload) => ({
+                //     ...p,
+                //     isBeingConsumed: false
+                //   })
+                // ) as ProducerInfo[],
                 peerNicknames: nicknames,
                 peerTodayTotalDurations: durations
               },
               false,
               "room/joined"
             );
-
-            //3.
-            get().createTransports();
           } else {
             onError?.(response.error || "Unknown error");
           }
@@ -335,22 +358,24 @@ export const createRoomSlice: StateCreator<
       addEventListeners(socket);
     },
 
-    leaveRoom: () => {
+    leaveRoom: (socketEmitFlag = true) => {
       const {
         socket,
-        isUserInRoom: isRoomJoined,
+        isUserInRoom,
         sendTransport,
         recvTransport,
         producer,
         consumersByPeerId,
         initializeMediaStreamSliceStates
       } = get();
-      // if (!isRoomJoined) return;
-      if (!socket || !isRoomJoined) return; //
+      if (!socket || !isUserInRoom) return; //
 
       if (producer) {
         producer.close();
-        socket.emit(EventNames.PRODUCER_CLOSED, { producerId: producer.id });
+        // WARNING:  방에서 방출될때, ping timeout 이후 prolonged disconnect 때문에 서버쪽에서 cleanup되면,
+        // producer not found. <-- 그런데 이것때문에 갑자기 뭐...
+        socketEmitFlag &&
+          socket.emit(EventNames.PRODUCER_CLOSED, { producerId: producer.id });
       }
       consumersByPeerId.forEach((c) => c.close());
 
@@ -359,8 +384,31 @@ export const createRoomSlice: StateCreator<
       sendTransport?.close();
       recvTransport?.close();
 
-      socket.emit(EventNames.LEAVE_ROOM);
+      // WHAT_IF: 만약에 socket이 연결이 안되었는데, 그러니까 인터넷 맛이 가서 방에 있다가 모르겠다 그냥 나가자 하고 leaveRoom버튼 누르면,
+      // socket연결 안되었는데 저거 emit하면 전달 안되고 나중에 재연결 되면 자동으로 전달될텐데... (그 volatile설정 안해서)... 그러면 시나리오가 어떻게 되는거야?
+      // server의 groupStudyManagementService의 leaveRoom에 의해 { success: false, error: 'Peer is not in any room' } is returned -> AckResponse로 전달된다. 그런데 네가 안받고 있잖아.
+      // TODO: AckResponse 받아보고 위의 edge case 관찰해보기.
+      // TODO: socketEmitFlag가 아니라 isUserBeingRemovedAbnormally (e.g, prolonged tcp disconnect) 로 바꾸면 될듯.
+      if (socket.connected && socketEmitFlag) {
+        // socketEmitFlag -> peerStatus cross check했을때, 서버쪽은 방에서 나가졌거나 아예 peerMap에서 삭제했지만, 여기에서는 Room에 있는 경우 leaveRoom함수를 재활용하기 위해서.
+        console.log("LEAVE_ROOM is sent");
+        socket.emit(
+          EventNames.LEAVE_ROOM,
+          (res: AckResponse<{ left: boolean }>) => {
+            if (res.success && res.data)
+              console.log("success -> left is ", res.data.left);
+            else if (!res.success)
+              console.warn(
+                "error occurred while removing the peer in the room in the server",
+                res.error
+              );
+          }
+        );
+      } else {
+        console.log("LEAVE_ROOM is not sent.");
+      }
 
+      console.log("about to call removeEventListeners inside leaveRoom()");
       removeEventListeners(socket);
 
       initializeMediaStreamSliceStates();

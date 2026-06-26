@@ -131,7 +131,7 @@ export function Room() {
   const startSharing = useConnectionStore((s) => s.startSharing);
   const stopSharing = useConnectionStore((s) => s.stopSharing);
   const isDeviceLoaded = useConnectionStore((s) => s.isDeviceLoaded);
-  const isRoomJoined = useConnectionStore((s) => s.isUserInRoom);
+  const isUserInRoom = useConnectionStore((s) => s.isUserInRoom);
   const forcedRoomExitReason = useConnectionStore(
     (s) => s.forcedRoomExitReason
   );
@@ -170,7 +170,8 @@ export function Room() {
 
   // 방 입장
   useEffect(() => {
-    if (forcedRoomExitReason) { // QQQ: App.tsx에서 `/group-study`로 navigate 했을 때, 사실 이 copmonent가 왜 마운트 되는지 잘 모르겠음. 그런데 그냥 넘어가겠음.
+    if (forcedRoomExitReason) {
+      // QQQ: App.tsx에서 `/group-study`로 navigate 했을 때, 사실 이 copmonent가 왜 마운트 되는지 잘 모르겠음. 그런데 그냥 넘어가겠음.
       console.log("[Room] skipping auto-join due to forced exit", {
         forcedRoomExitReason,
         roomId
@@ -178,9 +179,7 @@ export function Room() {
       return;
     }
 
-    if (socket && connected && roomId && !isRoomJoined) {
-      // TODO: 저기 아래에 createTransports()를 직접적으로 호출하는게 있는데 (setup에서),
-      // joinRoom() 정의 안에서도 createTransports()를 호출한다. 누굴 죽이고 누굴 살리지?
+    if (socket && connected && roomId && !isUserInRoom) {
       joinRoom(roomId, (error) => {
         alert("방 참가에 실패했습니다: " + error);
         navigate("/group-study");
@@ -190,7 +189,7 @@ export function Room() {
     socket,
     connected,
     roomId,
-    isRoomJoined,
+    isUserInRoom,
     forcedRoomExitReason,
     joinRoom,
     navigate
@@ -201,10 +200,10 @@ export function Room() {
      * 1. Duplicated guards (here and in the createTransports()) are tolerated while still allowing setup to retry as inputs load.
      * 2. CreateTransports reads the latest store state and is guarded internally.
      **/
-    if (!isRoomJoined || !isDeviceLoaded || !stream) return;
+    if (!isUserInRoom || !isDeviceLoaded || !stream) return;
 
-    createTransports();
-  }, [isRoomJoined, isDeviceLoaded, stream, createTransports]);
+    createTransports(); // isUserInRoom을 joinRoom 내부에서 설정해주면, 이 useEffect이 호출될테고, 그렇다면 guard를 걸어서 호출가능 할듯? 그러니까 서버 기준으로 방에 참가했다는것이 인정되면.
+  }, [isUserInRoom, isDeviceLoaded, stream, createTransports]);
 
   // 방 나가기 (UI → store action → navigate)
   const handleLeaveRoom = useCallback(() => {

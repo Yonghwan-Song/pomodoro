@@ -69,3 +69,8 @@ export type ConsumerLayersChangedPayload = {
 };
 
 export type SocketID = string;
+
+export type PeerStatus = {
+  doesPeerExistInPeerMap: boolean;
+  isPeerInRoom: boolean;
+}
