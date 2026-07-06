@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { Request, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
 
 export interface CustomRequest extends Request {
