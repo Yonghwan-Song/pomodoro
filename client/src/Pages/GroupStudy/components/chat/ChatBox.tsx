@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { css } from "../../../../../styled-system/css";
 import { ChatMessage } from "./ChatMessage";
 import { ChatMessageInfo } from "../../../../common/webrtc/payloadRelated";
+import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
+import { useAuthContext } from "../../../../Context/AuthContext";
 
 type ChatLayout = "sidebar" | "stacked";
 
 interface ChatBoxProps {
   messages: ChatMessageInfo[];
-  onSendMessage: (message: string) => void;
   mySocketId: string;
   layout?: ChatLayout | { base: ChatLayout; lg?: ChatLayout };
   participantCount?: number;
@@ -15,13 +16,14 @@ interface ChatBoxProps {
 
 export function ChatBox({
   messages,
-  onSendMessage,
   mySocketId,
   layout = "stacked",
   participantCount = 1
 }: ChatBoxProps) {
+  const { user } = useAuthContext() || {};
   const [isOpen, setIsOpen] = useState(true);
   const [input, setInput] = useState("");
+  const sendChatMessage = useConnectionStore((s) => s.sendChatMessage);
 
   const heightByLayout =
     typeof layout === "string"
@@ -37,13 +39,20 @@ export function ChatBox({
 
   const handleSend = () => {
     if (!input.trim()) return;
-    onSendMessage(input);
+    handleSendMessage(input);
     setInput("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSend();
   };
+
+  const handleSendMessage = useCallback(
+    (message: string) => {
+      sendChatMessage(message, user?.displayName ?? null);
+    },
+    [sendChatMessage, user?.displayName]
+  );
 
   const recentActivityLabel = useMemo(() => {
     if (messages.length === 0) return "활동 없음";

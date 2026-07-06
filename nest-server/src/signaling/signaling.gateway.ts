@@ -60,14 +60,15 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
   // path: '/socket.io' // 👈 명시적으로 경로 고정 (글로벌 프리픽스 간섭 무시)
 })
 export class SignalingGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
   constructor(
     private readonly mediasoupService: MediasoupService,
     private readonly groupStudyManagementService: GroupStudyManagementService
-  ) { }
+  ) {}
 
   afterInit(server: Server) {
     server.use(async (socket, next) => {
@@ -75,9 +76,16 @@ export class SignalingGateway
       if (!token) return next(new Error('Authentication token required'));
       try {
         const decoded = await admin.auth().verifyIdToken(token);
-        socket.data.userEmail = decoded.email;
+        // 왼쪽 값이 null 또는 undefined일 때만 오른쪽 값을 반환
+        // 그 외('', 0, false 등)는 왼쪽 값을 그대로 반환
         socket.data.uid = decoded.uid;
-        socket.data.userNickname = decoded.name;
+        socket.data.userEmail =
+          decoded.email === undefined ? null : decoded.email;
+        // const dummy = undefined;
+        socket.data.userNickname =
+          decoded.name === undefined ? null : decoded.name;
+        socket.data.picture =
+          decoded.picture === undefined ? null : decoded.picture;
         next();
       } catch (err) {
         console.warn('firebase token related error thrown in afterInit', err);
@@ -115,7 +123,7 @@ export class SignalingGateway
     const clientIp = clientSocket.request.socket.remoteAddress;
     console.log(
       `[SignalingGateway:handleConnection] New connection from\n   UID=${uid}, ` +
-      `IP=${clientIp}, PORT=${clientPort}`
+        `IP=${clientIp}, PORT=${clientPort}`
     );
 
     //#region Add/Succeeds a peer
@@ -129,7 +137,7 @@ export class SignalingGateway
       // NOTE: reconnection
       console.log(
         `Reconnect detected for uid=${uid}. ` +
-        `Reusing existing peer and updating socket to ${clientSocket.id}.`
+          `Reusing existing peer and updating socket to ${clientSocket.id}.`
       );
 
       if (existingPeer.removalTimer !== null) {
@@ -171,7 +179,9 @@ export class SignalingGateway
       this.groupStudyManagementService.addPeer(
         uid,
         clientSocket.id,
-        clientSocket.data.userNickname
+        clientSocket.data.userEmail,
+        clientSocket.data.userNickname,
+        clientSocket.data.picture
       );
     }
     //#endregion
@@ -189,8 +199,8 @@ export class SignalingGateway
 
       console.log(
         `[SignalingGateway:handleConnection] Socket upgraded to WebSocket. Real PORT=${realPort} (UID=${uid})\n` +
-        `  -> 차단 명령어: sudo ${firewallCmd} -I INPUT 1 -p tcp -i lo --sport ${realPort} -j DROP && sudo ${firewallCmd} -I OUTPUT 1 -p tcp -o lo --dport ${realPort} -j DROP\n` +
-        `  -> 해제 명령어: sudo ${firewallCmd} -D INPUT -p tcp -i lo --sport ${realPort} -j DROP; sudo ${firewallCmd} -D OUTPUT -p tcp -o lo --dport ${realPort} -j DROP`
+          `  -> 차단 명령어: sudo ${firewallCmd} -I INPUT 1 -p tcp -i lo --sport ${realPort} -j DROP && sudo ${firewallCmd} -I OUTPUT 1 -p tcp -o lo --dport ${realPort} -j DROP\n` +
+          `  -> 해제 명령어: sudo ${firewallCmd} -D INPUT -p tcp -i lo --sport ${realPort} -j DROP; sudo ${firewallCmd} -D OUTPUT -p tcp -o lo --dport ${realPort} -j DROP`
       );
     });
 
@@ -220,8 +230,8 @@ export class SignalingGateway
     if (peer && clientSocket.id !== peer.currentSocketId) {
       console.log(
         `[SignalingGateway:handleDisconnect] Ignoring stale disconnect: ` +
-        `socket=${clientSocket.id}, current=${peer.currentSocketId}, ` +
-        `uid=${uid}, reason=${disconnectReason}`
+          `socket=${clientSocket.id}, current=${peer.currentSocketId}, ` +
+          `uid=${uid}, reason=${disconnectReason}`
       );
       this.logConnectedSockets('stale-disconnect-ignored');
       return;
@@ -270,7 +280,7 @@ export class SignalingGateway
             // This means the disconnected peer is in the lobby
             console.log(
               `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
-              `Preserving only peer state for future reconnection.`
+                `Preserving only peer state for future reconnection.`
             );
             console.log('existingPeer.room', room); // null
 
@@ -304,7 +314,7 @@ export class SignalingGateway
             console.log('existingPeer.room.id', peer.room.id);
             console.log(
               `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
-              `Preserving peer and room state for future reconnection.`
+                `Preserving peer and room state for future reconnection.`
             );
 
             //#region comments
@@ -322,7 +332,7 @@ export class SignalingGateway
              *  - case 1: 딱 한번 증가함. 최초 failed handling에서 attemptToRestartIce()를 호출하므로. (attemptToRestartIce()의 호출 횟수만큼 count는 증가)
              *  - case 3: 이것은 그냥 인터넷이 나가버린거잖아....
              * !그러니까 결국 tcp가 down이 x min만큼 지속되면 client쪽에서도 뭔가 조치를 취해야한다. //?(노트북 뚜껑 닫거나, 절전모드 이런거랑은 구분 해야하는데... 어떻게 하지?)
-             * tcp가 한번이라도 재연결 되어서 ICE negotitation이 일어나지 않는 한, 답이 없다. 연속이 아니더라도 된다.. udp가 up되었다고 판단할 수 있는
+             * tcp가 한번이라도 재연결 되어서 ICE negotiation이 일어나지 않는 한, 답이 없다. 연속이 아니더라도 된다.. udp가 up되었다고 판단할 수 있는
              * udp가 up되었다고 internet이 up된것은 아니지만, internet이 up되었다면 udp는 무조건 up이 된것이라고 볼 수 있다. 라고 우리가 가정한다면,
              * internet이 up되었다는 WebAPI를 활용한 어떤 인지 방법이 존재할 것이고, tcp가 딱 한번 잠시 연결되었다가 끊겼다고 가정했을때, 그 연결당시에 ICE params인가? (ufrag와 pwd)를
              * 우리쪽으로 가져올 수만 있다면(client side로), 그것을 keep해두었다가 방금전에 말한 특정한 event에 반응하여 udp up을 가정할수 있을듯,
@@ -441,7 +451,7 @@ export class SignalingGateway
 
     console.log(
       `[SignalingGateway:logConnectedSockets] activeUidsWithPeerRecord=${activeUidsWithPeerRecord.size}, ` +
-      `mismatchedCurrentSocket=${mismatchedCurrentSocket}`
+        `mismatchedCurrentSocket=${mismatchedCurrentSocket}`
     );
     console.log(`======================================= ${context}`);
   }
@@ -545,7 +555,7 @@ export class SignalingGateway
     );
   }
 
-  // 만약 받지 못했다고 가정하면, 아니 씨발... 그게 말이 되나? 존나 빨리 두번 조지면
+  // 만약 받지 못했다고 가정하면, 아니 ... 그게 말이 되나? 존나 빨리 두번 조지면
   // 못받아?
   // [ICE Restart 요청 수신]
   // 클라이언트가 네트워크 문제로 연결에 실패(failed)했을 때, 연결을 복구하기 위해 새로운 인증 정보를 요청하는 이벤트
@@ -705,7 +715,7 @@ export class SignalingGateway
 
   // [Client -> Server] 클라이언트가 "나 이 방에 들어갈래" 라고 서버에 요청하는 이벤트입니다.
   @SubscribeMessage(EventNames.JOIN_ROOM)
-  //TODO: 1)유체이탈 후 영혼이 들어오는 것인지, 2)2)몸과 영혼이 일치하여 들어오는 것인지 구분. -> isUserInRoom state을 함께 payload로 보낸다.
+  //TODO: 1)유체이탈 후 영혼이 들어오는 것인지, 2)몸과 영혼이 일치하여 들어오는 것인지 구분. -> isUserInRoom state을 함께 payload로 보낸다.
   // 2) 일반적인 경우. 1) 어떤 이유로 room에 존재하던 disconnected peer가 reconnect된 후 ()
   async handleJoinRoom(
     @ConnectedSocket() connectedSocket: Socket,
@@ -748,10 +758,14 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.CHAT_MESSAGE)
   handleChatMessage(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { message: string }
+    @MessageBody() payload: { message: string; timestamp: string }
   ): void {
-    const { message } = payload;
-    this.groupStudyManagementService.handleChatMessage(clientSocket, message);
+    const { message, timestamp } = payload;
+    this.groupStudyManagementService.handleChatMessage(
+      clientSocket,
+      message,
+      timestamp
+    );
   }
 
   // [Real-time Duration Sync]

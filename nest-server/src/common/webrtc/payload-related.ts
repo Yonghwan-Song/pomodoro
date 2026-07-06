@@ -33,7 +33,7 @@ export type AckResponse<T = any> = {
 export type DataToSyncForPeerReconnected = {
   peersTodayTotalFocusArray: TodayTotalFocusOfPeer[];
   chatMessages: ChatMessageInfo[];
-}
+};
 
 export interface ChatMessageInfo {
   senderId: string;
@@ -47,11 +47,25 @@ export type TodayTotalFocusOfPeer = {
   todayTotalDuration: number;
 };
 
+export type ParticipantBasicData = {
+  peerId: string;
+  nickName: string | null;
+  picture: string | null;
+  todayTotalDuration: number;
+};
+
 export type JOIN_ROOM_DATA = {
   selfPeerId: string; // Disconnection handling할때 nest log에서 편하게 알아보기 위해
   roomId: string;
   existingProducers: ProducerPayload[];
-  peersTodayTotalFocusArray: TodayTotalFocusOfPeer[];
+  participantBasicDataArray: ParticipantBasicData[];
+};
+
+export type NEW_PEER_JOINED_DATA = {
+  peerId: string;
+  todayTotalDuration: number;
+  nickName: string | null;
+  picture: string | null;
 };
 
 /** Ack `data` for batch preferred spatial layer on all of a peer's consumers */
@@ -73,4 +87,4 @@ export type SocketID = string;
 export type PeerStatus = {
   doesPeerExistInPeerMap: boolean;
   isPeerInRoom: boolean;
-}
+};

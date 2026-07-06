@@ -6,11 +6,14 @@ import {
 } from 'mediasoup/types';
 import { Room } from './room.entity';
 import { ChatMessageInfo } from 'src/common/webrtc/payload-related';
+import { getNickname } from './utils';
 
 export class Peer {
   public readonly id: string; // Firebase uid — never changes across reconnects
   public currentSocketId: string; // current socket.id — swapped on reconnect
-  public userNickname: string;
+  public userEmail: string | null; // 받아만 두고 딱히 프론트에 보내지는 말기. 개인정보.
+  public userNickname: string | null;
+  public picture: string | null;
   // 동시에 한곳에만 입장할 수 있다는 그 제약 그리고 transport은 재활용될 수 없다는 것 (그러니까 room과 transport은 1:1의 관계인것)
   //-> NOTE: peer는 어떤 임의의 시점에서 관찰되었을 때, 동시에 두가지 방에 존재할 수 없음. Peer가 가지고 있는 transport의 존재는 지금 그가 존재하는 방에 종속된다. 그렇다면, 방에서 나간다는 것은,
   // transport의 존재도 같이 사라진다는 것. (그렇게 해야한다던데... ... 재활용 못한데..대충 읽기에는 그랬고.. 그냥 이렇게 하면 안전빵 같음. 지금 뭐 더 복잡하게 설계하지는 못하겠음 ㅠ)
@@ -30,10 +33,23 @@ export class Peer {
 
   public removalTimer: NodeJS.Timeout | null;
 
-  constructor(uid: string, socketId: string, userNickname: string) {
+  constructor(params: {
+    uid: string;
+    socketId: string;
+    userEmail: string | null;
+    userNickname: string | null;
+    picture: string | null;
+  }) {
+    const { uid, socketId, userEmail, userNickname, picture } = params;
+
     this.id = uid;
     this.currentSocketId = socketId;
-    this.userNickname = userNickname;
+    this.userEmail = userEmail;
+    this.userNickname = getNickname({
+      userNicknameFromGoogleAccount: userNickname,
+      uid
+    });
+    this.picture = picture;
     this.room = null;
     // TODO: Should I initialize other fields too?
   }

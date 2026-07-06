@@ -1,15 +1,15 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { Request, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
 
 export interface CustomRequest extends Request {
   userEmail?: string;
   userNickname?: string;
+  picture?: string;
 }
 
 export async function FireBase_Admin_Middleware(
   req: CustomRequest,
-  res: Response,
   next: NextFunction
 ) {
   const authorizationHeader = req.headers.authorization;

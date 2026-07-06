@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import { css } from "../../../../../styled-system/css";
 import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
+import ImageMemoized from "../../../../ReusableComponents/ImageMemoized";
 
 interface VideoPlayerProps {
   stream?: MediaStream | null;
   isLocal?: boolean; // 로컬 비디오인지 여부를 나타내는 prop
   consumerId?: string; // 원격 비디오의 화질 조절을 위한 consumer ID
+  picture: string | null; // 구글 프로필 이미지 url
 }
 
 function getLayerLabel(layer?: number) {
@@ -26,7 +28,8 @@ function getRequestedLayerText(layer?: number) {
 const VideoPlayer = ({
   stream,
   isLocal = false,
-  consumerId
+  consumerId,
+  picture
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -82,17 +85,12 @@ const VideoPlayer = ({
   };
 
   if (!stream) {
-    return (
-      <div
-        className={css({
-          width: "100%",
-          maxWidth: "100%",
-          aspectRatio: "16 / 9",
-          borderRadius: "lg",
-          backgroundColor: "bg.canvas"
-        })}
-      />
-    );
+    // NOTE: isLocal === true 인 경우는 (즉, 자기 자신 화면을 render하는 경우) stream이 없는 경우는 없다.
+    // room에 입장할 때 받아서 들어옴.
+    // 그런데, 그런거 뭐 상관 없이 picture를 기본적으로 stream이 없는 경우에 사용해서 화면에 보여준다.
+    // 그리고 그마저도 없으면 (null값일 수 있음) 그냥 아래의 div를 그대로 사용한다.
+
+    return <ImageMemoized picture={picture} />;
   }
 
   return (
@@ -207,6 +205,7 @@ const VideoPlayer = ({
           </div>
         )}
       </div>
+
       {/* layerStates and Buttons */}
       {!isLocal && consumerId && (
         <div
@@ -267,6 +266,7 @@ const VideoPlayer = ({
               {requestedLayerLabel}
             </span>
           </div>
+
           <div
             className={css({
               display: "inline-flex",

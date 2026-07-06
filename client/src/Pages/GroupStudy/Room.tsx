@@ -5,7 +5,6 @@ import { useEffect, useCallback, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useConnectionStore } from "../../zustand-stores/connectionStore";
 import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import { useAuthContext } from "../../Context/AuthContext";
 import { ChatBox } from "./components/chat/ChatBox";
 import { RoomControls } from "./components/room/RoomControls";
 import { GlobalLayerControls } from "./components/room/GlobalLayerControls";
@@ -143,11 +142,11 @@ export function Room() {
   const peerTodayTotalDurations = useConnectionStore(
     (s) => s.peerTodayTotalDurations
   );
+  const participants = useConnectionStore((s) => s.participants);
   const chatMessages = useConnectionStore((s) => s.chatMessages);
   const joinRoom = useConnectionStore((s) => s.joinRoom);
   const leaveRoom = useConnectionStore((s) => s.leaveRoom);
   const createTransports = useConnectionStore((s) => s.createTransports); // NOTE: Moving state or actions out of RoomSlice does not require import changes here, since they are still accessed through the combined connection store.
-  const sendChatMessage = useConnectionStore((s) => s.sendChatMessage);
 
   const myTodayTotalDuration = useBoundedPomoInfoStore(
     (state) => state.todayTotalDuration
@@ -156,7 +155,6 @@ export function Room() {
   // useAuthContext()가 초기화 전이거나 Provider 외부일 때 null을 반환할 수 있습니다.
   // null에서 { user }를 구조 분해(destructuring)하려고 하면 런타임 에러(Cannot destructure property...)가 발생하여 앱이 다운됩니다.
   // 이를 방지하고 TypeScript 에러를 해결하기 위해 `|| {}`를 추가하여 null일 경우 빈 객체에서 분해하도록 안전하게 처리했습니다.
-  const { user } = useAuthContext() || {};
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
 
@@ -211,14 +209,6 @@ export function Room() {
     navigate("/group-study");
   }, [leaveRoom, navigate]);
 
-  // 채팅 메시지 전송
-  const handleSendMessage = useCallback(
-    (message: string) => {
-      sendChatMessage(message, user?.displayName ?? "");
-    },
-    [sendChatMessage, user?.displayName]
-  );
-
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -269,12 +259,12 @@ export function Room() {
             peerNicknames={peerNicknames}
             myTodayTotalDuration={myTodayTotalDuration}
             peerTodayTotalDurations={peerTodayTotalDurations}
+            participants={participants}
           />
         </section>
         <aside css={desktopChatCss}>
           <ChatBox
             messages={chatMessages}
-            onSendMessage={handleSendMessage}
             mySocketId={socket?.id ?? ""}
             layout="sidebar"
           />
@@ -299,7 +289,6 @@ export function Room() {
             <section css={mobilePanelCss}>
               <ChatBox
                 messages={chatMessages}
-                onSendMessage={handleSendMessage}
                 mySocketId={socket?.id ?? ""}
                 layout="sidebar"
               />

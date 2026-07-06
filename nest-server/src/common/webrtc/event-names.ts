@@ -50,4 +50,4 @@ export const SYNC_DATA_TO_PEER_RECONNECTED = 'syncDataToPeerReconnected'; // han
 export const LOG_OUT = 'logOut';
 
 // Reconnect 관련
-export const CHECK_PEER_STATUS_IN_SERVER = "checkPeerStatusInServer"
+export const CHECK_PEER_STATUS_IN_SERVER = 'checkPeerStatusInServer';

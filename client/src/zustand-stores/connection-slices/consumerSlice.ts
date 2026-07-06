@@ -1,7 +1,12 @@
 import { enableMapSet } from "immer";
 import type { StateCreator } from "zustand";
 import * as EventNames from "../../common/webrtc/eventNames";
-import { ConnectionStore, ConsumerSlice, ConsumerLayerState } from "./types";
+import {
+  ConnectionStore,
+  ConsumerSlice,
+  ConsumerLayerState,
+  Participant
+} from "./types";
 import {
   AckResponse,
   ConsumerOptionsExtended
@@ -23,11 +28,15 @@ export const createConsumerSlice: StateCreator<
     consumerLayers: new Map(),
     lastGlobalPreferredSpatialLayer: undefined,
     initializeConsumerSliceStates: () => {
-      set({
-        consumersByPeerId: new Map(),
-        consumerLayers: new Map(),
-        lastGlobalPreferredSpatialLayer: undefined,
-      }, false, "consumer/resetToInitialValues")
+      set(
+        {
+          consumersByPeerId: new Map(),
+          consumerLayers: new Map(),
+          lastGlobalPreferredSpatialLayer: undefined
+        },
+        false,
+        "consumer/resetToInitialValues"
+      );
     },
     // complex one
     // NOTE: joinRoom -> ON ROOM_GET_PRODUCER's Ack cb
@@ -123,17 +132,46 @@ export const createConsumerSlice: StateCreator<
 
               const newStream = new MediaStream([consumer.track]);
               set(
-                (state) => ({
-                  remoteStreams: new Map(state.remoteStreams).set(
-                    peerId,
-                    newStream
-                  )
-                }),
+                (state) => {
+                  const participantsToUpdate = new Map<string, Participant>(
+                    state.participants
+                  );
+                  const existing = participantsToUpdate.get(peerId);
+
+                  if (existing) {
+                    participantsToUpdate.set(peerId, {
+                      ...existing,
+                      stream: newStream
+                    });
+                  } else {
+                    console.warn(
+                      "The owner of remote stream does not exist in participant map <- INTENT_TO_CONSUME"
+                    );
+                  }
+
+                  return {
+                    remoteStreams: new Map(state.remoteStreams).set(
+                      peerId,
+                      newStream
+                    ),
+                    participants: participantsToUpdate
+                  };
+                },
                 false,
                 "room/remoteStreamAdded"
               );
 
+              // Emitted when the transport this consumer belongs to is closed for whatever reason. The consumer itself is also closed.
+              // NOTE: It means that the recv transport this peer owns is closed for whatever reason.
+              // Something weird about this listener is that the transport close will invoke multiple listener callbacks
+              // because all consumers defined in this scope belong to the same recv transport, which is commonly used by all consumers of video producers.
+              // 그래도 우선... participantsToUpdate을 적어두긴 하겠음.... 그런데 사실 위의 가정이 참이라면,
+              // consumersByPeerId는 뭐... 사실상 초기화, 그리고 remoteStreams도 초기화, participants는 stream다 초기화 해야함.
+              // TODO: 그리고 [Emitted when the transport is closed for whatever reason](https://mediasoup.org/documentation/v3/mediasoup-client/api/#transport-observer-on-close) <- 이것을 사용해야함.
               consumer.on("transportclose", () => {
+                console.log(
+                  `The recv transport the consumer for peer ${peerId} is closed for whatever reason`
+                );
                 set(
                   (state) => {
                     const newConsumers = new Map(state.consumersByPeerId);
@@ -142,10 +180,22 @@ export const createConsumerSlice: StateCreator<
                     newStreams.delete(peerId);
                     const newLayers = new Map(state.consumerLayers);
                     newLayers.delete(consumer.id);
+                    const participantsToUpdate = new Map(state.participants);
+                    const result = participantsToUpdate.delete(peerId);
+                    if (result) {
+                      console.log(
+                        `The stream of peer ${peerId} is deleted from the peer object`
+                      );
+                    } else {
+                      console.log(
+                        `The deletion of the peer ${peerId}'s stream from the peer object failed`
+                      );
+                    }
                     return {
                       consumersByPeerId: newConsumers,
                       remoteStreams: newStreams,
-                      consumerLayers: newLayers
+                      consumerLayers: newLayers,
+                      participants: participantsToUpdate
                     };
                   },
                   false,

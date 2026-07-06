@@ -25,12 +25,12 @@ export const createSocketSlice: StateCreator<
         initializeProducerSliceStates,
         initializeConsumerSliceStates,
         initializeSocketSliceStates,
-        socket,
+        socket
       } = get();
 
       initializeRoomSliceStates();
-      if (socket) socket.io.removeAllListeners()
-      initializeSocketSliceStates()
+      if (socket) socket.io.removeAllListeners();
+      initializeSocketSliceStates();
       initializeMediaStreamSliceStates();
       initializeDeviceSliceStates();
       initializeTransportSliceStates();
@@ -74,17 +74,22 @@ export const createSocketSlice: StateCreator<
       // connect()는 비동기 함수이므로 여러 컴포넌트가 동시에 호출해도 소켓이 중복 생성되지 않아야 한다.
 
       console.log(`connect() was called by ${caller}`);
-      console.log("socket inside connect()", socket)
+      // console.log("socket inside connect()", socket);
 
       // NOTE: When a socket is disconnected and it is not set to null, connect() should not be called
       // because the socket disconnected is supposed to be reconnected automatically.
       // If we allow this method to run, it will probably create a new socket instance and the old one will be left orphaned.
-      
+
       // #region New
-      if (socket !== null ) {
-        console.log("socket is not null. connect() is early returned due to one of the followings");
+      if (socket !== null) {
+        console.log(
+          "socket is not null. connect() is early returned due to one of the followings"
+        );
         console.log("socket.connected", socket.connected);
-        console.log("socket.disconnected -> non null socket is disconnected means it is attempting to reconnect", socket.disconnected);
+        console.log(
+          "socket.disconnected -> non null socket is disconnected means it is attempting to reconnect",
+          socket.disconnected
+        );
         console.log("isConnecting (set in this connect() call)", isConnecting);
         return;
       }
@@ -113,7 +118,7 @@ export const createSocketSlice: StateCreator<
           reconnection: true,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
-          randomizationFactor: 0.5,
+          randomizationFactor: 0.5
           // transports: ['polling', 'websocket'], // polling 먼저, 그 다음 websocket 업그레이드
           // transports: ['websocket'], // polling을 제외하고 websocket만 사용
           // upgrade: false
@@ -131,18 +136,6 @@ export const createSocketSlice: StateCreator<
           );
         });
 
-        //#region Origianl on socket disconnect
-        // newSocket.on("disconnect", (reason) => {
-        //   console.log("socket disconnection reason -> ", reason);
-        //   if (EXPLICIT_SOCKET_DISCONNECT_REASONS.has(reason)) {
-        //     get().leaveRoom(); // leaveRoom does not change socket states. Then, why did you.. call it here?...
-        //     // Go to the definition of EXPLICIT_SOCKET_DISCONNECT_REASONS. You will find the answer
-        //   }
-
-        //   set({ isSocketConnected: false }, false, "socket/disconnected");
-        // });
-        //#endregion
-
         //#region New on socket disconnection -> 30분 뒤에 방에서 나가지도록
         // TODO: - [x] timeout callback -> initialize slices, set forcedRoomExitReason
         //       - [x] EXPLICIT_SOCKET_DISCONNECT_REASONS -> leaveRoom() 에 뭔가 추가해보기 -> 이것도 동일하게 하자 그냥
@@ -150,7 +143,7 @@ export const createSocketSlice: StateCreator<
         //       - [ ] check if I do Something about socket manager's "reconnect" event handler.
         //          1. newSocket.io 즉, socket자체로부터 manager로 접속하는거니까.. 뭔가 manager수준에서 자신이 manager하고 있는 socket이 null이 되면 알아서 라이브러리 수준에서 event listener를 drop하지 않을까?
         newSocket.on("disconnect", (reason) => {
-          const { leaveRoom, isUserInRoom, socketResetTimer } = get();
+          const { isUserInRoom, socketResetTimer } = get();
           console.log("socket disconnection reason -> ", reason);
 
           // WARNING: 다양한 disconnect reason과 관계없이 공통으로 적용.
@@ -216,12 +209,12 @@ export const createSocketSlice: StateCreator<
         //   }
         //
         //   //#region Scribble
-        //   // 1. firefox 방어가 되는지 확인해야함. 아니면 시발 firefox쓰지 말라고해버리기...
+        //   // 1. firefox 방어가 되는지 확인해야함. 아니면 firefox쓰지 말라고해버리기...
         //   // 2. 경우의 수 rope들 다시 잡아내기 (가능한 사건들의 줄기?) <-- 이거를 어떠헥 다시 하지.....................
         //   // 3. Then, what should I do about the fucking edge case where socket.emit() is called and ack res is not received?
         //   // What happens in this design?
         //   // The fact that an ack response is not received means the socket connection was down as soon as the socket.emit() was called.
-        //   // That means this reconnect handler is going to be called definetly
+        //   // That means this reconnect handler is going to be called definitely
         //   //#endregion
         //
         //   console.log(
@@ -279,7 +272,7 @@ export const createSocketSlice: StateCreator<
             socketResetTimer
           } = get();
 
-          console.log("socket manager's reconnect handler is called")
+          console.log("socket manager's reconnect handler is called");
 
           // DECISION: ClearTimeout AS SOON AS a "reconnect" event occurs
           if (socketResetTimer !== null) {
@@ -365,10 +358,10 @@ export const createSocketSlice: StateCreator<
                       // reload는 connect(), 위의 경우는 지금 이 함수. 그렇다면 joinRoom에 isUserInRoomInClient를 payload에 포함시키면 해결된다.
                       // WHAT_IF: 그러나 만약에, user가 방에 안들어가는 시간이 길어지면, participants의 UX는 감소. 3분 + 너무 많은 시간동안 접속 안했음 => 안좋아.
                       // 그래서 또한번 timeout을 줘서 유체이탈이라는 판단이 선 후 3분의 시간이 지났는데 방에 안들어오면 그냥 peer를 방에서 강제로 방출.
-                      // 그렇다면 connect시점에 이게 서버쪽에서 유체이탈인지 아닌지 판단을 할 수 있게 해줘야지 setTimeout호출을 할텐데... 이렇게까지 해야하나? 
+                      // 그렇다면 connect시점에 이게 서버쪽에서 유체이탈인지 아닌지 판단을 할 수 있게 해줘야지 setTimeout호출을 할텐데... 이렇게까지 해야하나?
                       // DESIGN: 그냥 connect event handler에서도 socket.emit으로 peerStatus 확인한 후에 만약 유체이탈 상태다 하면 이쪽에서 뭐 보내주지 유체이탈이라고
-                      // IMPT: 재연결이라는 것을 포함시키면, 이제 문제가 socket connection이 reconnection인지 아닌지 구분해야한다는것. 
-                      // 그런데 그것을 connect handler in ther server는 peer와 peer.id가 firebaseUid라는 것 그리고 fierbaseUid는 지금 우리 앱 구조상 peer에게 유일한 값이라는것 (식별자).
+                      // IMPT: 재연결이라는 것을 포함시키면, 이제 문제가 socket connection이 reconnection인지 아닌지 구분해야한다는것.
+                      // 그런데 그것을 connect handler in their server는 peer와 peer.id가 firebaseUid라는 것 그리고 fierbaseUid는 지금 우리 앱 구조상 peer에게 유일한 값이라는것 (식별자).
                       // 연결에 비용이 증가하는데? recovery 기능 넣느라고... 아닌가 그냥 if구문 하나로만 분기점을 만들어 낼 수 있으니까 고작 그거 console.log찍는거나 computing 비용의 관점에서는 별거 아니게 만들 수 있는것인가?
                     }
                   } else {
@@ -393,7 +386,7 @@ export const createSocketSlice: StateCreator<
                     }
                   }
                 }
-                //  WARNING: 여기까지 도달할 수 없어. 왜냐하면 애초에 이 message는 peer가 재연결 된 이후에 씨이발 보내질 수 밖에 없기 때문이야. 대가리 씨발...
+                //  WARNING: 여기까지 도달할 수 없어. 왜냐하면 애초에 이 message는 peer가 재연결 된 이후에나 보내질 수 밖에 없기 때문이야.
                 // 그리고 완전 connection관련해서는 초기화 할것임.
                 //
                 // else {

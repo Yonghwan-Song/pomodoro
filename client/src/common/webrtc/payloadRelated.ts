@@ -1,4 +1,4 @@
-import { type ConsumerOptions, RtpCapabilities } from "mediasoup-client/types";
+import { type ConsumerOptions } from "mediasoup-client/types";
 
 // WARNING:
 export type ProducerPayload = {
@@ -35,7 +35,7 @@ export type AckResponse<T = any> = {
 export type DataToSyncForPeerReconnected = {
   peersTodayTotalFocusArray: TodayTotalFocusOfPeer[];
   chatMessages: ChatMessageInfo[];
-}
+};
 
 export interface ChatMessageInfo {
   senderId: string;
@@ -49,11 +49,27 @@ export type TodayTotalFocusOfPeer = {
   todayTotalDuration: number;
 };
 
+// NOTE: data를 받아올 때는 undefined properties가 존재할 수 있지만,
+// 우리가 여기에서 사용하고자 하는 participant 타입 수준부터는 다른 대체 값을 할당하여 undefined를 허용하지 않는다.
+export type NEW_PEER_JOINED_DATA = {
+  peerId: string;
+  todayTotalDuration: number;
+  nickName: string | null;
+  picture: string | null;
+};
+
+export type ParticipantBasicData = {
+  peerId: string;
+  nickName: string;
+  picture: string;
+  todayTotalDuration: number;
+};
+
 export type JOIN_ROOM_DATA = {
   selfPeerId: string; // Disconnection handling할때 nest log에서 편하게 알아보기 위해
   roomId: string;
   existingProducers: ProducerPayload[];
-  peersTodayTotalFocusArray: TodayTotalFocusOfPeer[];
+  participantBasicDataArray: ParticipantBasicData[];
 };
 
 /** Ack `data` for batch preferred spatial layer on all of a peer's consumers (server shape). */
@@ -77,4 +93,4 @@ export type SocketID = string;
 export type PeerStatus = {
   doesPeerExistInPeerMap: boolean;
   isPeerInRoom: boolean;
-}
+};

@@ -24,6 +24,7 @@ import {
   ConsumerLayersChangedPayload,
   DataToSyncForPeerReconnected,
   JOIN_ROOM_DATA,
+  NEW_PEER_JOINED_DATA,
   ProducerPayload
 } from 'src/common/webrtc/payload-related';
 import { InjectModel } from '@nestjs/mongoose';
@@ -32,7 +33,8 @@ import { Model } from 'mongoose';
 
 @Injectable()
 export class GroupStudyManagementService
-  implements OnModuleInit, OnModuleDestroy {
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(GroupStudyManagementService.name);
   // NOTE: 마치 이곳을 로비 정도로 생각하면 될듯. 사람들이 대기하고있고, 여러개의 방이 있고 (물론 지금은 공개방 하나 있음 30명으로 제한 예정)
   private peerMap: Map<string, Peer> = new Map();
@@ -42,7 +44,7 @@ export class GroupStudyManagementService
     private readonly mediasoupService: MediasoupService,
     @InjectModel(RoomSchemaClass.name)
     private readonly roomModel: Model<RoomDocument> // TODO: RoomDocument는 대체 정체가 뭐임...
-  ) { }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Service has been initialized.');
@@ -69,9 +71,21 @@ export class GroupStudyManagementService
 
   //#region Only Peer
   // TODO: 대충 이전에 transport 에러로 disconnected된 socket의 id만 알 수 있다면...
-  // 그거로 peer entitiy의 socketId만 갈아끼우면 되긴 하거든?.. .그러면 이제 정체성이란게 다시 승계/연결되는거니까...
-  addPeer(uid: string, socketId: string, userNickname: string) {
-    const newPeer = new Peer(uid, socketId, userNickname);
+  // 그거로 peer entity의 socketId만 갈아끼우면 되긴 하거든?.. .그러면 이제 정체성이란게 다시 승계/연결되는거니까...
+  addPeer(
+    uid: string,
+    socketId: string,
+    userEmail: string | null,
+    userNickname: string | null,
+    picture: string | null
+  ) {
+    const newPeer = new Peer({
+      uid,
+      socketId,
+      userEmail,
+      userNickname,
+      picture
+    });
     this.peerMap.set(uid, newPeer);
     this.logCurrentState('[group-study-management.service:addPeer]');
   }
@@ -169,8 +183,6 @@ export class GroupStudyManagementService
   }
 
   removePeerFromPeerMap(uid: string) {
-    const existingSocketId = this.peerMap.get(uid).currentSocketId;
-
     if (this.peerMap.delete(uid)) {
       console.log(
         `[removePeerFromPeerMap()] Peer ${uid} removed from peersMap`
@@ -266,8 +278,8 @@ export class GroupStudyManagementService
 
       getIceStateLog(iceState)(
         `ice=${transition} ` +
-        `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
-        buildLifecycleSuffix(now)
+          `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
+          buildLifecycleSuffix(now)
       );
 
       lastObservedIceState = iceState;
@@ -281,9 +293,9 @@ export class GroupStudyManagementService
       const now = Date.now();
       console.log(
         `tuple=${tuple.protocol} ` +
-        `local=${tuple.localIp}:${tuple.localPort} ` +
-        `remote=${tuple.remoteIp}:${tuple.remotePort} ` +
-        buildLifecycleSuffix(now)
+          `local=${tuple.localIp}:${tuple.localPort} ` +
+          `remote=${tuple.remoteIp}:${tuple.remotePort} ` +
+          buildLifecycleSuffix(now)
       );
     });
 
@@ -291,9 +303,9 @@ export class GroupStudyManagementService
       const now = Date.now();
       console.warn(
         `closed ` +
-        `lastIce=${lastObservedIceState} ` +
-        `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
-        buildLifecycleSuffix(now)
+          `lastIce=${lastObservedIceState} ` +
+          `sinceLastIce=${formatElapsedMs(now - lastIceStateChangedAt)} ` +
+          buildLifecycleSuffix(now)
       );
     });
 
@@ -301,10 +313,10 @@ export class GroupStudyManagementService
 
     console.log(
       `owner peer=${uid} ` +
-      `initialIce=${transport.iceState} ` +
-      `udpPort=${udpIce?.port ?? 'n/a'} ` +
-      (tcpIce ? `tcpPort=${tcpIce.port} ` : '') +
-      `iceCandidates=${transport.iceCandidates.length} ${logPrefix}`
+        `initialIce=${transport.iceState} ` +
+        `udpPort=${udpIce?.port ?? 'n/a'} ` +
+        (tcpIce ? `tcpPort=${tcpIce.port} ` : '') +
+        `iceCandidates=${transport.iceCandidates.length} ${logPrefix}`
     );
 
     const transportOptions = {
@@ -488,8 +500,9 @@ export class GroupStudyManagementService
       );
       return {
         success: false,
-        error: `Failed to set preferred layers - message -> ${error instanceof Error ? error.message : String(error)
-          }`
+        error: `Failed to set preferred layers - message -> ${
+          error instanceof Error ? error.message : String(error)
+        }`
       };
     }
   }
@@ -526,8 +539,9 @@ export class GroupStudyManagementService
       );
       return {
         success: false,
-        error: `Failed to set preferred layers for all consumers - message -> ${error instanceof Error ? error.message : String(error)
-          }`
+        error: `Failed to set preferred layers for all consumers - message -> ${
+          error instanceof Error ? error.message : String(error)
+        }`
       };
     }
   }
@@ -598,11 +612,10 @@ export class GroupStudyManagementService
       transport.iceState === 'completed'
     ) {
       // WARNING: 클라이언트에서 failed가 너무 빨리 뜨는거야?... 만약 그렇다면... 위의 iceState이 좀 늦게 반영되는거 같은데... 곧 disconnected로 변하지 않나?
-      // 서로 비동기라... 아니 씨발 서로 통신하고 하나 둘 셋 하고 state을 바꾸는게 아니지 않나?... 각자 즈그들 (transport instance)의 기준따라 거시기 하겠지.
+      // 서로 비동기라... 아니 서로 통신하고 하나 둘 셋 하고 state을 바꾸는게 아니지 않나?... 각자 즈그들 (transport instance)의 기준따라 거시기 하겠지.
       // 그래서 약간 ... 클라이언트가 더 빨리 판단해서 failed로 된거고... ...
       // 라고 생각해보면 말이 되긴함. 그런데 애초에 이렇게 방어해놓은것은 왜...
       // 빡대가리새끼야... completed에서 disconnected되고나서 다시 connected -> completed된 딱 그 찰나의 경우만 방어하고싶은건데 대놓고 completed와 connected로 guard를 만들면 중간에 한번 disconnected되었었는지 아닌지 어떻게 아냐고...
-      // 그냥 씨발 조져...
       // 0|pomodoro-nest  | [SignalingGateway:handleRestartIce] Socket sb_GzYEKgNEPOWq-AAAj requested ICE restart for its recv transport
       // 0|pomodoro-nest  | [SignalingGateway:handleRestartIce] Socket sb_GzYEKgNEPOWq-AAAj requested ICE restart for its send transport
       // 0|pomodoro-nest  | ice=completed -> disconnected sinceLastIce=50843ms peer=r013y8V4e1TbWrZkrsOsagS3oa22 age=106297ms ts=2026-06-23T11:36:45.201Z [recv:f437cb2a-810e-4ddb-89c9-3eeb4707c2e6]
@@ -901,7 +914,7 @@ export class GroupStudyManagementService
 
       const roomId = peer.room?.id;
       if (roomId) {
-        // ASSUMPTION: (FIXED) I think sockets in each device are not in the same room after reconnection. The room actually they are staying is the same in terms of UX and Room entity calss instance.
+        // ASSUMPTION: (FIXED) I think sockets in each device are not in the same room after reconnection. The room actually they are staying is the same in terms of UX and Room entity class instance.
         // However, in terms of socket.io's room feature, they are not in the same room.
         clientSocket.to(roomId).emit(EventNames.PRODUCER_CLOSED, {
           producerId: targetProducerId
@@ -1023,7 +1036,7 @@ export class GroupStudyManagementService
       `[group-study-management.service:joinRoom] The room ${room.id} has ${room.getPeers().length} members`
     );
 
-    /** 2) Broadcasting by ROOM_PEER_JOINED event (JOIN_ROOM -> invokes utimately -> ROOM_PEER_JOINED)
+    /** 2) Broadcasting by ROOM_PEER_JOINED event (JOIN_ROOM -> invokes ultimately -> ROOM_PEER_JOINED)
      * [Server -> Client(s)] 이 방에 이미 들어와 있던 다른 사람들에게만 '나(clientSocket) 방금 들어왔어!'라고 통지합니다.
      * - JOIN_ROOM (요청): "저 이 방에 들어갈게요" (Client -> Server)
      * - ROOM_PEER_JOINED (알림): "얘 방금 우리 방에 들어왔어요" (Server -> Clients in Room)
@@ -1034,10 +1047,18 @@ export class GroupStudyManagementService
      * 1번 방식 (현재 작성하신 코드 - 가장 권장/일반적인 방식) -> clientSocket.to(roomId).emit('EVENT', data);
      * 2번 방식 (명시적 broadcast 사용 - 옛날 버전이나 특정 상황에서 쓰임) -> clientSocket.broadcast.to(roomId).emit('EVENT', data);
      */
-    connectedSocket.to(roomId).emit(EventNames.ROOM_PEER_JOINED, {
+
+    const basicDataOfNewParticipant: NEW_PEER_JOINED_DATA = {
       peerId: peer.id,
-      todayTotalDuration: peer.todayTotalDuration // DESIGN: 내 todayTotalDuration을 participants가 최초 인식하도록 하게 하는 지점.
-    });
+      todayTotalDuration: peer.todayTotalDuration, // DESIGN: 내 todayTotalDuration을 participants가 최초 인식하도록 하게 하는 지점.
+      nickName: peer.userNickname,
+      picture: peer.picture
+    };
+    console.log('room_peer_joined data', basicDataOfNewParticipant);
+
+    connectedSocket
+      .to(roomId)
+      .emit(EventNames.ROOM_PEER_JOINED, basicDataOfNewParticipant);
 
     // 3) Prepare JOIN_ROOM_DATA
     const existingProducers = room
@@ -1046,11 +1067,13 @@ export class GroupStudyManagementService
 
     // 방에 이미 존재하던 사람들의 id와 오늘 집중 시간을 묶어서 방금 입장한 사람에게 반환합니다.
     // TODO: let the reconnected peer have this array.... back to his side to make a synchronization of data lost when he was disconnected.
-    const peersTodayTotalFocusArray = room
+    const participantBasicDataArray = room
       .getPeers()
       .filter((p) => p.id !== (connectedSocket.data.uid as string))
       .map((p) => ({
         peerId: p.id,
+        nickName: p.userNickname,
+        picture: p.picture,
         todayTotalDuration: p.todayTotalDuration
       }));
 
@@ -1060,7 +1083,7 @@ export class GroupStudyManagementService
         selfPeerId: peer.id,
         roomId, // 소유자들 (즉, 참가자들)이 머무르고 있는 같은 공간의 identifier (사실 지금까지는 open방 하나밖에 구현 안해서... identify할 필요가 없긴 함.. :::...)
         existingProducers, // 보고 듣는것
-        peersTodayTotalFocusArray // 보고 들을 수 있는것의 소유자들
+        participantBasicDataArray // 보고 들을 수 있는것의 소유자들
       }
     };
   }
@@ -1148,7 +1171,8 @@ export class GroupStudyManagementService
   // Therefore, let's just make a field in each peer.
   handleChatMessage(
     clientSocket: Socket,
-    message: string
+    message: string,
+    timestamp: string
   ): { success: boolean; error?: string } {
     const peer = this.requirePeer(
       clientSocket.data.uid as string,
@@ -1167,7 +1191,7 @@ export class GroupStudyManagementService
       senderId: peer.id,
       senderNickname: peer.userNickname,
       message: message,
-      timestamp: new Date().toISOString()
+      timestamp
     };
 
     peer.chatMessages.push(chatPayload);

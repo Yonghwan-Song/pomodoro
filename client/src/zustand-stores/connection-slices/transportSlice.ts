@@ -40,10 +40,7 @@ export const createTransportSlice: StateCreator<
       }
     },
     initializeTransportSliceStates: () => {
-      const {
-        sendTransport,
-        recvTransport,
-      } = get();     // TODO: transport close하고 초기화 해야하는거 아닌가? device도 그렇고 다른 webRTC와 관계있는 객체들은 다 close하는 방법이 있지 않나
+      const { sendTransport, recvTransport } = get(); // TODO: transport close하고 초기화 해야하는거 아닌가? device도 그렇고 다른 webRTC와 관계있는 객체들은 다 close하는 방법이 있지 않나
 
       // 2. 리스너 제거 + close, send/recv 둘 다
       [sendTransport, recvTransport].forEach((transport) => {
@@ -139,7 +136,7 @@ export const createTransportSlice: StateCreator<
         // QQQ: 왜 once? 왜 안적어놨어? on으로 바꿔도 되는지 모르잖아......................................................
         // 존나 많이 호출되는데 왜그런지 모르겠음. 걍 once로 해보고 다시 로그 찍어보겠음
         // TODO: 이전에 isCreatingTransports 때문에 early return되었다고 로그가 떴는데도 씨이발 아래의 once함수의 cb의 console.log가 실행되었다. remove를 해줘야한다는거야?
-        // ㅠㅠㅠㅠ disconnected일때 off를 해저야하나 이런게 아니라 우리의 의도에 따라 해줘야하는거라고 이 씨이...발아.. 방에서 나갔다가 다시 들어올 때마다 씨발 socket.once를 해주면 그게 존나 중복되니까 문제가 생기지 않을까?
+        // disconnected일때 off를 해저야하나 이런게 아니라 우리의 의도에 따라 해줘야하는거라고 이 씨이...발아.. 방에서 나갔다가 다시 들어올 때마다 socket.once를 해주면 그게 존나 중복되니까 문제가 생기지 않을까?
         // 그게 직접적인 이번 에러의 원인이 아닐지라도 entropy를 줄이라며.. 결국 이것도 joinRoom의 과정에 포함되니까 leaveRoom하면 off할꺼야 그리고 적어 off한다고
         socket.once(EventNames.SEND_TRANSPORT_CREATED, (options: any) => {
           console.log(
@@ -210,7 +207,7 @@ export const createTransportSlice: StateCreator<
                 "Right before attempting to restart ICE inside connectionstatechange handler"
               );
 
-              get().attemptToRestartIceWithGuards(transport, "send", socket); // IMPT: 내부에서 socket과 tranport를 이용해서 guard한다.
+              get().attemptToRestartIceWithGuards(transport, "send", socket); // IMPT: 내부에서 socket과 transport를 이용해서 guard한다.
             }
 
             // TODO: 이것들은... 뭔지 알아보고, 필요하면 뭐라도 작성해보기?
@@ -250,6 +247,14 @@ export const createTransportSlice: StateCreator<
                   : err(new Error(ack.error)); // ERROR: Produce failed Error: Send transport mismatch at Socket2.<anonymous> <-- 이딴것도 뜬다 씨이발..
               }
             );
+          });
+
+          transport.observer.on("close", () => {
+            console.log(`send transport[${transport.id}] is closed`);
+          });
+
+          transport.observer.on("newproducer", (producer) => {
+            console.log("new producer created [id:%s]", producer.id);
           });
 
           set({ sendTransport: transport, isSendTransportReady: true });
@@ -335,6 +340,14 @@ export const createTransportSlice: StateCreator<
             );
           });
 
+          transport.observer.on("close", () => {
+            console.log(`recv transport[${transport.id}] is closed`);
+          });
+
+          transport.observer.on("newconsumer", (consumer) => {
+            console.log("new consumer created [id:%s]", consumer.id);
+          });
+
           set({ recvTransport: transport, isRecvTransportReady: true });
           get().consumePendingProducers();
         });
@@ -372,7 +385,10 @@ export const createTransportSlice: StateCreator<
         return;
       }
 
-      console.log(`current iceRestartAttemptCount[${kind}] - `, iceRestartAttemptCount[kind])
+      console.log(
+        `current iceRestartAttemptCount[${kind}] - `,
+        iceRestartAttemptCount[kind]
+      );
       if (iceRestartAttemptCount[kind] >= MAX_ICE_RESTART_ATTEMPTS) {
         console.log(
           `${kind} transport ice restart attempt count -> ${iceRestartAttemptCount[kind]}`
@@ -393,11 +409,10 @@ export const createTransportSlice: StateCreator<
       });
 
       try {
-        socket
-        /** TODO: It is okay not to rely on this timeout
+        socket/** TODO: It is okay not to rely on this timeout
          * because the edge case will always involve reconnection, which leads to the invocation of the socket.io reconnect callback where we handle a new ice negatitation.
          * But code block looks so complicated. Let's just copy and paste it somewhere else first.
-         */.volatile
+         */ .volatile
           .emit(
             EventNames.RESTART_ICE,
             { kind },
