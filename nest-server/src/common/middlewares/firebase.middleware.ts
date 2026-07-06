@@ -10,6 +10,7 @@ export interface CustomRequest extends Request {
 
 export async function FireBase_Admin_Middleware(
   req: CustomRequest,
+  res: Response,
   next: NextFunction
 ) {
   const authorizationHeader = req.headers.authorization;
