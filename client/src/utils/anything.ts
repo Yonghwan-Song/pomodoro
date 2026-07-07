@@ -1,14 +1,14 @@
-import { AxiosRequestConfig } from "axios";
-import { UpdateCategoryDTOWithUUID } from "../axios-and-error-handling/errorController";
-import { roundTo_X_DecimalPoints } from "./number-related-utils";
-import { PomoSettingType } from "../types/clientStatesType";
-import { boundedPomoInfoStore } from "../zustand-stores/pomoInfoStoreUsingSlice";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { RESOURCE, SUB_SET } from "../constants";
+import { AxiosRequestConfig } from 'axios';
+import { UpdateCategoryDTOWithUUID } from '../axios-and-error-handling/errorController';
+import { roundTo_X_DecimalPoints } from './number-related-utils';
+import { PomoSettingType } from '../types/clientStatesType';
+import { boundedPomoInfoStore } from '../zustand-stores/pomoInfoStoreUsingSlice';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { RESOURCE, SUB_SET } from '../constants';
 
 export function insert_UUID_to_reqConfig(
   reqConfig: AxiosRequestConfig<any>,
-  _uuid: string | undefined
+  _uuid: string | undefined,
 ) {
   if (!_uuid) return reqConfig; //? 그냥... non-undefined assertion하기 쫄려서..
 
@@ -25,14 +25,14 @@ export function getAverage(numbers: number[]): number {
 }
 
 export function calculateTargetFocusRatio(
-  pomoSetting: PomoSettingType
+  pomoSetting: PomoSettingType,
 ): number {
   const {
     pomoDuration,
     shortBreakDuration,
     longBreakDuration,
     numOfPomo,
-    numOfCycle
+    numOfCycle,
   } = pomoSetting;
 
   const totalFocusDurationTargetedInSec = 60 * pomoDuration * numOfPomo;
@@ -43,7 +43,7 @@ export function calculateTargetFocusRatio(
       longBreakDuration);
   const ratioTargeted = roundTo_X_DecimalPoints(
     totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-    2
+    2,
   );
   return ratioTargeted;
   // return roundTo_X_DecimalPoints(ratioTargeted, 2);
@@ -64,14 +64,14 @@ export function assignStartTimeToChangeInfoArrays(startTime: number) {
     const updatedTaskChangeInfoArray = [...currentTaskChangeInfoArray];
     updatedTaskChangeInfoArray[0] = {
       ...updatedTaskChangeInfoArray[0],
-      taskChangeTimestamp: startTime
+      taskChangeTimestamp: startTime,
     };
     boundedPomoInfoStore
       .getState()
       .setTaskChangeInfoArray(updatedTaskChangeInfoArray);
 
     axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-      taskChangeInfoArray: updatedTaskChangeInfoArray
+      taskChangeInfoArray: updatedTaskChangeInfoArray,
     });
     // console.log(
     //   "updatedTaskChangeInfoArray at assignStartTimeToChangeInfoArrays",
@@ -86,14 +86,14 @@ export function assignStartTimeToChangeInfoArrays(startTime: number) {
     const updatedCategoryChangeInfoArray = [...currentCategoryChangeInfoArray];
     updatedCategoryChangeInfoArray[0] = {
       ...updatedCategoryChangeInfoArray[0],
-      categoryChangeTimestamp: startTime
+      categoryChangeTimestamp: startTime,
     };
     boundedPomoInfoStore
       .getState()
       .setCategoryChangeInfoArray(updatedCategoryChangeInfoArray);
 
     axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
-      categoryChangeInfoArray: updatedCategoryChangeInfoArray
+      categoryChangeInfoArray: updatedCategoryChangeInfoArray,
     });
     // console.log(
     //   "updatedCategoryChangeInfoArray at assignStartTimeToChangeInfoArrays",
@@ -120,21 +120,21 @@ export function getCycleRecord(
   cycleDurationInSec: number,
   totalFocusDurationInSec: number,
   ratioTargeted: number,
-  endTime: number
+  endTime: number,
 ) {
   const currentRatio = roundTo_X_DecimalPoints(
     totalFocusDurationInSec / cycleDurationInSec,
-    2
+    2,
   );
 
   return {
     ratio: currentRatio,
     cycleAdherenceRate: roundTo_X_DecimalPoints(
       currentRatio / ratioTargeted,
-      2
+      2,
     ),
     start: endTime - cycleDurationInSec * 1000,
     end: endTime,
-    date: new Date()
+    date: new Date(),
   };
 }

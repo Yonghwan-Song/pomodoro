@@ -1,13 +1,13 @@
-import { AxiosRequestConfig, AxiosResponse } from "axios";
-import { axiosInstance } from "./axios-instances";
+import { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { axiosInstance } from './axios-instances';
 import {
   DB,
   emptyFailedReqInfo,
   getUserEmail,
   openIndexedDB,
-  persistFailedReqInfoToIDB
-} from "..";
-import { RESOURCE, SUB_SET } from "../constants";
+  persistFailedReqInfoToIDB,
+} from '..';
+import { RESOURCE, SUB_SET } from '../constants';
 
 /**
  * Why I Need This and What This Does:
@@ -72,28 +72,32 @@ export interface ERR_CONTROLLER {
 }
 
 export const errController: ERR_CONTROLLER = {
-  owner: "",
+  owner: '',
   failedReqInfo: {
     GET: [],
     POST: [],
     PATCH: new Map<string, UrlAndData>(),
-    DELETE: []
+    DELETE: [],
   },
 
   registerFailedReqInfo(reqConfig: AxiosRequestConfig) {
+    console.log(
+      'registerFailedReqInfo is invoked with this reqConfig',
+      reqConfig,
+    );
     const { method, url, data } = reqConfig;
 
     if (!method || !url) return;
 
     switch (method.toUpperCase()) {
-      case "POST":
+      case 'POST':
         this.failedReqInfo.POST.push({
           url,
-          data: JSON.parse(data)
+          data: JSON.parse(data),
         });
         break;
 
-      case "PATCH":
+      case 'PATCH':
         this.handlePatchRequests(url, data);
         break;
 
@@ -127,13 +131,13 @@ export const errController: ERR_CONTROLLER = {
        * becuase of the structure of the DTO class at 'nest-server/src/categories/dto/update-category.dto.ts'
        */
       case RESOURCE.CATEGORIES:
-        let batchUrl = url + "/batch";
+        const batchUrl = url + '/batch';
         const existingEntry = this.failedReqInfo.PATCH.get(batchUrl);
         if (existingEntry) {
-          if ("isCurrent" in parsedData.data) {
-            let currentCategoryDTO = existingEntry.data.categories.find(
+          if ('isCurrent' in parsedData.data) {
+            const currentCategoryDTO = existingEntry.data.categories.find(
               (category: UpdateCategoryDTOWithUUID) =>
-                "isCurrent" in category.data && category.data.isCurrent
+                'isCurrent' in category.data && category.data.isCurrent,
             );
             if (currentCategoryDTO) {
               currentCategoryDTO.data.isCurrent = false;
@@ -141,7 +145,8 @@ export const errController: ERR_CONTROLLER = {
           }
 
           const matchingCategory = existingEntry.data.categories.find(
-            (category: { _uuid: string }) => category._uuid === parsedData._uuid
+            (category: { _uuid: string }) =>
+              category._uuid === parsedData._uuid,
           );
           if (matchingCategory) {
             const dataOfMatchingCategoryCloned = (
@@ -149,28 +154,28 @@ export const errController: ERR_CONTROLLER = {
             ).data;
             matchingCategory.data = {
               ...dataOfMatchingCategoryCloned,
-              ...(parsedData.data as CategoryDTO)
+              ...(parsedData.data as CategoryDTO),
             };
             this.failedReqInfo.PATCH.set(batchUrl, {
               url: batchUrl,
               data: {
-                categories: existingEntry.data.categories
-              }
+                categories: existingEntry.data.categories,
+              },
             });
           } else {
             existingEntry.data.categories.push(parsedData);
             this.failedReqInfo.PATCH.set(batchUrl, {
               url: batchUrl,
               data: {
-                categories: existingEntry.data.categories
-              }
+                categories: existingEntry.data.categories,
+              },
             });
           }
         } else {
           // set initial entry
           this.failedReqInfo.PATCH.set(batchUrl, {
             url: batchUrl,
-            data: { categories: [parsedData] }
+            data: { categories: [parsedData] },
           });
         }
 
@@ -189,7 +194,7 @@ export const errController: ERR_CONTROLLER = {
 
     if (existingUrlAndData) {
       existingUrlAndData.data = this.mergeData(existingUrlAndData.data, {
-        data: JSON.stringify(newData)
+        data: JSON.stringify(newData),
       });
       this.failedReqInfo.PATCH.set(url, existingUrlAndData);
     } else {
@@ -198,7 +203,7 @@ export const errController: ERR_CONTROLLER = {
   },
 
   mergeData(existingData: any, newReqConfig: AxiosRequestConfig) {
-    let newData = JSON.parse(newReqConfig.data);
+    const newData = JSON.parse(newReqConfig.data);
     for (const key in newData) {
       existingData[key] = newData[key];
     }
@@ -225,9 +230,9 @@ export const errController: ERR_CONTROLLER = {
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "PATCH"
+          method: 'PATCH',
         });
-      })
+      }),
     );
 
     this.failedReqInfo.PATCH.clear();
@@ -238,9 +243,9 @@ export const errController: ERR_CONTROLLER = {
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "POST"
+          method: 'POST',
         });
-      })
+      }),
     );
 
     this.failedReqInfo.POST = [];
@@ -261,10 +266,10 @@ export const errController: ERR_CONTROLLER = {
     // console.log("userEmail inside getAndResendFailedReqsFromIDB", userEmail);
 
     if (userEmail) {
-      let db = DB || (await openIndexedDB());
+      const db = DB || (await openIndexedDB());
       const store = db
-        .transaction("failedReqInfo", "readonly")
-        .objectStore("failedReqInfo");
+        .transaction('failedReqInfo', 'readonly')
+        .objectStore('failedReqInfo');
       const failedReqInfoFromIDB = await store.get(userEmail);
 
       if (failedReqInfoFromIDB !== undefined) {
@@ -281,11 +286,11 @@ export const errController: ERR_CONTROLLER = {
   },
 
   storeFailedReqsToIDB: async function () {
-    let userEmail = await getUserEmail();
+    const userEmail = await getUserEmail();
     if (userEmail) {
       persistFailedReqInfoToIDB({
         userEmail,
-        value: this.failedReqInfo
+        value: this.failedReqInfo,
       });
     }
   },
@@ -295,5 +300,5 @@ export const errController: ERR_CONTROLLER = {
     this.failedReqInfo.POST = [];
     this.failedReqInfo.PATCH.clear();
     this.failedReqInfo.DELETE = [];
-  }
+  },
 };

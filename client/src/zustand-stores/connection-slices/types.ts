@@ -1,12 +1,12 @@
 //#region original right after applying slice pattern
-import type { Socket } from "socket.io-client";
-import type { Device, types as mediasoupTypes } from "mediasoup-client";
+import type { Socket } from 'socket.io-client';
+import type { Device, types as mediasoupTypes } from 'mediasoup-client';
 import type {
   AckResponse,
-  CommonPreferredLayersForAllConsumersData
-} from "../../common/webrtc/payloadRelated";
-import type { ProducerInfo } from "../../Pages/GroupStudy/typeDef";
-import { ChatMessageInfo } from "../../common/webrtc/payloadRelated";
+  CommonPreferredLayersForAllConsumersData,
+} from '../../common/webrtc/payloadRelated';
+import type { ProducerInfo } from '../../Pages/GroupStudy/typeDef';
+import { ChatMessageInfo } from '../../common/webrtc/payloadRelated';
 
 // TODO: 이제 행동과 필요한 재료들을 가져다가 사용하는 관점으로 바뀌었기 때문에,
 // 최대한 행동들을 체계화 해서 RoomSliceActions에 정의해야함.
@@ -18,32 +18,23 @@ export type ConnectionStore = RoomSlice & UtilitySlice; // CONCEPT: User가 Room
 // 2.
 export interface RoomSlice extends RoomSliceStates, RoomSliceActions {}
 export interface UtilitySlice
-  extends SocketSlice,
-    MediaStreamSlice,
-    MediasoupSlice {}
+  extends SocketSlice, MediaStreamSlice, MediasoupSlice {}
 
 // 3.
 export interface SocketSlice extends SocketSliceStates, SocketSliceActions {}
 export interface MediaStreamSlice
-  extends MediaStreamSliceStates,
-    MediaStreamSliceActions {}
+  extends MediaStreamSliceStates, MediaStreamSliceActions {}
 export interface MediasoupSlice
-  extends DeviceSlice,
-    TransportSlice,
-    ProducerSlice,
-    ConsumerSlice {}
+  extends DeviceSlice, TransportSlice, ProducerSlice, ConsumerSlice {}
 
 // 4.
 export interface DeviceSlice extends DeviceSliceStates, DeviceSliceActions {}
 export interface TransportSlice
-  extends TransportSliceStates,
-    TransportSliceActions {}
+  extends TransportSliceStates, TransportSliceActions {}
 export interface ProducerSlice
-  extends ProducerSliceStates,
-    ProducerSliceActions {}
+  extends ProducerSliceStates, ProducerSliceActions {}
 export interface ConsumerSlice
-  extends ConsumerSliceStates,
-    ConsumerSliceActions {}
+  extends ConsumerSliceStates, ConsumerSliceActions {}
 //#endregion CONNECTIONSTORE DEFINITION AND TOP LEVEL INTERFACES --->
 
 export type Participant = {
@@ -95,7 +86,7 @@ export interface RoomSliceActions {
   sendChatMessage: (message: string, senderNickname: string | null) => void;
   setPreferredVideoQuality: (consumerId: string, spatialLayer: number) => void;
   setCommonPreferredVideoQuality: (
-    spatialLayer: number
+    spatialLayer: number,
   ) => Promise<AckResponse<CommonPreferredLayersForAllConsumersData> | null>;
   pauseOrResumeVideo: (consumerId: string) => void;
   startSharing: () => void;
@@ -181,8 +172,8 @@ export interface TransportSliceActions {
   createTransports: () => void;
   attemptToRestartIceWithGuards: (
     transport: mediasoupTypes.Transport,
-    kind: "send" | "recv",
-    socket: Socket
+    kind: 'send' | 'recv',
+    socket: Socket,
   ) => void; // null check는 던질때 한번 하는게 함수 정의 내부에서 야랄나는것보다 나는 더 좋음!
 }
 
@@ -211,10 +202,10 @@ export interface ConsumerSliceActions {
     // It is more about asking the mediasoup server's Room to modify the consumers' settings it owns.
     //* 그러니까 지금 이 사용자의 consumer가 뭔가를 능동적으로 한다기보다는 server에게 어떠한 요청을 하고(signaling server를 통해서), 실질적으로 consumer하고있는 producer in server side의 어떤 값을 조정하고 그러는걸까?.. 시바루..?
     consumerId: string,
-    spatialLayer: number
+    spatialLayer: number,
   ) => void;
   setCommonPreferredLayersForAllConsumers: (
-    spatialLayer: number
+    spatialLayer: number,
   ) => Promise<AckResponse<CommonPreferredLayersForAllConsumersData> | null>;
   toggleLocalConsumerPause: (consumerId: string) => void;
 }
@@ -226,15 +217,16 @@ export interface ConsumerSliceActions {
 export type PeerId = string;
 export type ConsumerId = string;
 export type ConsumerLayerState = {
+  // WARNING: When rejoining the room after a user reloaded, he cannot guarantee that the consumers he had still exist. For example, if he had a consumer for the firefox peer and the peer stopped sharing while he was out, the corresponding consumer of the reloaded peer in the server side should be cleaned up so that he can sync producers and consumers correctly when rejoining the room.
   requestedSpatialLayer?: number;
   currentSpatialLayer?: number;
   isPausedByProducer?: boolean;
   isPausedLocallyByViewer?: boolean;
 };
 export type ForcedRoomExitReason =
-  | "kicked"
-  | "room-closed"
-  | "tcp-socket-prolonged-disconnect"
-  | "transport-recovery-failed"
+  | 'kicked'
+  | 'room-closed'
+  | 'tcp-socket-prolonged-disconnect'
+  | 'transport-recovery-failed'
   | null;
 //#endregion OTHER TYPE DEFINITIONS --->

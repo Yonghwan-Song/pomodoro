@@ -3,12 +3,12 @@ import {
   useEffect,
   Dispatch,
   SetStateAction,
-  DependencyList
-} from "react";
-import { useAuthContext } from "../Context/AuthContext";
-import { DynamicCache, openCache } from "..";
-import { BASE_URL, CacheName } from "../constants";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
+  DependencyList,
+} from 'react';
+import { useAuthContext } from '../Context/AuthContext';
+import { DynamicCache, openCache } from '..';
+import { BASE_URL, CacheName } from '../constants';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
 
 //#region Type Definition
 type DataType<T, S> = S extends undefined ? T : S;
@@ -24,7 +24,7 @@ type ArgType<T, S> = {
 
 type CustomReturnType<T, S> = [
   DataType<T, S> | null,
-  Dispatch<SetStateAction<DataType<T, S> | null>>
+  Dispatch<SetStateAction<DataType<T, S> | null>>,
 ];
 //#endregion
 
@@ -47,7 +47,7 @@ export function useFetch<T, S = undefined>({
   callbacks,
   additionalDeps,
   additionalCondition,
-  params
+  params,
 }: ArgType<T, S>): CustomReturnType<T, S> {
   const [data, setData] = useState<DataType<T, S> | null>(null);
   const { user } = useAuthContext()!;
@@ -70,7 +70,7 @@ export function useFetch<T, S = undefined>({
             ? modifier((await resData.json()) as T)
             : await resData.json();
 
-        console.log("data from cache", data);
+        console.log('data from cache', data);
         if (callbacks !== undefined) {
           // await Promise.all(
           //   callbacks.map(async (fn) => {

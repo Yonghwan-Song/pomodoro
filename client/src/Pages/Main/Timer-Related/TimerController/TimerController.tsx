@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
-import { useState, useMemo, useEffect, useRef, useReducer } from "react";
-import { AxiosError } from "axios";
+import { useState, useMemo, useEffect, useRef, useReducer } from 'react';
+import { AxiosError } from 'axios';
 import {
   CacheName,
   RESOURCE,
@@ -8,9 +8,9 @@ import {
   SUB_SET,
   CURRENT_SESSION_TYPE,
   CURRENT_TASK_ID,
-  BREAK_POINTS
-} from "../../../../constants/index";
-import { useAuthContext } from "../../../../Context/AuthContext";
+  BREAK_POINTS,
+} from '../../../../constants/index';
+import { useAuthContext } from '../../../../Context/AuthContext';
 import {
   DynamicCache,
   openCache,
@@ -20,11 +20,11 @@ import {
   persistTimersStatesToServer,
   openIndexedDB,
   DB,
-  persistStatesToIDB
-} from "../../../..";
-import { notify } from "../../../../utils/notify";
-import { recordPomo } from "../../../../utils/recordPomo";
-import { persistRecOfTodayToServer } from "../../../../utils/persistRecOfTodayToServer";
+  persistStatesToIDB,
+} from '../../../..';
+import { notify } from '../../../../utils/notify';
+import { recordPomo } from '../../../../utils/recordPomo';
+import { persistRecOfTodayToServer } from '../../../../utils/persistRecOfTodayToServer';
 import {
   AutoStartSettingType,
   CategoryChangeInfo,
@@ -34,31 +34,31 @@ import {
   RecType,
   TimerStateType,
   TimersStatesType,
-  TimersStatesTypeWithCurrentCycleInfo
-} from "../../../../types/clientStatesType";
-import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
+  TimersStatesTypeWithCurrentCycleInfo,
+} from '../../../../types/clientStatesType';
+import { axiosInstance } from '../../../../axios-and-error-handling/axios-instances';
 import {
   calculateCycleCount,
   calculateNumOfRemainingPomoSessions,
   calculateRepetitionCountWithinCycle,
   getProgress,
   msToSec,
-  isThisFocusSession
-} from "../utility-functions";
-import { roundTo_X_DecimalPoints } from "../../../../utils/number-related-utils";
+  isThisFocusSession,
+} from '../utility-functions';
+import { roundTo_X_DecimalPoints } from '../../../../utils/number-related-utils';
 import {
   boundedPomoInfoStore,
-  useBoundedPomoInfoStore
-} from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
-import { FlexBox } from "../../../../ReusableComponents/Layouts/FlexBox";
-import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
-import { Tooltip } from "react-tooltip";
-import PauseTimer from "../PauseTimer";
-import { Button } from "../../../../ReusableComponents/Buttons/Button";
-import { ACTION, reducer, TimerAction } from "../reducers";
-import Time from "../Time/Time";
-import { getAverage, isSessionNotStartedYet } from "../../../../utils/anything";
-import { css } from "@emotion/react";
+  useBoundedPomoInfoStore,
+} from '../../../../zustand-stores/pomoInfoStoreUsingSlice';
+import { FlexBox } from '../../../../ReusableComponents/Layouts/FlexBox';
+import CircularProgressBar from '../CircularProgressBar/circularProgressBar';
+import { Tooltip } from 'react-tooltip';
+import PauseTimer from '../PauseTimer';
+import { Button } from '../../../../ReusableComponents/Buttons/Button';
+import { ACTION, reducer, TimerAction } from '../reducers';
+import Time from '../Time/Time';
+import { getAverage, isSessionNotStartedYet } from '../../../../utils/anything';
+import { css } from '@emotion/react';
 
 type TimerControllerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -67,7 +67,7 @@ type TimerControllerProps = {
   autoStartSetting: AutoStartSettingType;
   records: RecType[];
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
-  variant?: "default" | "mini";
+  variant?: 'default' | 'mini';
 };
 
 enum SESSION {
@@ -75,7 +75,7 @@ enum SESSION {
   SHORT_BREAK,
   LAST_POMO,
   LONG_BREAK,
-  VERY_LAST_POMO
+  VERY_LAST_POMO,
 }
 
 export function TimerController({
@@ -85,37 +85,37 @@ export function TimerController({
   autoStartSetting,
   records,
   setRecords,
-  variant = "default"
+  variant = 'default',
 }: TimerControllerProps) {
   //#region global states
   const categoriesFromStore = useBoundedPomoInfoStore(
-    (state) => state.categories
+    (state) => state.categories,
   );
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.categoryChangeInfoArray
+    (state) => state.categoryChangeInfoArray,
   );
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.setCategoryChangeInfoArray
+    (state) => state.setCategoryChangeInfoArray,
   );
   const taskChangeInfoArray = useBoundedPomoInfoStore(
-    (states) => states.taskChangeInfoArray
+    (states) => states.taskChangeInfoArray,
   );
   const setTaskChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.setTaskChangeInfoArray
+    (state) => state.setTaskChangeInfoArray,
   );
 
   const colorForUnCategorized = useBoundedPomoInfoStore(
-    (state) => state.colorForUnCategorized
+    (state) => state.colorForUnCategorized,
   );
   const doesItJustChangeCategory = useBoundedPomoInfoStore(
-    (state) => state.doesItJustChangeCategory
+    (state) => state.doesItJustChangeCategory,
   );
   const cycleSettings = useBoundedPomoInfoStore((state) => state.cycleSettings);
   const updateCycleSettings = useBoundedPomoInfoStore(
-    (state) => state.setCycleSettings
+    (state) => state.setCycleSettings,
   );
   const setTimersStatesPartial = useBoundedPomoInfoStore(
-    (states) => states.setTimersStatesPartial
+    (states) => states.setTimersStatesPartial,
   );
   const { user } = useAuthContext()!;
   //#endregion
@@ -127,7 +127,7 @@ export function TimerController({
     shortBreakDuration,
     longBreakDuration,
     numOfPomo,
-    numOfCycle
+    numOfCycle,
   } = pomoSetting;
 
   //
@@ -160,13 +160,13 @@ export function TimerController({
     {
       running: false,
       startTime: 0,
-      pause: { totalLength: 0, record: [] }
+      pause: { totalLength: 0, record: [] },
     },
-    initializeTimerState
+    initializeTimerState,
   );
   const endTimeRef = useRef(0);
   const [remainingDurationInSec, setRemainingDurationInSec] = useState(
-    initializeRemainingDuration
+    initializeRemainingDuration,
   );
 
   //#region Ratios and adherenceRate
@@ -209,22 +209,22 @@ export function TimerController({
 
   const ratioTargeted = roundTo_X_DecimalPoints(
     totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-    2
+    2,
   );
   const currentRatio = roundTo_X_DecimalPoints(
     totalFocusDurationInSec / cycleDurationInSec,
-    2
+    2,
   );
   const adherenceRateInPercent = roundTo_X_DecimalPoints(
     (currentRatio / ratioTargeted) * 100,
-    2
+    2,
   );
   //#endregion
 
   //
   const [tooltipText, setTooltipText] = useState<
     [string, string, string, string]
-  >(["", "", "", ""]);
+  >(['', '', '', '']);
 
   /**
    * !IMPT
@@ -263,13 +263,13 @@ export function TimerController({
     isBeforeStartOfCycles,
     numOfPomo,
     numOfCycle,
-    repetitionCount
+    repetitionCount,
   );
   const repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
     numOfPomo,
     numOfCycle,
     repetitionCount,
-    cycleCount
+    cycleCount,
   ) as number;
 
   // console.log("numOfPomo", numOfPomo);
@@ -279,7 +279,7 @@ export function TimerController({
   const DURATIONS = {
     pomoDuration,
     shortBreakDuration,
-    longBreakDuration
+    longBreakDuration,
   };
 
   //#region Initializers
@@ -289,7 +289,7 @@ export function TimerController({
       (timerState = {
         running: (statesRelatedToTimer as TimersStatesType).running,
         startTime: (statesRelatedToTimer as TimersStatesType).startTime,
-        pause: (statesRelatedToTimer as TimersStatesType).pause
+        pause: (statesRelatedToTimer as TimersStatesType).pause,
       });
     return timerState;
   }
@@ -308,7 +308,7 @@ export function TimerController({
         timePassed = Date.now() - startTime;
         timeCountedDown = timePassed - pause.totalLength;
         remainingDuration = Math.floor(
-          (durationInSeconds * 1000 - timeCountedDown) / 1000
+          (durationInSeconds * 1000 - timeCountedDown) / 1000,
         );
       } else if (startTime === 0) {
         //running === false && startTime === 0 -> timer has not yet started.
@@ -330,7 +330,7 @@ export function TimerController({
 
         timeCountedDown = timePassed - pause.totalLength;
         remainingDuration = Math.floor(
-          (durationInSeconds * 1000 - timeCountedDown) / 1000
+          (durationInSeconds * 1000 - timeCountedDown) / 1000,
         );
       }
     }
@@ -347,25 +347,25 @@ export function TimerController({
     end: number,
     cycleDurationInSec: number,
     totalFocusDurationInSec: number,
-    caller: string = "omitted"
+    caller: string = 'omitted',
   ) {
     const currentRatio = roundTo_X_DecimalPoints(
       totalFocusDurationInSec / cycleDurationInSec,
-      2
+      2,
     );
     const cycleRecord = {
       ratio: currentRatio,
       cycleAdherenceRate: roundTo_X_DecimalPoints(
         currentRatio / ratioTargeted,
-        2
+        2,
       ),
       start: end - cycleDurationInSec * 1000,
       end,
-      date: new Date()
+      date: new Date(),
     };
     // console.log("cycleRecord from " + caller, cycleRecord);
     const cycleSettingsCloned = structuredClone(cycleSettings);
-    let name = "";
+    let name = '';
     let cycleStatPayload: CycleRecord[] = [];
     let averageAdherenceRatePayload = 1;
     for (let i = 0; i < cycleSettingsCloned.length; i++) {
@@ -376,11 +376,11 @@ export function TimerController({
         }
         cycleSettingsCloned[i].cycleStat.push(cycleRecord);
         const adherenceRateArr = cycleSettingsCloned[i].cycleStat.map(
-          (record) => record.cycleAdherenceRate
+          (record) => record.cycleAdherenceRate,
         );
         const averageAdherenceRate = roundTo_X_DecimalPoints(
           getAverage(adherenceRateArr),
-          2
+          2,
         );
         cycleSettingsCloned[i].averageAdherenceRate = averageAdherenceRate;
         averageAdherenceRatePayload = averageAdherenceRate;
@@ -397,8 +397,8 @@ export function TimerController({
         name,
         data: {
           cycleStat: cycleStatPayload,
-          averageAdherenceRate: averageAdherenceRatePayload
-        }
+          averageAdherenceRate: averageAdherenceRatePayload,
+        },
       });
   }
   /**
@@ -427,7 +427,7 @@ export function TimerController({
     howManyCountdown,
     state,
     timeCountedDownInMilliSeconds = durationInMinutes * 60 * 1000,
-    endForced
+    endForced,
   }: {
     howManyCountdown: number;
     state: TimerStateType;
@@ -443,17 +443,17 @@ export function TimerController({
     const sessionData = {
       ...withoutRunning,
       endTime,
-      timeCountedDown: timeCountedDownInMilliSeconds
+      timeCountedDown: timeCountedDownInMilliSeconds,
     };
 
     // console.log("howManyCountdown", howManyCountdown);
     // console.log("numOfPomo", numOfPomo);
     const prevSession = identifyPrevSession({
       howManyCountdown,
-      numOfPomo
+      numOfPomo,
     });
     // console.log("prevSession", SESSION[prevSession]);
-    const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
+    const currentSessionType = +prevSession % 2 === 0 ? 'pomo' : 'break';
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
 
     wrapUpSession({
@@ -461,8 +461,8 @@ export function TimerController({
       data: {
         state,
         timeCountedDownInMilliSeconds,
-        sessionData
-      }
+        sessionData,
+      },
     });
   }
 
@@ -474,13 +474,13 @@ export function TimerController({
    */
   function identifyPrevSession({
     howManyCountdown,
-    numOfPomo
+    numOfPomo,
   }: {
     howManyCountdown: number;
     numOfPomo: number;
   }): SESSION {
     if (howManyCountdown === 0) {
-      console.log("1");
+      console.log('1');
       return SESSION.VERY_LAST_POMO;
     }
 
@@ -494,7 +494,7 @@ export function TimerController({
     //! 그 setUp함수에서 이 conditional block으로 오는 경우는 없다. :::...
     //! 그러므로 그냥 %2값만 가지고도 Pomo인지 Break인지 판단해도 괜찮다. :::...
     if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
-      console.log("2");
+      console.log('2');
       return SESSION.VERY_LAST_POMO;
     }
 
@@ -504,29 +504,29 @@ export function TimerController({
         //                         = (2, 3) -> PBPL|PBPL|PBP
         if (howManyCountdown % 2 === 0) {
           if (howManyCountdown % (2 * numOfPomo) === 0) {
-            console.log("3");
+            console.log('3');
             return SESSION.LONG_BREAK;
           }
-          console.log("4");
+          console.log('4');
           return SESSION.SHORT_BREAK;
         }
         if (howManyCountdown % 2 === 1) {
           if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
-            console.log("5");
+            console.log('5');
             return SESSION.LAST_POMO;
           }
-          console.log("6");
+          console.log('6');
           return SESSION.POMO;
         }
       } else if (numOfPomo === 1) {
         // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
         // Short break does not exist
         if (howManyCountdown % 2 === 0) {
-          console.log("7");
+          console.log('7');
           return SESSION.LONG_BREAK;
         }
         if (howManyCountdown % 2 === 1) {
-          console.log("8");
+          console.log('8');
           return SESSION.LAST_POMO;
         }
       }
@@ -535,21 +535,21 @@ export function TimerController({
       if (numOfPomo > 1) {
         // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
         if (howManyCountdown % 2 === 1) {
-          console.log("9");
+          console.log('9');
           return SESSION.POMO;
         }
         if (howManyCountdown % 2 === 0) {
-          console.log("10");
+          console.log('10');
           return SESSION.SHORT_BREAK;
         }
       } else if (numOfPomo === 1) {
         // P
-        console.log("11");
+        console.log('11');
         return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
       }
     }
 
-    console.log("12");
+    console.log('12');
     return SESSION.POMO; //dummy
   }
   //#endregion
@@ -570,13 +570,13 @@ export function TimerController({
    */
   async function wrapUpSession({
     prevSession,
-    data
+    data,
   }: {
     prevSession: SESSION;
     data: {
       state: TimerStateType;
       timeCountedDownInMilliSeconds: number;
-      sessionData: Omit<RecType, "kind">;
+      sessionData: Omit<RecType, 'kind'>;
     };
   }) {
     // console.log("SESSION inside wrapUpSession", SESSION[prevSession]);
@@ -586,15 +586,15 @@ export function TimerController({
       const infoArr = [
         {
           categoryName:
-            currentCategory === null ? "uncategorized" : currentCategory.name,
+            currentCategory === null ? 'uncategorized' : currentCategory.name,
           categoryChangeTimestamp: 0,
           _uuid: currentCategory?._uuid,
           color:
             currentCategory !== null
               ? currentCategory.color
               : colorForUnCategorized,
-          progress: 0 //? 시작을 아직 안한거니까 0으로 하겠음.
-        }
+          progress: 0, //? 시작을 아직 안한거니까 0으로 하겠음.
+        },
       ];
       updateCategoryChangeInfoArray(infoArr);
       persistCategoryChangeInfoArrayToIDB(infoArr);
@@ -604,9 +604,9 @@ export function TimerController({
             categoryName: info.categoryName,
             categoryChangeTimestamp: info.categoryChangeTimestamp,
             color: info.color,
-            progress: info.progress
+            progress: info.progress,
           };
-        })
+        }),
       });
 
       // Reset taskChangeInfoArray because a session is completed.
@@ -625,17 +625,17 @@ export function TimerController({
         setTaskChangeInfoArray([
           {
             id: currentTaskId,
-            taskChangeTimestamp: 0
-          }
+            taskChangeTimestamp: 0,
+          },
         ]);
 
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
           taskChangeInfoArray: [
             {
               id: currentTaskId,
-              taskChangeTimestamp: 0
-            }
-          ]
+              taskChangeTimestamp: 0,
+            },
+          ],
         });
       }
     }
@@ -644,7 +644,7 @@ export function TimerController({
 
     switch (prevSession) {
       case SESSION.POMO:
-        notify("shortBreak");
+        notify('shortBreak');
         //#region A
         // A - 1: F.E
         // 1)
@@ -653,7 +653,7 @@ export function TimerController({
         // 2)
         persistStatesToIDB({
           duration: shortBreakDuration,
-          repetitionCount: repetitionCount + 1
+          repetitionCount: repetitionCount + 1,
         });
         // A - 2: B.E
         // 자동시작 - 근본적으로  //!TimerState (running, startTime, pause)만 바꿔주면 됨.
@@ -670,7 +670,7 @@ export function TimerController({
               pause: { totalLength: 0, record: [] },
               //PatternTimerStatesType
               duration: shortBreakDuration,
-              repetitionCount: repetitionCount + 1
+              repetitionCount: repetitionCount + 1,
             });
         }
         //#endregion
@@ -678,7 +678,7 @@ export function TimerController({
         // B - 1: pomodoro records
         if (user) {
           const copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
+            categoryChangeInfoArray,
           );
           const copiedTaskChangeInfoArray =
             structuredClone(taskChangeInfoArray);
@@ -715,21 +715,21 @@ export function TimerController({
             (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
-              sessionData
+              sessionData,
             ));
         }
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         // New
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "pomo",
-            data: sessionData
+            kind: 'pomo',
+            data: sessionData,
           });
         }
 
@@ -737,7 +737,7 @@ export function TimerController({
         break;
 
       case SESSION.SHORT_BREAK:
-        notify("pomo");
+        notify('pomo');
 
         //#region A 다음 세션 진행하기 위한 정보의 변환
         // A - 1: F.E
@@ -747,7 +747,7 @@ export function TimerController({
         // 2)
         persistStatesToIDB({
           duration: pomoDuration,
-          repetitionCount: repetitionCount + 1
+          repetitionCount: repetitionCount + 1,
         });
         // A - 2: B.E
         if (!autoStartSetting.doesPomoStartAutomatically) {
@@ -757,29 +757,29 @@ export function TimerController({
               startTime: 0,
               pause: { totalLength: 0, record: [] },
               duration: pomoDuration,
-              repetitionCount: repetitionCount + 1
+              repetitionCount: repetitionCount + 1,
             });
         } //#endregion
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "break", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'break', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "break",
-            data: sessionData
+            kind: 'break',
+            data: sessionData,
           });
         }
         //#endregion
         break;
 
       case SESSION.LAST_POMO:
-        notify("longBreak");
+        notify('longBreak');
 
         //#region A 다음 세션 진행하기 위한 정보의 변환
         // A - 1: F.E
@@ -789,7 +789,7 @@ export function TimerController({
         // 2)
         persistStatesToIDB({
           duration: longBreakDuration,
-          repetitionCount: repetitionCount + 1
+          repetitionCount: repetitionCount + 1,
         });
         // A - 2: B.E
         if (!autoStartSetting.doesBreakStartAutomatically) {
@@ -799,7 +799,7 @@ export function TimerController({
               startTime: 0,
               pause: { totalLength: 0, record: [] },
               duration: longBreakDuration,
-              repetitionCount: repetitionCount + 1
+              repetitionCount: repetitionCount + 1,
             });
         } //#endregion
 
@@ -807,7 +807,7 @@ export function TimerController({
         // B - 1: pomodoro records
         if (user) {
           const copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
+            categoryChangeInfoArray,
           );
           const copiedTaskChangeInfoArray =
             structuredClone(taskChangeInfoArray);
@@ -831,20 +831,20 @@ export function TimerController({
             (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
-              sessionData
+              sessionData,
             ));
         }
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "pomo",
-            data: sessionData
+            kind: 'pomo',
+            data: sessionData,
           });
         }
         //#endregion
@@ -852,20 +852,20 @@ export function TimerController({
         break;
 
       case SESSION.VERY_LAST_POMO:
-        notify("cyclesCompleted");
+        notify('cyclesCompleted');
 
         generateAndPushCycleRecord(
           endTimeRef.current,
           cycleDurationInSec - longBreakDuration * 60,
           totalFocusDurationInSec,
-          "VERY_LAST_POMO"
+          'VERY_LAST_POMO',
         );
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
         setCycleDurationInSec(cycleDurationTargetedInSec);
         setCycleStartTimestamp(0);
         setVeryFirstCycleStartTimestamp(0);
         setTotalDurationOfSetOfCyclesInSec(
-          cycleDurationTargetedInSec * numOfCycle
+          cycleDurationTargetedInSec * numOfCycle,
         );
         //#region A
         // A - 1: F.E
@@ -881,8 +881,8 @@ export function TimerController({
             cycleDuration: cycleDurationTargetedInSec,
             cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle
-          }
+            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle,
+          },
         });
         // A - 2: B.E
         if (user) {
@@ -891,14 +891,14 @@ export function TimerController({
             startTime: 0,
             pause: { totalLength: 0, record: [] },
             duration: pomoDuration,
-            repetitionCount: 0
+            repetitionCount: 0,
           });
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
             totalFocusDuration: totalFocusDurationTargetedInSec,
             cycleDuration: cycleDurationTargetedInSec,
             cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: 0,
-            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle
+            totalDurationOfSetOfCycles: cycleDurationTargetedInSec * numOfCycle,
           });
         }
 
@@ -908,7 +908,7 @@ export function TimerController({
         // B - 1: pomodoro records
         if (user) {
           const copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
+            categoryChangeInfoArray,
           );
           const copiedTaskChangeInfoArray =
             structuredClone(taskChangeInfoArray);
@@ -932,33 +932,33 @@ export function TimerController({
             (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
-              sessionData
+              sessionData,
             ));
         }
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "pomo",
-            data: sessionData
+            kind: 'pomo',
+            data: sessionData,
           });
         }
         //#endregion
         break;
 
       case SESSION.LONG_BREAK:
-        notify("nextCycle");
+        notify('nextCycle');
 
         generateAndPushCycleRecord(
           endTimeRef.current,
           cycleDurationInSec,
           totalFocusDurationInSec,
-          "LONG_BREAK"
+          'LONG_BREAK',
         );
         setCycleStartTimestamp(0);
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
@@ -977,8 +977,8 @@ export function TimerController({
             cycleDuration: cycleDurationTargetedInSec,
             cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: veryFirstCycleStartTimestamp,
-            totalDurationOfSetOfCycles: totalFocusDurationInSec
-          }
+            totalDurationOfSetOfCycles: totalFocusDurationInSec,
+          },
         });
 
         //#region New
@@ -987,14 +987,14 @@ export function TimerController({
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
             cycleStartTimestamp: 0,
             totalFocusDuration: totalFocusDurationTargetedInSec,
-            cycleDuration: cycleDurationTargetedInSec
+            cycleDuration: cycleDurationTargetedInSec,
           });
           await persistTimersStatesToServer({
             running: false,
             startTime: 0,
             pause: { totalLength: 0, record: [] },
             duration: pomoDuration,
-            repetitionCount: repetitionCount + 1
+            repetitionCount: repetitionCount + 1,
           });
         }
         //#endregion New
@@ -1004,13 +1004,13 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
         // 2)
-        persistRecOfTodayToServer({ kind: "break", ...sessionData }, user);
+        persistRecOfTodayToServer({ kind: 'break', ...sessionData }, user);
         // 3)
         await persistSingleTodaySessionToIDB({
-          kind: "break",
-          data: sessionData
+          kind: 'break',
+          data: sessionData,
         });
         //#endregion
 
@@ -1036,13 +1036,13 @@ export function TimerController({
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        const states = await obtainStatesFromIDB("withoutSettings");
+        const states = await obtainStatesFromIDB('withoutSettings');
         const progress = getProgress(states as TimersStatesType);
 
         if (
-          SESSION[prevSessionType.current] === "SHORT_BREAK" ||
-          SESSION[prevSessionType.current] === "LONG_BREAK" ||
-          SESSION[prevSessionType.current] === "VERY_LAST_POMO"
+          SESSION[prevSessionType.current] === 'SHORT_BREAK' ||
+          SESSION[prevSessionType.current] === 'LONG_BREAK' ||
+          SESSION[prevSessionType.current] === 'VERY_LAST_POMO'
         ) {
           if (
             (states as TimersStatesTypeWithCurrentCycleInfo).running ===
@@ -1054,14 +1054,14 @@ export function TimerController({
               categoryName:
                 currentCategory !== null
                   ? currentCategory.name
-                  : "uncategorized",
+                  : 'uncategorized',
               categoryChangeTimestamp: 0,
               _uuid: currentCategory?._uuid,
               color:
                 currentCategory !== null
                   ? currentCategory.color
                   : colorForUnCategorized,
-              progress
+              progress,
             };
             updateCategoryChangeInfoArray([infoObj]);
             persistCategoryChangeInfoArrayToIDB([infoObj]);
@@ -1074,10 +1074,10 @@ export function TimerController({
                       categoryName: infoObj.categoryName,
                       categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
                       color: infoObj.color,
-                      progress: infoObj.progress
-                    }
-                  ]
-                }
+                      progress: infoObj.progress,
+                    },
+                  ],
+                },
               );
           } else {
             // console.log("pomo session is on going");
@@ -1088,19 +1088,19 @@ export function TimerController({
               categoryName:
                 currentCategory !== null
                   ? currentCategory.name
-                  : "uncategorized",
+                  : 'uncategorized',
               categoryChangeTimestamp: Date.now(),
               _uuid: currentCategory?._uuid,
               color:
                 currentCategory !== null
                   ? currentCategory.color
                   : colorForUnCategorized,
-              progress
+              progress,
             };
 
             updateCategoryChangeInfoArray([
               ...categoryChangeInfoArray,
-              infoObj
+              infoObj,
             ]);
             // console.log("categoryChangeInfoArray", [
             //   ...categoryChangeInfoArray,
@@ -1108,7 +1108,7 @@ export function TimerController({
             // ]);
             persistCategoryChangeInfoArrayToIDB([
               ...categoryChangeInfoArray,
-              infoObj
+              infoObj,
             ]);
             user &&
               axiosInstance.patch(
@@ -1120,35 +1120,35 @@ export function TimerController({
                         categoryName: info.categoryName,
                         categoryChangeTimestamp: info.categoryChangeTimestamp,
                         color: info.color,
-                        progress: info.progress
+                        progress: info.progress,
                       };
                     }),
                     {
                       categoryName: infoObj.categoryName,
                       categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
                       color: infoObj.color,
-                      progress: infoObj.progress
-                    }
-                  ]
-                }
+                      progress: infoObj.progress,
+                    },
+                  ],
+                },
               );
           }
         }
         if (
-          SESSION[prevSessionType.current] === "POMO" ||
-          SESSION[prevSessionType.current] === "LAST_POMO"
+          SESSION[prevSessionType.current] === 'POMO' ||
+          SESSION[prevSessionType.current] === 'LAST_POMO'
         ) {
           // console.log("break session");
           const infoObj = {
             categoryName:
-              currentCategory !== null ? currentCategory.name : "uncategorized",
+              currentCategory !== null ? currentCategory.name : 'uncategorized',
             categoryChangeTimestamp: 0,
             _uuid: currentCategory?._uuid,
             color:
               currentCategory !== null
                 ? currentCategory.color
                 : colorForUnCategorized,
-            progress
+            progress,
           };
           updateCategoryChangeInfoArray([infoObj]);
           // console.log("categoryChangeInfoArray", [infoObj]);
@@ -1162,10 +1162,10 @@ export function TimerController({
                     categoryName: infoObj.categoryName,
                     categoryChangeTimestamp: infoObj.categoryChangeTimestamp,
                     color: infoObj.color,
-                    progress: infoObj.progress
-                  }
-                ]
-              }
+                    progress: infoObj.progress,
+                  },
+                ],
+              },
             );
         }
       }
@@ -1185,7 +1185,7 @@ export function TimerController({
           updated[updated.length - 1].color = currentCategory?.color;
         } else {
           delete updated[updated.length - 1]._uuid;
-          updated[updated.length - 1].categoryName = "uncategorized";
+          updated[updated.length - 1].categoryName = 'uncategorized';
           updated[updated.length - 1].color = colorForUnCategorized;
         }
 
@@ -1198,8 +1198,8 @@ export function TimerController({
               categoryChangeInfoArray: updated.map((info) => {
                 const { _uuid, ...infoWithout_uuid } = info;
                 return infoWithout_uuid;
-              })
-            }
+              }),
+            },
           );
       }
       // 0. idb (x)
@@ -1224,7 +1224,7 @@ export function TimerController({
   useEffect(() => {
     const prevSession = +identifyPrevSession({
       howManyCountdown: repetitionCount,
-      numOfPomo
+      numOfPomo,
     });
     // console.log(
     //   `prevSession calculated in  [] side-effect`,
@@ -1232,12 +1232,12 @@ export function TimerController({
     // );
     prevSessionType.current = prevSession;
 
-    let currentSessionType = "";
+    let currentSessionType = '';
     if (prevSession === 5) {
-      currentSessionType = "pomo";
+      currentSessionType = 'pomo';
     } else if (prevSession % 2 === 0) {
-      currentSessionType = "pomo";
-    } else currentSessionType = "break";
+      currentSessionType = 'pomo';
+    } else currentSessionType = 'break';
     // const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType); // CategoryList component에서 이 값이 필요함.
   }, [repetitionCount, numOfPomo]);
@@ -1263,22 +1263,22 @@ export function TimerController({
   useEffect(setRemainingDurationAfterReset, [
     remainingDurationInSec,
     durationInSeconds,
-    timerState.running
+    timerState.running,
   ]);
   useEffect(setRemainingDurationAfterMount, [
     remainingDurationInSec,
     durationInSeconds,
-    timerState.running
+    timerState.running,
   ]);
   useEffect(countDown, [
     remainingDurationInSec,
     durationInSeconds,
-    timerState.running
+    timerState.running,
   ]);
   useEffect(checkIfSessionShouldBeFinished, [
     remainingDurationInSec,
     durationInSeconds,
-    timerState.running
+    timerState.running,
   ]);
   // useEffect(logPause, [
   //   remainingDuration,
@@ -1322,8 +1322,8 @@ export function TimerController({
               (Date.now() -
                 timerState.startTime -
                 timerState.pause.totalLength)) /
-              1000
-          )
+              1000,
+          ),
         );
       }, 500);
       return () => {
@@ -1347,8 +1347,8 @@ export function TimerController({
       if (userEmail) {
         const db = DB || (await openIndexedDB());
         const store = db
-          .transaction("failedReqInfo", "readonly")
-          .objectStore("failedReqInfo");
+          .transaction('failedReqInfo', 'readonly')
+          .objectStore('failedReqInfo');
         const info = await store.get(userEmail);
         // console.log("failedReqInfo in doesFailedReqInfoExistInIDB()", info); // ? 이거 왜 자꾸 undefined로 뜨는거야?
         return !!info;
@@ -1367,7 +1367,7 @@ export function TimerController({
         ) {
           next({
             howManyCountdown: repetitionCount + 1,
-            state: timerState
+            state: timerState,
           });
           dispatch({ type: ACTION.RESET });
           setTimersStatesPartial({ running: false, startTime: 0 });
@@ -1381,7 +1381,7 @@ export function TimerController({
 
     const typeOfPrevSession = identifyPrevSession({
       howManyCountdown: repetitionCount,
-      numOfPomo
+      numOfPomo,
     });
 
     switch (typeOfPrevSession) {
@@ -1427,20 +1427,20 @@ export function TimerController({
       const categoryChangeInfoArrayShallowCopied = [...categoryChangeInfoArray];
       categoryChangeInfoArrayShallowCopied[0] = {
         ...categoryChangeInfoArrayShallowCopied[0],
-        categoryChangeTimestamp: startTime
+        categoryChangeTimestamp: startTime,
       };
       updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
       const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
       taskChangeInfoArrayShallowCopied[0] = {
         ...taskChangeInfoArrayShallowCopied[0],
-        taskChangeTimestamp: startTime
+        taskChangeTimestamp: startTime,
       };
       setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
 
       setTimersStatesPartial({
         running: true,
-        startTime
+        startTime,
       });
       if (user !== null) {
         persistTimersStatesToServer({
@@ -1448,14 +1448,14 @@ export function TimerController({
           running: true,
           pause: { totalLength: 0, record: [] },
           repetitionCount,
-          duration
+          duration,
         });
         axiosInstance.patch(
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-          { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
+          { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
         );
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-          taskChangeInfoArray: taskChangeInfoArrayShallowCopied
+          taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
         });
       }
 
@@ -1485,15 +1485,15 @@ export function TimerController({
               cycleStartTimestamp: startTime,
               totalFocusDuration: totalFocusDurationInSec,
               cycleDuration: cycleDurationTargetedInSec,
-              veryFirstCycleStartTimestamp
-            }
+              veryFirstCycleStartTimestamp,
+            },
           });
           user &&
             axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
               totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
               cycleStartTimestamp: startTime,
               totalFocusDuration: totalFocusDurationTargetedInSec,
-              cycleDuration: cycleDurationTargetedInSec
+              cycleDuration: cycleDurationTargetedInSec,
             });
         } else {
           setCycleStartTimestamp(startTime);
@@ -1503,14 +1503,14 @@ export function TimerController({
               totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
               totalFocusDuration: totalFocusDurationInSec,
               cycleDuration: cycleDurationTargetedInSec,
-              veryFirstCycleStartTimestamp
-            }
+              veryFirstCycleStartTimestamp,
+            },
           });
           user &&
             axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
               cycleStartTimestamp: startTime,
               totalFocusDuration: totalFocusDurationTargetedInSec,
-              cycleDuration: cycleDurationTargetedInSec
+              cycleDuration: cycleDurationTargetedInSec,
             });
         }
       }
@@ -1530,13 +1530,13 @@ export function TimerController({
               totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
               totalFocusDuration: totalFocusDurationInSec,
               cycleStartTimestamp,
-              veryFirstCycleStartTimestamp
-            }
+              veryFirstCycleStartTimestamp,
+            },
           });
           user &&
             axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
               cycleDuration: newCycleDuration,
-              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+              totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
             });
         }
       }
@@ -1548,30 +1548,30 @@ export function TimerController({
   //문제점: toggle이 나타내는 case들 중 분명 resume이라는게 존재하는데 조건식에서 resume이라는 단어는 코빼기도 보이지 않는다.
   async function toggleTimer(momentTimerIsToggled: number) {
     if (doWeStartTimer()) {
-      if (SESSION[prevSessionType.current] === "VERY_LAST_POMO") {
+      if (SESSION[prevSessionType.current] === 'VERY_LAST_POMO') {
         // console.log(
         //   "SESSION[prevSessionType.current]",
         //   SESSION[prevSessionType.current]
         // );
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
         const categoryChangeInfoArrayShallowCopied = [
-          ...categoryChangeInfoArray
+          ...categoryChangeInfoArray,
         ];
         categoryChangeInfoArrayShallowCopied[0] = {
           ...categoryChangeInfoArrayShallowCopied[0],
-          categoryChangeTimestamp: momentTimerIsToggled
+          categoryChangeTimestamp: momentTimerIsToggled,
         };
         updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
         const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
         taskChangeInfoArrayShallowCopied[0] = {
           ...taskChangeInfoArrayShallowCopied[0],
-          taskChangeTimestamp: momentTimerIsToggled
+          taskChangeTimestamp: momentTimerIsToggled,
         };
         setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
         setTimersStatesPartial({
           running: true,
-          startTime: momentTimerIsToggled
+          startTime: momentTimerIsToggled,
         });
         setCycleStartTimestamp(momentTimerIsToggled);
         setVeryFirstCycleStartTimestamp(momentTimerIsToggled);
@@ -1583,25 +1583,25 @@ export function TimerController({
             veryFirstCycleStartTimestamp: momentTimerIsToggled,
             totalFocusDuration: totalFocusDurationInSec,
             cycleDuration: cycleDurationInSec,
-            totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec
-          }
+            totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+          },
         });
         if (user !== null) {
           persistTimersStatesToServer({
             startTime: momentTimerIsToggled,
             running: true,
-            pause: { totalLength: 0, record: [] }
+            pause: { totalLength: 0, record: [] },
           });
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
             cycleStartTimestamp: momentTimerIsToggled,
-            veryFirstCycleStartTimestamp: momentTimerIsToggled
+            veryFirstCycleStartTimestamp: momentTimerIsToggled,
           });
           axiosInstance.patch(
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
+            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
           );
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-            taskChangeInfoArray: taskChangeInfoArrayShallowCopied
+            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
           });
         }
       }
@@ -1610,24 +1610,24 @@ export function TimerController({
         // console.log("repetitionCount !== 0", repetitionCount);
         dispatch({ type: ACTION.START, payload: momentTimerIsToggled });
         const categoryChangeInfoArrayShallowCopied = [
-          ...categoryChangeInfoArray
+          ...categoryChangeInfoArray,
         ];
         categoryChangeInfoArrayShallowCopied[0] = {
           ...categoryChangeInfoArrayShallowCopied[0],
-          categoryChangeTimestamp: momentTimerIsToggled
+          categoryChangeTimestamp: momentTimerIsToggled,
         };
         updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
         const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
         taskChangeInfoArrayShallowCopied[0] = {
           ...taskChangeInfoArrayShallowCopied[0],
-          taskChangeTimestamp: momentTimerIsToggled
+          taskChangeTimestamp: momentTimerIsToggled,
         };
 
         setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
         setTimersStatesPartial({
           running: true,
-          startTime: momentTimerIsToggled
+          startTime: momentTimerIsToggled,
         });
         if (user !== null) {
           persistTimersStatesToServer({
@@ -1635,14 +1635,14 @@ export function TimerController({
             running: true,
             pause: { totalLength: 0, record: [] },
             repetitionCount,
-            duration: durationInSeconds / 60
+            duration: durationInSeconds / 60,
           });
           axiosInstance.patch(
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
+            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
           );
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-            taskChangeInfoArray: taskChangeInfoArrayShallowCopied
+            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
           });
         }
 
@@ -1665,7 +1665,7 @@ export function TimerController({
         // );
 
         // start of a cycle
-        if (SESSION[prevSessionType.current] === "LONG_BREAK") {
+        if (SESSION[prevSessionType.current] === 'LONG_BREAK') {
           if (gapForLateStartInSec > 0) {
             // late start -> increases totalDurationOfSetOfCycles
             const newTotalDurationOfSetOfCycles =
@@ -1678,13 +1678,13 @@ export function TimerController({
                 cycleStartTimestamp: momentTimerIsToggled,
                 totalFocusDuration: totalFocusDurationInSec,
                 cycleDuration: cycleDurationInSec,
-                veryFirstCycleStartTimestamp
-              }
+                veryFirstCycleStartTimestamp,
+              },
             });
             user &&
               axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
                 totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-                cycleStartTimestamp: momentTimerIsToggled
+                cycleStartTimestamp: momentTimerIsToggled,
               });
           } else {
             setCycleStartTimestamp(momentTimerIsToggled);
@@ -1694,18 +1694,18 @@ export function TimerController({
                 totalFocusDuration: totalFocusDurationInSec,
                 cycleDuration: cycleDurationInSec,
                 veryFirstCycleStartTimestamp,
-                totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec
-              }
+                totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+              },
             });
             user &&
               axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-                cycleStartTimestamp: momentTimerIsToggled
+                cycleStartTimestamp: momentTimerIsToggled,
               });
           }
         }
 
         // start of a session
-        if (SESSION[prevSessionType.current] !== "LONG_BREAK") {
+        if (SESSION[prevSessionType.current] !== 'LONG_BREAK') {
           if (gapForLateStartInSec > 0) {
             const newCycleDuration = cycleDurationInSec + gapForLateStartInSec;
             const newTotalDurationOfSetOfCycles =
@@ -1719,13 +1719,13 @@ export function TimerController({
                 totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
                 totalFocusDuration: totalFocusDurationInSec,
                 cycleStartTimestamp,
-                veryFirstCycleStartTimestamp
-              }
+                veryFirstCycleStartTimestamp,
+              },
             });
             user &&
               axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
                 cycleDuration: newCycleDuration,
-                totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+                totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
               });
           } else {
           }
@@ -1734,14 +1734,14 @@ export function TimerController({
     } else if (doWeResumeTimer()) {
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       setTimersStatesPartial({
-        running: true
+        running: true,
       });
       const pause = {
         record: timerState.pause!.record.map((obj) => {
           if (obj.end === undefined) {
             return {
               ...obj,
-              end: momentTimerIsToggled
+              end: momentTimerIsToggled,
             };
           } else {
             return obj;
@@ -1750,14 +1750,15 @@ export function TimerController({
         totalLength:
           timerState.pause!.totalLength +
           (momentTimerIsToggled -
-            timerState.pause!.record[timerState.pause!.record.length - 1].start)
+            timerState.pause!.record[timerState.pause!.record.length - 1]
+              .start),
       };
       // to serveer
       user &&
         persistTimersStatesToServer({
           startTime: timerState.startTime,
           running: true,
-          pause
+          pause,
         });
 
       // calculate the ratio affected
@@ -1774,13 +1775,13 @@ export function TimerController({
           //
           totalFocusDuration: totalFocusDurationInSec,
           cycleStartTimestamp,
-          veryFirstCycleStartTimestamp
-        }
+          veryFirstCycleStartTimestamp,
+        },
       });
       user &&
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
           cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
         });
     } else if (doWePauseTimer()) {
       dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
@@ -1794,9 +1795,9 @@ export function TimerController({
             ...timerState.pause,
             record: [
               ...timerState.pause!.record,
-              { start: momentTimerIsToggled, end: undefined }
-            ]
-          }
+              { start: momentTimerIsToggled, end: undefined },
+            ],
+          },
         });
     }
     function doWeStartTimer() {
@@ -1840,14 +1841,14 @@ export function TimerController({
       if (
         identifyPrevSession({
           howManyCountdown: repetitionCount + 1,
-          numOfPomo
+          numOfPomo,
         }) === SESSION.VERY_LAST_POMO
       ) {
         generateAndPushCycleRecord(
           now,
           newCycleDuration,
           newTotalFocusDuration,
-          "endTimer - focus session"
+          'endTimer - focus session',
         );
       }
       setTotalFocusDurationInSec(newTotalFocusDuration);
@@ -1860,28 +1861,28 @@ export function TimerController({
           totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
           //
           cycleStartTimestamp,
-          veryFirstCycleStartTimestamp
-        }
+          veryFirstCycleStartTimestamp,
+        },
       });
       user &&
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
           totalFocusDuration: newTotalFocusDuration,
           cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
         });
     } else {
       // Break session
       if (
         identifyPrevSession({
           howManyCountdown: repetitionCount + 1,
-          numOfPomo
+          numOfPomo,
         }) === SESSION.LONG_BREAK
       ) {
         generateAndPushCycleRecord(
           now,
           newCycleDuration,
           totalFocusDurationInSec,
-          "endTimer - break session"
+          'endTimer - break session',
         );
       }
       setCycleDurationInSec(newCycleDuration);
@@ -1893,13 +1894,13 @@ export function TimerController({
           //
           totalFocusDuration: totalFocusDurationInSec,
           cycleStartTimestamp,
-          veryFirstCycleStartTimestamp
-        }
+          veryFirstCycleStartTimestamp,
+        },
       });
       user &&
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
           cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles
+          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
         });
     }
 
@@ -1913,14 +1914,14 @@ export function TimerController({
         howManyCountdown: repetitionCount + 1,
         state: stateCloned,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
-        endForced: now
+        endForced: now,
       });
     } else {
       next({
         howManyCountdown: repetitionCount + 1,
         state: timerState,
         timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
-        endForced: now
+        endForced: now,
       });
     }
 
@@ -1947,18 +1948,18 @@ export function TimerController({
    */
   function determinePatternTimerStates({
     howManyCountdown,
-    numOfPomo
+    numOfPomo,
   }: {
     howManyCountdown: number;
     numOfPomo: number;
   }): {
     duration: number;
-    kind: "pomoDuration" | "shortBreakDuration" | "longBreakDuration";
+    kind: 'pomoDuration' | 'shortBreakDuration' | 'longBreakDuration';
     repetitionCount?: number;
   } {
     let retVal: {
       duration: number;
-      kind: "pomoDuration" | "shortBreakDuration" | "longBreakDuration";
+      kind: 'pomoDuration' | 'shortBreakDuration' | 'longBreakDuration';
       repetitionCount?: number;
     } | null = null;
     // console.log(
@@ -1975,17 +1976,17 @@ export function TimerController({
     // );
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
-        retVal = { duration: shortBreakDuration, kind: "shortBreakDuration" };
+        retVal = { duration: shortBreakDuration, kind: 'shortBreakDuration' };
       } else {
-        retVal = { duration: pomoDuration, kind: "pomoDuration" };
+        retVal = { duration: pomoDuration, kind: 'pomoDuration' };
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
-      retVal = { duration: longBreakDuration, kind: "longBreakDuration" };
+      retVal = { duration: longBreakDuration, kind: 'longBreakDuration' };
     } else {
       retVal = {
         duration: pomoDuration,
-        kind: "pomoDuration",
-        repetitionCount: 0
+        kind: 'pomoDuration',
+        repetitionCount: 0,
       };
     }
     return retVal;
@@ -1994,19 +1995,19 @@ export function TimerController({
 
   function calculateTooltipText(
     ev: React.MouseEvent<HTMLHeadingElement>,
-    moment: number
+    moment: number,
   ) {
     // console.log("ev.timeStamp", ev.timeStamp);
     // console.log("moment", moment);
     let sessionRange,
       cycleRange,
-      setOfCyclesRange = "";
+      setOfCyclesRange = '';
     let sessionStartString,
       sessionEndString,
       cycleStartString,
       cycleEndString,
       setOfCyclesStartString,
-      setOfCyclesEndString = "";
+      setOfCyclesEndString = '';
     let sessionEndTimestamp,
       cycleEndTimestamp,
       setOfCyclesEndTimestamp = 0;
@@ -2077,25 +2078,25 @@ export function TimerController({
       if (timerState.startTime !== 0) {
         // delayted start이 totalDurationOfSetOfCyclesInSec에 반영되어 있음.
         setOfCyclesStartString = new Date(
-          veryFirstCycleStartTimestamp
+          veryFirstCycleStartTimestamp,
         ).toLocaleTimeString();
         setOfCyclesEndTimestamp =
           veryFirstCycleStartTimestamp + totalDurationOfSetOfCyclesInSec * 1000;
         setOfCyclesEndString = new Date(
-          setOfCyclesEndTimestamp
+          setOfCyclesEndTimestamp,
         ).toLocaleTimeString();
       } else {
         // delayted start이 totalDurationOfSetOfCyclesInSec에 아직 반영되어있지 않음.
         const delayCalculatedOnMouseHoverInMs = moment - endTimeRef.current;
         setOfCyclesStartString = new Date(
-          veryFirstCycleStartTimestamp
+          veryFirstCycleStartTimestamp,
         ).toLocaleTimeString();
         setOfCyclesEndTimestamp =
           veryFirstCycleStartTimestamp +
           (delayCalculatedOnMouseHoverInMs +
             totalDurationOfSetOfCyclesInSec * 1000);
         setOfCyclesEndString = new Date(
-          setOfCyclesEndTimestamp
+          setOfCyclesEndTimestamp,
         ).toLocaleTimeString();
       }
     } else {
@@ -2103,7 +2104,7 @@ export function TimerController({
       setOfCyclesStartString = new Date(moment).toLocaleTimeString();
       setOfCyclesEndTimestamp = moment + totalDurationOfSetOfCyclesInSec * 1000;
       setOfCyclesEndString = new Date(
-        setOfCyclesEndTimestamp
+        setOfCyclesEndTimestamp,
       ).toLocaleTimeString();
     }
 
@@ -2113,13 +2114,13 @@ export function TimerController({
 
     const sessionInfo = determinePatternTimerStates({
       howManyCountdown: repetitionCount,
-      numOfPomo: numOfPomo
+      numOfPomo: numOfPomo,
     });
     const originalDuration = DURATIONS[sessionInfo.kind];
     const durationInfo = `${durationInSeconds / 60} = ${originalDuration} ${
       durationInSeconds / 60 - originalDuration >= 0
-        ? "+ " + (durationInSeconds / 60 - originalDuration)
-        : "- " + Math.abs(durationInSeconds / 60 - originalDuration)
+        ? '+ ' + (durationInSeconds / 60 - originalDuration)
+        : '- ' + Math.abs(durationInSeconds / 60 - originalDuration)
     }`;
     setTooltipText([sessionRange, cycleRange, setOfCyclesRange, durationInfo]);
   }
@@ -2131,7 +2132,7 @@ export function TimerController({
     ) : (
       <h2
         data-tooltip-id="session-info"
-        style={{ cursor: "pointer" }}
+        style={{ cursor: 'pointer' }}
         onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
       >
         <Time seconds={remainingDurationInSec} />
@@ -2143,7 +2144,7 @@ export function TimerController({
     ) : (
       <h2
         data-tooltip-id="session-info"
-        style={{ cursor: "pointer" }}
+        style={{ cursor: 'pointer' }}
         onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
       >
         <Time seconds={durationInSeconds} />
@@ -2151,75 +2152,75 @@ export function TimerController({
     );
   //#endregion
 
-  if (variant === "mini") {
+  if (variant === 'mini') {
     return (
       <div
         css={{
-          display: "flex",
-          alignItems: "center",
-          gap: "15px",
-          fontFamily: "monospace",
-          fontSize: "1.2rem",
-          color: "var(--colors-text-strong)"
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px',
+          fontFamily: 'monospace',
+          fontSize: '1.2rem',
+          color: 'var(--colors-text-strong)',
         }}
       >
         <span
           css={{
             color: isThisFocusSession(repetitionCount)
-              ? "var(--colors-status-break)"
-              : "var(--colors-status-running)"
+              ? 'var(--colors-status-break)'
+              : 'var(--colors-status-running)',
           }}
         >
-          {isThisFocusSession(repetitionCount) ? "🔥 POMO" : "☕️ BREAK"}
+          {isThisFocusSession(repetitionCount) ? '🔥 POMO' : '☕️ BREAK'}
         </span>
-        <span css={{ fontWeight: "bold" }}>
+        <span css={{ fontWeight: 'bold' }}>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </span>
-        <div css={{ display: "flex", gap: "8px" }}>
+        <div css={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => toggleTimer(Date.now())}
             css={{
-              background: "transparent",
-              border: "none",
-              color: "var(--colors-text-strong)",
-              cursor: "pointer",
-              fontSize: "1.2rem",
-              padding: "5px",
-              transition: "all 0.2s",
-              "&:hover": {
-                transform: "scale(1.1)",
-                color: "var(--colors-accent-secondary)"
-              }
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--colors-text-strong)',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              padding: '5px',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'scale(1.1)',
+                color: 'var(--colors-accent-secondary)',
+              },
             }}
           >
             {timerState.running === true
-              ? "⏸️"
+              ? '⏸️'
               : timerState.startTime === 0
-              ? "▶️"
-              : "▶️"}
+                ? '▶️'
+                : '▶️'}
           </button>
           <button
             onClick={() => endTimer(Date.now())}
             css={{
-              background: "transparent",
-              border: "none",
-              color: "var(--colors-text-strong)",
-              cursor: "pointer",
-              fontSize: "1.2rem",
-              padding: "5px",
-              transition: "all 0.2s",
-              "&:hover": {
-                transform: "scale(1.1)",
-                color: "var(--colors-accent-secondary)"
-              }
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--colors-text-strong)',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              padding: '5px',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'scale(1.1)',
+                color: 'var(--colors-accent-secondary)',
+              },
             }}
           >
             {isSessionNotStartedYet(
               timerState.running,
-              timerState.startTime
+              timerState.startTime,
             ) === true
-              ? "⏭️"
-              : "⏹️"}
+              ? '⏭️'
+              : '⏹️'}
           </button>
         </div>
       </div>
@@ -2248,29 +2249,29 @@ export function TimerController({
         }
       `}
     >
-      <div css={{ alignSelf: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
         <FlexBox justifyContent="space-evenly">
-          <h2>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h2>
+          <h2>{isThisFocusSession(repetitionCount) ? 'POMO' : 'BREAK'}</h2>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
         <Tooltip id="session-info" place="top">
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              fontFamily: "monospace"
+              display: 'flex',
+              flexDirection: 'column',
+              fontFamily: 'monospace',
             }}
           >
             <h3>
-              {"Session\u00A0range"}:{"\u00A0\u00A0"}
+              {'Session\u00A0range'}:{'\u00A0\u00A0'}
               {tooltipText[0]}
             </h3>
             <h3>
-              {"Cycle\u00A0\u00A0\u00A0range"}:{"\u00A0\u00A0"}
+              {'Cycle\u00A0\u00A0\u00A0range'}:{'\u00A0\u00A0'}
               {tooltipText[1]}
             </h3>
             <h3>
-              {"Cycles\u00A0\u00A0range"}:{"\u00A0\u00A0"}
+              {'Cycles\u00A0\u00A0range'}:{'\u00A0\u00A0'}
               {tooltipText[2]}
             </h3>
             <h3>{tooltipText[3]}</h3>
@@ -2297,8 +2298,8 @@ export function TimerController({
             durationInSeconds === 0
               ? 0
               : remainingDurationInSec < 0
-              ? 1
-              : 1 - remainingDurationInSec / durationInSeconds
+                ? 1
+                : 1 - remainingDurationInSec / durationInSeconds
           }
           startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
@@ -2319,7 +2320,7 @@ export function TimerController({
         />
       </div>
 
-      <div css={{ alignSelf: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
         <PauseTimer
           isOnSession={timerState.running || timerState.startTime !== 0}
           isPaused={
@@ -2332,20 +2333,20 @@ export function TimerController({
         />
       </div>
 
-      <div css={{ alignSelf: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
         <FlexBox justifyContent="space-evenly">
           <Button
-            type={"submit"}
-            color={"primary"}
+            type={'submit'}
+            color={'primary'}
             handleClick={() => {
               toggleTimer(Date.now());
             }}
           >
             {timerState.running === true
-              ? "Pause"
+              ? 'Pause'
               : timerState.startTime === 0
-              ? "Start"
-              : "Resume"}
+                ? 'Start'
+                : 'Resume'}
           </Button>
           <Button
             handleClick={() => {
@@ -2354,33 +2355,33 @@ export function TimerController({
           >
             {isSessionNotStartedYet(
               timerState.running,
-              timerState.startTime
+              timerState.startTime,
             ) === true
-              ? "Skip"
-              : "End"}
+              ? 'Skip'
+              : 'End'}
           </Button>
         </FlexBox>
       </div>
 
-      <div css={{ alignSelf: "center" }}>
-        <h3 style={{ textAlign: "center" }}>
-          Remaining Pomo Sessions -{" "}
+      <div css={{ alignSelf: 'center' }}>
+        <h3 style={{ textAlign: 'center' }}>
+          Remaining Pomo Sessions -{' '}
           {calculateNumOfRemainingPomoSessions(
             numOfPomo,
-            repetitionCountWithinCycle
+            repetitionCountWithinCycle,
           )}
         </h3>
       </div>
 
-      <div css={{ alignSelf: "center" }}>
-        <h3 style={{ textAlign: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
+        <h3 style={{ textAlign: 'center' }}>
           Cycle - {cycleCount} out of {numOfCycle}
         </h3>
       </div>
 
       <div
         css={{
-          placeSelf: "center"
+          placeSelf: 'center',
         }}
       >
         <div>

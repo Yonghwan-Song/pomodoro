@@ -1,9 +1,9 @@
 // Styled component이용해서 Timeline 다시 만들려고 했는데, 실패했음. 그런데 그냥 우선은 지우지 않고 놔두겠음 혹시 모르니.
-import { useState, useEffect } from "react";
-import Session from "./Session";
-import { SessionType } from "../../../types/clientStatesType";
-import Scale from "../../../ReusableComponents/Scale/Scale";
-import { StyledTimeline } from "../../../ReusableComponents/styles/timeline-related/Timeline.styled";
+import { useState, useEffect } from 'react';
+import Session from './Session';
+import { SessionType } from '../../../types/clientStatesType';
+import Scale from '../../../ReusableComponents/Scale/Scale';
+import { StyledTimeline } from '../../../ReusableComponents/styles/timeline-related/Timeline.styled';
 
 type TimelineProps = {
   arrOfSessions: SessionType[];
@@ -18,7 +18,7 @@ type TimelineProps = {
  */
 
 export default function TimelineUsingStyledComponent({
-  arrOfSessions
+  arrOfSessions,
 }: TimelineProps) {
   const [dynamicLeftAndRight, setDynamicLeftAndRight] =
     useState(getCSSLeftAndRight);

@@ -1,7 +1,7 @@
 import {
   StyledLoadingMessageProps,
-  StyledLoadingMessage
-} from "../styles/LoadingMessage.styled";
+  StyledLoadingMessage,
+} from '../styles/LoadingMessage.styled';
 
 type LoadingMessageProps = StyledLoadingMessageProps & {
   children: React.ReactNode;

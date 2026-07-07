@@ -1,16 +1,16 @@
 /** @jsxImportSource @emotion/react */
-import React, { useEffect, useState } from "react";
-import { RESOURCE, SUB_SET } from "../../../constants";
-import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { TaskWithFocusDurationAndChildren } from "../../../types/todoistRelatedTypes";
-import { TaskItem } from "./TaskItem";
-import styled from "styled-components";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+import React, { useEffect, useState } from 'react';
+import { RESOURCE, SUB_SET } from '../../../constants';
+import { axiosInstance } from '../../../axios-and-error-handling/axios-instances';
+import { TaskWithFocusDurationAndChildren } from '../../../types/todoistRelatedTypes';
+import { TaskItem } from './TaskItem';
+import styled from 'styled-components';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   generateTaskDictionaryAndTree,
-  useTaskSelectionHandler
-} from "./todoist-utility";
-import { Button } from "../../../ReusableComponents/Buttons/Button";
+  useTaskSelectionHandler,
+} from './todoist-utility';
+import { Button } from '../../../ReusableComponents/Buttons/Button';
 
 const Container = styled.div`
   padding: 1rem;
@@ -26,7 +26,7 @@ const Heading = styled.h2`
 
 const Message = styled.div<{ error?: boolean }>`
   padding: 1rem;
-  color: ${({ error }) => (error ? "#EF4444" : "inherit")};
+  color: ${({ error }) => (error ? '#EF4444' : 'inherit')};
   text-align: center;
   text-decoration: underline;
 `;
@@ -36,28 +36,28 @@ const NoTaskButton = styled.button<{ selected: boolean }>`
   width: 100%;
   font-size: 1em;
   padding: 0.75rem;
-  background: ${({ selected }) => (selected ? "#ffe4b5" : "#f3f4f6")};
+  background: ${({ selected }) => (selected ? '#ffe4b5' : '#f3f4f6')};
   color: #3275ad;
   border: 2px dashed #3275ad;
   border-radius: 0.5rem;
   font-weight: bold;
   cursor: pointer;
   text-align: center;
-  box-shadow: ${({ selected }) => (selected ? "0 0 0 2px #ff8522" : "none")};
+  box-shadow: ${({ selected }) => (selected ? '0 0 0 2px #ff8522' : 'none')};
 `;
 
 export function TodoistTasks() {
   const taskTreeForUI = useBoundedPomoInfoStore(
-    (states) => states.taskTreeForUI
+    (states) => states.taskTreeForUI,
   );
   const setTaskTreeForUI = useBoundedPomoInfoStore(
-    (states) => states.setTaskTreeForUI
+    (states) => states.setTaskTreeForUI,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const currentTaskId = useBoundedPomoInfoStore(
-    (states) => states.currentTaskId
+    (states) => states.currentTaskId,
   );
   const handleTaskSelection = useTaskSelectionHandler();
 
@@ -66,25 +66,25 @@ export function TodoistTasks() {
       setError(null);
       setLoading(true);
       const response = await axiosInstance.get(
-        RESOURCE.TODOIST + SUB_SET.TASKS
+        RESOURCE.TODOIST + SUB_SET.TASKS,
       );
 
       const { rootTasks, taskMap } = generateTaskDictionaryAndTree(
-        response.data.tasks
+        response.data.tasks,
       );
       setTaskTreeForUI(rootTasks);
     } catch (err) {
-      console.error("Error fetching tasks:", err);
-      setError("Failed to fetch tasks. Please try again.");
+      console.error('Error fetching tasks:', err);
+      setError('Failed to fetch tasks. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const getButtonText = () => {
-    if (loading) return "Loading...";
-    if (taskTreeForUI === null) return "Import Tasks";
-    return "Sync Tasks";
+    if (loading) return 'Loading...';
+    if (taskTreeForUI === null) return 'Import Tasks';
+    return 'Sync Tasks';
   };
 
   const getMessage = () => {
@@ -126,7 +126,7 @@ export function TodoistTasks() {
     function findAncestors(
       node: TaskWithFocusDurationAndChildren,
       targetId: string,
-      path: string[] = []
+      path: string[] = [],
     ): string[] | null {
       if (node.id === targetId) return path;
       if (!node.children) return null;
@@ -150,16 +150,16 @@ export function TodoistTasks() {
 
   return (
     <div>
-      <h2 style={{ textAlign: "center", marginBottom: "1rem" }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>
         Todoist Items
       </h2>
 
-      <div css={{ display: "flex", columnGap: "9px", padding: "1rem" }}>
+      <div css={{ display: 'flex', columnGap: '9px', padding: '1rem' }}>
         <NoTaskButton
           onClick={(ev) => {
-            handleTaskSelection("", Date.now());
+            handleTaskSelection('', Date.now());
           }}
-          selected={currentTaskId === ""}
+          selected={currentTaskId === ''}
         >
           💤 Run Without Task
         </NoTaskButton>

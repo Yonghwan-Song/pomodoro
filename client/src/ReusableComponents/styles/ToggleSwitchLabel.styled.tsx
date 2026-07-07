@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled, { css } from 'styled-components';
 
 export type StyledLabelForSwitchPropsType = {
   isHorizontal: boolean;
@@ -6,7 +6,7 @@ export type StyledLabelForSwitchPropsType = {
 };
 
 export const StyledLabelForSwitch = styled.label.attrs((props) => ({
-  htmlFor: props.htmlFor
+  htmlFor: props.htmlFor,
 }))<StyledLabelForSwitchPropsType>`
   ${({ isHorizontal, marginBetweenLabelNameAndSwitch }) => {
     if (isHorizontal === true) {
@@ -14,9 +14,11 @@ export const StyledLabelForSwitch = styled.label.attrs((props) => ({
         display: flex;
         align-items: center;
         & > p {
-          margin-right: ${marginBetweenLabelNameAndSwitch
-            ? marginBetweenLabelNameAndSwitch + "px"
-            : "20px"};
+          margin-right: ${
+            marginBetweenLabelNameAndSwitch
+              ? marginBetweenLabelNameAndSwitch + 'px'
+              : '20px'
+          };
         }
       `;
     }
@@ -25,9 +27,11 @@ export const StyledLabelForSwitch = styled.label.attrs((props) => ({
     if (isHorizontal === false) {
       return css`
         & > p {
-          margin-bottom: ${marginBetweenLabelNameAndSwitch
-            ? marginBetweenLabelNameAndSwitch + "px"
-            : "20px"};
+          margin-bottom: ${
+            marginBetweenLabelNameAndSwitch
+              ? marginBetweenLabelNameAndSwitch + 'px'
+              : '20px'
+          };
         }
       `;
     }

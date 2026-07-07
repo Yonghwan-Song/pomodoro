@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled, { css } from 'styled-components';
 
 export type StyledLeftRightBoxPropsType = {
   isSwitchOn: boolean;
@@ -16,28 +16,28 @@ export const StyledLeftBox = styled.div<StyledLeftRightBoxPropsType>`
     let widthExceptForEdges = unitSize ? unitSize : 100;
     let edgesFromEachSide = xAxisEdgeWidth ? xAxisEdgeWidth * 2 : 2 * 2;
 
-    return widthExceptForEdges + edgesFromEachSide + "px";
+    return widthExceptForEdges + edgesFromEachSide + 'px';
   }};
-  height: ${({ unitSize }) => (unitSize ? unitSize + "px" : "100px")};
+  height: ${({ unitSize }) => (unitSize ? unitSize + 'px' : '100px')};
   ${({
     isSwitchOn,
     borderWidth,
     backgroundColorForOn,
-    backgroundColorForOff
+    backgroundColorForOff,
   }) => {
     if (isSwitchOn === true) {
       return css`
-        border-top: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-top: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOn} solid;
-        border-bottom: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-bottom: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOn} solid;
       `;
     }
     if (isSwitchOn === false) {
       return css`
-        border-top: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-top: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOff} solid;
-        border-bottom: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-bottom: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOff} solid;
       `;
     }
@@ -67,28 +67,28 @@ export const StyledRightBox = styled.div<StyledLeftRightBoxPropsType>`
     let widthExceptForEdges = unitSize ? unitSize : 100;
     let edgesFromEachSide = xAxisEdgeWidth ? xAxisEdgeWidth * 2 : 2 * 2;
 
-    return widthExceptForEdges + edgesFromEachSide + "px";
+    return widthExceptForEdges + edgesFromEachSide + 'px';
   }};
-  height: ${({ unitSize }) => (unitSize ? unitSize + "px" : "100px")};
+  height: ${({ unitSize }) => (unitSize ? unitSize + 'px' : '100px')};
   ${({
     isSwitchOn,
     borderWidth,
     backgroundColorForOn,
-    backgroundColorForOff
+    backgroundColorForOff,
   }) => {
     if (isSwitchOn === true) {
       return css`
-        border-top: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-top: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOn} solid;
-        border-bottom: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-bottom: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOn} solid;
       `;
     }
     if (isSwitchOn === false) {
       return css`
-        border-top: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-top: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOff} solid;
-        border-bottom: ${borderWidth ? borderWidth + "px" : "2px"}
+        border-bottom: ${borderWidth ? borderWidth + 'px' : '2px'}
           ${backgroundColorForOff} solid;
       `;
     }

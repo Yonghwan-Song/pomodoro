@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import GoogleButton from "react-google-button";
-import { useAuthContext } from "../../Context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { clearRecOfToday } from "../..";
-import { errController } from "../../axios-and-error-handling/errorController";
+import { useEffect } from 'react';
+import GoogleButton from 'react-google-button';
+import { useAuthContext } from '../../Context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { clearRecOfToday } from '../..';
+import { errController } from '../../axios-and-error-handling/errorController';
 
 function Signin() {
   const { googleSignIn, user } = useAuthContext()!;
@@ -24,7 +24,7 @@ function Signin() {
 
   useEffect(() => {
     if (user !== null) {
-      navigate("/timer");
+      navigate('/timer');
     }
   }, [user]);
 

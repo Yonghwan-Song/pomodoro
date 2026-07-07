@@ -11,7 +11,7 @@ export interface CustomRequest extends Request {
 export async function FireBase_Admin_Middleware(
   req: CustomRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const authorizationHeader = req.headers.authorization;
   // console.log('authorizationHeader');
@@ -46,6 +46,6 @@ export async function FireBase_Admin_Middleware(
 
   throw new HttpException(
     'Authorization header is undefined',
-    HttpStatus.UNAUTHORIZED
+    HttpStatus.UNAUTHORIZED,
   );
 }

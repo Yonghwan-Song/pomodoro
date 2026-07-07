@@ -1,15 +1,15 @@
-import { enableMapSet } from "immer";
-import type { StateCreator } from "zustand";
-import * as EventNames from "../../common/webrtc/eventNames";
-import { ConnectionStore, ProducerSlice } from "./types";
-import { AckResponse } from "../../common/webrtc/payloadRelated";
-import { createSimulcastEncodingsFromTrack } from "./utils";
+import { enableMapSet } from 'immer';
+import type { StateCreator } from 'zustand';
+import * as EventNames from '../../common/webrtc/eventNames';
+import { ConnectionStore, ProducerSlice } from './types';
+import { AckResponse } from '../../common/webrtc/payloadRelated';
+import { createSimulcastEncodingsFromTrack } from './utils';
 
 enableMapSet();
 
 export const createProducerSlice: StateCreator<
   ConnectionStore,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   ProducerSlice
 > = (set, get) => {
@@ -17,10 +17,14 @@ export const createProducerSlice: StateCreator<
     producer: null,
     isProducerPaused: false,
     initializeProducerSliceStates: () => {
-      set({
-        producer: null,
-        isProducerPaused: false,
-      }, false, "producer/resetToInitialValues")
+      set(
+        {
+          producer: null,
+          isProducerPaused: false,
+        },
+        false,
+        'producer/resetToInitialValues',
+      );
     },
     produce: async () => {
       const { mediaStream, isBeingShared, sendTransport, producer } = get();
@@ -34,13 +38,13 @@ export const createProducerSlice: StateCreator<
           track: videoTrack,
           stopTracks: false,
           encodings: createSimulcastEncodingsFromTrack(
-            videoTrack.getSettings()
+            videoTrack.getSettings(),
           ),
-          codecOptions: { videoGoogleStartBitrate: 1000 }
+          codecOptions: { videoGoogleStartBitrate: 1000 },
         });
-        set({ producer: newProducer }, false, "room/produced");
+        set({ producer: newProducer }, false, 'room/produced');
       } catch (e) {
-        console.error("Produce failed", e);
+        console.error('Produce failed', e);
       }
     },
 
@@ -64,13 +68,13 @@ export const createProducerSlice: StateCreator<
       producer.pause();
       socket.emit(
         EventNames.PAUSE_PRODUCER,
-        { kind: "video" },
+        { kind: 'video' },
         (ack: AckResponse) => {
           if (!ack.success) {
             producer.resume();
             set({ isProducerPaused: false });
           }
-        }
+        },
       );
       set({ isProducerPaused: true });
     },
@@ -81,15 +85,15 @@ export const createProducerSlice: StateCreator<
       producer.resume();
       socket.emit(
         EventNames.RESUME_PRODUCER,
-        { kind: "video" },
+        { kind: 'video' },
         (ack: AckResponse) => {
           if (!ack.success) {
             producer.pause();
             set({ isProducerPaused: true });
           }
-        }
+        },
       );
       set({ isProducerPaused: false });
-    }
+    },
   };
 };

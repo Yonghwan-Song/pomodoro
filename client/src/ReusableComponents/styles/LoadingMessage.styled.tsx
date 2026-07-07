@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 export type StyledLoadingMessageProps = {
   fontSize?: string;
@@ -10,5 +10,5 @@ export const StyledLoadingMessage = styled.h3<StyledLoadingMessageProps>`
   margin: auto;
   left: 50%;
   transform: translate(-50%, -50%);
-  ${({ top }) => `top: ${top || "30%"}`}
+  ${({ top }) => `top: ${top || '30%'}`}
 `;

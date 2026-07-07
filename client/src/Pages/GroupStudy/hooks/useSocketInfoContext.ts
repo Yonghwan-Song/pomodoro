@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
-import { Socket } from "socket.io-client";
-import { Device } from "mediasoup-client";
+import { useOutletContext } from 'react-router-dom';
+import { Socket } from 'socket.io-client';
+import { Device } from 'mediasoup-client';
 
 export type SocketContextType = {
   socket: Socket | null;

@@ -1,9 +1,9 @@
 type ButtonProps = {
   // color?: string;
   handleClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  color?: "primary" | "blue" | undefined;
+  color?: 'primary' | 'blue' | undefined;
   children: string;
-} & Omit<React.ComponentProps<"button">, "children">;
+} & Omit<React.ComponentProps<'button'>, 'children'>;
 
 export function Button({
   children,
@@ -16,7 +16,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`btn${color !== undefined ? " btn-" + color : ""}`}
+      className={`btn${color !== undefined ? ' btn-' + color : ''}`}
       onClick={handleClick}
       {...rest}
     >

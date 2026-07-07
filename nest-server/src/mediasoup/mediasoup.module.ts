@@ -33,11 +33,11 @@ const localIpProvider = {
     }
     console.log('Ip interfaces array', ips);
     return ips.length > 0 ? ips : ['127.0.0.1'];
-  }
+  },
 };
 
 @Module({
   providers: [MediasoupService, localIpProvider],
-  exports: [MediasoupService]
+  exports: [MediasoupService],
 })
 export class MediasoupModule {}

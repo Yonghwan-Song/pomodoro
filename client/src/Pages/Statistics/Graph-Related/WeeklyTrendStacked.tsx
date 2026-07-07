@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   CategoryDetail,
   WeekStat,
-  WeekStatWithGoal
-} from "../statRelatedTypes";
+  WeekStatWithGoal,
+} from '../statRelatedTypes';
 import {
   Area,
   AreaChart,
@@ -13,24 +13,24 @@ import {
   Tooltip,
   TooltipProps,
   XAxis,
-  YAxis
-} from "recharts";
+  YAxis,
+} from 'recharts';
 import {
   LeftArrow,
-  RightArrow
-} from "../../../ReusableComponents/Icons/ChevronArrows";
-import { endOfISOWeek, startOfISOWeek } from "date-fns";
-import { getHHmm } from "./StackedGraph";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+  RightArrow,
+} from '../../../ReusableComponents/Icons/ChevronArrows';
+import { endOfISOWeek, startOfISOWeek } from 'date-fns';
+import { getHHmm } from './StackedGraph';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   getMessageForRemainingDuration,
-  roundTo_X_DecimalPoints
-} from "../../../utils/number-related-utils";
+  roundTo_X_DecimalPoints,
+} from '../../../utils/number-related-utils';
 
 export function WeeklyTrendStacked({
   weeklyTrend,
   listOfCategoryDetails,
-  colorForUnCategorized
+  colorForUnCategorized,
 }: {
   weeklyTrend: WeekStat[];
   listOfCategoryDetails: CategoryDetail[];
@@ -43,14 +43,14 @@ export function WeeklyTrendStacked({
   });
   const [count, setCount] = useState(INITIAL_COUNT);
   const [start, setStart] = useState(() =>
-    Math.max(localWeeklyTrend.length - INITIAL_COUNT, 0)
+    Math.max(localWeeklyTrend.length - INITIAL_COUNT, 0),
   );
 
   function selectPreviousTenWeekData() {
     if (start === 0) {
-      alert("No more data");
+      alert('No more data');
     } else if (localWeeklyTrend.length <= count) {
-      alert("No more data");
+      alert('No more data');
     } else {
       let newStart = start - INITIAL_COUNT;
       if (newStart < 0) newStart = 0;
@@ -60,9 +60,9 @@ export function WeeklyTrendStacked({
   }
   function selectNextTenWeekData() {
     if (start === localWeeklyTrend.length - count) {
-      alert("No more data");
+      alert('No more data');
     } else if (localWeeklyTrend.length <= count) {
-      alert("No more data");
+      alert('No more data');
     } else {
       let newStart = start + INITIAL_COUNT;
       if (newStart > localWeeklyTrend.length - count)
@@ -85,14 +85,14 @@ export function WeeklyTrendStacked({
         ...cloned,
         goal: {
           minimum: weeklyGoal.minimum * 60,
-          ideal: weeklyGoal.ideal * 60
-        }
+          ideal: weeklyGoal.ideal * 60,
+        },
       };
-    }
+    },
   );
   const maxValueOfData = Math.max(
     ...combinedWithGoals.map((stat) => stat.total ?? 0),
-    weeklyGoal.ideal * 60
+    weeklyGoal.ideal * 60,
   );
   let mintuesRemoved = removeMintues(maxValueOfData);
   const maxTickOfYAxis = roundUpToNearest_X_hour(mintuesRemoved, 300);
@@ -111,14 +111,14 @@ export function WeeklyTrendStacked({
   }
 
   //#region Calculate week range
-  let range = "";
+  let range = '';
   if (slicedLocalWeeklyTrend.length !== 0) {
     const startOfCorrespondingWeek = startOfISOWeek(
-      slicedLocalWeeklyTrend[0].timestampOfFirstDate
+      slicedLocalWeeklyTrend[0].timestampOfFirstDate,
     );
     const endOfCorrespondingWeek = endOfISOWeek(
       slicedLocalWeeklyTrend[slicedLocalWeeklyTrend.length - 1]
-        .timestampOfFirstDate
+        .timestampOfFirstDate,
     );
     range = `${startOfCorrespondingWeek.toLocaleDateString()} ~ ${endOfCorrespondingWeek.toLocaleDateString()}`;
   }
@@ -128,18 +128,18 @@ export function WeeklyTrendStacked({
     <>
       <div
         style={{
-          position: "absolute",
-          display: "flex",
-          right: "5px",
-          top: "6px",
-          zIndex: 2
+          position: 'absolute',
+          display: 'flex',
+          right: '5px',
+          top: '6px',
+          zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => selectPreviousTenWeekData()} />
-        <p style={{ width: "172px", textAlign: "center" }}>{range}</p>
+        <p style={{ width: '172px', textAlign: 'center' }}>{range}</p>
         <RightArrow handleClick={() => selectNextTenWeekData()} />
       </div>
-      <ResponsiveContainer width={"100%"} minHeight={300}>
+      <ResponsiveContainer width={'100%'} minHeight={300}>
         <AreaChart
           data={combinedWithGoals}
           margin={{ top: 10, right: 10, left: -20, bottom: -10 }}
@@ -148,8 +148,8 @@ export function WeeklyTrendStacked({
 
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
-            dataKey={"weekNumber"}
-            tickFormatter={(value: string, index: number) => "W" + value}
+            dataKey={'weekNumber'}
+            tickFormatter={(value: string, index: number) => 'W' + value}
           />
           <YAxis
             domain={[0, maxTickOfYAxis]}
@@ -164,9 +164,9 @@ export function WeeklyTrendStacked({
             y={weeklyGoal.minimum * 60}
             // label={getHHmm(weeklyGoal.minimum * 60)}
             label={{
-              position: "center",
+              position: 'center',
               value: getHHmm(weeklyGoal.minimum * 60),
-              fill: "#12489e"
+              fill: '#12489e',
             }}
             stroke="#4081e9"
           />
@@ -174,9 +174,9 @@ export function WeeklyTrendStacked({
             y={weeklyGoal.ideal * 60}
             // label={getHHmm(weeklyGoal.ideal * 60)}
             label={{
-              position: "center",
+              position: 'center',
               value: getHHmm(weeklyGoal.ideal * 60),
-              fill: "#0e8b48"
+              fill: '#0e8b48',
             }}
             stroke="#5cca90"
           />
@@ -189,7 +189,7 @@ export function WeeklyTrendStacked({
                 dot={{
                   strokeWidth: 1.5,
                   r: 3,
-                  fill: "#ffffff"
+                  fill: '#ffffff',
                 }}
                 dataKey={`subtotalByCategory.${detail.name}.duration`}
                 stroke={detail.color}
@@ -207,7 +207,7 @@ export function WeeklyTrendStacked({
             dot={{
               strokeWidth: 1.5,
               r: 3,
-              fill: "#ffffff"
+              fill: '#ffffff',
             }}
             stroke={colorForUnCategorized}
             strokeWidth={2}
@@ -225,15 +225,15 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
   const {
     active,
     payload,
-    label // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
+    label, // dayOfWeek: e.g., Wed, Thu, etc., which are the values for the X axis.
   } = prop;
 
   if (active && payload && payload.length) {
     const startOfCorrespondingWeek = startOfISOWeek(
-      payload[0].payload.timestampOfFirstDate
+      payload[0].payload.timestampOfFirstDate,
     );
     const endOfCorrespondingWeek = endOfISOWeek(
-      payload[payload.length - 1].payload.timestampOfFirstDate
+      payload[payload.length - 1].payload.timestampOfFirstDate,
     );
 
     const minimum = payload[0].payload.goal.minimum;
@@ -241,11 +241,11 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
     const weekTotal = payload[0].payload.total;
     const minimumGoalRateInPercent = roundTo_X_DecimalPoints(
       (weekTotal / minimum) * 100,
-      1
+      1,
     ); // Round to one decimal point
     const idealGoalRateInPercent = roundTo_X_DecimalPoints(
       (weekTotal / ideal) * 100,
-      1
+      1,
     );
 
     const remainingUntilMinimum = minimum - weekTotal;
@@ -254,16 +254,16 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
     return (
       <div
         style={{
-          borderRadius: "0.25rem",
-          background: "#fff",
-          padding: "1rem",
-          boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
-          textAlign: "left",
-          fontWeight: "bold"
+          borderRadius: '0.25rem',
+          background: '#fff',
+          padding: '1rem',
+          boxShadow: '15px 30px 40px 5px rgba(0, 0, 0, 0.5)',
+          textAlign: 'left',
+          fontWeight: 'bold',
         }}
       >
         <p>
-          W{label} ({startOfCorrespondingWeek.toLocaleDateString()} ~{" "}
+          W{label} ({startOfCorrespondingWeek.toLocaleDateString()} ~{' '}
           {endOfCorrespondingWeek.toLocaleDateString()})
         </p>
         {payload.map((dayData, index) => {
@@ -273,20 +273,20 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
                 <div>
                   <p
                     style={{
-                      fontWeight: "bold",
-                      fontStyle: "italic",
-                      textAlign: "center"
+                      fontWeight: 'bold',
+                      fontStyle: 'italic',
+                      textAlign: 'center',
                     }}
                   >
                     Total: {getHHmm(dayData.payload.total)}
                   </p>
                   <div
-                    style={{ display: "flex", justifyContent: "space-evenly" }}
+                    style={{ display: 'flex', justifyContent: 'space-evenly' }}
                   >
-                    <p style={{ color: "#4081e9" }}>
+                    <p style={{ color: '#4081e9' }}>
                       {minimumGoalRateInPercent}%
                     </p>
-                    <p style={{ color: "#5cca90" }}>
+                    <p style={{ color: '#5cca90' }}>
                       {idealGoalRateInPercent}%
                     </p>
                   </div>
@@ -294,10 +294,10 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
               )}
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  columnGap: "6px",
-                  color: dayData.color
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  columnGap: '6px',
+                  color: dayData.color,
                 }}
               >
                 <p>{dayData.name}:</p>
@@ -305,13 +305,13 @@ function CustomTooltip(prop: TooltipProps<number, string>) {
               </div>
               <p
                 style={{
-                  fontStyle: "italic"
+                  fontStyle: 'italic',
                 }}
               >
                 {index === payload.length - 1 &&
                   getMessageForRemainingDuration(
                     remainingUntilMinimum,
-                    remainingUntilIdeal
+                    remainingUntilIdeal,
                   )}
               </p>
             </div>

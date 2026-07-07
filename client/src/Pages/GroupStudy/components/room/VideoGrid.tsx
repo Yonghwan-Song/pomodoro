@@ -1,8 +1,8 @@
-import { css } from "../../../../../styled-system/css";
-import VideoPlayer from "../media/VideoPlayer";
-import { getHHmm } from "../../../../utils/number-related-utils";
-import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
-import { Participant } from "../../../../zustand-stores/connection-slices/types";
+import { css } from '../../../../../styled-system/css';
+import VideoPlayer from '../media/VideoPlayer';
+import { getHHmm } from '../../../../utils/number-related-utils';
+import { useConnectionStore } from '../../../../zustand-stores/connectionStore';
+import { Participant } from '../../../../zustand-stores/connection-slices/types';
 
 const DUMMY_VIDEO_COUNT = 3;
 
@@ -21,57 +21,57 @@ export function VideoGrid({
   peerNicknames,
   myTodayTotalDuration,
   peerTodayTotalDurations,
-  participants
+  participants,
 }: VideoGridProps) {
   const consumersByPeerId = useConnectionStore(
-    (state) => state.consumersByPeerId
+    (state) => state.consumersByPeerId,
   );
   const isSharing = useConnectionStore((state) => state.isBeingShared);
   const isProducerPaused = useConnectionStore(
-    (state) => state.isProducerPaused
+    (state) => state.isProducerPaused,
   );
   const toggleOffCamera = useConnectionStore((state) => state.toggleOffCamera);
   const toggleOnCamera = useConnectionStore((state) => state.toggleOnCamera);
 
   const cardClassName = css({
-    backgroundColor: "bg.surface",
-    border: "1px solid",
-    borderColor: "borders.subtle",
-    borderRadius: "xl",
-    padding: "3",
-    boxShadow: "0 12px 24px rgba(15, 23, 42, 0.12)",
-    minWidth: 0
+    backgroundColor: 'bg.surface',
+    border: '1px solid',
+    borderColor: 'borders.subtle',
+    borderRadius: 'xl',
+    padding: '3',
+    boxShadow: '0 12px 24px rgba(15, 23, 42, 0.12)',
+    minWidth: 0,
   });
 
   const headingClassName = css({
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "3",
-    marginBottom: "2"
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: '3',
+    marginBottom: '2',
   });
 
   const titleClassName = css({
-    fontSize: "sm",
-    fontWeight: "medium",
-    color: "text.main",
+    fontSize: 'sm',
+    fontWeight: 'medium',
+    color: 'text.main',
     minWidth: 0,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   });
 
   return (
     <div
       className={css({
-        display: "grid",
+        display: 'grid',
         gridTemplateColumns: {
-          base: "1fr",
-          md: "repeat(auto-fit, minmax(260px, 1fr))",
-          xl: "repeat(auto-fit, minmax(300px, 1fr))"
+          base: '1fr',
+          md: 'repeat(auto-fit, minmax(260px, 1fr))',
+          xl: 'repeat(auto-fit, minmax(300px, 1fr))',
         },
-        gap: "4",
-        minWidth: 0
+        gap: '4',
+        minWidth: 0,
       })}
     >
       {localStream && (
@@ -80,13 +80,13 @@ export function VideoGrid({
             <h3 className={titleClassName}>My Video</h3>
             <span
               className={css({
-                fontSize: "xs",
-                fontWeight: "bold",
-                color: "bg.canvas",
-                backgroundColor: "status.info",
-                paddingX: "2",
-                paddingY: "1",
-                borderRadius: "full"
+                fontSize: 'xs',
+                fontWeight: 'bold',
+                color: 'bg.canvas',
+                backgroundColor: 'status.info',
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'full',
               })}
             >
               🔥 {getHHmm(myTodayTotalDuration)}
@@ -94,35 +94,35 @@ export function VideoGrid({
           </div>
           <div
             className={css({
-              position: "relative"
+              position: 'relative',
             })}
           >
             {isSharing && (
               <button
                 onClick={isProducerPaused ? toggleOnCamera : toggleOffCamera}
                 className={css({
-                  position: "absolute",
-                  top: "2",
-                  right: "2",
+                  position: 'absolute',
+                  top: '2',
+                  right: '2',
                   zIndex: 1,
-                  minWidth: "72px",
-                  paddingX: "3",
-                  paddingY: "1.5",
-                  fontSize: "xs",
-                  fontWeight: "medium",
-                  borderRadius: "full",
-                  cursor: "pointer",
-                  border: "none",
-                  color: "white",
+                  minWidth: '72px',
+                  paddingX: '3',
+                  paddingY: '1.5',
+                  fontSize: 'xs',
+                  fontWeight: 'medium',
+                  borderRadius: 'full',
+                  cursor: 'pointer',
+                  border: 'none',
+                  color: 'white',
                   backgroundColor: isProducerPaused
-                    ? "status.running"
-                    : "status.error",
-                  boxShadow: "0 4px 12px rgba(15, 23, 42, 0.24)",
+                    ? 'status.running'
+                    : 'status.error',
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.24)',
                   _hover: { opacity: 0.9 },
-                  transition: "background-color 0.15s, opacity 0.15s"
+                  transition: 'background-color 0.15s, opacity 0.15s',
                 })}
               >
-                {isProducerPaused ? "Camera on" : "Camera off"}
+                {isProducerPaused ? 'Camera on' : 'Camera off'}
               </button>
             )}
             {/* Actually the picture below should be the picture url of this peer 그런데 어차피 stream이 null일 수가 없어서... 그리고 받아오는 API 만들기 귀찮아서 null로 넣겠음. */}
@@ -143,13 +143,13 @@ export function VideoGrid({
               <h3 className={titleClassName}>{nickName}</h3>
               <span
                 className={css({
-                  fontSize: "xs",
-                  fontWeight: "bold",
-                  color: "bg.canvas",
-                  backgroundColor: "status.running",
-                  paddingX: "2",
-                  paddingY: "1",
-                  borderRadius: "full"
+                  fontSize: 'xs',
+                  fontWeight: 'bold',
+                  color: 'bg.canvas',
+                  backgroundColor: 'status.running',
+                  paddingX: '2',
+                  paddingY: '1',
+                  borderRadius: 'full',
                 })}
               >
                 🔥 {getHHmm(todayTotalDuration || 0)}
@@ -204,13 +204,13 @@ export function VideoGrid({
               <h3 className={titleClassName}>Dummy {idx + 1}</h3>
               <span
                 className={css({
-                  fontSize: "xs",
-                  fontWeight: "bold",
-                  color: "bg.canvas",
-                  backgroundColor: "status.neutral",
-                  paddingX: "2",
-                  paddingY: "1",
-                  borderRadius: "full"
+                  fontSize: 'xs',
+                  fontWeight: 'bold',
+                  color: 'bg.canvas',
+                  backgroundColor: 'status.neutral',
+                  paddingX: '2',
+                  paddingY: '1',
+                  borderRadius: 'full',
                 })}
               >
                 —

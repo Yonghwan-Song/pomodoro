@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled, { css } from 'styled-components';
 
 type FlexBoxType = {
   gap?: string;
@@ -58,7 +58,7 @@ export const StyledFlexBox = styled.div<FlexBoxType>`
       flex-wrap: ${flexWrap};
     `}
   & > * {
-    flex-basis: ${({ flexBasis }) => flexBasis || "auto"};
+    flex-basis: ${({ flexBasis }) => flexBasis || 'auto'};
     text-align: center;
   }
 `;

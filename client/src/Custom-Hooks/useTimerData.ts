@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 import {
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
-  deciderOfWhetherDataForRunningTimerFetched
-} from "..";
+  deciderOfWhetherDataForRunningTimerFetched,
+} from '..';
 import {
   CycleInfoType,
   TimersStatesType,
   TimersStatesTypeWithCurrentCycleInfo,
-  RecType
-} from "../types/clientStatesType";
-import { pubsub } from "../pubsub";
-import { SUCCESS_PersistingTimersStatesWithCycleInfoToIDB } from "../constants";
+  RecType,
+} from '../types/clientStatesType';
+import { pubsub } from '../pubsub';
+import { SUCCESS_PersistingTimersStatesWithCycleInfoToIDB } from '../constants';
 
 /**
  * useTimerData Custom Hook
@@ -42,13 +42,13 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
   const [records, setRecords] = useState<RecType[]>([]);
 
   const areDataForRunningTimerFetched = useRef<[boolean, boolean]>(
-    deciderOfWhetherDataForRunningTimerFetched
+    deciderOfWhetherDataForRunningTimerFetched,
   );
 
   useEffect(() => {
     function setStatesRelatedToTimerAndCurrentCycleInfoUsingDataFromIDB() {
       const getStatesFromIDB = async () => {
-        const states = await obtainStatesFromIDB("withoutSettings");
+        const states = await obtainStatesFromIDB('withoutSettings');
         if (Object.entries(states).length !== 0) {
           const { currentCycleInfo, ...timersStates } =
             states as TimersStatesTypeWithCurrentCycleInfo;
@@ -97,7 +97,7 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
           setStatesRelatedToTimer(data.timersStates);
           setCurrentCycleInfo(data.currentCycleInfo);
           areDataForRunningTimerFetched.current[0] = true;
-        }
+        },
       );
       return () => {
         unsub();
@@ -110,11 +110,11 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
     if (skipPubSub) return;
     function subscribeToSuccessOfPersistingRecordsOfTodayToIDB() {
       const unsub = pubsub.subscribe(
-        "successOfPersistingRecordsOfTodayToIDB",
+        'successOfPersistingRecordsOfTodayToIDB',
         (data) => {
           setRecords(data);
           areDataForRunningTimerFetched.current[1] = true;
-        }
+        },
       );
       return () => {
         unsub();
@@ -127,10 +127,10 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
     if (skipPubSub) return;
     function subscribeToRePersistingFailedRecOfToday() {
       const unsub = pubsub.subscribe(
-        "addFailedRecOfTodayToIDB",
+        'addFailedRecOfTodayToIDB',
         (newlyAddedRecArr) => {
           setRecords((prev) => [...prev, ...newlyAddedRecArr]);
-        }
+        },
       );
       return () => {
         unsub();
@@ -163,6 +163,6 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
     setRecords,
     isStatesRelatedToTimerReady,
     isCurrentCycleInfoReady,
-    areDataForRunningTimerFetchedCompletely
+    areDataForRunningTimerFetchedCompletely,
   };
 }

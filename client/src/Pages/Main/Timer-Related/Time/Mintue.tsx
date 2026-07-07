@@ -1,4 +1,4 @@
-import styles from "./Mintue.module.css";
+import styles from './Mintue.module.css';
 
 type MintueProps = {
   minutes: number;

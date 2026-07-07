@@ -3,7 +3,7 @@ export async function makeSound() {
   try {
     const audioContext = new AudioContext();
     const buffer = await (
-      await fetch("/the-little-dwarf-498.ogg")
+      await fetch('/the-little-dwarf-498.ogg')
     ).arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(buffer);
     const audioBufferSourceNode = audioContext.createBufferSource();
@@ -16,38 +16,38 @@ export async function makeSound() {
 }
 
 export async function notify(which: string) {
-  let title = "Pomodoro";
-  let body = "";
+  let title = 'Pomodoro';
+  let body = '';
 
   // eslint-disable-next-line default-case
   switch (which) {
-    case "pomo":
-      body = "Time to focus";
+    case 'pomo':
+      body = 'Time to focus';
       break;
-    case "shortBreak":
-      body = "Time to take a short break";
+    case 'shortBreak':
+      body = 'Time to take a short break';
       break;
-    case "longBreak":
-      body = "Time to take a long break";
+    case 'longBreak':
+      body = 'Time to take a long break';
       break;
-    case "nextCycle":
-      body = "Time to do the next cycle of pomos";
+    case 'nextCycle':
+      body = 'Time to do the next cycle of pomos';
       break;
-    case "cyclesCompleted":
-      body = "All cycles of focus durations are done";
+    case 'cyclesCompleted':
+      body = 'All cycles of focus durations are done';
       break;
   }
 
   let options = {
     body,
-    silent: true
+    silent: true,
   };
 
   await makeSound();
 
   let noti = new Notification(title, options);
 
-  noti.addEventListener("click", (ev) => {
+  noti.addEventListener('click', (ev) => {
     noti.close();
     window.focus();
   });

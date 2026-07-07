@@ -1,5 +1,5 @@
-import styled, { css } from "styled-components";
-import { BREAK_POINTS } from "../../constants";
+import styled, { css } from 'styled-components';
+import { BREAK_POINTS } from '../../constants';
 
 type GridType = {
   maxWidth?: string;
@@ -25,7 +25,7 @@ type GridType = {
 };
 
 export const StyledGrid = styled.div<GridType>`
-  max-width: ${({ maxWidth }) => maxWidth || "960px"};
+  max-width: ${({ maxWidth }) => maxWidth || '960px'};
 
   ${({ minWidth }) =>
     minWidth &&
@@ -64,7 +64,7 @@ export const StyledGrid = styled.div<GridType>`
       place-content: ${placeContent};
     `}
 
-  padding: ${({ padding }) => padding || "10px"};
+  padding: ${({ padding }) => padding || '10px'};
   display: grid;
 
   ${({ column }) => {
@@ -86,12 +86,12 @@ export const StyledGrid = styled.div<GridType>`
   ${({ autoColumn }) =>
     autoColumn &&
     css`
-      grid-auto-columns: ${autoColumn + "px"};
+      grid-auto-columns: ${autoColumn + 'px'};
     `}
   ${({ autoRow }) =>
     autoRow &&
     css`
-      grid-auto-rows: ${autoRow + "px"};
+      grid-auto-rows: ${autoRow + 'px'};
     `}
 
 
@@ -106,26 +106,21 @@ export const StyledGrid = styled.div<GridType>`
       grid-row-gap: ${rowGap};
     `};
 
-  ${({ margin }) =>
-    css`
-      margin: ${margin};
-    `}
-  ${({ marginTop }) =>
-    css`
-      margin-top: ${marginTop};
-    `}
-  ${({ marginRight }) =>
-    css`
-      margin-right: ${marginRight};
-    `}
-  ${({ marginBottom }) =>
-    css`
-      margin-bottom: ${marginBottom};
-    `}
-  ${({ marginLeft }) =>
-    css`
-      margin-left: ${marginLeft};
-    `}
+  ${({ margin }) => css`
+    margin: ${margin};
+  `}
+  ${({ marginTop }) => css`
+    margin-top: ${marginTop};
+  `}
+  ${({ marginRight }) => css`
+    margin-right: ${marginRight};
+  `}
+  ${({ marginBottom }) => css`
+    margin-bottom: ${marginBottom};
+  `}
+  ${({ marginLeft }) => css`
+    margin-left: ${marginLeft};
+  `}
 
   @media (width<= ${BREAK_POINTS.MOBILE}) {
     grid-template-columns: 1fr;

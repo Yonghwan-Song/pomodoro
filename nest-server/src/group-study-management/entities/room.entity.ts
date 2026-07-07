@@ -25,7 +25,7 @@ export class Room {
     if (peer) {
       this.peers.delete(peerId);
       console.log(
-        `[room.entity:removePeer] Peer ${peerId} was removed from the peer list in the room ${this.id}`
+        `[room.entity:removePeer] Peer ${peerId} was removed from the peer list in the room ${this.id}`,
       );
     }
     return peer;
@@ -44,7 +44,7 @@ export class Room {
           producerId: producer.id,
           peerId: peer.id,
           kind: producer.kind, //? Look at this. producer here 는 타입이 다르잖아. -> /home/yhs/Repos/pomodoro-from-arch/nest-server/node_modules/mediasoup/node/lib/ProducerTypes.d.ts
-          displayName: peer.userNickname
+          displayName: peer.userNickname,
         });
       }
     }
@@ -61,7 +61,7 @@ export class Room {
     return {
       id: this.id,
       name: this.name,
-      peerCount: this.peers.size
+      peerCount: this.peers.size,
     };
   }
 }

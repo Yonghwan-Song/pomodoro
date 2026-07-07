@@ -1,9 +1,9 @@
-import { useEffect } from "react";
-import { useConnectionStore } from "../../zustand-stores/connectionStore";
-import { Outlet } from "react-router-dom";
-import { countDown } from "../..";
-import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
+import { useEffect } from 'react';
+import { useConnectionStore } from '../../zustand-stores/connectionStore';
+import { Outlet } from 'react-router-dom';
+import { countDown } from '../..';
+import { axiosInstance } from '../../axios-and-error-handling/axios-instances';
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
 
 export default function GroupStudy() {
   const socket = useConnectionStore((s) => s.socket);
@@ -13,7 +13,7 @@ export default function GroupStudy() {
   const initDevice = useConnectionStore((s) => s.initDevice);
 
   const setTodayTotalDuration = useBoundedPomoInfoStore(
-    (s) => s.setTodayTotalDuration
+    (s) => s.setTodayTotalDuration,
   );
 
   // QQQ: 문제점 - tcpkill을 취소하고 adb reverse --remove tcp:3000에 대해서 다시 adb reverse tcp:3000 tcp:3000을 실행시켰음에도 불구하고
@@ -30,7 +30,7 @@ export default function GroupStudy() {
   // console.log("right before the connect() useEffect");
   useEffect(() => {
     // console.log("in the connect() useEffect");
-    connect("GroupStudy Component");
+    connect('GroupStudy Component');
   }, [connect]);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function GroupStudy() {
 
   // NOTE: When a user enters a room, this should be stopped as if a Timer component is rendered in the "/main"
   useEffect(() => {
-    countDown(localStorage.getItem("idOfSetInterval"));
+    countDown(localStorage.getItem('idOfSetInterval'));
   }, []);
 
   // Fetch today's total duration when entering the Group Study section
@@ -49,17 +49,18 @@ export default function GroupStudy() {
     async function fetchTodayTotal() {
       try {
         const today = new Date();
-        const todayDateString = `${today.getMonth() + 1
-          }/${today.getDate()}/${today.getFullYear()}`;
+        const todayDateString = `${
+          today.getMonth() + 1
+        }/${today.getDate()}/${today.getFullYear()}`;
 
         // 서버에 오늘 날짜를 보내서 "오늘 하루 동안 집중한 총 시간(분)"을 가져옵니다.
         // GroupStudy 라우트에 진입할 때 딱 한 번만 호출하여 불필요한 API 요청을 줄입니다.
         const res = await axiosInstance.get(
-          `/pomodoros/today/total?date=${todayDateString}`
+          `/pomodoros/today/total?date=${todayDateString}`,
         );
         console.log(
           "🔥 [GroupStudy] Today's Total Duration from Server:",
-          res.data.todayTotal
+          res.data.todayTotal,
         );
 
         // 가져온 오늘 총 집중 시간을 Zustand 스토어에 저장합니다.

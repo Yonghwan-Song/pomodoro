@@ -3,24 +3,24 @@ import {
   SessionSegment,
   DurationOfCategoryTaskCombination,
   RecType,
-  TaskTrackingDocument
-} from "../types/clientStatesType";
-import { PomodoroSessionDocument } from "../Pages/Statistics/statRelatedTypes";
+  TaskTrackingDocument,
+} from '../types/clientStatesType';
+import { PomodoroSessionDocument } from '../Pages/Statistics/statRelatedTypes';
 import {
   makeTimestampsFromRawData,
   makeSegmentsFromTimestamps,
   makeDurationsFromSegmentsByCategoryAndTaskCombination,
   makePomoRecordsFromDurations,
-  getTaskDurationMapFromSegments
-} from "../Pages/Main/Category-Related/category-change-utility";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { boundedPomoInfoStore } from "../zustand-stores/pomoInfoStoreUsingSlice";
-import { DynamicCache, openCache } from "../index";
-import { CacheName, BASE_URL, RESOURCE } from "../constants";
-import { pubsub } from "../pubsub";
+  getTaskDurationMapFromSegments,
+} from '../Pages/Main/Category-Related/category-change-utility';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { boundedPomoInfoStore } from '../zustand-stores/pomoInfoStoreUsingSlice';
+import { DynamicCache, openCache } from '../index';
+import { CacheName, BASE_URL, RESOURCE } from '../constants';
+import { pubsub } from '../pubsub';
 
-import { useConnectionStore } from "../zustand-stores/connectionStore";
-import * as EventNames from "../common/webrtc/eventNames";
+import { useConnectionStore } from '../zustand-stores/connectionStore';
+import * as EventNames from '../common/webrtc/eventNames';
 
 export async function recordPomo(
   categoryChangeInfoArray: {
@@ -31,17 +31,17 @@ export async function recordPomo(
     id: string;
     taskChangeTimestamp: number;
   }[],
-  sessionData: Omit<RecType, "kind">
+  sessionData: Omit<RecType, 'kind'>,
 ) {
   try {
     const invalidTaskChangeInfo = taskChangeInfoArray.filter(
-      (info) => typeof info.id !== "string"
+      (info) => typeof info.id !== 'string',
     );
     if (invalidTaskChangeInfo.length > 0) {
-      console.warn("[recordPomo] invalid taskChangeInfoArray.id detected", {
+      console.warn('[recordPomo] invalid taskChangeInfoArray.id detected', {
         invalidTaskChangeInfo,
         taskChangeInfoArray,
-        sessionStartTime: sessionData.startTime
+        sessionStartTime: sessionData.startTime,
       });
     }
 
@@ -53,7 +53,7 @@ export async function recordPomo(
         start: number;
         end: number;
       }[],
-      sessionData.endTime
+      sessionData.endTime,
     );
     const segments: Array<SessionSegment> =
       makeSegmentsFromTimestamps(timestamps);
@@ -63,10 +63,10 @@ export async function recordPomo(
       makePomoRecordsFromDurations(durations, sessionData.startTime);
     const taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
     const taskTrackingArr: TaskTrackingDocument[] = Array.from(
-      taskFocusDurationMap.entries()
+      taskFocusDurationMap.entries(),
     ).map(([taskId, duration]) => ({
       taskId,
-      duration: Math.floor(duration / (60 * 1000))
+      duration: Math.floor(duration / (60 * 1000)),
     }));
 
     boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
@@ -75,7 +75,7 @@ export async function recordPomo(
     // 방금 종료된 타이머 세션(PomodoroSessionDocument 배열)에서 실제로 집중한 총 시간(duration)을 합산합니다.
     const totalDurationAdded = pomodoroRecordArr.reduce(
       (acc, curr) => acc + curr.duration,
-      0
+      0,
     );
 
     // 상태를 업데이트하고 반환된 최신값을 바로 가져옵니다. (Zustand 외부 호출은 동기적으로 즉시 처리됨)
@@ -90,11 +90,11 @@ export async function recordPomo(
 
     if (socket && isUserInRoom) {
       socket.emit(EventNames.SYNC_MY_TODAY_TOTAL_DURATION, {
-        todayTotalDuration: updatedTodayTotalDuration
+        todayTotalDuration: updatedTodayTotalDuration,
       });
     }
 
-    pubsub.publish("pomoAdded", pomodoroRecordArr);
+    pubsub.publish('pomoAdded', pomodoroRecordArr);
     //#endregion
 
     //#region Update cache
@@ -108,14 +108,14 @@ export async function recordPomo(
 
       await cache.put(
         BASE_URL + RESOURCE.POMODOROS,
-        new Response(JSON.stringify(statData))
+        new Response(JSON.stringify(statData)),
       );
     }
     //#endregion
 
     const payload = {
       pomodoroRecordArr,
-      taskTrackingArr
+      taskTrackingArr,
     };
     axiosInstance.post(RESOURCE.POMODOROS, payload);
   } catch (err) {

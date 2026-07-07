@@ -13,7 +13,7 @@ export const FULL_HD_MAX_BITRATE_30FPS = 3_000_000;
 // https://socket.io/docs/v4/client-socket-instance/#disconnect
 // According to the documentation above, the two reasons below do not trigger automatic reconnection.
 export const EXPLICIT_SOCKET_DISCONNECT_REASONS = new Set([
-  "io client disconnect", // The socket was manually disconnected using disconnect() method of the client socket.
-  "io server disconnect" // The server has forcefully disconnected the socket with socket.disconnect() (socket.io/docs/v4/server-api/#socketdisconnectclose)
+  'io client disconnect', // The socket was manually disconnected using disconnect() method of the client socket.
+  'io server disconnect', // The server has forcefully disconnected the socket with socket.disconnect() (socket.io/docs/v4/server-api/#socketdisconnectclose)
   // 둘다 의도적으로 끊는것 서버쪽에서든 클라이언트쪽에서든.
 ]);

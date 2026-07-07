@@ -1,16 +1,16 @@
 /** @jsxImportSource @emotion/react */
-import { useAuthContext } from "../../Context/AuthContext";
-import RecOfToday from "./Timeline-Related/RecOfToday";
-import { BREAK_POINTS, MINIMUMS, VH_RATIO } from "../../constants";
-import CategoryList from "./Category-Related/CategoryList";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
-import { Grid } from "../../ReusableComponents/Layouts/Grid";
-import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import { TimerController } from "./Timer-Related/TimerController/TimerController";
-import { TodoistTasks } from "./Todoist-Related/TodoistTasks";
-import { css } from "@emotion/react";
-import { useTimerData } from "../../Custom-Hooks/useTimerData";
+import { useAuthContext } from '../../Context/AuthContext';
+import RecOfToday from './Timeline-Related/RecOfToday';
+import { BREAK_POINTS, MINIMUMS, VH_RATIO } from '../../constants';
+import CategoryList from './Category-Related/CategoryList';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
+import { Grid } from '../../ReusableComponents/Layouts/Grid';
+import { GridItem } from '../../ReusableComponents/Layouts/GridItem';
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { TimerController } from './Timer-Related/TimerController/TimerController';
+import { TodoistTasks } from './Todoist-Related/TodoistTasks';
+import { css } from '@emotion/react';
+import { useTimerData } from '../../Custom-Hooks/useTimerData';
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -25,16 +25,16 @@ export default function Main() {
     setRecords,
     isStatesRelatedToTimerReady,
     isCurrentCycleInfoReady,
-    areDataForRunningTimerFetchedCompletely
+    areDataForRunningTimerFetchedCompletely,
   } = useTimerData();
 
   //* At this point, it doesn't matter whether this setting comes from IDB or the server, as the AuthContextProvider handles it.
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
   const autoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.autoStartSetting
+    (state) => state.autoStartSetting,
   );
   const isTodoistIntegrationEnabled = useBoundedPomoInfoStore(
-    (state) => state.isTodoistIntegrationEnabled
+    (state) => state.isTodoistIntegrationEnabled,
   );
 
   // When this main page is loaded,
@@ -75,7 +75,7 @@ export default function Main() {
         {isStatesRelatedToTimerReady &&
           isCurrentCycleInfoReady &&
           (isPomoSettingReady && isAutoStartSettingReady ? (
-            localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
+            localStorage.getItem('user') === 'authenticated' ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
               isUserAuthReady ? (
                 // Though the user auth is ready, user's data needed to run a timer might not be ready.
                 areDataForRunningTimerFetchedCompletely ? (
@@ -97,14 +97,14 @@ export default function Main() {
                         />
                       </BoxShadowWrapper>
                     </GridItem>
-                    <GridItem width={"100%"}>
+                    <GridItem width={'100%'}>
                       {user !== null && (
                         <BoxShadowWrapper>
                           <CategoryList />
                         </BoxShadowWrapper>
                       )}
                     </GridItem>
-                    <GridItem width={"100%"}>
+                    <GridItem width={'100%'}>
                       {user !== null && isTodoistIntegrationEnabled && (
                         <BoxShadowWrapper>
                           <TodoistTasks />
@@ -113,11 +113,11 @@ export default function Main() {
                     </GridItem>
                   </Grid>
                 ) : (
-                  <h2 css={{ textAlign: "center" }}>fetching data...</h2>
+                  <h2 css={{ textAlign: 'center' }}>fetching data...</h2>
                 )
               ) : (
                 // User auth: NOT READY, user's data required to run timer: NOT READY
-                <h2 css={{ textAlign: "center" }}>loading timer...</h2>
+                <h2 css={{ textAlign: 'center' }}>loading timer...</h2>
               )
             ) : (
               // When a user logs out,
@@ -142,7 +142,7 @@ export default function Main() {
               </Grid>
             )
           ) : (
-            <h2 css={{ textAlign: "center" }}>loading timer...</h2>
+            <h2 css={{ textAlign: 'center' }}>loading timer...</h2>
           ))}
       </section>
     </main>

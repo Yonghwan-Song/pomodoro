@@ -1,14 +1,14 @@
-import type { StateCreator } from "zustand";
-import type { Socket } from "socket.io-client";
-import * as EventNames from "../../common/webrtc/eventNames";
-import { auth } from "../../firebase";
-import { boundedPomoInfoStore } from "../pomoInfoStoreUsingSlice";
+import type { StateCreator } from 'zustand';
+import type { Socket } from 'socket.io-client';
+import * as EventNames from '../../common/webrtc/eventNames';
+import { auth } from '../../firebase';
+import { boundedPomoInfoStore } from '../pomoInfoStoreUsingSlice';
 import type {
   ConnectionStore,
   RoomSlice,
   ConsumerLayerState,
-  Participant
-} from "./types";
+  Participant,
+} from './types';
 import type {
   AckResponse,
   ConsumerLayersChangedPayload,
@@ -17,17 +17,17 @@ import type {
   ProducerPayload,
   DataToSyncForPeerReconnected,
   NEW_PEER_JOINED_DATA,
-  ParticipantBasicData
-} from "../../common/webrtc/payloadRelated";
-import { ChatMessageInfo } from "../../common/webrtc/payloadRelated";
-import { enableMapSet } from "immer";
-import { getNickname } from "./utils";
+  ParticipantBasicData,
+} from '../../common/webrtc/payloadRelated';
+import { ChatMessageInfo } from '../../common/webrtc/payloadRelated';
+import { enableMapSet } from 'immer';
+import { getNickname } from './utils';
 
 enableMapSet();
 
 export const createRoomSlice: StateCreator<
   ConnectionStore,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   RoomSlice
 > = (set, get) => {
@@ -59,15 +59,15 @@ export const createRoomSlice: StateCreator<
               if (existing) {
                 updatedParticipants.set(peerId, {
                   ...existing,
-                  nickName: displayName
+                  nickName: displayName,
                 });
               } else {
                 updatedParticipants.set(peerId, {
                   peerId,
                   nickName: displayName,
                   todayTotalDuration: 0,
-                  picture: "",
-                  stream: null
+                  picture: '',
+                  stream: null,
                 });
               }
             });
@@ -80,18 +80,18 @@ export const createRoomSlice: StateCreator<
                 // Just store it with isBeingConsumed false for now. We will later decide/handle whether or not to consume it.
                 ...producersFromServer.map((p) => ({
                   ...p,
-                  isBeingConsumed: false
-                }))
-              ]
+                  isBeingConsumed: false,
+                })),
+              ],
             };
           },
           false,
-          "room/newProducers"
+          'room/newProducers',
         );
 
         // 2)
         get().consumePendingProducers(); // <----- 이 안에 INTENT_TO_CONSUME이 emit되고,
-      }
+      },
     );
 
     // TODO: 아래의 socket event listen 호출 타이밍이 방에 입장하자 마자라기보다는 관련 event가 발생하는 코드 위치와 비슷하게 놓는게 좋지 않을까?... 따지고보면 join room할때 다 때려박으면 어차피 방 안에서 일어나는 것이기 때문에 문제 없지만, 그래도 시간 구조적으로 뭔가... 뭉뚱그려져 잇구 organized되지 않은 느낌.
@@ -103,7 +103,7 @@ export const createRoomSlice: StateCreator<
         peerId,
         todayTotalDuration,
         nickName,
-        picture
+        picture,
       }: NEW_PEER_JOINED_DATA) => {
         set(
           (state) => {
@@ -115,7 +115,7 @@ export const createRoomSlice: StateCreator<
                 ...existing,
                 todayTotalDuration: todayTotalDuration,
                 nickName,
-                picture
+                picture,
               });
             } else {
               participantsToUpdate.set(peerId, {
@@ -123,32 +123,32 @@ export const createRoomSlice: StateCreator<
                 nickName,
                 todayTotalDuration,
                 picture,
-                stream: null
+                stream: null,
               });
             }
             updated.set(peerId, todayTotalDuration);
             return {
               peerTodayTotalDurations: updated,
-              participants: participantsToUpdate
+              participants: participantsToUpdate,
             };
           },
           false,
-          "room/peerJoined"
+          'room/peerJoined',
         );
-      }
+      },
     );
 
     socket.on(EventNames.PRODUCER_CLOSED, ({ producerId }) => {
-      console.log("producerId inside PRODUCER_CLOSED", producerId);
+      console.log('producerId inside PRODUCER_CLOSED', producerId);
       const {
         peerProducerList,
         consumersByPeerId,
         remoteStreams, // TODO: 이거 왜 이딴식으로 다시 받아와서 .... 다시 전부다 재 할당하냐고.. 그냥 observer event쓰면 되는건데...
         consumerLayers,
-        participants
+        participants,
       } = get();
       const producerInfo = peerProducerList.find(
-        (p) => p.producerId === producerId
+        (p) => p.producerId === producerId,
       );
       if (!producerInfo) return;
 
@@ -170,22 +170,22 @@ export const createRoomSlice: StateCreator<
           if (existing) {
             participantsToUpdate.set(producerInfo.peerId, {
               ...existing,
-              stream: null
+              stream: null,
             });
           }
           set({
             consumersByPeerId: newConsumers,
             remoteStreams: newStreams,
             consumerLayers: newLayers,
-            participants: participantsToUpdate
+            participants: participantsToUpdate,
           });
         }
       }
 
       set({
         peerProducerList: peerProducerList.filter(
-          (p) => p.producerId !== producerId
-        )
+          (p) => p.producerId !== producerId,
+        ),
       });
     });
 
@@ -195,11 +195,11 @@ export const createRoomSlice: StateCreator<
         set(
           ({ peerTodayTotalDurations, participants }) => {
             const peerTodayTotalDurationsToUpdate = new Map(
-              peerTodayTotalDurations
+              peerTodayTotalDurations,
             );
             peerTodayTotalDurationsToUpdate.set(
               payload.peerId,
-              payload.todayTotalDuration
+              payload.todayTotalDuration,
             );
 
             const participantsToUpdate = new Map(participants);
@@ -208,19 +208,19 @@ export const createRoomSlice: StateCreator<
             if (existing) {
               participantsToUpdate.set(payload.peerId, {
                 ...existing,
-                todayTotalDuration: payload.todayTotalDuration
+                todayTotalDuration: payload.todayTotalDuration,
               });
             }
 
             return {
               peerTodayTotalDurations: peerTodayTotalDurationsToUpdate,
-              participants: participantsToUpdate
+              participants: participantsToUpdate,
             };
           },
           false,
-          "room/updatePeerDuration"
+          'room/updatePeerDuration',
         );
-      }
+      },
     );
 
     // DECISION: Reconnected user gets chat messages he have missed due to disconnection.
@@ -231,7 +231,7 @@ export const createRoomSlice: StateCreator<
       EventNames.SYNC_DATA_TO_PEER_RECONNECTED,
       ({
         peersTodayTotalFocusArray,
-        chatMessages
+        chatMessages,
       }: DataToSyncForPeerReconnected) => {
         const peersTodayTotalFocusArrayToSync = peersTodayTotalFocusArray;
         const chatMessagesToSync = chatMessages;
@@ -247,10 +247,10 @@ export const createRoomSlice: StateCreator<
                 if (existing) {
                   participantsToUpdate.set(peerId, {
                     ...existing,
-                    todayTotalDuration
+                    todayTotalDuration,
                   });
                 }
-              }
+              },
             );
 
             // DECISION: disconnected되었던 user가 채팅을 두번정도 쳤다고 하고, 그 사이에 participant가 채팅을 쳤다고 가정하면,
@@ -260,19 +260,19 @@ export const createRoomSlice: StateCreator<
                 const aTime = Date.parse(a.timestamp);
                 const bTime = Date.parse(b.timestamp);
                 return aTime - bTime;
-              }
+              },
             );
 
             return {
               peerTodayTotalDurations: updated,
               chatMessages: inOrder,
-              participants: participantsToUpdate
+              participants: participantsToUpdate,
             };
           },
           false,
-          "room/syncDataToPeerReconnected"
+          'room/syncDataToPeerReconnected',
         );
-      }
+      },
     );
 
     socket.on(EventNames.ROOM_PEER_LEFT, ({ peerId }) => {
@@ -292,7 +292,7 @@ export const createRoomSlice: StateCreator<
         return {
           peerTodayTotalDurations: d,
           peerNicknames: n,
-          participants: participantsToUpdate
+          participants: participantsToUpdate,
         };
       });
     });
@@ -314,11 +314,11 @@ export const createRoomSlice: StateCreator<
             layers.get(payload.consumerId) || ({} as ConsumerLayerState);
           layers.set(payload.consumerId, {
             ...existing,
-            currentSpatialLayer: payload.layers?.spatialLayer
+            currentSpatialLayer: payload.layers?.spatialLayer,
           });
           return { consumerLayers: layers };
         });
-      }
+      },
     );
   };
 
@@ -357,10 +357,10 @@ export const createRoomSlice: StateCreator<
           peerNicknames: new Map(),
           participants: new Map(),
           peerTodayTotalDurations: new Map(),
-          chatMessages: []
+          chatMessages: [],
         },
         false,
-        "room/resetToInitialValues"
+        'room/resetToInitialValues',
       );
     },
     /** NOTE:
@@ -407,9 +407,9 @@ export const createRoomSlice: StateCreator<
             const {
               selfPeerId,
               existingProducers, // nicknames here are the ones of those who have been already sharing their media.
-              participantBasicDataArray // 여기에서 duration
+              participantBasicDataArray, // 여기에서 duration
             } = response.data;
-            console.log("selfPeerId", selfPeerId);
+            console.log('selfPeerId', selfPeerId);
             const nicknames = new Map<string, string>();
             const durations = new Map<string, number>();
             const participantMap = new Map<string, Participant>();
@@ -419,10 +419,10 @@ export const createRoomSlice: StateCreator<
               (p: ProducerPayload) => {
                 const retVal = {
                   ...p,
-                  isBeingConsumed: false
+                  isBeingConsumed: false,
                 };
                 return retVal;
-              }
+              },
             );
             // peerProducerList.forEach((p) => {
             //   console.log("peerId", p.peerId);
@@ -437,7 +437,7 @@ export const createRoomSlice: StateCreator<
                 peerId,
                 nickName,
                 picture,
-                todayTotalDuration
+                todayTotalDuration,
               }: ParticipantBasicData) => {
                 durations.set(peerId, todayTotalDuration);
                 nicknames.set(peerId, nickName);
@@ -446,9 +446,9 @@ export const createRoomSlice: StateCreator<
                   nickName,
                   picture,
                   todayTotalDuration,
-                  stream: null
+                  stream: null,
                 });
-              }
+              },
             );
 
             set(
@@ -460,16 +460,16 @@ export const createRoomSlice: StateCreator<
                   participants: participantMap,
                   // The two values below are kept temporarily since we are not finished at introducing participants yet.
                   peerNicknames: nicknames, // WARNING: 사실 지금은 과도기라 그렇지만, 지금 join room 시점에서는 producer에서 혹시 모를 nickname의 update를 반영하기 위해 producerList에서 찾아서 할당 안해줘도 된다. 이제는 participantBasicDataArray에 처음부터 다 포함되어 오니까.
-                  peerTodayTotalDurations: durations
+                  peerTodayTotalDurations: durations,
                 };
               },
               false,
-              "room/joined"
+              'room/joined',
             );
           } else {
-            onError?.(response.error || "Unknown error");
+            onError?.(response.error || 'Unknown error');
           }
-        }
+        },
       );
 
       //4. Listens events
@@ -484,7 +484,7 @@ export const createRoomSlice: StateCreator<
         recvTransport,
         producer,
         consumersByPeerId,
-        initializeMediaStreamSliceStates
+        initializeMediaStreamSliceStates,
       } = get();
       if (!socket || !isUserInRoom) return; //
 
@@ -509,23 +509,23 @@ export const createRoomSlice: StateCreator<
       // TODO: socketEmitFlag가 아니라 isUserBeingRemovedAbnormally (e.g, prolonged tcp disconnect) 로 바꾸면 될듯.
       if (socket.connected && socketEmitFlag) {
         // socketEmitFlag -> peerStatus cross check했을때, 서버쪽은 방에서 나가졌거나 아예 peerMap에서 삭제했지만, 여기에서는 Room에 있는 경우 leaveRoom함수를 재활용하기 위해서.
-        console.log("LEAVE_ROOM is sent");
+        console.log('LEAVE_ROOM is sent');
         socket.emit(
           EventNames.LEAVE_ROOM,
           (res: AckResponse<{ left: boolean }>) => {
             if (res.success && res.data)
-              console.log("success -> left is ", res.data.left);
+              console.log('success -> left is ', res.data.left);
             else if (!res.success)
               console.warn(
-                "error occurred while removing the peer in the room in the server",
-                res.error
+                'error occurred while removing the peer in the room in the server',
+                res.error,
               );
-          }
+          },
         );
       } else {
-        console.log("LEAVE_ROOM is not sent.");
+        console.log('LEAVE_ROOM is not sent.');
       }
-      console.log("about to call removeEventListeners inside leaveRoom()");
+      console.log('about to call removeEventListeners inside leaveRoom()');
       removeEventListeners(socket);
       initializeMediaStreamSliceStates();
       set(
@@ -543,7 +543,7 @@ export const createRoomSlice: StateCreator<
             // DECISION: 어쩌면 transport 만들기 시작할때 0으로 다시 값 성정하는 부분이랑 겹칠 수도 있지만, 비용이 쌀것 같아서 그냥 허용하겠음. :::...
             iceRestartAttemptCount: {
               send: 0,
-              recv: 0
+              recv: 0,
             },
             peerProducerList: [],
             participants: new Map(),
@@ -553,11 +553,11 @@ export const createRoomSlice: StateCreator<
             peerTodayTotalDurations: new Map(),
             chatMessages: [],
             consumerLayers: new Map(),
-            lastGlobalPreferredSpatialLayer: undefined
+            lastGlobalPreferredSpatialLayer: undefined,
           };
         },
         false,
-        "room/left"
+        'room/left',
       );
     },
 
@@ -574,15 +574,15 @@ export const createRoomSlice: StateCreator<
           senderId: uid,
           senderNickname: getNickname({
             userNicknameFromGoogleAccount: senderNickname,
-            uid
+            uid,
           }),
           message,
-          timestamp
+          timestamp,
         };
         set((s) => ({ chatMessages: [...s.chatMessages, msg] }));
         socket.volatile.emit(EventNames.CHAT_MESSAGE, { message, timestamp }); // DECISION: volatile -> 재전송 되면 오히려 참가하지 못했던 사용자의 허공에 대한 외침이 연결되어 있던 사용자들의 대화 맥락에 방해가 된다.
       } else {
-        console.warn("auth.currentUser is null -> ", auth.currentUser);
+        console.warn('auth.currentUser is null -> ', auth.currentUser);
       }
     },
 
@@ -601,19 +601,19 @@ export const createRoomSlice: StateCreator<
     startSharing: () => {
       const { mediaStream, produce } = get();
       if (mediaStream) {
-        set({ isBeingShared: true }, false, "media/startSharing");
+        set({ isBeingShared: true }, false, 'media/startSharing');
         produce();
       }
     },
     stopSharing: () => {
       get().closeProducer();
-      set({ isBeingShared: false }, false, "media/stopSharing");
+      set({ isBeingShared: false }, false, 'media/stopSharing');
     },
     toggleOnCamera: () => {
       get().resumeProducer();
     },
     toggleOffCamera: () => {
       get().pauseProducer();
-    }
+    },
   };
 };

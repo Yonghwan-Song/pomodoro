@@ -1,10 +1,10 @@
-import { Button } from "../../ReusableComponents/Buttons/Button";
-import ToggleSwitch from "../../ReusableComponents/ToggleSwitch/ToggleSwitch";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+import { Button } from '../../ReusableComponents/Buttons/Button';
+import ToggleSwitch from '../../ReusableComponents/ToggleSwitch/ToggleSwitch';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
 
 type AutoStartSettingsUIProps = {
   handleSubmitToChangeAutoStartSettings: (
-    ev: React.FormEvent<HTMLFormElement>
+    ev: React.FormEvent<HTMLFormElement>,
   ) => void;
   doesPomoStartAutomatically: boolean;
   setDoesPomoStartAutomatically: React.Dispatch<React.SetStateAction<boolean>>;
@@ -21,19 +21,19 @@ export function AutoStartSettingsUI({
   doesBreakStartAutomatically,
   setDoesBreakStartAutomatically,
   doesCycleStartAutomatically,
-  setDoesCycleStartAutomatically
+  setDoesCycleStartAutomatically,
 }: AutoStartSettingsUIProps) {
   return (
     <BoxShadowWrapper>
       <form
         onSubmit={handleSubmitToChangeAutoStartSettings}
         style={{
-          display: "flex",
-          justifyContent: "space-around",
-          flexWrap: "wrap",
-          alignItems: "center",
-          rowGap: "20px",
-          columnGap: "9px"
+          display: 'flex',
+          justifyContent: 'space-around',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          rowGap: '20px',
+          columnGap: '9px',
         }}
       >
         <ToggleSwitch
@@ -86,7 +86,7 @@ export function AutoStartSettingsUI({
           backgroundColorForSwitch="#f0f0f0"
         />
 
-        <Button type={"submit"} color={"primary"}>
+        <Button type={'submit'} color={'primary'}>
           SAVE
         </Button>
       </form>

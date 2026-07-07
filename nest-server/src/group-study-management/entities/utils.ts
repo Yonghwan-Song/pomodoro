@@ -38,7 +38,7 @@ const ADJECTIVES = [
   'Hazy',
   'Jolly',
   'Misty',
-  'Tranquil'
+  'Tranquil',
 ];
 
 const NOUNS = [
@@ -81,7 +81,7 @@ const NOUNS = [
   'Nimbus',
   'Cobalt',
   'Alder',
-  'Zephyr'
+  'Zephyr',
 ];
 
 function hashUid(uid: string): number {

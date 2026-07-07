@@ -30,27 +30,27 @@
  * - `inFlightRef`: 연속 클릭/더블클릭으로 동일 요청이 여러 번 나가는 것을 막음 (state 갱신보다 동기적으로 확실).
  * - `pendingLayer`: 어떤 버튼이 진행 중인지 표시(`…`) 및 나머지 버튼 시각적 dim 용.
  */
-import { useCallback, useRef, useState } from "react";
-import { css } from "../../../../../styled-system/css";
-import { useConnectionStore } from "../../../../zustand-stores/connectionStore";
+import { useCallback, useRef, useState } from 'react';
+import { css } from '../../../../../styled-system/css';
+import { useConnectionStore } from '../../../../zustand-stores/connectionStore';
 
 /** simulcast 일반적인 3단 spatial layer — VideoPlayer 의 Low/Mid/High 와 동일한 정수 */
 const SPATIAL_LAYERS = [0, 1, 2] as const;
 
 const layerLabel: Record<(typeof SPATIAL_LAYERS)[number], string> = {
-  0: "Low",
-  1: "Mid",
-  2: "High"
+  0: 'Low',
+  1: 'Mid',
+  2: 'High',
 };
 
 export function GlobalLayerControls() {
   // 내 recv 쪽에 붙어 있는 consumer 개수 — 0 이면 아래에서 아무것도 렌더하지 않음
   const consumerCount = useConnectionStore((s) => s.consumersByPeerId.size);
   const lastGlobalPreferredSpatialLayer = useConnectionStore(
-    (s) => s.lastGlobalPreferredSpatialLayer
+    (s) => s.lastGlobalPreferredSpatialLayer,
   );
   const setCommonPreferredLayersForAllConsumers = useConnectionStore(
-    (s) => s.setCommonPreferredLayersForAllConsumers
+    (s) => s.setCommonPreferredLayersForAllConsumers,
   );
 
   const [pendingLayer, setPendingLayer] = useState<number | null>(null);
@@ -63,13 +63,13 @@ export function GlobalLayerControls() {
       setPendingLayer(spatialLayer);
       try {
         const ack = await setCommonPreferredLayersForAllConsumers(spatialLayer); // AckRes에 failed한 consumer들 array로 받아오는데, 지금은 활용가치가 없어서 받아오지 않았다.
-        console.log("ack", ack);
+        console.log('ack', ack);
       } finally {
         inFlightRef.current = false;
         setPendingLayer(null);
       }
     },
-    [consumerCount, setCommonPreferredLayersForAllConsumers]
+    [consumerCount, setCommonPreferredLayersForAllConsumers],
   );
 
   if (consumerCount === 0) {
@@ -79,10 +79,10 @@ export function GlobalLayerControls() {
   return (
     <div
       className={css({
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: "2"
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '2',
       })}
       aria-label="Preferred quality for all remote videos"
     >
@@ -92,19 +92,19 @@ export function GlobalLayerControls() {
       */}
       <span
         className={css({
-          fontSize: "xs",
-          fontWeight: "medium",
-          color: "text.muted",
-          whiteSpace: "nowrap"
+          fontSize: 'xs',
+          fontWeight: 'medium',
+          color: 'text.muted',
+          whiteSpace: 'nowrap',
         })}
       >
         All streams
       </span>
       <div
         className={css({
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "1"
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1',
         })}
       >
         {SPATIAL_LAYERS.map((layer) => {
@@ -122,27 +122,27 @@ export function GlobalLayerControls() {
               aria-pressed={isSelected}
               onClick={() => void handlePick(layer)}
               className={css({
-                paddingX: "3",
-                paddingY: "1",
-                fontSize: "xs",
-                fontWeight: "semibold",
-                borderRadius: "pill",
-                border: "1px solid",
-                borderColor: isSelected ? "blue.300" : "borders.subtle",
-                backgroundColor: "bg.surface",
+                paddingX: '3',
+                paddingY: '1',
+                fontSize: 'xs',
+                fontWeight: 'semibold',
+                borderRadius: 'pill',
+                border: '1px solid',
+                borderColor: isSelected ? 'blue.300' : 'borders.subtle',
+                backgroundColor: 'bg.surface',
                 // VideoPlayer 오버레이 버튼과 같은 토큰 (선택된 spatial layer)
-                color: isSelected ? "blue.300" : "text.main",
-                cursor: isBusy ? "wait" : "pointer",
+                color: isSelected ? 'blue.300' : 'text.main',
+                cursor: isBusy ? 'wait' : 'pointer',
                 opacity: isBusy && pendingLayer !== layer ? 0.55 : 1,
                 _hover: {
-                  borderColor: "accent.secondary",
-                  color: "blue.300",
-                  opacity: isBusy ? 0.55 : 0.92
+                  borderColor: 'accent.secondary',
+                  color: 'blue.300',
+                  opacity: isBusy ? 0.55 : 0.92,
                 },
-                _disabled: { cursor: "not-allowed", opacity: 0.5 }
+                _disabled: { cursor: 'not-allowed', opacity: 0.5 },
               })}
             >
-              {pendingLayer === layer ? "…" : layerLabel[layer]}
+              {pendingLayer === layer ? '…' : layerLabel[layer]}
             </button>
           );
         })}

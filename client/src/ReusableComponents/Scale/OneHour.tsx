@@ -1,6 +1,6 @@
-import { StyledNumberForTime } from "../styles/timeline-related/NumberForTime.styled";
-import { StyledOneHour } from "../styles/timeline-related/OneHour.styled";
-import TenMinutes from "./TenMinutes";
+import { StyledNumberForTime } from '../styles/timeline-related/NumberForTime.styled';
+import { StyledOneHour } from '../styles/timeline-related/OneHour.styled';
+import TenMinutes from './TenMinutes';
 
 type OneHourProps = {
   base: number;
@@ -8,7 +8,7 @@ type OneHourProps = {
 };
 
 export default function OneHour({ base, index }: OneHourProps) {
-  const borderColor = "#9ca0bb";
+  const borderColor = '#9ca0bb';
 
   return (
     <>

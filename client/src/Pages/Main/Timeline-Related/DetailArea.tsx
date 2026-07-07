@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { DurationType, SessionType } from "../../../types/clientStatesType";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DurationType, SessionType } from '../../../types/clientStatesType';
 import {
   mobileRange,
   tabletRange,
   fhdRange,
   qhdRange,
-  uhdRange
-} from "./mediaQueryLists";
-import { MINIMUMS, PIXEL, VH_RATIO } from "../../../constants";
+  uhdRange,
+} from './mediaQueryLists';
+import { MINIMUMS, PIXEL, VH_RATIO } from '../../../constants';
 
 type DetailAreaProps = {
   arrOfSessions: SessionType[];
@@ -15,14 +15,14 @@ type DetailAreaProps = {
 
 export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
   const [flattened, setFlattened] = useState<DurationType[]>([]);
-  const [message, setMessage] = useState<string>("");
+  const [message, setMessage] = useState<string>('');
   const divRef = useRef<HTMLDivElement>(null);
   const nestedDivRef = useRef<HTMLDivElement>(null);
   const now = new Date();
   const startOfTodayTimestamp = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate()
+    now.getDate(),
   ).getTime();
   let isButtonPressed = false;
 
@@ -63,80 +63,80 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
   const handleMobileRangeAtDetailedArea = useCallback(
     (ev: MediaQueryListEvent) => {
       if (ev.matches) {
-        console.log("MOBILE IN DETAIL_AREA");
+        console.log('MOBILE IN DETAIL_AREA');
         divRef.current &&
-          (divRef.current.style.width = PIXEL.PER_HR.IN_MOBILE * 24 + "px");
+          (divRef.current.style.width = PIXEL.PER_HR.IN_MOBILE * 24 + 'px');
         msToPx.current = PIXEL.PER_SEC.IN_MOBILE / 1000;
       }
     },
-    []
+    [],
   );
   const handleTabletRangeAtDetailedArea = useCallback(
     (ev: MediaQueryListEvent) => {
       if (ev.matches) {
-        console.log("TABLET IN DETAIL_AREA");
+        console.log('TABLET IN DETAIL_AREA');
         divRef.current &&
-          (divRef.current.style.width = PIXEL.PER_HR.IN_TABLET * 24 + "px");
+          (divRef.current.style.width = PIXEL.PER_HR.IN_TABLET * 24 + 'px');
         msToPx.current = PIXEL.PER_SEC.IN_TABLET / 1000;
       }
     },
-    []
+    [],
   );
   const handleFHD_RangeAtDetailedArea = useCallback(
     (ev: MediaQueryListEvent) => {
       if (ev.matches) {
-        console.log("FHD IN DETAIL_AREA");
+        console.log('FHD IN DETAIL_AREA');
         divRef.current &&
-          (divRef.current.style.width = PIXEL.PER_HR.IN_FHD * 24 + "px");
+          (divRef.current.style.width = PIXEL.PER_HR.IN_FHD * 24 + 'px');
         msToPx.current = PIXEL.PER_SEC.IN_FHD / 1000;
       }
     },
-    []
+    [],
   );
   const handleQHD_RangeAtDetailedArea = useCallback(
     (ev: MediaQueryListEvent) => {
       if (ev.matches) {
-        console.log("QHD IN DETAIL_AREA");
+        console.log('QHD IN DETAIL_AREA');
         divRef.current &&
-          (divRef.current.style.width = PIXEL.PER_HR.IN_QHD * 24 + "px");
+          (divRef.current.style.width = PIXEL.PER_HR.IN_QHD * 24 + 'px');
         msToPx.current = PIXEL.PER_SEC.IN_QHD / 1000;
       }
     },
-    []
+    [],
   );
   const handleUHD_RangeAtDetailedArea = useCallback(
     (ev: MediaQueryListEvent) => {
       if (ev.matches) {
-        console.log("UHD IN DETAIL_AREA");
+        console.log('UHD IN DETAIL_AREA');
         divRef.current &&
-          (divRef.current.style.width = PIXEL.PER_HR.IN_UHD * 24 + "px");
+          (divRef.current.style.width = PIXEL.PER_HR.IN_UHD * 24 + 'px');
         msToPx.current = PIXEL.PER_SEC.IN_UHD / 1000;
       }
     },
-    []
+    [],
   );
 
-  mobileRange.addEventListener("change", handleMobileRangeAtDetailedArea);
-  tabletRange.addEventListener("change", handleTabletRangeAtDetailedArea);
-  fhdRange.addEventListener("change", handleFHD_RangeAtDetailedArea);
-  qhdRange.addEventListener("change", handleQHD_RangeAtDetailedArea);
-  uhdRange.addEventListener("change", handleUHD_RangeAtDetailedArea);
+  mobileRange.addEventListener('change', handleMobileRangeAtDetailedArea);
+  tabletRange.addEventListener('change', handleTabletRangeAtDetailedArea);
+  fhdRange.addEventListener('change', handleFHD_RangeAtDetailedArea);
+  qhdRange.addEventListener('change', handleQHD_RangeAtDetailedArea);
+  uhdRange.addEventListener('change', handleUHD_RangeAtDetailedArea);
   //#endregion
 
   //#region side effects
   useEffect(() => {
     return () => {
       mobileRange.removeEventListener(
-        "change",
-        handleMobileRangeAtDetailedArea
+        'change',
+        handleMobileRangeAtDetailedArea,
       );
       tabletRange.removeEventListener(
-        "change",
-        handleTabletRangeAtDetailedArea
+        'change',
+        handleTabletRangeAtDetailedArea,
       );
-      fhdRange.removeEventListener("change", handleFHD_RangeAtDetailedArea);
-      qhdRange.removeEventListener("change", handleQHD_RangeAtDetailedArea);
-      uhdRange.removeEventListener("change", handleUHD_RangeAtDetailedArea);
+      fhdRange.removeEventListener('change', handleFHD_RangeAtDetailedArea);
+      qhdRange.removeEventListener('change', handleQHD_RangeAtDetailedArea);
+      uhdRange.removeEventListener('change', handleUHD_RangeAtDetailedArea);
     };
   }, []);
 
@@ -156,7 +156,7 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
         let endPoint = (dur.endTime - startOfTodayTimestamp) * msToPx.current;
         let pointerLocation =
           Math.abs(
-            parseInt(window.getComputedStyle(parentElement as Element).left)
+            parseInt(window.getComputedStyle(parentElement as Element).left),
           ) + ev.clientX;
         if (pointerLocation >= startPoint && pointerLocation <= endPoint) {
           middle = (startPoint + endPoint) / 2;
@@ -164,28 +164,28 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
         } else {
           return false;
         }
-      }
+      },
     );
     // console.log("matchingDuration", matchingDuration);
     // console.log("middle", middle);
 
     if (matchingDuration !== undefined) {
-      nestedDivRef.current!.style.left = middle + "px";
+      nestedDivRef.current!.style.left = middle + 'px';
       let startTimeString = new Date(
-        matchingDuration.startTime
+        matchingDuration.startTime,
       ).toLocaleTimeString();
       let endTimeString = new Date(
-        matchingDuration.endTime
+        matchingDuration.endTime,
       ).toLocaleTimeString();
       let durationInSeconds = Math.floor(matchingDuration.duration / 1000);
       let minutes = Math.floor(durationInSeconds / 60);
       let seconds = durationInSeconds % 60;
       setMessage(
         `${startTimeString} ~ ${endTimeString}
-        ${minutes}m ${seconds}s`
+        ${minutes}m ${seconds}s`,
       );
     } else {
-      setMessage("");
+      setMessage('');
     }
 
     if (ev.button === 0) {
@@ -214,23 +214,23 @@ export default function DetailArea({ arrOfSessions }: DetailAreaProps) {
       onMouseMove={handleMouseMove}
       onWheel={handleWheel}
       style={{
-        position: "absolute",
+        position: 'absolute',
         bottom: `min(-${MINIMUMS.DETAIL_AREA}px,-${VH_RATIO.DETAIL_AREA}vh)`,
         height: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`,
-        backgroundColor: "#9ca0bb",
-        width: fullWidthOfTimeline.current + "px"
+        backgroundColor: '#9ca0bb',
+        width: fullWidthOfTimeline.current + 'px',
       }}
     >
       <div
         ref={nestedDivRef}
         style={{
-          display: "inline-block",
-          position: "absolute",
-          height: "50%",
-          left: "0px",
-          transform: "translateX(-50%)",
-          textAlign: "center",
-          lineHeight: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`
+          display: 'inline-block',
+          position: 'absolute',
+          height: '50%',
+          left: '0px',
+          transform: 'translateX(-50%)',
+          textAlign: 'center',
+          lineHeight: `max(${MINIMUMS.DETAIL_AREA}px,${VH_RATIO.DETAIL_AREA}vh)`,
         }}
       >
         {message}

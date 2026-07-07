@@ -6,7 +6,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
   ConnectedSocket,
-  MessageBody
+  MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import type { DisconnectReason } from 'socket.io';
@@ -17,12 +17,12 @@ import type {
   CommonPreferredLayersForAllConsumersData,
   ConsumerOptionsExtended,
   JOIN_ROOM_DATA,
-  PeerStatus
+  PeerStatus,
 } from 'src/common/webrtc/payload-related';
 import type {
   IceParameters,
   ProducerOptions,
-  RtpCapabilities
+  RtpCapabilities,
 } from 'mediasoup/types';
 import { GroupStudyManagementService } from 'src/group-study-management/group-study-management.service';
 import * as admin from 'firebase-admin';
@@ -53,10 +53,10 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
       'https://pomodoro-git-feature-integrate-webrtc-yhs-projects-00a441cb.vercel.app',
       'https://pomodoro-git-main-yhs-projects-00a441cb.vercel.app',
       'http://localhost:3001',
-      'http://localhost:3000'
+      'http://localhost:3000',
     ],
-    credentials: true
-  }
+    credentials: true,
+  },
   // transports: ['websocket'] // 👈 서버도 웹소켓 프로토콜만 사용하도록 제한
   // path: '/socket.io' // 👈 명시적으로 경로 고정 (글로벌 프리픽스 간섭 무시)
 })
@@ -68,7 +68,7 @@ export class SignalingGateway
 
   constructor(
     private readonly mediasoupService: MediasoupService,
-    private readonly groupStudyManagementService: GroupStudyManagementService
+    private readonly groupStudyManagementService: GroupStudyManagementService,
   ) {}
 
   afterInit(server: Server) {
@@ -124,7 +124,7 @@ export class SignalingGateway
     const clientIp = clientSocket.request.socket.remoteAddress;
     console.log(
       `[SignalingGateway:handleConnection] New connection from\n   UID=${uid}, ` +
-        `IP=${clientIp}, PORT=${clientPort}`
+        `IP=${clientIp}, PORT=${clientPort}`,
     );
 
     //#region Add/Succeeds a peer
@@ -138,39 +138,39 @@ export class SignalingGateway
       // NOTE: reconnection
       console.log(
         `Reconnect detected for uid=${uid}. ` +
-          `Reusing existing peer and updating socket to ${clientSocket.id}.`
+          `Reusing existing peer and updating socket to ${clientSocket.id}.`,
       );
 
       if (existingPeer.removalTimer !== null) {
         console.log(
-          `about to clear existingPeer scheduled removal of ${existingPeer.id}`
+          `about to clear existingPeer scheduled removal of ${existingPeer.id}`,
         );
         clearTimeout(existingPeer.removalTimer);
       }
 
       this.groupStudyManagementService.updatePeerCurrentSocket(
         uid,
-        clientSocket.id
+        clientSocket.id,
       );
 
       if (existingPeer.room !== null) {
         console.log(
-          `The peer ${existingPeer.id} was  in the room - prepare for data sync`
+          `The peer ${existingPeer.id} was  in the room - prepare for data sync`,
         );
         clientSocket.join(existingPeer.room.id);
 
         const dataToSync =
           this.groupStudyManagementService.prepareDataForSyncOfPeerReconnected(
-            uid
+            uid,
           );
         dataToSync !== undefined &&
           clientSocket.emit(
             EventNames.SYNC_DATA_TO_PEER_RECONNECTED,
-            dataToSync
+            dataToSync,
           );
       } else {
         console.log(
-          `The peer ${existingPeer.id} was not joined in any room - no need for data sync`
+          `The peer ${existingPeer.id} was not joined in any room - no need for data sync`,
         );
       }
       this.logConnectedSockets('reconnect');
@@ -182,7 +182,7 @@ export class SignalingGateway
         clientSocket.id,
         clientSocket.data.userEmail,
         clientSocket.data.userNickname,
-        clientSocket.data.picture
+        clientSocket.data.picture,
       );
     }
     //#endregion
@@ -201,7 +201,7 @@ export class SignalingGateway
       console.log(
         `[SignalingGateway:handleConnection] Socket upgraded to WebSocket. Real PORT=${realPort} (UID=${uid})\n` +
           `  -> 차단 명령어: sudo ${firewallCmd} -I INPUT 1 -p tcp -i lo --sport ${realPort} -j DROP && sudo ${firewallCmd} -I OUTPUT 1 -p tcp -o lo --dport ${realPort} -j DROP\n` +
-          `  -> 해제 명령어: sudo ${firewallCmd} -D INPUT -p tcp -i lo --sport ${realPort} -j DROP; sudo ${firewallCmd} -D OUTPUT -p tcp -o lo --dport ${realPort} -j DROP`
+          `  -> 해제 명령어: sudo ${firewallCmd} -D INPUT -p tcp -i lo --sport ${realPort} -j DROP; sudo ${firewallCmd} -D OUTPUT -p tcp -o lo --dport ${realPort} -j DROP`,
       );
     });
 
@@ -211,7 +211,7 @@ export class SignalingGateway
       clientSocket.data.disconnectReason = reason;
       console.log(
         'clientSocket.data.disconnectReason',
-        clientSocket.data.disconnectReason
+        clientSocket.data.disconnectReason,
       );
     });
     //#endregion
@@ -232,7 +232,7 @@ export class SignalingGateway
       console.log(
         `[SignalingGateway:handleDisconnect] Ignoring stale disconnect: ` +
           `socket=${clientSocket.id}, current=${peer.currentSocketId}, ` +
-          `uid=${uid}, reason=${disconnectReason}`
+          `uid=${uid}, reason=${disconnectReason}`,
       );
       this.logConnectedSockets('stale-disconnect-ignored');
       return;
@@ -273,7 +273,7 @@ export class SignalingGateway
           //#endregion
 
           console.log(
-            `Socket ${clientSocket.id} (uid=${uid}) disconnected with reason="${disconnectReason}" - [SignalingGateway:handleDisconnect]`
+            `Socket ${clientSocket.id} (uid=${uid}) disconnected with reason="${disconnectReason}" - [SignalingGateway:handleDisconnect]`,
           );
 
           if (room === null || room === undefined) {
@@ -281,7 +281,7 @@ export class SignalingGateway
             // This means the disconnected peer is in the lobby
             console.log(
               `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
-                `Preserving only peer state for future reconnection.`
+                `Preserving only peer state for future reconnection.`,
             );
             console.log('existingPeer.room', room); // null
 
@@ -302,12 +302,12 @@ export class SignalingGateway
               () => {
                 console.log(
                   '------------------------about to remove peer - ',
-                  uid
+                  uid,
                 );
 
                 this.groupStudyManagementService.removePeerFromPeerMap(uid);
               },
-              3 * 60 * 1000
+              3 * 60 * 1000,
               // 30 * 60 * 1000
             );
           } else {
@@ -315,7 +315,7 @@ export class SignalingGateway
             console.log('existingPeer.room.id', peer.room.id);
             console.log(
               `[SignalingGateway:handleDisconnect] Socket ${clientSocket.id} (uid=${uid}) disconnected. ` +
-                `Preserving peer and room state for future reconnection.`
+                `Preserving peer and room state for future reconnection.`,
             );
 
             //#region comments
@@ -354,16 +354,16 @@ export class SignalingGateway
               peer.removalTimer = setTimeout(
                 async () => {
                   await this.groupStudyManagementService.leaveRoom(
-                    clientSocket
+                    clientSocket,
                   );
                   this.groupStudyManagementService.removePeerFromPeerMap(uid);
                 },
-                3 * 60 * 1000
+                3 * 60 * 1000,
                 // 30 * 60 * 1000
               );
             } else {
               console.log(
-                `The disconnected socket ${clientSocket.id} is a zombie socket of the peer ${peer.id}`
+                `The disconnected socket ${clientSocket.id} is a zombie socket of the peer ${peer.id}`,
               );
             }
           }
@@ -381,13 +381,13 @@ export class SignalingGateway
               this.groupStudyManagementService.removePeerFromPeerMap(uid);
             },
             // 0 // ping timeout말고는 즉각 종료되게 ... 테스트 목적임
-            3 * 60 * 1000
+            3 * 60 * 1000,
           );
           break;
 
         case 'transport error': // NOTE: Closing a browser tab / Reloading the page
           console.log(
-            `due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`
+            `due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`,
           );
           this.groupStudyManagementService.leaveRoom(clientSocket); // room이 없으면 알아서 early return해줌.
           this.groupStudyManagementService.removePeerFromPeerMap(uid);
@@ -396,7 +396,7 @@ export class SignalingGateway
 
         default:
           console.log(
-            `due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`
+            `due to the disconnectReason ${disconnectReason}, the peer resource is about to be cleaned up`,
           );
           this.groupStudyManagementService.leaveRoom(clientSocket); // room이 없으면 알아서 early return해줌.
           this.groupStudyManagementService.removePeerFromPeerMap(uid);
@@ -415,7 +415,7 @@ export class SignalingGateway
 
     console.log(`========== CONNECTED SOCKETS ========== ${context}`);
     console.log(
-      `[SignalingGateway:logConnectedSockets] totalActiveSockets=${activeSockets.size}`
+      `[SignalingGateway:logConnectedSockets] totalActiveSockets=${activeSockets.size}`,
     );
 
     activeSockets.forEach((socket) => {
@@ -435,7 +435,7 @@ export class SignalingGateway
       }
 
       const rooms = [...socket.rooms].filter(
-        (room) => room !== socket.id && room !== '/'
+        (room) => room !== socket.id && room !== '/',
       );
 
       console.log(`[SignalingGateway:logConnectedSockets] socket:`, {
@@ -446,13 +446,13 @@ export class SignalingGateway
         transport: socket.conn.transport.name,
         rooms,
         isPeerCurrentSocket,
-        hasRemovalTimer: peer?.removalTimer !== null
+        hasRemovalTimer: peer?.removalTimer !== null,
       });
     });
 
     console.log(
       `[SignalingGateway:logConnectedSockets] activeUidsWithPeerRecord=${activeUidsWithPeerRecord.size}, ` +
-        `mismatchedCurrentSocket=${mismatchedCurrentSocket}`
+        `mismatchedCurrentSocket=${mismatchedCurrentSocket}`,
     );
     console.log(`======================================= ${context}`);
   }
@@ -461,13 +461,13 @@ export class SignalingGateway
   //#region Etc
   @SubscribeMessage(EventNames.CHECK_PEER_STATUS_IN_SERVER)
   async handleCheckPeerStatusInServer(
-    @ConnectedSocket() clientSocket: Socket
+    @ConnectedSocket() clientSocket: Socket,
   ): Promise<AckResponse<PeerStatus>> {
     const uid = clientSocket.data.uid as string;
 
     const peerStatus: PeerStatus = {
       doesPeerExistInPeerMap: false,
-      isPeerInRoom: false
+      isPeerInRoom: false,
     };
 
     const existingPeer = this.groupStudyManagementService.getPeer(uid);
@@ -476,13 +476,13 @@ export class SignalingGateway
       peerStatus.doesPeerExistInPeerMap = true;
       if (existingPeer.room) {
         console.log(
-          `peer with uid ${existingPeer.id} exists in the room ${existingPeer.room.id}`
+          `peer with uid ${existingPeer.id} exists in the room ${existingPeer.room.id}`,
         );
         peerStatus.isPeerInRoom = true;
       }
     } else {
       console.log(
-        `peer with uid ${existingPeer.id} does not exist in the peerMap`
+        `peer with uid ${existingPeer.id} does not exist in the peerMap`,
       );
     }
 
@@ -499,11 +499,11 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.SET_DEVICE_RTP_CAPABILITIES) // 3
   handleSetDeviceRtpCapabilities(
     clientSocket: Socket,
-    rtpCapabilities: RtpCapabilities
+    rtpCapabilities: RtpCapabilities,
   ): AckResponse {
     this.groupStudyManagementService.setPeerRtpCapabilities(
       clientSocket.data.uid as string,
-      rtpCapabilities
+      rtpCapabilities,
     );
     return { success: true };
   }
@@ -515,7 +515,7 @@ export class SignalingGateway
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.data.uid as string,
-        'send'
+        'send',
       );
 
     clientSocket.emit(EventNames.SEND_TRANSPORT_CREATED, transportOptions);
@@ -526,7 +526,7 @@ export class SignalingGateway
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.data.uid as string,
-        'recv'
+        'recv',
       );
 
     clientSocket.emit(EventNames.RECV_TRANSPORT_CREATED, transportOptions);
@@ -535,24 +535,24 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.CONNECT_SEND_TRANSPORT)
   async handleSendTransportConnect(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { dtlsParameters: any }
+    @MessageBody() payload: { dtlsParameters: any },
   ): Promise<AckResponse> {
     return await this.groupStudyManagementService.connectTransport(
       clientSocket.data.uid as string,
       payload.dtlsParameters,
-      'send'
+      'send',
     );
   }
 
   @SubscribeMessage(EventNames.CONNECT_RECV_TRANSPORT)
   async handleRecvTransportConnect(
     clientSocket: Socket,
-    payload: { dtlsParameters: any }
+    payload: { dtlsParameters: any },
   ): Promise<AckResponse> {
     return await this.groupStudyManagementService.connectTransport(
       clientSocket.data.uid as string,
       payload.dtlsParameters,
-      'recv'
+      'recv',
     );
   }
 
@@ -563,14 +563,14 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.RESTART_ICE)
   async handleRestartIce(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { kind: 'send' | 'recv' }
+    @MessageBody() payload: { kind: 'send' | 'recv' },
   ): Promise<AckResponse<{ iceParameters: IceParameters }>> {
     console.log(
-      `[SignalingGateway:handleRestartIce] Socket ${clientSocket.id} requested ICE restart for its ${payload.kind} transport`
+      `[SignalingGateway:handleRestartIce] Socket ${clientSocket.id} requested ICE restart for its ${payload.kind} transport`,
     );
     return await this.groupStudyManagementService.restartIce(
       clientSocket.data.uid as string,
-      payload.kind
+      payload.kind,
     );
   }
   //#endregion Transport related
@@ -584,48 +584,48 @@ export class SignalingGateway
       transportId: string;
       kind: 'audio' | 'video';
       rtpParameters: ProducerOptions['rtpParameters']; // RTP send params 같은데
-    }
+    },
   ): Promise<AckResponse<{ producerId: string }>> {
     return await this.groupStudyManagementService.createProducer(
       clientSocket,
       payload.transportId,
       payload.kind,
-      payload.rtpParameters
+      payload.rtpParameters,
     );
   }
 
   @SubscribeMessage(EventNames.PAUSE_PRODUCER)
   async handlePauseProducer(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { kind: 'video' | 'audio' }
+    @MessageBody() payload: { kind: 'video' | 'audio' },
   ): Promise<AckResponse> {
     return await this.groupStudyManagementService.pauseProducer(
       clientSocket.data.uid as string,
-      payload.kind
+      payload.kind,
     );
   }
 
   @SubscribeMessage(EventNames.RESUME_PRODUCER)
   async handleResumeProducer(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { kind: 'video' | 'audio' }
+    @MessageBody() payload: { kind: 'video' | 'audio' },
   ): Promise<AckResponse> {
     return await this.groupStudyManagementService.resumeProducer(
       clientSocket.data.uid as string,
-      payload.kind
+      payload.kind,
     );
   }
 
   @SubscribeMessage(EventNames.PRODUCER_CLOSED)
   handleProducerClosed(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { producerId?: string; kind?: 'video' | 'audio' }
+    @MessageBody() payload: { producerId?: string; kind?: 'video' | 'audio' },
   ): void {
     const { producerId, kind } = payload;
     this.groupStudyManagementService.closeProducer(
       clientSocket,
       producerId,
-      kind
+      kind,
     );
   }
   //#endregion Producer related
@@ -639,58 +639,58 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.INTENT_TO_CONSUME)
   async handleIntentToConsume(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { producerId: string; peerId: string }
+    @MessageBody() payload: { producerId: string; peerId: string },
   ): Promise<AckResponse<ConsumerOptionsExtended>> {
     return await this.groupStudyManagementService.createConsumer(
       clientSocket,
       payload.peerId,
-      payload.producerId
+      payload.producerId,
     );
   }
 
   @SubscribeMessage(EventNames.PAUSE_CONSUMER)
   async handlePauseConsumer(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { consumerId: string }
+    @MessageBody() payload: { consumerId: string },
   ): Promise<AckResponse<{ paused: boolean }>> {
     return await this.groupStudyManagementService.pauseConsumer(
       clientSocket.data.uid as string,
-      payload.consumerId
+      payload.consumerId,
     );
   }
 
   @SubscribeMessage(EventNames.RESUME_CONSUMER)
   async handleResumeConsumer(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { consumerId: string }
+    @MessageBody() payload: { consumerId: string },
   ): Promise<AckResponse<{ resumed: boolean }>> {
     return await this.groupStudyManagementService.resumeConsumer(
       clientSocket.data.uid as string,
-      payload.consumerId
+      payload.consumerId,
     );
   }
 
   @SubscribeMessage(EventNames.SET_CONSUMER_PREFERRED_LAYERS)
   async handleSetConsumerPreferredLayers(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { consumerId: string; spatialLayer: number }
+    @MessageBody() payload: { consumerId: string; spatialLayer: number },
   ): Promise<AckResponse> {
     // QQQ: Ack Callback 받아서 뭐... 딱히 사용하고 있지 않은데?..
     return await this.groupStudyManagementService.setConsumerPreferredLayers(
       clientSocket.data.uid as string,
       payload.consumerId,
-      payload.spatialLayer
+      payload.spatialLayer,
     );
   }
 
   @SubscribeMessage(EventNames.SET_COMMON_PREFERRED_LAYERS_FOR_ALL_CONSUMERS)
   async handleSetCommonPreferredLayersForAllConsumers(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { spatialLayer: number }
+    @MessageBody() payload: { spatialLayer: number },
   ): Promise<AckResponse<CommonPreferredLayersForAllConsumersData>> {
     return await this.groupStudyManagementService.setCommonPreferredLayersForAllConsumers(
       clientSocket.data.uid as string,
-      payload.spatialLayer
+      payload.spatialLayer,
     );
   }
   //#endregion Consumer related
@@ -705,10 +705,10 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.CREATE_ROOM)
   async handleCreateRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { name: string }
+    @MessageBody() payload: { name: string },
   ): Promise<AckResponse<{ roomId: string }>> {
     const roomId = await this.groupStudyManagementService.createRoom(
-      payload.name
+      payload.name,
     );
     this.broadcastRoomList();
     return { success: true, data: { roomId } };
@@ -720,7 +720,7 @@ export class SignalingGateway
   // 2) 일반적인 경우. 1) 어떤 이유로 room에 존재하던 disconnected peer가 reconnect된 후 ()
   async handleJoinRoom(
     @ConnectedSocket() connectedSocket: Socket,
-    @MessageBody() payload: { roomId: string; todayTotalDuration: number }
+    @MessageBody() payload: { roomId: string; todayTotalDuration: number },
   ): Promise<AckResponse<JOIN_ROOM_DATA>> {
     const { roomId, todayTotalDuration } = payload;
 
@@ -730,7 +730,7 @@ export class SignalingGateway
     const result = await this.groupStudyManagementService.joinRoom(
       connectedSocket,
       roomId,
-      todayTotalDuration
+      todayTotalDuration,
     );
 
     // QQQ: success인지는 이미 joinRoom함수에서 알 수 있는데, 여기에서 호출하는것보다 groupStudyManagementService의 joinRoom에서 호출하는게 더 좋을지도 모르겠음.
@@ -745,7 +745,7 @@ export class SignalingGateway
 
   @SubscribeMessage(EventNames.LEAVE_ROOM)
   async handlePeerLeaveRoom(
-    @ConnectedSocket() clientSocket: Socket
+    @ConnectedSocket() clientSocket: Socket,
   ): Promise<AckResponse<{ left: boolean }>> {
     console.log('LEAVE_ROOM message is received');
     const result =
@@ -759,13 +759,13 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.CHAT_MESSAGE)
   handleChatMessage(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { message: string; timestamp: string }
+    @MessageBody() payload: { message: string; timestamp: string },
   ): void {
     const { message, timestamp } = payload;
     this.groupStudyManagementService.handleChatMessage(
       clientSocket,
       message,
-      timestamp
+      timestamp,
     );
   }
 
@@ -774,12 +774,12 @@ export class SignalingGateway
   @SubscribeMessage(EventNames.SYNC_MY_TODAY_TOTAL_DURATION)
   handleUpdateTodayTotalDuration(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() payload: { todayTotalDuration: number }
+    @MessageBody() payload: { todayTotalDuration: number },
   ): void {
     const { todayTotalDuration } = payload;
     this.groupStudyManagementService.updatePeerTodayTotalDuration(
       clientSocket,
-      todayTotalDuration
+      todayTotalDuration,
     );
   }
 

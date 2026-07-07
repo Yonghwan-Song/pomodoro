@@ -1,48 +1,48 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useAuthContext } from "../../Context/AuthContext";
-import { Button } from "../../ReusableComponents/Buttons/Button";
-import { Grid } from "../../ReusableComponents/Layouts/Grid";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+import React, { useEffect, useRef, useState } from 'react';
+import { useAuthContext } from '../../Context/AuthContext';
+import { Button } from '../../ReusableComponents/Buttons/Button';
+import { Grid } from '../../ReusableComponents/Layouts/Grid';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
 import {
   Category,
   CycleSetting,
-  PomoSettingType
-} from "../../types/clientStatesType";
-import ReactModal from "react-modal";
-import styles from "./Settings.module.css";
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
+  PomoSettingType,
+} from '../../types/clientStatesType';
+import ReactModal from 'react-modal';
+import styles from './Settings.module.css';
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { axiosInstance } from '../../axios-and-error-handling/axios-instances';
 import {
   COLOR_FOR_CURRENT_STH,
   COLOR_FOR_SAVE_NEW_CYCLE_SETTING,
   COLOR_FOR_SELECTED_SETTING,
   RESOURCE,
-  SUB_SET
-} from "../../constants";
+  SUB_SET,
+} from '../../constants';
 import {
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
   persistTimersStatesToServer,
-  stopCountDownInBackground
-} from "../..";
-import { roundTo_X_DecimalPoints } from "../../utils/number-related-utils";
-import { calculateTargetFocusRatio } from "../../utils/anything";
+  stopCountDownInBackground,
+} from '../..';
+import { roundTo_X_DecimalPoints } from '../../utils/number-related-utils';
+import { calculateTargetFocusRatio } from '../../utils/anything';
 
 type CycleSettingFrameProps = {
   cycleSettingNameInput: string;
   isUserCreatingNewCycleSetting: boolean;
   handleSubmitToEditCycleSetting: (
-    ev: React.FormEvent<HTMLFormElement>
+    ev: React.FormEvent<HTMLFormElement>,
   ) => void;
   handleCycleSettingNameChange: (
-    ev: React.ChangeEvent<HTMLInputElement>
+    ev: React.ChangeEvent<HTMLInputElement>,
   ) => void;
   handlePomoSettingChange: (ev: React.ChangeEvent<HTMLInputElement>) => void;
   handlePomoSettingBlur: (ev: React.FocusEvent<HTMLInputElement>) => void;
   pomoSettingInputs: PomoSettingType;
   ratioTargetedCalculated: number;
   handleSubmitToSaveNewCycleSetting: (
-    ev: React.FormEvent<HTMLFormElement>
+    ev: React.FormEvent<HTMLFormElement>,
   ) => void;
   deleteSelectedSetting: (ev: React.MouseEvent<HTMLButtonElement>) => void;
   cycleSettingSelected: CycleSetting | null;
@@ -68,13 +68,13 @@ type CycleSettingFrameProps = {
 
 const customModalStyles = {
   content: {
-    top: "50%",
-    left: "50%",
-    right: "auto",
-    bottom: "auto",
-    marginRight: "-50%",
-    transform: "translate(-50%, -50%)"
-  }
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
+  },
 };
 
 export function CycleSettingFrame({
@@ -98,7 +98,7 @@ export function CycleSettingFrame({
   isInputLocked,
   setIsInputLocked,
   setTargetFocusRatio,
-  displayValues
+  displayValues,
 }: CycleSettingFrameProps) {
   const { user } = useAuthContext()!;
   const cycleSettingNameInputRef = useRef<HTMLInputElement>(null);
@@ -107,27 +107,27 @@ export function CycleSettingFrame({
   const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
   const cycleSettings = useBoundedPomoInfoStore((state) => state.cycleSettings);
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.setCategoryChangeInfoArray
+    (state) => state.setCategoryChangeInfoArray,
   );
   const updateCycleSettings = useBoundedPomoInfoStore(
-    (state) => state.setCycleSettings
+    (state) => state.setCycleSettings,
   );
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
   const updatePomoSetting = useBoundedPomoInfoStore(
-    (state) => state.setPomoSetting
+    (state) => state.setPomoSetting,
   );
 
   const isTodoistIntegrationEnabled = useBoundedPomoInfoStore(
-    (states) => states.isTodoistIntegrationEnabled
+    (states) => states.isTodoistIntegrationEnabled,
   );
   const setTaskChangeInfoArray = useBoundedPomoInfoStore(
-    (states) => states.setTaskChangeInfoArray
+    (states) => states.setTaskChangeInfoArray,
   );
   const currentTaskId = useBoundedPomoInfoStore(
-    (states) => states.currentTaskId
+    (states) => states.currentTaskId,
   );
   const setTimersStatesPartial = useBoundedPomoInfoStore(
-    (states) => states.setTimersStatesPartial
+    (states) => states.setTimersStatesPartial,
   );
 
   // useEffect(() => {
@@ -171,11 +171,11 @@ export function CycleSettingFrame({
       if (cycleSettingSelected?.isCurrent && isTodoistIntegrationEnabled) {
         const newTaskChangeInfo = {
           id: currentTaskId,
-          taskChangeTimestamp: 0
+          taskChangeTimestamp: 0,
         };
         setTaskChangeInfoArray([newTaskChangeInfo]);
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-          taskChangeInfoArray: [newTaskChangeInfo]
+          taskChangeInfoArray: [newTaskChangeInfo],
         });
         setTimersStatesPartial({ running: false, startTime: 0 });
       }
@@ -219,7 +219,7 @@ export function CycleSettingFrame({
     axiosInstance.patch(RESOURCE.CYCLE_SETTINGS, {
       // name: cycleSettingNameInput,
       name: cycleSettingSelected?.name,
-      data: { isCurrent: true }
+      data: { isCurrent: true },
     });
     updatePomoSetting(cycleSettingSelected?.pomoSetting);
 
@@ -228,7 +228,7 @@ export function CycleSettingFrame({
       shortBreakDuration,
       longBreakDuration,
       numOfPomo,
-      numOfCycle
+      numOfCycle,
     } = cycleSettingSelected.pomoSetting;
     let totalFocusDuration = numOfPomo * pomoDuration * 60;
     let cycleDuration =
@@ -247,8 +247,8 @@ export function CycleSettingFrame({
         cycleDuration,
         cycleStartTimestamp: 0,
         veryFirstCycleStartTimestamp: 0,
-        totalDurationOfSetOfCycles: cycleDuration * numOfCycle
-      }
+        totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+      },
     });
     stopCountDownInBackground();
 
@@ -256,7 +256,7 @@ export function CycleSettingFrame({
       if (prev === null) return prev;
       return {
         ...prev,
-        isCurrent: true
+        isCurrent: true,
       };
     });
 
@@ -264,15 +264,15 @@ export function CycleSettingFrame({
       const infoArr = [
         {
           categoryName:
-            currentCategory === null ? "uncategorized" : currentCategory.name,
+            currentCategory === null ? 'uncategorized' : currentCategory.name,
           categoryChangeTimestamp: 0,
           _uuid: currentCategory?._uuid,
           color:
             currentCategory !== null
               ? currentCategory.color
               : colorForUnCategorized,
-          progress: 0
-        }
+          progress: 0,
+        },
       ];
       persistCategoryChangeInfoArrayToIDB(infoArr);
       persistTimersStatesToServer({
@@ -280,28 +280,28 @@ export function CycleSettingFrame({
         repetitionCount: 0,
         running: false,
         startTime: 0,
-        pause: { totalLength: 0, record: [] }
+        pause: { totalLength: 0, record: [] },
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
-        categoryChangeInfoArray: infoArr
+        categoryChangeInfoArray: infoArr,
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration,
         cycleDuration,
         cycleStartTimestamp: 0,
         veryFirstCycleStartTimestamp: 0,
-        totalDurationOfSetOfCycles: cycleDuration * numOfCycle
+        totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
       });
       updateCategoryChangeInfoArray(infoArr);
 
       if (isTodoistIntegrationEnabled) {
         const newTaskChangeInfo = {
           id: currentTaskId,
-          taskChangeTimestamp: 0
+          taskChangeTimestamp: 0,
         };
         setTaskChangeInfoArray([newTaskChangeInfo]);
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-          taskChangeInfoArray: [newTaskChangeInfo]
+          taskChangeInfoArray: [newTaskChangeInfo],
         });
         setTimersStatesPartial({ running: false, startTime: 0 });
       }
@@ -327,7 +327,7 @@ export function CycleSettingFrame({
         shortBreakDuration,
         longBreakDuration,
         numOfPomo,
-        numOfCycle
+        numOfCycle,
       } = currentCycleSetting.pomoSetting;
       let totalFocusDuration = numOfPomo * pomoDuration * 60;
       let cycleDuration =
@@ -343,15 +343,15 @@ export function CycleSettingFrame({
       const infoArr = [
         {
           categoryName:
-            currentCategory === null ? "uncategorized" : currentCategory.name,
+            currentCategory === null ? 'uncategorized' : currentCategory.name,
           categoryChangeTimestamp: 0,
           _uuid: currentCategory?._uuid,
           color:
             currentCategory !== null
               ? currentCategory.color
               : colorForUnCategorized,
-          progress: 0
-        }
+          progress: 0,
+        },
       ];
       //#region Reset IDB
       persistStatesToIDB({
@@ -365,8 +365,8 @@ export function CycleSettingFrame({
           cycleDuration,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: cycleDuration * numOfCycle
-        }
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        },
       });
       persistCategoryChangeInfoArrayToIDB(infoArr);
       //#endregion Reset IDB
@@ -378,28 +378,28 @@ export function CycleSettingFrame({
         repetitionCount: 0,
         running: false,
         startTime: 0,
-        pause: { totalLength: 0, record: [] }
+        pause: { totalLength: 0, record: [] },
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY, {
-        categoryChangeInfoArray: infoArr
+        categoryChangeInfoArray: infoArr,
       });
       axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
         totalFocusDuration,
         cycleDuration,
         cycleStartTimestamp: 0,
         veryFirstCycleStartTimestamp: 0,
-        totalDurationOfSetOfCycles: cycleDuration * numOfCycle
+        totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
       });
       updateCategoryChangeInfoArray(infoArr);
 
       if (isTodoistIntegrationEnabled) {
         const newTaskChangeInfo = {
           id: currentTaskId,
-          taskChangeTimestamp: 0
+          taskChangeTimestamp: 0,
         };
         setTaskChangeInfoArray([newTaskChangeInfo]);
         axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-          taskChangeInfoArray: [newTaskChangeInfo]
+          taskChangeInfoArray: [newTaskChangeInfo],
         });
         setTimersStatesPartial({ running: false, startTime: 0 });
       }
@@ -410,7 +410,7 @@ export function CycleSettingFrame({
         numOfCycle,
         pomoDuration,
         shortBreakDuration,
-        longBreakDuration
+        longBreakDuration,
       } = pomoSettingInputs;
 
       let totalFocusDuration = numOfPomo * pomoDuration * 60;
@@ -430,8 +430,8 @@ export function CycleSettingFrame({
           cycleDuration,
           cycleStartTimestamp: 0,
           veryFirstCycleStartTimestamp: 0,
-          totalDurationOfSetOfCycles: cycleDuration * numOfCycle
-        }
+          totalDurationOfSetOfCycles: cycleDuration * numOfCycle,
+        },
       });
       stopCountDownInBackground();
     }
@@ -451,7 +451,7 @@ export function CycleSettingFrame({
       setPomoSettingInputs(cycleSettingSelected.pomoSetting);
       setCycleSettingNameInput(cycleSettingSelected.name);
       setTargetFocusRatio(
-        calculateTargetFocusRatio(cycleSettingSelected.pomoSetting)
+        calculateTargetFocusRatio(cycleSettingSelected.pomoSetting),
       );
     } else {
       // console.log("It was me");
@@ -503,8 +503,8 @@ export function CycleSettingFrame({
         <Grid
           column={2}
           row={2}
-          columnGap={"38px"}
-          rowGap={"38px"}
+          columnGap={'38px'}
+          rowGap={'38px'}
           justifyItems="center"
           alignItems="center"
         >
@@ -516,14 +516,14 @@ export function CycleSettingFrame({
                   name="cycleSettingName"
                   type="text"
                   style={{
-                    display: "block",
-                    backgroundColor: "#f0f0f0",
-                    border: "none",
-                    borderRadius: "0.5rem",
-                    textAlign: "center",
-                    padding: "0.4em 0",
-                    width: "100%",
-                    fontSize: "1.5em"
+                    display: 'block',
+                    backgroundColor: '#f0f0f0',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    textAlign: 'center',
+                    padding: '0.4em 0',
+                    width: '100%',
+                    fontSize: '1.5em',
                   }}
                   value={cycleSettingNameInput}
                   onChange={handleCycleSettingNameChange}
@@ -604,20 +604,20 @@ export function CycleSettingFrame({
               />
             </div>
           </label>
-          <div style={{ textAlign: "center" }}>
-            <span style={{ color: "red" }}>
-              {roundTo_X_DecimalPoints(ratioTargetedCalculated * 100, 2)}%{" "}
+          <div style={{ textAlign: 'center' }}>
+            <span style={{ color: 'red' }}>
+              {roundTo_X_DecimalPoints(ratioTargetedCalculated * 100, 2)}%{' '}
               {/* {ratioTargetedCalculated * 100}%{" "} */}
             </span>
             of a cycle duration is focus
           </div>
           {isUserCreatingNewCycleSetting ? (
-            <Button color={"blue"}>SAVE TO CREATE</Button>
+            <Button color={'blue'}>SAVE TO CREATE</Button>
           ) : (
             <>
               {!isInputLocked ? (
                 <>
-                  <Button type="submit" color={"primary"}>
+                  <Button type="submit" color={'primary'}>
                     SAVE
                   </Button>
                   <Button type="button" onClick={handleCancleEditClick}>
@@ -629,7 +629,7 @@ export function CycleSettingFrame({
                   {cycleSettingSelected?.isCurrent === false ? (
                     <Button
                       type="button"
-                      color={"primary"}
+                      color={'primary'}
                       onClick={openSelectModal}
                     >
                       SET AS CURRENT
@@ -660,7 +660,7 @@ export function CycleSettingFrame({
 
                   <Button
                     type="button"
-                    color={"primary"}
+                    color={'primary'}
                     onClick={handleEditClick}
                   >
                     EDIT
@@ -684,9 +684,9 @@ export function CycleSettingFrame({
       >
         <h2>Confirm Deletion</h2>
         <p>Are you sure you want to delete this cycle setting?</p>
-        <div style={{ display: "flex", justifyContent: "space-around" }}>
+        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
           <Button onClick={closeDeleteModal}>Cancel</Button>
-          <Button color={"primary"} type="button" onClick={confirmDelete}>
+          <Button color={'primary'} type="button" onClick={confirmDelete}>
             Delete
           </Button>
         </div>
@@ -703,9 +703,9 @@ export function CycleSettingFrame({
           session and the remaining sessions in the current cycle will be
           cleared.
         </p>
-        <div style={{ display: "flex", justifyContent: "space-around" }}>
+        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
           <Button onClick={closeSelectModal}>Cancel</Button>
-          <Button color={"primary"} type="button" onClick={confirmSelect}>
+          <Button color={'primary'} type="button" onClick={confirmSelect}>
             Select
           </Button>
         </div>

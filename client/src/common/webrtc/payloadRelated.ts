@@ -1,10 +1,10 @@
-import { type ConsumerOptions } from "mediasoup-client/types";
+import { type ConsumerOptions } from 'mediasoup-client/types';
 
 // WARNING:
 export type ProducerPayload = {
   producerId: string;
   peerId: string; // Firebase uid of the producing peer
-  kind: "audio" | "video";
+  kind: 'audio' | 'video';
   displayName?: string; // 선택적 정보
   // appData?: Record<string, any>; // WARNING: 프로젝트 어디에서도 appData를 사용하고있지 않음. -> 그냥 지운다.
 };

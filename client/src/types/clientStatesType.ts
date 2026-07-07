@@ -87,7 +87,7 @@ export interface Category {
  * !Thus, a _uuid is used to uniquely identify categories on the front end before saving them to the database.
  * !It serves as a temporary identifier to distinguish different categories.
  */
-export type NewCategory = Omit<Category, "_id">;
+export type NewCategory = Omit<Category, '_id'>;
 
 /**
  * @prop progress - a number that represents how much progress has been made in the current session until this category starts.
@@ -103,7 +103,7 @@ export type NewCategory = Omit<Category, "_id">;
  *     예를 들면, 1시간에서 처음 15분과 다음 15분을 각각 A와 B로 진행했다고 하면,
  *    progress 는 0.5
  */
-export type CategoryChangeInfo = Pick<Category, "color" | "_uuid"> & {
+export type CategoryChangeInfo = Pick<Category, 'color' | '_uuid'> & {
   categoryName: string;
   categoryChangeTimestamp: number;
   progress: number;
@@ -140,13 +140,13 @@ export type DailyGoals = [Goal, Goal, Goal, Goal, Goal, Goal, Goal];
 //#endregion
 
 //#region Timeline-Related
-export type RecType = Omit<TimerStateType, "running"> & {
-  kind: "pomo" | "break";
+export type RecType = Omit<TimerStateType, 'running'> & {
+  kind: 'pomo' | 'break';
   endTime: number;
   timeCountedDown: number;
 };
 
-export type KindOfDuration = "pomo" | "break" | "pause";
+export type KindOfDuration = 'pomo' | 'break' | 'pause';
 export type DurationType = {
   startTime: number;
   endTime: number;
@@ -176,8 +176,8 @@ export type SessionType = DurationType[];
 
 // New one that also combines the taskChangeInfoArray's elements
 export type InfoOfSessionStateChange = {
-  kind: "category" | "task" | "pause" | "endOfSession";
-  subKind?: string | "start" | "end";
+  kind: 'category' | 'task' | 'pause' | 'endOfSession';
+  subKind?: string | 'start' | 'end';
   timestamp: number;
 };
 export type CategoryDurationsAndHelperFields = {
@@ -204,14 +204,14 @@ export type DurationOfCategoryTaskCombination = {
 export type SegmentDuration = {
   owner: string; //! This is not optional since pause can also have its category. I mean we just can pause a session and the session has its category (including "uncategorized")
   duration: number;
-  type: "pause" | "focus";
+  type: 'pause' | 'focus';
   startTime: number;
 };
 
 export type SessionSegment = {
   owner: [string, string]; // [taskId, categoryName]
   duration: number;
-  type: "pause" | "focus";
+  type: 'pause' | 'focus';
   startTime: number;
 };
 
@@ -221,7 +221,7 @@ export type SegmentDurationsAndHelperFields = {
   // following three are used to help calculate duration for each segment.
   currentOwner: string;
   currentStartTime: number;
-  currentType: "pause" | "focus";
+  currentType: 'pause' | 'focus';
 };
 
 export type SegmentDurationsAndHelperFields2 = {
@@ -229,7 +229,7 @@ export type SegmentDurationsAndHelperFields2 = {
   // following three are used to help calculate duration for each segment.
   currentOwner: [string, string]; // [taskId, categoryName];
   currentStartTime: number;
-  currentType: "pause" | "focus";
+  currentType: 'pause' | 'focus';
 };
 
 export type TaskDuration = {

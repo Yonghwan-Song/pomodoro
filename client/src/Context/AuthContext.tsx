@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, createContext } from "react";
+import React, { useContext, useEffect, useState, createContext } from 'react';
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -6,28 +6,28 @@ import {
   onAuthStateChanged,
   getAdditionalUserInfo,
   User,
-} from "firebase/auth";
+} from 'firebase/auth';
 
-import { auth } from "../firebase";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
+import { auth } from '../firebase';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
 import {
   CURRENT_CATEGORY_NAME,
   RESOURCE,
   SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
-} from "../constants";
+} from '../constants';
 import {
   DataFromServer,
   useBoundedPomoInfoStore,
-} from "../zustand-stores/pomoInfoStoreUsingSlice";
+} from '../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   dataCombinedFromIDB,
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
   setStateStoreToDefault,
-} from "..";
-import { Category, CategoryChangeInfo } from "../types/clientStatesType";
-import { pubsub } from "../pubsub";
+} from '..';
+import { Category, CategoryChangeInfo } from '../types/clientStatesType';
+import { pubsub } from '../pubsub';
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;
@@ -144,7 +144,7 @@ export function AuthContextProvider({
           currentCycleInfo: states.currentCycleInfo,
         });
         //2.
-        localStorage.setItem("user", "authenticated");
+        localStorage.setItem('user', 'authenticated');
 
         //3. to ensure that categories are uniquely identified on the client side.
         await addUUIDToCategory(
@@ -225,7 +225,7 @@ export function AuthContextProvider({
      */
 
     async function getAndSetStatesFromIDBForNonSignedInUsers() {
-      const states = await obtainStatesFromIDB("withSettings");
+      const states = await obtainStatesFromIDB('withSettings');
 
       // 1. non-signed-in user가 이전에 사용하던 정보가 Indexed DB에 존재하는 경우.
       if (Object.entries(states).length !== 0) {
@@ -261,7 +261,7 @@ export function AuthContextProvider({
     }
 
     function isNonSignInUser() {
-      return localStorage.getItem("user") !== "authenticated";
+      return localStorage.getItem('user') !== 'authenticated';
     }
 
     if (isNonSignInUser()) {

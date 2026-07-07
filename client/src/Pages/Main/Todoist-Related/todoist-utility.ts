@@ -2,25 +2,25 @@ import {
   RESOURCE,
   SUB_SET,
   CURRENT_SESSION_TYPE,
-  CURRENT_TASK_ID
-} from "../../../constants";
+  CURRENT_TASK_ID,
+} from '../../../constants';
 import {
   TaskChangeInfo,
-  TodoistTasksWithFocusDuration
-} from "../../../types/todoistRelatedTypes";
-import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+  TodoistTasksWithFocusDuration,
+} from '../../../types/todoistRelatedTypes';
+import { axiosInstance } from '../../../axios-and-error-handling/axios-instances';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   TaskWithFocusDurationAndChildren,
-  TodoistTasksTreeAndMap
-} from "../../../types/todoistRelatedTypes";
+  TodoistTasksTreeAndMap,
+} from '../../../types/todoistRelatedTypes';
 
 /**
  * Returns true if any descendant of `task` has id === currentTaskId
  */
 export function hasDescendantWithId(
   task: TaskWithFocusDurationAndChildren,
-  currentTaskId: string
+  currentTaskId: string,
 ): boolean {
   if (!task.children || task.children.length === 0) return false;
   for (const child of task.children) {
@@ -36,13 +36,13 @@ export function useTaskSelectionHandler() {
   const setCurrentTaskId = useBoundedPomoInfoStore((s) => s.setCurrentTaskId);
   const addTaskChangeInfo = useBoundedPomoInfoStore((s) => s.addTaskChangeInfo);
   const setTaskChangeInfoArray = useBoundedPomoInfoStore(
-    (s) => s.setTaskChangeInfoArray
+    (s) => s.setTaskChangeInfoArray,
   );
   const checkIfSessionIsNotStartedYet = useBoundedPomoInfoStore(
-    (s) => s.checkIfSessionIsNotStartedYet
+    (s) => s.checkIfSessionIsNotStartedYet,
   );
   const taskChangeInfoArray = useBoundedPomoInfoStore(
-    (s) => s.taskChangeInfoArray
+    (s) => s.taskChangeInfoArray,
   );
   const currentTaskId = useBoundedPomoInfoStore((s) => s.currentTaskId);
 
@@ -52,13 +52,13 @@ export function useTaskSelectionHandler() {
 
     const currentSessionType = sessionStorage.getItem(CURRENT_SESSION_TYPE);
     if (!currentSessionType) {
-      alert("Please click the task again");
+      alert('Please click the task again');
       return;
     }
 
     const sessionType = currentSessionType.toUpperCase();
-    const isPomo = sessionType === "POMO";
-    const isBreak = sessionType === "BREAK";
+    const isPomo = sessionType === 'POMO';
+    const isBreak = sessionType === 'BREAK';
 
     // console.log("sessionType inside the useTaskSelectionHandler", sessionType);
 
@@ -68,7 +68,7 @@ export function useTaskSelectionHandler() {
     let newTaskChange: TaskChangeInfo;
     let shouldAddTaskChange = false;
     let shouldSetTaskChangeArray = false;
-    let patchUrl = "";
+    let patchUrl = '';
     let patchData: any = {};
 
     if (isPomo && !checkIfSessionIsNotStartedYet()) {
@@ -78,7 +78,7 @@ export function useTaskSelectionHandler() {
       patchData = {
         currentTaskId: taskId,
         doesItJustChangeTask: false,
-        changeTimestamp: moment
+        changeTimestamp: moment,
       };
     } else if ((isPomo && checkIfSessionIsNotStartedYet()) || isBreak) {
       // console.log(
@@ -89,12 +89,12 @@ export function useTaskSelectionHandler() {
         taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0;
       newTaskChange = {
         id: taskId,
-        taskChangeTimestamp: preservedTaskChangeTimestamp
+        taskChangeTimestamp: preservedTaskChangeTimestamp,
       };
       shouldSetTaskChangeArray = true;
       patchUrl = RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY;
       patchData = {
-        taskChangeInfoArray: [newTaskChange]
+        taskChangeInfoArray: [newTaskChange],
       };
     } else {
       // Unknown session type, do nothing
@@ -110,7 +110,7 @@ export function useTaskSelectionHandler() {
       }
       await axiosInstance.patch(patchUrl, patchData);
     } catch (error) {
-      console.error("Error handling task selection:", error);
+      console.error('Error handling task selection:', error);
     }
   };
 }
@@ -183,7 +183,7 @@ export function useTaskSelectionHandler() {
 
 //#region New - on my own
 export function generateTaskDictionaryAndTree(
-  tasks: TodoistTasksWithFocusDuration[]
+  tasks: TodoistTasksWithFocusDuration[],
 ): TodoistTasksTreeAndMap {
   if (tasks.length === 0) {
     return { rootTasks: [], taskMap: new Map() };
@@ -196,7 +196,7 @@ export function generateTaskDictionaryAndTree(
   tasks.forEach((task) => {
     taskDictionary.set(
       task.id,
-      { ...task, children: [] } // kinda.. creating a reference. (왜냐하면 JS object라)
+      { ...task, children: [] }, // kinda.. creating a reference. (왜냐하면 JS object라)
     );
   });
 
@@ -238,7 +238,7 @@ export function generateTaskDictionaryAndTree(
 export function updateMatchingTaskInTree(
   tasksInTheSameLevel: TaskWithFocusDurationAndChildren[],
   taskId: string,
-  focusDuration: number
+  focusDuration: number,
 ) {
   tasksInTheSameLevel.forEach((task) => {
     if (task.id === taskId) {

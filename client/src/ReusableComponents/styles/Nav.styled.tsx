@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import { MINIMUMS, VH_RATIO } from "../../constants";
+import styled from 'styled-components';
+import { MINIMUMS, VH_RATIO } from '../../constants';
 
 export const StyledNav = styled.nav`
   position: sticky;

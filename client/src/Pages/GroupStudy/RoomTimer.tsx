@@ -1,10 +1,10 @@
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import { TimerController } from "../Main/Timer-Related/TimerController/TimerController";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
-import { Grid } from "../../ReusableComponents/Layouts/Grid";
-import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
-import { useTimerData } from "../../Custom-Hooks/useTimerData";
-import { css } from "../../../styled-system/css";
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { TimerController } from '../Main/Timer-Related/TimerController/TimerController';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
+import { Grid } from '../../ReusableComponents/Layouts/Grid';
+import { GridItem } from '../../ReusableComponents/Layouts/GridItem';
+import { useTimerData } from '../../Custom-Hooks/useTimerData';
+import { css } from '../../../styled-system/css';
 
 /**
  * RoomTimer Component
@@ -24,13 +24,13 @@ export function RoomTimer() {
     records,
     setRecords,
     isStatesRelatedToTimerReady,
-    isCurrentCycleInfoReady
+    isCurrentCycleInfoReady,
   } = useTimerData({ skipPubSub: true });
 
   // 서버(혹은 로컬)에서 가져온 사용자 설정값들을 Zustand 스토어에서 읽어옵니다.
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
   const autoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.autoStartSetting
+    (state) => state.autoStartSetting,
   );
 
   const isPomoSettingReady = pomoSetting !== null;
@@ -47,9 +47,9 @@ export function RoomTimer() {
     return (
       <div
         className={css({
-          padding: "4",
-          textAlign: "center",
-          color: "gray.500"
+          padding: '4',
+          textAlign: 'center',
+          color: 'gray.500',
         })}
       >
         loading timer...
@@ -60,8 +60,8 @@ export function RoomTimer() {
   return (
     <div
       className={css({
-        display: "flex",
-        alignItems: "center"
+        display: 'flex',
+        alignItems: 'center',
       })}
     >
       <Grid
@@ -69,7 +69,7 @@ export function RoomTimer() {
         placeItems="center"
         rowGap="14px"
         padding="0px"
-        style={{ width: "auto" }}
+        style={{ width: 'auto' }}
       >
         <GridItem width="auto">
           <BoxShadowWrapper

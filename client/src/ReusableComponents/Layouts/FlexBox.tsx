@@ -1,4 +1,4 @@
-import { StyledFlexBox } from "../styles/FlexBox.styled";
+import { StyledFlexBox } from '../styles/FlexBox.styled';
 
 type FlexBoxProps = {
   children?: React.ReactNode;

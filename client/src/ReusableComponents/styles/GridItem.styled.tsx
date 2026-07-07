@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled, { css } from 'styled-components';
 
 type GridItemType = {
   textAlign?: string;
@@ -22,20 +22,20 @@ export const StyledGridItem = styled.div<GridItemType>`
   min-width: ${({ minWidth }) => {
     if (minWidth !== undefined) {
       if (minWidth >= 0) {
-        return minWidth + "px";
+        return minWidth + 'px';
       }
     } else {
-      return "0px";
+      return '0px';
     }
   }};
 
   min-height: ${({ minHeight }) => {
     if (minHeight !== undefined) {
       if (minHeight >= 0) {
-        return minHeight + "px";
+        return minHeight + 'px';
       }
     } else {
-      return "0px";
+      return '0px';
     }
   }};
 
@@ -54,10 +54,10 @@ export const StyledGridItem = styled.div<GridItemType>`
     `}
 
     ${({ rowStart }) =>
-    rowStart &&
-    css`
-      grid-row-start: ${rowStart};
-    `}
+      rowStart &&
+      css`
+        grid-row-start: ${rowStart};
+      `}
 
   ${({ rowEnd }) =>
     rowEnd &&

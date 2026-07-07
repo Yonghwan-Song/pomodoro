@@ -1,4 +1,4 @@
-import { Task } from "@doist/todoist-api-typescript";
+import { Task } from '@doist/todoist-api-typescript';
 
 export interface TaskWithFocusDurationAndChildren extends Task {
   children?: TaskWithFocusDurationAndChildren[];

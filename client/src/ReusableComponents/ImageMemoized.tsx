@@ -1,8 +1,8 @@
-import { memo } from "react";
-import { css } from "../../styled-system/css";
+import { memo } from 'react';
+import { css } from '../../styled-system/css';
 
 const ImageMemoized = memo(function ImageMemoized({
-  picture
+  picture,
 }: {
   picture: string | null;
 }) {
@@ -13,11 +13,11 @@ const ImageMemoized = memo(function ImageMemoized({
         src={picture}
         alt="google profile image of the participant"
         className={css({
-          width: "100%",
-          maxWidth: "100%",
-          aspectRatio: "16 / 9",
-          borderRadius: "lg",
-          backgroundColor: "bg.canvas"
+          width: '100%',
+          maxWidth: '100%',
+          aspectRatio: '16 / 9',
+          borderRadius: 'lg',
+          backgroundColor: 'bg.canvas',
         })}
       />
     );
@@ -25,11 +25,11 @@ const ImageMemoized = memo(function ImageMemoized({
     return (
       <div
         className={css({
-          width: "100%",
-          maxWidth: "100%",
-          aspectRatio: "16 / 9",
-          borderRadius: "lg",
-          backgroundColor: "bg.canvas"
+          width: '100%',
+          maxWidth: '100%',
+          aspectRatio: '16 / 9',
+          borderRadius: 'lg',
+          backgroundColor: 'bg.canvas',
         })}
       />
     );

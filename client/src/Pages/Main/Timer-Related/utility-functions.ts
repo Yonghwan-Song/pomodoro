@@ -1,4 +1,4 @@
-import { TimersStatesType } from "../../../types/clientStatesType";
+import { TimersStatesType } from '../../../types/clientStatesType';
 
 export function getProgress(statesRelatedToTimer: TimersStatesType) {
   // let retVal = durationInSeconds,// this makes a timer not be able to go to next sessin when re-opening the app after a certain session has already finished.
@@ -17,7 +17,7 @@ export function getProgress(statesRelatedToTimer: TimersStatesType) {
       timePassed = Date.now() - startTime;
       timeCountedDown = timePassed - pause.totalLength;
       remainingDuration = Math.floor(
-        (durationInSeconds * 1000 - timeCountedDown) / 1000
+        (durationInSeconds * 1000 - timeCountedDown) / 1000,
       );
     } else if (startTime === 0) {
       //running === false && startTime === 0 -> timer has not yet started.
@@ -37,7 +37,7 @@ export function getProgress(statesRelatedToTimer: TimersStatesType) {
       }
       timeCountedDown = timePassed - pause.totalLength;
       remainingDuration = Math.floor(
-        (durationInSeconds * 1000 - timeCountedDown) / 1000
+        (durationInSeconds * 1000 - timeCountedDown) / 1000,
       );
     }
 
@@ -45,8 +45,8 @@ export function getProgress(statesRelatedToTimer: TimersStatesType) {
       durationInSeconds === 0
         ? 0
         : remainingDuration < 0
-        ? 1
-        : 1 - remainingDuration / durationInSeconds;
+          ? 1
+          : 1 - remainingDuration / durationInSeconds;
   }
 
   // progress = parseFloat(progress.toFixed(2));
@@ -60,7 +60,7 @@ export function calculateCycleCount(
   isBeforeStartOfCycle: boolean,
   numOfPomo: number,
   numOfCycle: number,
-  repetitionCount: number
+  repetitionCount: number,
 ) {
   if (isBeforeStartOfCycle) return 0;
 
@@ -82,7 +82,7 @@ export function calculateRepetitionCountWithinCycle(
   numOfPomo: number,
   numOfCycle: number,
   repetitionCount: number,
-  cycleCount: number
+  cycleCount: number,
 ) {
   if (cycleCount === 0) return 0;
 
@@ -92,15 +92,15 @@ export function calculateRepetitionCountWithinCycle(
 
 export function calculateNumOfRemainingPomoSessions(
   numOfPomo: number,
-  repetitionCountWithinCycle: number
+  repetitionCountWithinCycle: number,
 ) {
   let numOfRemainingPomoSessions =
     numOfPomo -
     (repetitionCountWithinCycle === 0
       ? 0
       : repetitionCountWithinCycle % 2 === 0
-      ? repetitionCountWithinCycle / 2
-      : (repetitionCountWithinCycle + 1) / 2);
+        ? repetitionCountWithinCycle / 2
+        : (repetitionCountWithinCycle + 1) / 2);
   // console.log("numOfRemainingPomoSessions", numOfRemainingPomoSessions);
 
   return numOfRemainingPomoSessions;

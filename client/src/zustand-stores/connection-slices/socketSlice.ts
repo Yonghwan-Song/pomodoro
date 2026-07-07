@@ -1,17 +1,17 @@
-import type { StateCreator } from "zustand";
-import { io } from "socket.io-client";
-import { auth } from "../../firebase";
-import { BASE_URL } from "../../constants";
-import { EXPLICIT_SOCKET_DISCONNECT_REASONS } from "./constants";
-import type { ConnectionStore, SocketSlice } from "./types";
-import { enableMapSet } from "immer";
-import * as EventNames from "../../common/webrtc/eventNames";
-import { AckResponse, PeerStatus } from "../../common/webrtc/payloadRelated";
+import type { StateCreator } from 'zustand';
+import { io } from 'socket.io-client';
+import { auth } from '../../firebase';
+import { BASE_URL } from '../../constants';
+import { EXPLICIT_SOCKET_DISCONNECT_REASONS } from './constants';
+import type { ConnectionStore, SocketSlice } from './types';
+import { enableMapSet } from 'immer';
+import * as EventNames from '../../common/webrtc/eventNames';
+import { AckResponse, PeerStatus } from '../../common/webrtc/payloadRelated';
 enableMapSet();
 
 export const createSocketSlice: StateCreator<
   ConnectionStore,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   SocketSlice
 > = (set, get) => {
@@ -25,7 +25,7 @@ export const createSocketSlice: StateCreator<
         initializeProducerSliceStates,
         initializeConsumerSliceStates,
         initializeSocketSliceStates,
-        socket
+        socket,
       } = get();
 
       initializeRoomSliceStates();
@@ -36,10 +36,10 @@ export const createSocketSlice: StateCreator<
       initializeTransportSliceStates();
       initializeProducerSliceStates();
       initializeConsumerSliceStates();
-      set({ forcedRoomExitReason: "tcp-socket-prolonged-disconnect" });
+      set({ forcedRoomExitReason: 'tcp-socket-prolonged-disconnect' });
     }, timeout);
 
-    set({ socketResetTimer: resetTimer }, false, "socket/assign-reset-timer");
+    set({ socketResetTimer: resetTimer }, false, 'socket/assign-reset-timer');
   };
 
   return {
@@ -62,10 +62,10 @@ export const createSocketSlice: StateCreator<
           socket: null,
           isSocketConnected: false,
           isSocketConnecting: false,
-          socketResetTimer: null
+          socketResetTimer: null,
         },
         false,
-        "socket/resetToInitialValues"
+        'socket/resetToInitialValues',
       );
     },
     // GroupStudy Component에서 side effect
@@ -83,14 +83,14 @@ export const createSocketSlice: StateCreator<
       // #region New
       if (socket !== null) {
         console.log(
-          "socket is not null. connect() is early returned due to one of the followings"
+          'socket is not null. connect() is early returned due to one of the followings',
         );
-        console.log("socket.connected", socket.connected);
+        console.log('socket.connected', socket.connected);
         console.log(
-          "socket.disconnected -> non null socket is disconnected means it is attempting to reconnect",
-          socket.disconnected
+          'socket.disconnected -> non null socket is disconnected means it is attempting to reconnect',
+          socket.disconnected,
         );
-        console.log("isConnecting (set in this connect() call)", isConnecting);
+        console.log('isConnecting (set in this connect() call)', isConnecting);
         return;
       }
       //#endregion New
@@ -105,34 +105,34 @@ export const createSocketSlice: StateCreator<
       // }
       //#endregion Old
 
-      set({ isSocketConnecting: true }, false, "socket/connecting"); //? What should be forbidden while a socket is connecting? -> QQQ?: 실제로 어떤 조건문에서도 사용되지 않고있긴 함.
+      set({ isSocketConnecting: true }, false, 'socket/connecting'); //? What should be forbidden while a socket is connecting? -> QQQ?: 실제로 어떤 조건문에서도 사용되지 않고있긴 함.
 
       // TODO: 이거 원리를 까먹었다.... token 재발행 이유가 있었는데....
       try {
         const newSocket = io(BASE_URL, {
           auth: async (cb) => {
             const currentUser = auth.currentUser;
-            const token = currentUser ? await currentUser.getIdToken() : "";
+            const token = currentUser ? await currentUser.getIdToken() : '';
             cb({ token });
           },
           reconnection: true,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
-          randomizationFactor: 0.5
+          randomizationFactor: 0.5,
           // transports: ['polling', 'websocket'], // polling 먼저, 그 다음 websocket 업그레이드
           // transports: ['websocket'], // polling을 제외하고 websocket만 사용
           // upgrade: false
         });
 
-        set({ socket: newSocket }, false, "socket/assignedNew");
+        set({ socket: newSocket }, false, 'socket/assignedNew');
 
         // 이게... 왜... 아니 그냥 소켓 연결 되버렸는데 다시? reconnec이 아니라? connect()이 명백히 호출된거잖아.... 자동연결 대신에....
-        newSocket.on("connect", () => {
-          console.log("the id of the socket just connected", newSocket.id);
+        newSocket.on('connect', () => {
+          console.log('the id of the socket just connected', newSocket.id);
           set(
             { isSocketConnected: true, isSocketConnecting: false },
             false,
-            "socket/connected"
+            'socket/connected',
           );
         });
 
@@ -142,13 +142,13 @@ export const createSocketSlice: StateCreator<
         //       - [ ] test the edge case of scenario 3 [tcp down, udp down, udp up, tcp up after timeout]
         //       - [ ] check if I do Something about socket manager's "reconnect" event handler.
         //          1. newSocket.io 즉, socket자체로부터 manager로 접속하는거니까.. 뭔가 manager수준에서 자신이 manager하고 있는 socket이 null이 되면 알아서 라이브러리 수준에서 event listener를 drop하지 않을까?
-        newSocket.on("disconnect", (reason) => {
+        newSocket.on('disconnect', (reason) => {
           const { isUserInRoom, socketResetTimer } = get();
-          console.log("socket disconnection reason -> ", reason);
+          console.log('socket disconnection reason -> ', reason);
 
           // WARNING: 다양한 disconnect reason과 관계없이 공통으로 적용.
           // isSocketConnecting은... 모르겠어.. 여기서 설정 안하겠음.. 이거 왜 만들어졌는지조차 모르겠음.
-          set({ isSocketConnected: false }, false, "socket/disconnected");
+          set({ isSocketConnected: false }, false, 'socket/disconnected');
 
           // NOTE: ★ 여기 추가: 어떤 reason이든 진입하면 이전 타이머부터 무조건 clear
           if (socketResetTimer !== null) {
@@ -156,13 +156,13 @@ export const createSocketSlice: StateCreator<
             set(
               { socketResetTimer: null },
               false,
-              "socket/clear-reset-timer-on-disconnect"
+              'socket/clear-reset-timer-on-disconnect',
             );
           }
 
           if (EXPLICIT_SOCKET_DISCONNECT_REASONS.has(reason)) {
             handleProlongedDisconnectionTimeout(0);
-          } else if (reason === "ping timeout") {
+          } else if (reason === 'ping timeout') {
             // TODO: After deleting the iptables rule, socket does not recover automatically perhaps because I set it to null or sth?... by setTimeout callback.
             // I think it would be better just to remove him from the room after timeout and let him keep his socket connection reattempts.
             // No.. I set reconnection to false. Let's test this scenario again.
@@ -170,22 +170,22 @@ export const createSocketSlice: StateCreator<
 
             // cb is only going to affect users in a room. Thus, do not let cb to determine if he is in a room or not.
             isUserInRoom && handleProlongedDisconnectionTimeout(3 * 60 * 1000);
-          } else if (reason === "transport close") {
+          } else if (reason === 'transport close') {
             // NOTE: The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G)
             handleProlongedDisconnectionTimeout(3 * 60 * 1000);
             // handleProlongedDisconnectionTimeout(0);
-          } else if (reason === "transport error" || reason === "parse error") {
+          } else if (reason === 'transport error' || reason === 'parse error') {
             isUserInRoom && handleProlongedDisconnectionTimeout(0);
           }
         });
         //#endregion
 
-        newSocket.on("connect_error", (err) => {
-          console.error("[socketStore] Connection error:", err.message);
+        newSocket.on('connect_error', (err) => {
+          console.error('[socketStore] Connection error:', err.message);
           set(
             { isSocketConnected: false, isSocketConnecting: false },
             false,
-            "socket/connect_error"
+            'socket/connect_error',
           );
         });
 
@@ -262,14 +262,14 @@ export const createSocketSlice: StateCreator<
         //    2. user is not in a room => if [FE] user is in the room, leaveRoom. else do nothing
         // 2. user does not exist in the peerMap => if [FE] user is in the room, leaveRoom first.
         // QQQ: I am not 100% sure if just leaving the room is enough in the 2 right above.
-        newSocket.io.on("reconnect", () => {
+        newSocket.io.on('reconnect', () => {
           const {
             leaveRoom,
             attemptToRestartIceWithGuards,
             sendTransport,
             recvTransport,
             isUserInRoom: isUserInRoomInClient,
-            socketResetTimer
+            socketResetTimer,
           } = get();
 
           console.log("socket manager's reconnect handler is called");
@@ -280,7 +280,7 @@ export const createSocketSlice: StateCreator<
             set(
               { socketResetTimer: null },
               false,
-              "socket/initialize-reset-timer"
+              'socket/initialize-reset-timer',
             );
           }
 
@@ -291,7 +291,7 @@ export const createSocketSlice: StateCreator<
               if (res.success && res.data) {
                 const {
                   doesPeerExistInPeerMap: doesPeerExistInPeerMapInServer,
-                  isPeerInRoom: isPeerInRoomInServer
+                  isPeerInRoom: isPeerInRoomInServer,
                 } = res.data;
                 // DESIGN: 위에 주석에 해당되는 부분
                 // IMPT: 3가지 분기점 A, B, C -> [1]이것들 모두 서버로부터의 peerStatus를 가지고 판단한다. [2]그리고, 그 분기점들 내부에서 room check를 한번 해준다([FE]정보 크로스체크)
@@ -307,37 +307,37 @@ export const createSocketSlice: StateCreator<
                     //#endregion
                     if (isUserInRoomInClient) {
                       // NOTE: [2]
-                      console.log("[SS, FE] -> [Room, Room]");
+                      console.log('[SS, FE] -> [Room, Room]');
                       // TEST: tcp-socket-prolonged-disconnect 이 발생하지 않았을때 (양쪽 모두)
                       // WHAT_IF: 만약에... UDP는 안끊겼다면? 그러면 재협상은... 할 필요가 없잖아. 그것은 그런데 attemptToRestartIce()의 transport guard가 판단해줌.
                       setTimeout(() => {
                         console.log(
-                          "invoking attemptToRestartIce with send in CHECK_PEER_STATUS_IN_SERVER ack cb"
+                          'invoking attemptToRestartIce with send in CHECK_PEER_STATUS_IN_SERVER ack cb',
                         );
                         sendTransport !== null &&
                           attemptToRestartIceWithGuards(
                             sendTransport,
-                            "send",
-                            newSocket
+                            'send',
+                            newSocket,
                           );
                       }, 0);
 
                       setTimeout(() => {
                         console.log(
-                          "invoking attemptToRestartIce with recv in CHECK_PEER_STATUS_IN_SERVER ack cb"
+                          'invoking attemptToRestartIce with recv in CHECK_PEER_STATUS_IN_SERVER ack cb',
                         );
                         recvTransport !== null &&
                           attemptToRestartIceWithGuards(
                             recvTransport,
-                            "recv",
-                            newSocket
+                            'recv',
+                            newSocket,
                           );
                       }, 1000);
                     } else {
                       // IMPT: 희박 - 방에 있다가 접속 맛탱이 가서 leaveRoom을 사용자가 클릭할 때만 발생. 새로고침 해도 -> transport close, `/timer`로 이동하니까 발생.
                       // 이런 경우 재연결의 주체가 지금 이 recnnect handler인 경우... 뭐 따로 내가 다시 방에 들어오도록 강제해야하지 않을까?.. 왜냐하면.................
                       // 그냥 거기에 머무르게 하면.... 아니야 그냥 방출하던가... 서버에서... 늦게나마... 왜냐하면 지가 나갔으니까...
-                      console.log("[SS, FE] -> [Room, Lobby]");
+                      console.log('[SS, FE] -> [Room, Lobby]');
                       // TEST: tcp-socket-prolonged-disconnect 이 FE에서만 발생 -> 서버쪽 제한시간이 더 길다.
                       //#region 주저리
                       // WARNING: 다른 참가자들 입장에서는 방에 내가 참여해있는데, 실질적으로 나는 방에서 나가진 이상한 경우. 물론 당연히 채팅이나 화면 공유는 먹통이겠지?
@@ -370,18 +370,18 @@ export const createSocketSlice: StateCreator<
                     if (isUserInRoomInClient) {
                       // IMPT: 그래서 여기도 존나 희박한게, 사용자가 연결이 끊겼을때 로비에서 방으로 입장한 경우.
                       // NOTE: [2]
-                      console.log("[SS, FE] -> [Lobby, Room]"); // QQQ: 이거 가능한거야? SS에서 방에서 로비로 쫒아내고 peerMap에서 안지울 수 있나? [Lobby, Lobby] -> [No Peer, Lobby]는 가능해보이는데,
+                      console.log('[SS, FE] -> [Lobby, Room]'); // QQQ: 이거 가능한거야? SS에서 방에서 로비로 쫒아내고 peerMap에서 안지울 수 있나? [Lobby, Lobby] -> [No Peer, Lobby]는 가능해보이는데,
                       // TODO: 혹시 user가 socket연결 안된지 모르고 Lobby에 있다가 방에 입장?... 시발 진짜... 그렇게 못하게 해야지...
 
                       leaveRoom(false); // 아니다.. 이미 서버에서는 lobby로 나가져있기 때문에 나가달라고 서버에 작업 요청할 필요가 없음. 대신에 FE에서는 나가야지
                       set({
-                        forcedRoomExitReason: "tcp-socket-prolonged-disconnect"
+                        forcedRoomExitReason: 'tcp-socket-prolonged-disconnect',
                       });
                       // TEST: tcp-socket-prolonged-disconnect 이 SS에서만 발생 -> FE쪽 제한시간이 더 길다.
                       // QQQ: FE쪽 제한시간이 더 길다 -> 이렇게 할 필요가 있나? 뭐 그냥 나는 동일하게 설정했을때 우연에 의해 이렇게 저렇게 모두 가능한 시나리오를 작성하긴 했는데.. 현타온다.
                     } else {
                       // QQQ: Lobby에 존재할 수가 있나?.... -> timeout cb이 실행 안되서 서버에서 정리 안되고 애초에 로비에서 끊기고 그냥 로비에 머물러있을 때 재접된 경우.
-                      console.log("[SS, FE] -> [Lobby, Lobby]");
+                      console.log('[SS, FE] -> [Lobby, Lobby]');
                       // TEST: tcp-socket-prolonged-disconnect 이 양쪽에서 모두 발생
                     }
                   }
@@ -407,15 +407,15 @@ export const createSocketSlice: StateCreator<
                 //   }
                 // }
               } else {
-                console.warn("dead path is reached. Something went wrong.");
+                console.warn('dead path is reached. Something went wrong.');
               }
-            }
+            },
           );
         });
         //#endregion
 
         newSocket.on(
-          "PRODUCER_PAUSED",
+          'PRODUCER_PAUSED',
           ({ producingPeerId }: { producingPeerId: string }) => {
             const correspondingConsumer =
               get().consumersByPeerId.get(producingPeerId);
@@ -430,26 +430,26 @@ export const createSocketSlice: StateCreator<
 
                 updatedLayers.set(correspondingConsumer.id, {
                   ...existingLayerState,
-                  isPausedByProducer: true
+                  isPausedByProducer: true,
                 });
 
                 return { consumerLayers: updatedLayers };
               },
               false,
-              "room/consumerProducerPaused"
+              'room/consumerProducerPaused',
             );
-          }
+          },
         );
 
         newSocket.on(
-          "PRODUCER_RESUMED",
+          'PRODUCER_RESUMED',
           ({ producingPeerId }: { producingPeerId: string }) => {
             const correspondingConsumer =
               get().consumersByPeerId.get(producingPeerId);
             if (!correspondingConsumer) return;
 
             const isLocallyPaused = get().consumerLayers.get(
-              correspondingConsumer.id
+              correspondingConsumer.id,
             )?.isPausedLocallyByViewer;
 
             if (!isLocallyPaused) {
@@ -464,19 +464,19 @@ export const createSocketSlice: StateCreator<
 
                 updatedLayers.set(correspondingConsumer.id, {
                   ...existingLayerState,
-                  isPausedByProducer: false
+                  isPausedByProducer: false,
                 });
 
                 return { consumerLayers: updatedLayers };
               },
               false,
-              "room/consumerProducerResumed"
+              'room/consumerProducerResumed',
             );
-          }
+          },
         );
       } catch (error) {
-        console.error("[socketStore] Setup failed", error);
-        set({ isSocketConnecting: false }, false, "socket/setupFailed");
+        console.error('[socketStore] Setup failed', error);
+        set({ isSocketConnecting: false }, false, 'socket/setupFailed');
       }
     },
 
@@ -486,13 +486,13 @@ export const createSocketSlice: StateCreator<
     disconnect: () => {
       const { socket } = get();
       if (socket) {
-        socket.off("PRODUCER_PAUSED");
-        socket.off("PRODUCER_RESUMED");
+        socket.off('PRODUCER_PAUSED');
+        socket.off('PRODUCER_RESUMED');
         socket.disconnect();
         set(
           { socket: null, isSocketConnected: false, isSocketConnecting: false },
           false,
-          "socket/manualDisconnect"
+          'socket/manualDisconnect',
         );
       }
     },
@@ -503,6 +503,6 @@ export const createSocketSlice: StateCreator<
       if (socket !== null) {
         socket.emit(EventNames.LOG_OUT);
       }
-    }
+    },
   };
 };

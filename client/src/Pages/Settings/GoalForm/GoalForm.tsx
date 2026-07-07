@@ -1,36 +1,36 @@
-import { useEffect, useRef, useState } from "react";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
-import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { RESOURCE, SUB_SET } from "../../../constants";
-import { DailyGoals } from "../../../types/clientStatesType";
+import { useEffect, useRef, useState } from 'react';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
+import { axiosInstance } from '../../../axios-and-error-handling/axios-instances';
+import { RESOURCE, SUB_SET } from '../../../constants';
+import { DailyGoals } from '../../../types/clientStatesType';
 
-import BlockNumberInput from "../../../ReusableComponents/Inputs/BlockNumberInput";
+import BlockNumberInput from '../../../ReusableComponents/Inputs/BlockNumberInput';
 
 export default function GoalForm() {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Global states
   const weeklyGoal = useBoundedPomoInfoStore((state) => state.goals.weeklyGoal);
   const dailyGoals = useBoundedPomoInfoStore((state) => state.goals.dailyGoals);
   const setWeeklyMinimum = useBoundedPomoInfoStore(
-    (state) => state.setWeeklyMinimum
+    (state) => state.setWeeklyMinimum,
   );
   const setWeeklyIdeal = useBoundedPomoInfoStore(
-    (state) => state.setWeeklyIdeal
+    (state) => state.setWeeklyIdeal,
   );
   const setDailyGoals = useBoundedPomoInfoStore((state) => state.setDailyGoals);
 
   // Local states
   const [weeklyMinimumInput, setWeeklyMinimumInput] = useState<number>(
-    weeklyGoal.minimum
+    weeklyGoal.minimum,
   );
   const [weeklyIdealInput, setWeeklyIdealInput] = useState<number>(
-    weeklyGoal.ideal
+    weeklyGoal.ideal,
   );
   const [dailyGoalsInputs, setDailyGoalsInputs] =
     useState<DailyGoals>(dailyGoals);
   const index = useRef<number>(0);
-  const typeToUpdate = useRef<"minimum" | "ideal">("minimum");
+  const typeToUpdate = useRef<'minimum' | 'ideal'>('minimum');
 
   // debounced values
   const [debouncedWeeklyMinimumInput, setDebouncedWeeklyMinimumInput] =
@@ -46,26 +46,26 @@ export default function GoalForm() {
 
   //#region Input Change Handlers
   function handleWeeklyMinimumInputChange(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) {
     const newMinimum = +event.target.value;
     setWeeklyMinimumInput(newMinimum);
   }
 
   function handleWeeklyIdealInputChange(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) {
     const newIdeal = +event.target.value;
     setWeeklyIdealInput(newIdeal);
   }
 
   function handleDailyMinimumInputsChange(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) {
     const newMinimum = +event.target.value;
     const idxOfCurrentTarget = event.currentTarget.dataset.index as string;
     index.current = Number(idxOfCurrentTarget);
-    typeToUpdate.current = "minimum";
+    typeToUpdate.current = 'minimum';
     //#region Original
     // const correspondingIdeal =
     //   dailyGoalsInputs[Number(idxOfCurrentTarget)].ideal;
@@ -87,7 +87,7 @@ export default function GoalForm() {
     const inputsCloned = structuredClone(dailyGoalsInputs);
     const inputsUpdated = inputsCloned.map((goal, idx) => {
       if (idx === Number(idxOfCurrentTarget)) {
-        goal["minimum"] = newMinimum;
+        goal['minimum'] = newMinimum;
       }
       return goal;
     }) as DailyGoals;
@@ -96,17 +96,17 @@ export default function GoalForm() {
   }
 
   function handleDailyIdealInputsChange(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) {
     const newIdeal = +event.target.value;
     const idxOfCurrentTarget = event.currentTarget.dataset.index as string;
     index.current = Number(idxOfCurrentTarget);
-    typeToUpdate.current = "ideal";
+    typeToUpdate.current = 'ideal';
 
     const inputsCloned = structuredClone(dailyGoalsInputs);
     const inputsUpdated = inputsCloned.map((goal, idx) => {
       if (idx === Number(idxOfCurrentTarget)) {
-        goal["ideal"] = newIdeal;
+        goal['ideal'] = newIdeal;
       }
       return goal;
     }) as DailyGoals;
@@ -137,7 +137,7 @@ export default function GoalForm() {
           dailyGoalsInputs[index.current].minimum,
           dailyGoalsInputs[index.current].ideal,
           typeToUpdate.current,
-          "daily"
+          'daily',
         )
       )
         setDebouncedDailyGoalsInputs(dailyGoalsInputs);
@@ -154,8 +154,8 @@ export default function GoalForm() {
           validateGoalInputs(
             weeklyMinimumInput,
             weeklyIdealInput,
-            "minimum",
-            "weekly"
+            'minimum',
+            'weekly',
           )
         )
           setDebouncedWeeklyMinimumInput(weeklyMinimumInput);
@@ -172,8 +172,8 @@ export default function GoalForm() {
           validateGoalInputs(
             weeklyMinimumInput,
             weeklyIdealInput,
-            "ideal",
-            "weekly"
+            'ideal',
+            'weekly',
           )
         )
           setDebouncedWeeklyIdealInput(weeklyIdealInput);
@@ -202,8 +202,8 @@ export default function GoalForm() {
     //To prevent setMinimum() from running on mount
     if (debouncedWeeklyMinimumInput !== null) {
       console.log(
-        "debouncedMinimumInput to set goal.minimum",
-        debouncedWeeklyMinimumInput
+        'debouncedMinimumInput to set goal.minimum',
+        debouncedWeeklyMinimumInput,
       );
       setWeeklyMinimum(debouncedWeeklyMinimumInput);
       //* 1. clone data to persist
@@ -218,8 +218,8 @@ export default function GoalForm() {
   useEffect(() => {
     if (debouncedWeeklyIdealInput !== null) {
       console.log(
-        "debouncedIdealInput to set goal.ideal",
-        debouncedWeeklyIdealInput
+        'debouncedIdealInput to set goal.ideal',
+        debouncedWeeklyIdealInput,
       );
       setWeeklyIdeal(debouncedWeeklyIdealInput);
       //API
@@ -237,35 +237,35 @@ export default function GoalForm() {
     <form>
       <div
         style={{
-          display: "flex",
-          flexDirection: "row",
-          flexWrap: "wrap",
-          rowGap: "6px"
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          rowGap: '6px',
         }}
       >
         <div>
           <div
             style={{
-              position: "relative",
-              top: "39px",
-              width: "50px",
-              fontStyle: "italic",
-              fontWeight: "bold",
-              textAlign: "center",
-              paddingRight: "6px"
+              position: 'relative',
+              top: '39px',
+              width: '50px',
+              fontStyle: 'italic',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              paddingRight: '6px',
             }}
           >
             Min
           </div>
           <div
             style={{
-              position: "relative",
-              top: "66px",
-              width: "50px",
-              fontStyle: "italic",
-              fontWeight: "bold",
-              textAlign: "center",
-              paddingRight: "6px"
+              position: 'relative',
+              top: '66px',
+              width: '50px',
+              fontStyle: 'italic',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              paddingRight: '6px',
             }}
           >
             Ideal
@@ -273,8 +273,8 @@ export default function GoalForm() {
         </div>
 
         {dailyGoalsInputs.map((goal, idx) => (
-          <div style={{ fontWeight: "bold", fontStyle: "italic" }} key={idx}>
-            <div style={{ textAlign: "center" }}>{days[idx]}</div>
+          <div style={{ fontWeight: 'bold', fontStyle: 'italic' }} key={idx}>
+            <div style={{ textAlign: 'center' }}>{days[idx]}</div>
             <BlockNumberInput
               value={goal.minimum}
               index={idx}
@@ -289,16 +289,16 @@ export default function GoalForm() {
         ))}
         <div
           style={{
-            width: "4px",
-            backgroundColor: "#8c8c8c",
-            border: "1px solid #8c8c8c",
-            borderRadius: "2px",
-            marginLeft: "10px",
-            marginRight: "10px"
+            width: '4px',
+            backgroundColor: '#8c8c8c',
+            border: '1px solid #8c8c8c',
+            borderRadius: '2px',
+            marginLeft: '10px',
+            marginRight: '10px',
           }}
         ></div>
         <div>
-          <div style={{ fontWeight: "bold", fontStyle: "italic" }}>Weekly</div>
+          <div style={{ fontWeight: 'bold', fontStyle: 'italic' }}>Weekly</div>
           <BlockNumberInput
             value={weeklyMinimumInput}
             onChange={handleWeeklyMinimumInputChange}
@@ -316,32 +316,32 @@ export default function GoalForm() {
 function validateGoalInputs(
   minimum: number,
   ideal: number,
-  kind: "minimum" | "ideal",
-  type: "weekly" | "daily"
+  kind: 'minimum' | 'ideal',
+  type: 'weekly' | 'daily',
 ) {
   let flag = true;
-  let message = "";
+  let message = '';
 
   if (minimum > ideal) {
-    if (kind === "minimum") {
-      message = "Minimum should not be greater than ideal";
+    if (kind === 'minimum') {
+      message = 'Minimum should not be greater than ideal';
       flag = false;
     }
-    if (kind === "ideal") {
-      message = "Ideal should be greater than or equal to minimum";
+    if (kind === 'ideal') {
+      message = 'Ideal should be greater than or equal to minimum';
       flag = false;
     }
   }
 
   if (minimum < 0 || ideal < 0) {
-    message = "Goal should not be negative";
+    message = 'Goal should not be negative';
     flag = false;
   }
-  if (type === "daily" && (minimum > 24 || ideal > 24)) {
+  if (type === 'daily' && (minimum > 24 || ideal > 24)) {
     message = "You can't focus more than 24h per day";
     flag = false;
   }
-  if (type === "weekly" && (minimum > 100 || ideal > 100)) {
+  if (type === 'weekly' && (minimum > 100 || ideal > 100)) {
     message = "Focusing more than 100h per week is unhealthy. Please don't";
     flag = false;
   }

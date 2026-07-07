@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
 interface NumberInputProps {
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -23,7 +23,7 @@ const StyledBlockNumberInput = styled.input`
 const BlockNumberInput: React.FC<NumberInputProps> = ({
   onChange,
   value,
-  index
+  index,
 }) => {
   return (
     <StyledBlockNumberInput

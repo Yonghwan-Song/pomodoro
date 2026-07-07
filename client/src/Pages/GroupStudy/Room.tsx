@@ -1,16 +1,16 @@
 /** @jsxImportSource @emotion/react */
 /* eslint-disable react/no-unknown-property */
-import { css } from "@emotion/react";
-import { useEffect, useCallback, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useConnectionStore } from "../../zustand-stores/connectionStore";
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import { ChatBox } from "./components/chat/ChatBox";
-import { RoomControls } from "./components/room/RoomControls";
-import { GlobalLayerControls } from "./components/room/GlobalLayerControls";
-import { VideoGrid } from "./components/room/VideoGrid";
-import { RoomTimer } from "./RoomTimer";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
+import { css } from '@emotion/react';
+import { useEffect, useCallback, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useConnectionStore } from '../../zustand-stores/connectionStore';
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { ChatBox } from './components/chat/ChatBox';
+import { RoomControls } from './components/room/RoomControls';
+import { GlobalLayerControls } from './components/room/GlobalLayerControls';
+import { VideoGrid } from './components/room/VideoGrid';
+import { RoomTimer } from './RoomTimer';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
 
 const roomLayoutCss = css`
   display: grid;
@@ -64,7 +64,9 @@ const mobileFloatingFabCss = css`
   background: linear-gradient(135deg, #2c7be5, #4da3ff);
   color: #ffffff;
   box-shadow: 0 12px 26px rgba(16, 24, 40, 0.34);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 
   &:hover {
     transform: translateY(-2px);
@@ -132,15 +134,15 @@ export function Room() {
   const isDeviceLoaded = useConnectionStore((s) => s.isDeviceLoaded);
   const isUserInRoom = useConnectionStore((s) => s.isUserInRoom);
   const forcedRoomExitReason = useConnectionStore(
-    (s) => s.forcedRoomExitReason
+    (s) => s.forcedRoomExitReason,
   );
   const isSendTransportReady = useConnectionStore(
-    (s) => s.isSendTransportReady
+    (s) => s.isSendTransportReady,
   );
   const remoteStreams = useConnectionStore((s) => s.remoteStreams);
   const peerNicknames = useConnectionStore((s) => s.peerNicknames);
   const peerTodayTotalDurations = useConnectionStore(
-    (s) => s.peerTodayTotalDurations
+    (s) => s.peerTodayTotalDurations,
   );
   const participants = useConnectionStore((s) => s.participants);
   const chatMessages = useConnectionStore((s) => s.chatMessages);
@@ -149,7 +151,7 @@ export function Room() {
   const createTransports = useConnectionStore((s) => s.createTransports); // NOTE: Moving state or actions out of RoomSlice does not require import changes here, since they are still accessed through the combined connection store.
 
   const myTodayTotalDuration = useBoundedPomoInfoStore(
-    (state) => state.todayTotalDuration
+    (state) => state.todayTotalDuration,
   );
 
   // useAuthContext()가 초기화 전이거나 Provider 외부일 때 null을 반환할 수 있습니다.
@@ -161,7 +163,7 @@ export function Room() {
   // stream이 없으면 자동으로 카메라 권한 요청
   useEffect(() => {
     if (!stream && connected) {
-      console.log("[Room] No stream found, obtaining stream...");
+      console.log('[Room] No stream found, obtaining stream...');
       obtainStream();
     }
   }, [stream, connected, obtainStream]);
@@ -170,17 +172,17 @@ export function Room() {
   useEffect(() => {
     if (forcedRoomExitReason) {
       // QQQ: App.tsx에서 `/group-study`로 navigate 했을 때, 사실 이 copmonent가 왜 마운트 되는지 잘 모르겠음. 그런데 그냥 넘어가겠음.
-      console.log("[Room] skipping auto-join due to forced exit", {
+      console.log('[Room] skipping auto-join due to forced exit', {
         forcedRoomExitReason,
-        roomId
+        roomId,
       });
       return;
     }
 
     if (socket && connected && roomId && !isUserInRoom) {
       joinRoom(roomId, (error) => {
-        alert("방 참가에 실패했습니다: " + error);
-        navigate("/group-study");
+        alert('방 참가에 실패했습니다: ' + error);
+        navigate('/group-study');
       });
     }
   }, [
@@ -190,7 +192,7 @@ export function Room() {
     isUserInRoom,
     forcedRoomExitReason,
     joinRoom,
-    navigate
+    navigate,
   ]);
 
   useEffect(() => {
@@ -206,33 +208,33 @@ export function Room() {
   // 방 나가기 (UI → store action → navigate)
   const handleLeaveRoom = useCallback(() => {
     leaveRoom();
-    navigate("/group-study");
+    navigate('/group-study');
   }, [leaveRoom, navigate]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         setIsMobileChatOpen(false);
       }
     };
 
-    window.addEventListener("keydown", handleEscape);
+    window.addEventListener('keydown', handleEscape);
     return () => {
-      window.removeEventListener("keydown", handleEscape);
+      window.removeEventListener('keydown', handleEscape);
     };
   }, []);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
     const handleDesktop = (event: MediaQueryListEvent) => {
       if (event.matches) {
         setIsMobileChatOpen(false);
       }
     };
 
-    mediaQuery.addEventListener("change", handleDesktop);
+    mediaQuery.addEventListener('change', handleDesktop);
     return () => {
-      mediaQuery.removeEventListener("change", handleDesktop);
+      mediaQuery.removeEventListener('change', handleDesktop);
     };
   }, []);
 
@@ -265,7 +267,7 @@ export function Room() {
         <aside css={desktopChatCss}>
           <ChatBox
             messages={chatMessages}
-            mySocketId={socket?.id ?? ""}
+            mySocketId={socket?.id ?? ''}
             layout="sidebar"
           />
         </aside>
@@ -274,9 +276,9 @@ export function Room() {
         type="button"
         css={mobileFloatingFabCss}
         onClick={() => setIsMobileChatOpen((v) => !v)}
-        aria-label={isMobileChatOpen ? "Close chat" : "Open chat"}
+        aria-label={isMobileChatOpen ? 'Close chat' : 'Open chat'}
       >
-        <span css={mobileFabIconCss}>{isMobileChatOpen ? "✕" : "💬"}</span>
+        <span css={mobileFabIconCss}>{isMobileChatOpen ? '✕' : '💬'}</span>
       </button>
       {/* Mobile chat overlay */}
       {isMobileChatOpen && (
@@ -289,7 +291,7 @@ export function Room() {
             <section css={mobilePanelCss}>
               <ChatBox
                 messages={chatMessages}
-                mySocketId={socket?.id ?? ""}
+                mySocketId={socket?.id ?? ''}
                 layout="sidebar"
               />
             </section>

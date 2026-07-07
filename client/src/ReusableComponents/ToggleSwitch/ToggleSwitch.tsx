@@ -1,7 +1,7 @@
-import ToggleSwitchBackground from "./ToggleSwitchBackground";
-import ToggleSwitchButton from "./ToggleSwitchButton";
-import { StyledToggleSwitchContainer } from "../styles/ToggleSwitchContainer.styled";
-import { StyledLabelForSwitch } from "../styles/ToggleSwitchLabel.styled";
+import ToggleSwitchBackground from './ToggleSwitchBackground';
+import ToggleSwitchButton from './ToggleSwitchButton';
+import { StyledToggleSwitchContainer } from '../styles/ToggleSwitchContainer.styled';
+import { StyledLabelForSwitch } from '../styles/ToggleSwitchLabel.styled';
 
 type ToggleSwitchPropsType = {
   labelName: string;
@@ -41,13 +41,13 @@ export default function ToggleSwitch({
   backgroundColorForOff,
   backgroundColorForSwitch,
   isWithBorder = false,
-  onChange
+  onChange,
 }: ToggleSwitchPropsType) {
   return (
     <div
       style={{
-        border: isWithBorder ? "1px solid black" : "none",
-        borderRadius: "0.5em"
+        border: isWithBorder ? '1px solid black' : 'none',
+        borderRadius: '0.5em',
       }}
     >
       <input
@@ -58,9 +58,9 @@ export default function ToggleSwitch({
         onChange={onChange}
         style={{
           opacity: 0,
-          position: "absolute",
-          left: "-9000px",
-          top: "-9000px"
+          position: 'absolute',
+          left: '-9000px',
+          top: '-9000px',
         }}
       />
 
@@ -73,9 +73,9 @@ export default function ToggleSwitch({
 
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between"
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
           {/* 이런식으로 도면 링크 걸어주기 */}
