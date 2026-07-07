@@ -1,4 +1,4 @@
-import styled, { css } from "styled-components";
+import styled, { css } from 'styled-components';
 
 export type StyledToggleSwitchButtonPropsType = {
   backgroundColorForSwitch: string;
@@ -14,11 +14,11 @@ export const StyledToggleSwitchButton = styled.div<StyledToggleSwitchButtonProps
     let distanceToMove = unitSize || 100;
     if (isSwitchOn === true) {
       return css`
-        left: ${distanceToMove + edgeWidth + "px"};
+        left: ${distanceToMove + edgeWidth + 'px'};
       `;
     } else {
       return css`
-        left: ${edgeWidth + "px"};
+        left: ${edgeWidth + 'px'};
       `;
     }
   }};
@@ -27,8 +27,8 @@ export const StyledToggleSwitchButton = styled.div<StyledToggleSwitchButtonProps
   transition-duration: 500ms;
   /* transition-timing-function: ease; */
 
-  width: ${({ unitSize }) => (unitSize ? unitSize + "px" : "100px")};
-  height: ${({ unitSize }) => (unitSize ? unitSize + "px" : "100px")};
+  width: ${({ unitSize }) => (unitSize ? unitSize + 'px' : '100px')};
+  height: ${({ unitSize }) => (unitSize ? unitSize + 'px' : '100px')};
 
   cursor: pointer;
   border-radius: 100%;

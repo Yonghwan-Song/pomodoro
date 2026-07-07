@@ -1,4 +1,4 @@
-import styles from "./Second.module.css";
+import styles from './Second.module.css';
 
 type SecondProps = {
   seconds: number;

@@ -1,17 +1,17 @@
-import { RecType } from "../types/clientStatesType";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { DynamicCache, openCache } from "../index";
-import { CacheName, BASE_URL, RESOURCE } from "../constants";
+import { RecType } from '../types/clientStatesType';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { DynamicCache, openCache } from '../index';
+import { CacheName, BASE_URL, RESOURCE } from '../constants';
 
 export async function persistRecOfTodayToServer(
   record: RecType,
-  authGuard: unknown
+  authGuard: unknown,
 ) {
   try {
     // caching
     let cache = DynamicCache || (await openCache(CacheName));
     let resOfRecordOfToday = await cache.match(
-      BASE_URL + RESOURCE.TODAY_RECORDS
+      BASE_URL + RESOURCE.TODAY_RECORDS,
     );
     if (resOfRecordOfToday !== undefined) {
       let recordsOfToday = await resOfRecordOfToday.json();
@@ -20,7 +20,7 @@ export async function persistRecOfTodayToServer(
       });
       await cache.put(
         BASE_URL + RESOURCE.TODAY_RECORDS,
-        new Response(JSON.stringify(recordsOfToday))
+        new Response(JSON.stringify(recordsOfToday)),
       );
     }
 

@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import * as mediasoupClient from "mediasoup-client";
-import * as EventNames from "../../common/webrtc/eventNames";
-import { useSocket } from "../../Custom-Hooks/useSocket";
-import { useUserMedia } from "../../Custom-Hooks/useUserMedia";
-import { Outlet } from "react-router-dom";
-import { type ConnectionInfoContextType } from "./hooks/useSocketInfoContext";
-import { Device, types as mediasoupTypes } from "mediasoup-client";
+import { useState, useEffect, useRef } from 'react';
+import * as mediasoupClient from 'mediasoup-client';
+import * as EventNames from '../../common/webrtc/eventNames';
+import { useSocket } from '../../Custom-Hooks/useSocket';
+import { useUserMedia } from '../../Custom-Hooks/useUserMedia';
+import { Outlet } from 'react-router-dom';
+import { type ConnectionInfoContextType } from './hooks/useSocketInfoContext';
+import { Device, types as mediasoupTypes } from 'mediasoup-client';
 
 export default function GroupStudy() {
   const { socket, connected } = useSocket();
@@ -31,9 +31,9 @@ export default function GroupStudy() {
       const handlerName = await mediasoupClient.detectDeviceAsync();
 
       if (handlerName) {
-        console.log("detected handler: %s", handlerName);
+        console.log('detected handler: %s', handlerName);
       } else {
-        console.warn("no suitable handler found for current browser/device");
+        console.warn('no suitable handler found for current browser/device');
       }
     }
     checkHandler();
@@ -47,10 +47,10 @@ export default function GroupStudy() {
       try {
         deviceRef.current = await Device.factory();
         setIsDeviceCreated(true);
-        console.log("deviceRef.current", deviceRef.current);
+        console.log('deviceRef.current', deviceRef.current);
       } catch (error: unknown) {
-        if ((error as Error).name === "UnsupportedError") {
-          console.warn("browser not supported");
+        if ((error as Error).name === 'UnsupportedError') {
+          console.warn('browser not supported');
         }
       }
     }
@@ -77,29 +77,29 @@ export default function GroupStudy() {
     ) {
       try {
         if (!deviceRef.current || !socket) {
-          console.warn("Device or socket not ready");
+          console.warn('Device or socket not ready');
           return;
         }
-        
+
         if (deviceRef.current.loaded) {
-          console.log("Device already loaded, skipping...");
+          console.log('Device already loaded, skipping...');
           setIsDeviceLoaded(true);
           return;
         }
         await deviceRef.current.load({ routerRtpCapabilities });
-        
+
         socket.emit(
           EventNames.SET_DEVICE_RTP_CAPABILITIES,
           deviceRef.current.rtpCapabilities,
           () => {
             console.log(
-              "[GroupStudy] Server confirmed RTP capabilities received",
+              '[GroupStudy] Server confirmed RTP capabilities received',
             );
             setIsDeviceLoaded(true);
           },
         );
       } catch (error) {
-        console.warn("error while loading routerRtpCapabilities", error);
+        console.warn('error while loading routerRtpCapabilities', error);
       }
     }
 

@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   RecType,
   SessionType,
   DurationType,
-} from "../../../types/clientStatesType";
-import Timeline from "./Timeline";
-import { MINIMUMS, VH_RATIO } from "../../../constants";
+} from '../../../types/clientStatesType';
+import Timeline from './Timeline';
+import { MINIMUMS, VH_RATIO } from '../../../constants';
 
 type RecOfTodayProps = {
   records: RecType[];
@@ -48,10 +48,10 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
           // curIndex: starts from 0 (on first call, 0 if `initialValue` was specified, otherwise 1)
           return arrOfStartAndEnd.reduce<DurationType[]>(
             (accu, curVal, curIndex, arr) => {
-              let subject: "pomo" | "break" | "pause" =
+              let subject: 'pomo' | 'break' | 'pause' =
                 // The first start cannot be the start of pause.
                 // It must be either the start of pomodoro or break.
-                (curIndex + 1) % 2 === 1 ? rec.kind : "pause";
+                (curIndex + 1) % 2 === 1 ? rec.kind : 'pause';
               if (curIndex + 1 < arr.length) {
                 return [
                   ...accu,
@@ -66,9 +66,9 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
                 return [...accu];
               }
             },
-            []
+            [],
           );
-        })
+        }),
     );
   }, [records]);
 
@@ -79,7 +79,7 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
   return (
     <div
       style={{
-        position: "relative",
+        position: 'relative',
         height: `max(${VH_RATIO.TIMELINE + VH_RATIO.DETAIL_AREA}vh, ${
           MINIMUMS.TIMELINE + MINIMUMS.DETAIL_AREA
         }px)`,

@@ -1,5 +1,5 @@
-import { memo } from "react";
-import OneHour from "./OneHour";
+import { memo } from 'react';
+import OneHour from './OneHour';
 
 const Scale = memo(function Scale() {
   return (

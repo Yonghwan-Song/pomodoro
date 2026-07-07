@@ -1,18 +1,18 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { types as mediasoupTypes } from "mediasoup-client";
-import * as EventNames from "../../common/webrtc/eventNames";
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { types as mediasoupTypes } from 'mediasoup-client';
+import * as EventNames from '../../common/webrtc/eventNames';
 import type {
   AckResponse,
   ConsumerOptionsExtended,
   ProducerPayload,
   SocketID,
-} from "../../common/webrtc/payloadRelated";
-import type { ProducerInfo } from "./typeDef";
-import { useConnectionInfoContext } from "./hooks/useSocketInfoContext";
-import { ChatBox } from "./components/chat/ChatBox";
-import { RoomControls } from "./components/room/RoomControls";
-import { VideoGrid } from "./components/room/VideoGrid";
+} from '../../common/webrtc/payloadRelated';
+import type { ProducerInfo } from './typeDef';
+import { useConnectionInfoContext } from './hooks/useSocketInfoContext';
+import { ChatBox } from './components/chat/ChatBox';
+import { RoomControls } from './components/room/RoomControls';
+import { VideoGrid } from './components/room/VideoGrid';
 
 export function Room() {
   const {
@@ -26,7 +26,7 @@ export function Room() {
     startSharing,
     stopSharing,
   } = useConnectionInfoContext();
-  const { roomId } = useParams<{ roomId: string }>(); 
+  const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const [isRoomJoined, setIsRoomJoined] = useState(false);
 
@@ -35,7 +35,7 @@ export function Room() {
   useEffect(() => {
     if (!stream && connected) {
       console.log(
-        "[Room] No stream found, obtaining stream for direct room access...",
+        '[Room] No stream found, obtaining stream for direct room access...',
       );
       obtainStream();
     }
@@ -103,10 +103,10 @@ export function Room() {
         if (response.success && response.data?.left) {
           sendTransportRef.current?.close();
           recvTransportRef.current?.close();
-          console.log("Left room successfully");
-          navigate("/group-study");
+          console.log('Left room successfully');
+          navigate('/group-study');
         } else {
-          console.error("Failed to leave room:", response.error);
+          console.error('Failed to leave room:', response.error);
           hasLeftRoomRef.current = false;
         }
       },
@@ -128,7 +128,7 @@ export function Room() {
         socketRef.current.emit(EventNames.LEAVE_ROOM);
       }
     };
-  }, []); 
+  }, []);
 
   useEffect(() => {
     if (!socket || !connected || !roomId || isRoomJoined) return;
@@ -149,26 +149,26 @@ export function Room() {
         }>,
       ) => {
         if (response.success && response.data) {
-          console.log("Room joined successfully:", response.data);
+          console.log('Room joined successfully:', response.data);
           setIsRoomJoined(true);
 
           if (response.data.existingProducers.length > 0) {
             console.log(
-              "(EventNames.JOIN_ROOM) Existing producers:",
+              '(EventNames.JOIN_ROOM) Existing producers:',
               response.data.existingProducers,
             );
             setProducersList(
               response.data.existingProducers.map((p) => ({
                 ...p,
-                kind: p.kind as "video" | "audio",
+                kind: p.kind as 'video' | 'audio',
                 isBeingConsumed: false,
               })),
             );
           }
         } else {
-          console.error("Failed to join room:", response.error);
-          alert("방 참가에 실패했습니다: " + response.error);
-          navigate("/group-study");
+          console.error('Failed to join room:', response.error);
+          alert('방 참가에 실패했습니다: ' + response.error);
+          navigate('/group-study');
         }
       },
     );
@@ -177,7 +177,7 @@ export function Room() {
   useEffect(() => {
     if (socket) {
       const updateProducersList = (payloads: ProducerPayload[]) => {
-        console.log("New producers:", payloads);
+        console.log('New producers:', payloads);
         setProducersList((prev) => [
           ...prev,
           ...payloads.map((payload) => ({
@@ -197,7 +197,7 @@ export function Room() {
   useEffect(() => {
     if (socket) {
       socket.on(EventNames.ROOM_PEER_JOINED, (payload: { peerId: string }) => {
-        console.log("New peer joined:", payload);
+        console.log('New peer joined:', payload);
       });
       return () => {
         socket.off(EventNames.ROOM_PEER_JOINED);
@@ -211,7 +211,7 @@ export function Room() {
     if (!socket) return;
 
     producersList.forEach((producer) => {
-      if (producer.kind !== "video") return;
+      if (producer.kind !== 'video') return;
 
       if (!producer.isBeingConsumed) {
         setProducersList((prev) =>
@@ -265,7 +265,7 @@ export function Room() {
                 const newStream = new MediaStream([track]);
                 handleNewRemoteStream(peerId, newStream);
 
-                consumer.on("transportclose", () => {
+                consumer.on('transportclose', () => {
                   console.log(`Consumer transport closed for peer: ${peerId}`);
                   setConsumersByPeerId((prev) => {
                     const newMap = new Map(prev);
@@ -275,12 +275,12 @@ export function Room() {
                   handleStreamClosed(peerId);
                 });
 
-                consumer.on("trackended", () => {
+                consumer.on('trackended', () => {
                   console.log(`Track from peer ${peerId} ended`);
                   handleStreamClosed(peerId);
                 });
               } catch (error) {
-                console.error("Error creating consumer:", error);
+                console.error('Error creating consumer:', error);
               }
             }
           },
@@ -288,7 +288,7 @@ export function Room() {
       }
     });
   }, [
-    producersList, 
+    producersList,
     handleNewRemoteStream,
     socket,
     handleStreamClosed,
@@ -299,7 +299,7 @@ export function Room() {
   useEffect(() => {
     function handleProducerClosed(payload: { producerId: string }) {
       const { producerId } = payload;
-      console.log("producerId that has been closed", producerId);
+      console.log('producerId that has been closed', producerId);
 
       setProducersList((prev) => {
         const producer = prev.find((p) => p.producerId === producerId);
@@ -354,7 +354,7 @@ export function Room() {
         );
         if (sendTransport) {
           console.log(
-            "verify: local send-transport has been created",
+            'verify: local send-transport has been created',
             sendTransport,
           );
           sendTransportRef.current = sendTransport;
@@ -362,7 +362,7 @@ export function Room() {
           setIsSendTransportCreatedLocally(true);
         }
       } catch (error) {
-        console.warn("error inside handleWebRtcTransportResponse", error);
+        console.warn('error inside handleWebRtcTransportResponse', error);
       }
     }
     return () => {
@@ -415,7 +415,7 @@ export function Room() {
           webRtcTransportOptions,
         );
         console.log(
-          "verify: local recv-transport has been created",
+          'verify: local recv-transport has been created',
           recvTransport,
         );
         if (recvTransport) {
@@ -423,7 +423,7 @@ export function Room() {
           setIsRecvTransportCreatedLocally(true);
         }
       } catch (error) {
-        console.warn("error inside createRecvTransportLocally", error);
+        console.warn('error inside createRecvTransportLocally', error);
       }
     }
   }, [connected, isDeviceLoaded, hasMediaPermission]);
@@ -431,7 +431,7 @@ export function Room() {
   useEffect(() => {
     if (isSendTransportCreatedLocally) {
       sendTransportRef.current!.on(
-        "connect",
+        'connect',
         ({ dtlsParameters }, callback, errback) => {
           try {
             if (socket !== null && sendTransportRef.current !== null) {
@@ -443,10 +443,10 @@ export function Room() {
                 },
                 (ackResponse: AckResponse) => {
                   if (ackResponse.success) {
-                    console.log("Send transport connected successfully");
+                    console.log('Send transport connected successfully');
                     callback();
                   } else {
-                    errback(new Error(ackResponse.error || "Unknown error"));
+                    errback(new Error(ackResponse.error || 'Unknown error'));
                   }
                 },
               );
@@ -458,22 +458,22 @@ export function Room() {
       );
 
       sendTransportRef.current!.on(
-        "produce",
+        'produce',
         (parameters, callback, errback) => {
           socket!.emit(
             EventNames.PRODUCE,
             {
               transportId: sendTransportRef.current!.id,
-              kind: "video", 
+              kind: 'video',
               rtpParameters: parameters.rtpParameters,
             },
             (ackResponse: AckResponse<{ producerId: string }>) => {
               if (ackResponse.success && ackResponse.data) {
-                console.log("Produce success", ackResponse.data);
+                console.log('Produce success', ackResponse.data);
                 callback({ id: ackResponse.data.producerId });
               } else {
-                console.log("Produce failed", ackResponse.error);
-                errback(new Error(ackResponse.error || "Unknown error"));
+                console.log('Produce failed', ackResponse.error);
+                errback(new Error(ackResponse.error || 'Unknown error'));
               }
             },
           );
@@ -483,8 +483,8 @@ export function Room() {
 
     return () => {
       if (sendTransportRef.current) {
-        sendTransportRef.current.removeAllListeners("connect");
-        sendTransportRef.current.removeAllListeners("produce");
+        sendTransportRef.current.removeAllListeners('connect');
+        sendTransportRef.current.removeAllListeners('produce');
       }
     };
   }, [isSendTransportCreatedLocally, socket]);
@@ -492,7 +492,7 @@ export function Room() {
   useEffect(() => {
     if (isRecvTransportCreatedLocally && recvTransportRef.current) {
       recvTransportRef.current.on(
-        "connect",
+        'connect',
         ({ dtlsParameters }, callback, errback) => {
           try {
             if (socket !== null && recvTransportRef.current !== null) {
@@ -504,10 +504,10 @@ export function Room() {
                 },
                 (ackResponse: AckResponse) => {
                   if (ackResponse.success) {
-                    console.log("Recv transport connected successfully");
+                    console.log('Recv transport connected successfully');
                     callback();
                   } else {
-                    errback(new Error(ackResponse.error || "Unknown error"));
+                    errback(new Error(ackResponse.error || 'Unknown error'));
                   }
                 },
               );
@@ -524,7 +524,7 @@ export function Room() {
     async function produce() {
       if (
         !stream ||
-        !isSharing || 
+        !isSharing ||
         !isSendTransportCreatedLocally ||
         !sendTransportRef.current
       )
@@ -541,10 +541,10 @@ export function Room() {
           stopTracks: false,
         });
 
-        console.log("Video Producer created:", producer);
+        console.log('Video Producer created:', producer);
         producerRef.current = producer;
       } catch (err) {
-        console.error("Produce failed:", err);
+        console.error('Produce failed:', err);
       }
     }
 
@@ -568,7 +568,7 @@ export function Room() {
     if (!message.trim() || !socket) return;
 
     const newMessage = {
-      senderId: "Me",
+      senderId: 'Me',
       message,
       timestamp: new Date().toISOString(),
     };
@@ -585,7 +585,7 @@ export function Room() {
       message: string;
       timestamp: string;
     }) => {
-      console.log("Incoming chat message:", payload);
+      console.log('Incoming chat message:', payload);
       setChatMessages((prev) => [...prev, payload]);
     };
 

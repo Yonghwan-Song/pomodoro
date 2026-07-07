@@ -1,4 +1,4 @@
-import { StyledBox, StyledBoxProps } from "./styles/Box.styled";
+import { StyledBox, StyledBoxProps } from './styles/Box.styled';
 
 type BoxShadowWrapperProp = StyledBoxProps & { children: React.ReactNode };
 

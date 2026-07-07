@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { css } from "../../../../../styled-system/css";
-import { ChatMessage, type ChatMessageData } from "./ChatMessage";
+import { useState } from 'react';
+import { css } from '../../../../../styled-system/css';
+import { ChatMessage, type ChatMessageData } from './ChatMessage';
 
 interface ChatBoxProps {
   messages: ChatMessageData[];
@@ -9,37 +9,37 @@ interface ChatBoxProps {
 
 export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
 
   const handleSend = () => {
     if (!input.trim()) return;
     onSendMessage(input);
-    setInput("");
+    setInput('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSend();
+    if (e.key === 'Enter') handleSend();
   };
 
   return (
     <div
       className={css({
-        position: "fixed",
-        bottom: "5",
-        right: "5",
-        width: "320px",
-        height: isOpen ? "450px" : "auto",
-        backgroundColor: "white",
-        border: "1px solid",
-        borderColor: "gray.200",
-        borderRadius: "xl",
-        display: "flex",
-        flexDirection: "column",
-        boxShadow: "lg",
+        position: 'fixed',
+        bottom: '5',
+        right: '5',
+        width: '320px',
+        height: isOpen ? '450px' : 'auto',
+        backgroundColor: 'white',
+        border: '1px solid',
+        borderColor: 'gray.200',
+        borderRadius: 'xl',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: 'lg',
         zIndex: 1000,
-        overflow: "hidden",
-        transition: "height 0.3s ease",
-        fontFamily: "sans-serif",
+        overflow: 'hidden',
+        transition: 'height 0.3s ease',
+        fontFamily: 'sans-serif',
       })}
     >
       {/* Header */}
@@ -47,35 +47,37 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={css({
-          padding: "4",
-          backgroundColor: "gray.50",
-          borderBottom: isOpen ? "1px solid" : "none",
-          borderColor: "gray.200",
-          fontWeight: "semibold",
-          fontSize: "md",
-          color: "gray.900",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          cursor: "pointer",
-          width: "100%",
-          textAlign: "left",
-          _hover: { backgroundColor: "gray.100" },
+          padding: '4',
+          backgroundColor: 'gray.50',
+          borderBottom: isOpen ? '1px solid' : 'none',
+          borderColor: 'gray.200',
+          fontWeight: 'semibold',
+          fontSize: 'md',
+          color: 'gray.900',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'left',
+          _hover: { backgroundColor: 'gray.100' },
         })}
       >
         <span>Chat Room</span>
-        <div className={css({ display: "flex", alignItems: "center", gap: "2" })}>
+        <div
+          className={css({ display: 'flex', alignItems: 'center', gap: '2' })}
+        >
           <span
             className={css({
-              fontSize: "xs",
-              color: "gray.500",
-              fontWeight: "normal",
+              fontSize: 'xs',
+              color: 'gray.500',
+              fontWeight: 'normal',
             })}
           >
             {messages.length} messages
           </span>
-          <span className={css({ fontSize: "xs", color: "gray.400" })}>
-            {isOpen ? "▼" : "▲"}
+          <span className={css({ fontSize: 'xs', color: 'gray.400' })}>
+            {isOpen ? '▼' : '▲'}
           </span>
         </div>
       </button>
@@ -86,21 +88,21 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
           <div
             className={css({
               flex: 1,
-              padding: "4",
-              overflowY: "auto",
-              display: "flex",
-              flexDirection: "column",
-              gap: "3",
-              backgroundColor: "white",
+              padding: '4',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '3',
+              backgroundColor: 'white',
             })}
           >
             {messages.length === 0 ? (
               <div
                 className={css({
-                  textAlign: "center",
-                  color: "gray.400",
-                  marginTop: "10",
-                  fontSize: "sm",
+                  textAlign: 'center',
+                  color: 'gray.400',
+                  marginTop: '10',
+                  fontSize: 'sm',
                 })}
               >
                 No messages yet.
@@ -115,12 +117,12 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
           {/* Input */}
           <div
             className={css({
-              padding: "4",
-              borderTop: "1px solid",
-              borderColor: "gray.200",
-              backgroundColor: "gray.50",
-              display: "flex",
-              gap: "2",
+              padding: '4',
+              borderTop: '1px solid',
+              borderColor: 'gray.200',
+              backgroundColor: 'gray.50',
+              display: 'flex',
+              gap: '2',
             })}
           >
             <input
@@ -131,15 +133,15 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
               placeholder="Type a message..."
               className={css({
                 flex: 1,
-                padding: "10px 14px",
-                borderRadius: "full",
-                border: "1px solid",
-                borderColor: "gray.300",
-                backgroundColor: "white",
-                fontSize: "sm",
-                outline: "none",
-                color: "black",
-                _focus: { borderColor: "blue.400" },
+                padding: '10px 14px',
+                borderRadius: 'full',
+                border: '1px solid',
+                borderColor: 'gray.300',
+                backgroundColor: 'white',
+                fontSize: 'sm',
+                outline: 'none',
+                color: 'black',
+                _focus: { borderColor: 'blue.400' },
               })}
             />
             <button
@@ -147,17 +149,17 @@ export function ChatBox({ messages, onSendMessage }: ChatBoxProps) {
               onClick={handleSend}
               disabled={!input.trim()}
               className={css({
-                paddingX: "4",
-                paddingY: "2",
-                backgroundColor: input.trim() ? "blue.500" : "gray.400",
-                color: "white",
-                border: "none",
-                borderRadius: "full",
-                cursor: input.trim() ? "pointer" : "default",
-                fontSize: "sm",
-                fontWeight: "medium",
-                transition: "background-color 0.2s",
-                _hover: input.trim() ? { backgroundColor: "blue.600" } : {},
+                paddingX: '4',
+                paddingY: '2',
+                backgroundColor: input.trim() ? 'blue.500' : 'gray.400',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'full',
+                cursor: input.trim() ? 'pointer' : 'default',
+                fontSize: 'sm',
+                fontWeight: 'medium',
+                transition: 'background-color 0.2s',
+                _hover: input.trim() ? { backgroundColor: 'blue.600' } : {},
               })}
             >
               Send

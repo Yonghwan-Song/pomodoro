@@ -1,11 +1,11 @@
-import { useContext, createContext, useEffect } from "react";
-import { useFetch } from "../Custom-Hooks/useFetch";
-import { RecType } from "../types/clientStatesType";
-import { persistManyTodaySessionsToIDB } from "..";
-import { pubsub } from "../pubsub";
-import { useAuthContext } from "./AuthContext";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { RESOURCE } from "../constants";
+import { useContext, createContext, useEffect } from 'react';
+import { useFetch } from '../Custom-Hooks/useFetch';
+import { RecType } from '../types/clientStatesType';
+import { persistManyTodaySessionsToIDB } from '..';
+import { pubsub } from '../pubsub';
+import { useAuthContext } from './AuthContext';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { RESOURCE } from '../constants';
 
 export const RecordsOfTodayContext = createContext<RecType[] | null>(null);
 
@@ -18,7 +18,7 @@ export function RecordsOfTodayContextProvider({
   const startOfTodayTimestamp = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate()
+    now.getDate(),
   ).getTime();
 
   const [recordsOfToday, setRecordsOfToday] = useFetch<RecType[]>({
@@ -66,7 +66,7 @@ function removeRecordsBeforeToday(records: RecType[]): RecType[] {
   const startOfTodayTimestamp = new Date(
     now.getFullYear(),
     now.getMonth(),
-    now.getDate()
+    now.getDate(),
   ).getTime();
 
   // 예를 들면, 어제 밤 11시에 시작해서 그다음날 오전 12시 30분에 세션이 종료되었다면,
@@ -77,7 +77,7 @@ function removeRecordsBeforeToday(records: RecType[]): RecType[] {
 async function persistRecordsOfTodayToIDB(records: RecType[]) {
   await persistManyTodaySessionsToIDB(records);
   // console.log("persisting recordsOfToday succeeded");
-  pubsub.publish("successOfPersistingRecordsOfTodayToIDB", records);
+  pubsub.publish('successOfPersistingRecordsOfTodayToIDB', records);
 }
 
 export function useRecordsOfTodayContext() {

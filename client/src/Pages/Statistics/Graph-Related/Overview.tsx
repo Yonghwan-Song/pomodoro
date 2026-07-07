@@ -1,6 +1,6 @@
-import { BoxShadowWrapper } from "../../../ReusableComponents/Wrapper";
-import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
-import { TotalComparison } from "./Total";
+import { BoxShadowWrapper } from '../../../ReusableComponents/Wrapper';
+import { FlexBox } from '../../../ReusableComponents/Layouts/FlexBox';
+import { TotalComparison } from './Total';
 
 type OverviewProps = {
   sum: {
@@ -21,7 +21,7 @@ export function Overview(props: OverviewProps) {
 
   return (
     <BoxShadowWrapper
-      fontSize={"1em"}
+      fontSize={'1em'}
       // inset={true}
     >
       <FlexBox justifyContent="space-around" columnGap="7px">
@@ -43,9 +43,9 @@ export function Overview(props: OverviewProps) {
           <h4>Total</h4>
           <h3
             style={{
-              color: "#6272a4",
-              fontWeight: "bold",
-              fontSize: "1.2em",
+              color: '#6272a4',
+              fontWeight: 'bold',
+              fontSize: '1.2em',
             }}
           >
             {Math.floor(allTime / 60)}h {allTime % 60}m

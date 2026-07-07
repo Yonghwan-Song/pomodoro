@@ -1,6 +1,6 @@
-import { useOutletContext } from "react-router-dom";
-import { Socket } from "socket.io-client";
-import { Device } from "mediasoup-client";
+import { useOutletContext } from 'react-router-dom';
+import { Socket } from 'socket.io-client';
+import { Device } from 'mediasoup-client';
 
 export type SocketContextType = {
   socket: Socket | null;
@@ -21,7 +21,9 @@ export type MediaContextType = {
   releaseStream: () => void;
 };
 
-export type ConnectionInfoContextType = SocketContextType & DeviceContextType & MediaContextType;
+export type ConnectionInfoContextType = SocketContextType &
+  DeviceContextType &
+  MediaContextType;
 
 export const useConnectionInfoContext = () => {
   return useOutletContext<ConnectionInfoContextType>();

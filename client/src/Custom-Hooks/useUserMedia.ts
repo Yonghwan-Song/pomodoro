@@ -1,11 +1,11 @@
 // Import the functions you need from the SDKs you need
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from 'react';
 
 export const useUserMedia = (
   trackOption: { video: boolean; audio: boolean } = {
     video: true,
     audio: true,
-  }
+  },
 ) => {
   /**
    * A MediaStream consists of zero or more MediaStreamTrack objects,
@@ -22,18 +22,18 @@ export const useUserMedia = (
 
     try {
       const newStream = await navigator.mediaDevices.getUserMedia(trackOption);
-      console.log("[useUserMedia] obtainStream SUCCESS", newStream.id);
+      console.log('[useUserMedia] obtainStream SUCCESS', newStream.id);
 
       newStream.getTracks().forEach((track) => {
-        track.addEventListener("ended", () => {
+        track.addEventListener('ended', () => {
           console.log(`Track ${track.kind} (${track.label}) ended`);
-          console.log("MediaStreamTrack.readyState", track.readyState);
+          console.log('MediaStreamTrack.readyState', track.readyState);
         });
       });
       setStream(newStream);
       return newStream;
     } catch (error) {
-      console.error("카메라/마이크에 접근할 수 없습니다:", error);
+      console.error('카메라/마이크에 접근할 수 없습니다:', error);
       return null;
     }
   }, [trackOption, stream]);
@@ -41,25 +41,25 @@ export const useUserMedia = (
   // 이미 있는 stream으로 공유 시작 (produce 트리거)
   const startSharing = useCallback(() => {
     if (stream) {
-      console.log("[useUserMedia] startSharing - isSharing set to true");
+      console.log('[useUserMedia] startSharing - isSharing set to true');
       setIsSharing(true);
     } else {
       console.warn(
-        "[useUserMedia] startSharing called but no stream available"
+        '[useUserMedia] startSharing called but no stream available',
       );
     }
   }, [stream]);
 
   // 공유 중지 (isSharing만 false로, stream은 유지)
   const stopSharing = useCallback(() => {
-    console.log("[useUserMedia] stopSharing - isSharing set to false");
+    console.log('[useUserMedia] stopSharing - isSharing set to false');
     setIsSharing(false);
   }, []);
 
   // stream 완전 해제 (track stop + stream null)
   const releaseStream = useCallback(() => {
     if (stream) {
-      console.log("[useUserMedia] releaseStream - stopping tracks");
+      console.log('[useUserMedia] releaseStream - stopping tracks');
       stream.getTracks().forEach((track) => track.stop());
     }
     setStream(null);
@@ -73,7 +73,7 @@ export const useUserMedia = (
     // The cleanup function handles the "stopping" part of the *previous* stream.
     return () => {
       if (stream) {
-        console.log("Cleaning up stream tracks...");
+        console.log('Cleaning up stream tracks...');
         stream.getTracks().forEach((track) => {
           console.log(`Stopping track: ${track.kind} (${track.label})`);
           track.stop();

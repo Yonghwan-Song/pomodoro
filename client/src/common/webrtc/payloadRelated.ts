@@ -1,9 +1,9 @@
-import { type ConsumerOptions } from "mediasoup-client/types";
+import { type ConsumerOptions } from 'mediasoup-client/types';
 
 export type ProducerPayload = {
   producerId: string;
   socketId: string;
-  kind: "audio" | "video";
+  kind: 'audio' | 'video';
   displayName?: string; // 선택적 정보
   appData?: Record<string, any>; // 선택적 커스텀 데이터
 };

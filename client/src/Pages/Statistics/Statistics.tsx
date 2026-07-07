@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
-import { useEffect } from "react";
-import { MINIMUMS, RESOURCE, SUB_SET, VH_RATIO } from "../../constants";
-import { Grid } from "../../ReusableComponents/Layouts/Grid";
-import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
+import { useMemo, useState } from 'react';
+import { useEffect } from 'react';
+import { MINIMUMS, RESOURCE, SUB_SET, VH_RATIO } from '../../constants';
+import { Grid } from '../../ReusableComponents/Layouts/Grid';
+import { GridItem } from '../../ReusableComponents/Layouts/GridItem';
 import {
   DayStat,
   DayStatForGraph,
@@ -10,37 +10,37 @@ import {
   CategorySubtotal,
   CategoryDetail,
   WeekStat,
-} from "./statRelatedTypes";
-import { countDown } from "../..";
-import { pubsub } from "../../pubsub";
-import { startOfWeek, endOfWeek, getISOWeek, getISOWeekYear } from "date-fns";
-import { Overview } from "./Graph-Related/Overview";
-import { CategoryGraph } from "./Graph-Related/CategoryGraph";
-import { useFetch } from "../../Custom-Hooks/useFetch";
-import { PomodoroSessionDocument } from "./statRelatedTypes";
-import { axiosInstance } from "../../axios-and-error-handling/axios-instances";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
-import { FlexBox } from "../../ReusableComponents/Layouts/FlexBox";
-import { StackedGraph } from "./Graph-Related/StackedGraph";
-import { WeeklyTrendStacked } from "./Graph-Related/WeeklyTrendStacked";
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import GoalGraph from "./Graph-Related/GoalGraph";
+} from './statRelatedTypes';
+import { countDown } from '../..';
+import { pubsub } from '../../pubsub';
+import { startOfWeek, endOfWeek, getISOWeek, getISOWeekYear } from 'date-fns';
+import { Overview } from './Graph-Related/Overview';
+import { CategoryGraph } from './Graph-Related/CategoryGraph';
+import { useFetch } from '../../Custom-Hooks/useFetch';
+import { PomodoroSessionDocument } from './statRelatedTypes';
+import { axiosInstance } from '../../axios-and-error-handling/axios-instances';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
+import { FlexBox } from '../../ReusableComponents/Layouts/FlexBox';
+import { StackedGraph } from './Graph-Related/StackedGraph';
+import { WeeklyTrendStacked } from './Graph-Related/WeeklyTrendStacked';
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import GoalGraph from './Graph-Related/GoalGraph';
 
 export default function Statistics() {
   const categoriesFromServer = useBoundedPomoInfoStore(
-    (state) => state.categories
+    (state) => state.categories,
   );
   const isUnCategorizedOnStat = useBoundedPomoInfoStore(
-    (state) => state.isUnCategorizedOnStat
+    (state) => state.isUnCategorizedOnStat,
   );
   const colorForUnCategorized = useBoundedPomoInfoStore(
-    (state) => state.colorForUnCategorized
+    (state) => state.colorForUnCategorized,
   );
   const updateCategories = useBoundedPomoInfoStore(
-    (state) => state.setCategories
+    (state) => state.setCategories,
   );
   const updateIsUncategorizedOnStat = useBoundedPomoInfoStore(
-    (state) => state.setIsUnCategorizedOnStat
+    (state) => state.setIsUnCategorizedOnStat,
   );
   const [sum, setSum] = useState({
     today: 0,
@@ -69,13 +69,13 @@ export default function Statistics() {
   // This array will get pomodoro duration statistics by going through
   // 'calculateThisWeekData()' which is passed as a callback element to the useFetch below.
   const [weekStart, setWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime(),
   );
   const [weekEnd, setWeekEnd] = useState(
-    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime(),
   );
   const [average, setAverage] = useState(0);
-  const [weekRange, setWeekRange] = useState("");
+  const [weekRange, setWeekRange] = useState('');
   const _24h = 24 * 60 * 60 * 1000;
   const [statData, setStatData] = useFetch<
     PomodoroSessionDocument[],
@@ -93,7 +93,7 @@ export default function Statistics() {
         previousValue.push({ name, color, isOnStat, _uuid: _uuid!, isCurrent });
         return previousValue;
       },
-      []
+      [],
     );
 
     //
@@ -116,15 +116,15 @@ export default function Statistics() {
    * object를 완성해 나간다.
    */
   function calculateDailyPomodoroDuration(
-    pomodoroDocs: PomodoroSessionDocument[]
+    pomodoroDocs: PomodoroSessionDocument[],
   ): DayStat[] {
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     // [{ date: '9/12/2022', total: 300 }, ... ]
 
     const arrOfDurationByDate = pomodoroDocs
       .sort(
         (a: PomodoroSessionDocument, b: PomodoroSessionDocument) =>
-          a.startTime - b.startTime // in ascending order
+          a.startTime - b.startTime, // in ascending order
       )
       .reduce<DayStat[]>((acc: DayStat[], curRec: PomodoroSessionDocument) => {
         // 1. 첫번째 계산
@@ -210,20 +210,20 @@ export default function Statistics() {
    * @param {*} statArray the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function calculateOverview(
-    pomodoroDailyStat: StatDataForGraph_DailyPomoStat
+    pomodoroDailyStat: StatDataForGraph_DailyPomoStat,
   ) {
     const now = new Date();
     //#region today and the last day total
     const startOfTodayTimestamp = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate()
+      now.getDate(),
     ).getTime();
     const todayPomo = pomodoroDailyStat.find(
-      (obj) => obj.timestamp === startOfTodayTimestamp
+      (obj) => obj.timestamp === startOfTodayTimestamp,
     );
     const lastDayPomo = pomodoroDailyStat.find(
-      (obj) => obj.timestamp === startOfTodayTimestamp - _24h
+      (obj) => obj.timestamp === startOfTodayTimestamp - _24h,
     );
     //#endregion
 
@@ -240,7 +240,7 @@ export default function Statistics() {
     ]);
     const thisWeekSum = thisWeekData.reduce(
       (acc: number, cur: DayStat) => acc + cur.total,
-      0
+      0,
     );
     const lastWeekData = extractWeekData(pomodoroDailyStat, [
       thisWeekStartTimestamp - 7 * _24h,
@@ -248,14 +248,14 @@ export default function Statistics() {
     ]);
     const lastWeekSum = lastWeekData.reduce(
       (acc: number, cur: DayStat) => acc + cur.total,
-      0
+      0,
     );
     //#endregion
 
     //#region month total
     const thisMonthStartTimestamp = new Date(
       now.getFullYear(),
-      now.getMonth()
+      now.getMonth(),
     ).getTime();
     const thisMonthEndTimestamp =
       now.getMonth() === 11
@@ -267,7 +267,7 @@ export default function Statistics() {
     ]);
     const thisMonthSum = thisMonthData.reduce(
       (acc: number, cur: DayStat) => acc + cur.total,
-      0
+      0,
     );
     const lastMonthStartTimestamp =
       now.getMonth() === 0
@@ -280,7 +280,7 @@ export default function Statistics() {
     ]);
     const lastMonthSum = lastMonthData.reduce(
       (acc: number, cur: DayStat) => acc + cur.total,
-      0
+      0,
     );
     //#endregion
 
@@ -320,9 +320,9 @@ export default function Statistics() {
     setWeekRange(
       `${weekCloned[0].date
         .slice(0, -5)
-        .replace("/", ". ")} - ${weekCloned[6].date
+        .replace('/', '. ')} - ${weekCloned[6].date
         .slice(0, -5)
-        .replace("/", ". ")}`
+        .replace('/', '. ')}`,
     );
     setDailyStatOfThisWeek(weekCloned);
   }
@@ -381,7 +381,7 @@ export default function Statistics() {
           return [...acc, weekStat];
         }
       },
-      []
+      [],
     );
 
     setWeeklyStatUpToTenWeeks(weeklyTrend);
@@ -405,44 +405,44 @@ export default function Statistics() {
     const weekNumber = getISOWeek(Date.now());
     const statArr: DayStatForGraph[] = [
       {
-        date: "",
-        dayOfWeek: "Mon",
+        date: '',
+        dayOfWeek: 'Mon',
         timestamp: 0,
         weekNumber,
       },
       {
-        date: "",
-        dayOfWeek: "Tue",
+        date: '',
+        dayOfWeek: 'Tue',
         timestamp: 0,
         weekNumber,
       },
       {
-        date: "",
-        dayOfWeek: "Wed",
+        date: '',
+        dayOfWeek: 'Wed',
         timestamp: 0,
         weekNumber,
       },
       {
-        date: "",
-        dayOfWeek: "Thu",
+        date: '',
+        dayOfWeek: 'Thu',
         timestamp: 0,
         weekNumber,
       },
       {
-        date: "",
-        dayOfWeek: "Fri",
+        date: '',
+        dayOfWeek: 'Fri',
         timestamp: 0,
         weekNumber,
       },
       {
-        date: "",
-        dayOfWeek: "Sat",
+        date: '',
+        dayOfWeek: 'Sat',
         timestamp: 0,
         weekNumber,
       },
       {
-        date: "",
-        dayOfWeek: "Sun",
+        date: '',
+        dayOfWeek: 'Sun',
         timestamp: 0,
         weekNumber,
       },
@@ -477,7 +477,7 @@ export default function Statistics() {
    */
   function extractWeekData(
     statArray: DayStat[],
-    range: [number, number]
+    range: [number, number],
   ): DayStat[] {
     return statArray.filter((ele) => {
       return (
@@ -502,11 +502,11 @@ export default function Statistics() {
       subtotalByCategory?: CategorySubtotal;
       withoutCategory?: number;
     }[],
-    weekStatFromData: DayStat[]
+    weekStatFromData: DayStat[],
   ) {
     for (const cloned of weekCloned) {
       const matchingStat = weekStatFromData.find(
-        (fromData) => fromData.date === cloned.date
+        (fromData) => fromData.date === cloned.date,
       );
       // console.log(
       //   "matchingStat from weekStatFromData in fillWeekCloned",
@@ -548,13 +548,13 @@ export default function Statistics() {
 
         return previousValue;
       },
-      {}
+      {},
     );
     return retVal;
   }
 
   function changeIsOnStat(ev: React.MouseEvent<HTMLDivElement>) {
-    const nameClicked = ev.currentTarget.getAttribute("data-name");
+    const nameClicked = ev.currentTarget.getAttribute('data-name');
     if (nameClicked) {
       let isOnStat: boolean = true;
       const categoriesUpdated = categoriesFromServer.map((category) => {
@@ -615,7 +615,7 @@ export default function Statistics() {
   }, [statData]);
 
   useEffect(() => {
-    countDown(localStorage.getItem("idOfSetInterval"));
+    countDown(localStorage.getItem('idOfSetInterval'));
     // {
     //   userEmail: string;
     //   duration: number;
@@ -627,7 +627,7 @@ export default function Statistics() {
     //   };
     // }[]
     const unsub = pubsub.subscribe(
-      "pomoAdded",
+      'pomoAdded',
       (
         final: {
           useEmail: string;
@@ -638,7 +638,7 @@ export default function Statistics() {
           category?: {
             name: string;
           };
-        }[]
+        }[],
       ) => {
         setStatData((prev) => {
           if (!prev) {
@@ -648,7 +648,7 @@ export default function Statistics() {
             const todayDateString = `${
               today.getMonth() + 1
             }/${today.getDate()}/${today.getFullYear()}`;
-            const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
             // const newSum = { ...sum };
 
@@ -681,7 +681,7 @@ export default function Statistics() {
               const startOfTodayTimestamp = new Date(
                 now.getFullYear(),
                 now.getMonth(),
-                now.getDate()
+                now.getDate(),
               ).getTime();
 
               const dayStat: DayStat = {
@@ -721,7 +721,7 @@ export default function Statistics() {
             return cloned;
           }
         });
-      }
+      },
     );
 
     return () => {
@@ -746,15 +746,15 @@ export default function Statistics() {
     <main
       style={{
         minHeight: `calc(100vh - max(${VH_RATIO.NAV_BAR}vh, ${MINIMUMS.NAV_BAR}px))`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
       {statData === null ? (
         <h2>loading data...</h2>
       ) : (
-        <div style={{ flexBasis: "100%" }}>
+        <div style={{ flexBasis: '100%' }}>
           <Grid rowGap="12px" margin="auto">
             <GridItem>
               <Overview sum={sum} />
@@ -808,28 +808,28 @@ export default function Statistics() {
                         data-name={category.name}
                         key={index}
                         style={{
-                          cursor: "pointer",
-                          display: "flex",
-                          alignItems: "center",
-                          columnGap: "6px",
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          columnGap: '6px',
                         }}
                         onClick={changeIsOnStat}
                       >
                         <div
                           style={{
-                            width: "30px",
-                            height: "30px",
+                            width: '30px',
+                            height: '30px',
                             backgroundColor: `${category.color}`,
-                            borderRadius: "50%",
+                            borderRadius: '50%',
                           }}
                         ></div>
                         <div
                           style={{
-                            color: category.isCurrent ? "#ff8522" : "black",
-                            fontWeight: category.isCurrent ? "bold" : "normal",
+                            color: category.isCurrent ? '#ff8522' : 'black',
+                            fontWeight: category.isCurrent ? 'bold' : 'normal',
                             textDecorationLine: category.isOnStat
-                              ? "underline"
-                              : "none",
+                              ? 'underline'
+                              : 'none',
                           }}
                         >
                           {category.name}
@@ -839,32 +839,32 @@ export default function Statistics() {
                   })}
                   <div
                     style={{
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      columnGap: "6px",
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      columnGap: '6px',
                     }}
                     onClick={changeIsUnCategorizedOnStat}
                   >
                     <div
                       style={{
-                        width: "30px",
-                        height: "30px",
+                        width: '30px',
+                        height: '30px',
                         backgroundColor: colorForUnCategorized,
-                        borderRadius: "50%",
+                        borderRadius: '50%',
                       }}
                     ></div>
                     <div
                       style={{
                         color: isThisSessionWithoutCategory
-                          ? "#ff8522"
-                          : "black",
+                          ? '#ff8522'
+                          : 'black',
                         fontWeight: isThisSessionWithoutCategory
-                          ? "bold"
-                          : "normal",
+                          ? 'bold'
+                          : 'normal',
                         textDecorationLine: isUnCategorizedOnStat
-                          ? "underline"
-                          : "none",
+                          ? 'underline'
+                          : 'none',
                       }}
                     >
                       Uncategorized

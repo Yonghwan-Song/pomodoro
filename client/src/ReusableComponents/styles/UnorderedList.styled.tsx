@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import { MINIMUMS, VH_RATIO } from "../../constants";
+import styled from 'styled-components';
+import { MINIMUMS, VH_RATIO } from '../../constants';
 
 export type StyledUnorderedListProps = {
   liOpacity: boolean;
@@ -49,8 +49,8 @@ export const StyledUnorderedList = styled.ul<StyledUnorderedListProps>`
     }
 
     transform: ${({ isSideBarActive }) =>
-      isSideBarActive ? "translateX(0%)" : "translateX(100%)"};
+      isSideBarActive ? 'translateX(0%)' : 'translateX(100%)'};
     transition: ${({ isSideBarActive }) =>
-      isSideBarActive ? "transform 0.3s ease-in" : ""};
+      isSideBarActive ? 'transform 0.3s ease-in' : ''};
   }
 `;

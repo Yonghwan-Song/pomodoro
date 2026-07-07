@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect } from 'react';
 
 interface VideoPlayerProps {
   stream: MediaStream;
@@ -20,7 +20,7 @@ const VideoPlayer = ({ stream, isLocal = false }: VideoPlayerProps) => {
       autoPlay
       playsInline
       muted={isLocal}
-      style={{ width: "320px", margin: "5px", border: "1px solid black" }}
+      style={{ width: '320px', margin: '5px', border: '1px solid black' }}
     />
   );
 };

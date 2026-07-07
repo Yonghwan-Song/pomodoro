@@ -1,34 +1,34 @@
 /** @jsxImportSource @emotion/react */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 import {
   obtainStatesFromIDB,
   retrieveTodaySessionsFromIDB,
   stopCountDownInBackground,
-} from "../..";
+} from '../..';
 import {
   CycleInfoType,
   TimersStatesType,
   TimersStatesTypeWithCurrentCycleInfo,
-} from "../../types/clientStatesType";
-import { useAuthContext } from "../../Context/AuthContext";
-import RecOfToday from "./Timeline-Related/RecOfToday";
-import { RecType } from "../../types/clientStatesType";
-import { pubsub } from "../../pubsub";
-import { deciderOfWhetherDataForRunningTimerFetched } from "../..";
+} from '../../types/clientStatesType';
+import { useAuthContext } from '../../Context/AuthContext';
+import RecOfToday from './Timeline-Related/RecOfToday';
+import { RecType } from '../../types/clientStatesType';
+import { pubsub } from '../../pubsub';
+import { deciderOfWhetherDataForRunningTimerFetched } from '../..';
 import {
   BREAK_POINTS,
   MINIMUMS,
   SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
   VH_RATIO,
-} from "../../constants";
-import CategoryList from "./Category-Related/CategoryList";
-import { BoxShadowWrapper } from "../../ReusableComponents/Wrapper";
-import { Grid } from "../../ReusableComponents/Layouts/Grid";
-import { GridItem } from "../../ReusableComponents/Layouts/GridItem";
-import { useBoundedPomoInfoStore } from "../../zustand-stores/pomoInfoStoreUsingSlice";
-import { TimerController } from "./Timer-Related/TimerController/TimerController";
-import { TodoistTasks } from "./Todoist-Related/TodoistTasks";
-import { css } from "@emotion/react";
+} from '../../constants';
+import CategoryList from './Category-Related/CategoryList';
+import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
+import { Grid } from '../../ReusableComponents/Layouts/Grid';
+import { GridItem } from '../../ReusableComponents/Layouts/GridItem';
+import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { TimerController } from './Timer-Related/TimerController/TimerController';
+import { TodoistTasks } from './Todoist-Related/TodoistTasks';
+import { css } from '@emotion/react';
 
 export default function Main() {
   const { user } = useAuthContext()!;
@@ -42,15 +42,15 @@ export default function Main() {
   const areDataForRunningTimerFetched = useRef<[boolean, boolean]>(
     //[0] for the state `statesRelatedToTimer`.
     //[1] for the state `records`.
-    deciderOfWhetherDataForRunningTimerFetched
+    deciderOfWhetherDataForRunningTimerFetched,
   );
   //* At this point, it doesn't matter whether this setting comes from IDB or the server, as the AuthContextProvider handles it.
   const pomoSetting = useBoundedPomoInfoStore((state) => state.pomoSetting);
   const autoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.autoStartSetting
+    (state) => state.autoStartSetting,
   );
   const isTodoistIntegrationEnabled = useBoundedPomoInfoStore(
-    (state) => state.isTodoistIntegrationEnabled
+    (state) => state.isTodoistIntegrationEnabled,
   );
 
   //#region UseEffects
@@ -66,7 +66,7 @@ export default function Main() {
   useEffect(setRecordsUsingDataFromIDB, []);
   useEffect(
     subscribeToSuccessOfPersistingTimerStatesWithCurrentCycleInfoToIDB,
-    []
+    [],
   );
   useEffect(subscribeToSuccessOfPersistingRecordsOfTodayToIDB, []);
   useEffect(subscribeToRePersistingFailedRecOfToday, []);
@@ -113,7 +113,7 @@ export default function Main() {
   //* 그래서 우선... 이 구조를 개선하기 전에는 currentCycleInfo도 같은 방식으로 default값을 TC에서 설정해보자 ㅠㅠ
   function setStatesRelatedToTimerAndCurrentCycleInfoUsingDataFromIDB() {
     const getStatesFromIDB = async () => {
-      let states = await obtainStatesFromIDB("withoutSettings");
+      let states = await obtainStatesFromIDB('withoutSettings');
       //! IMPT
       //! How can we guarantee that the states is not undefined?
       //! IDB must already be filled with the data fetched from server before this setup function is called.
@@ -154,10 +154,10 @@ export default function Main() {
 
   function subscribeToRePersistingFailedRecOfToday() {
     const unsub = pubsub.subscribe(
-      "addFailedRecOfTodayToIDB",
+      'addFailedRecOfTodayToIDB',
       (newlyAddedRecArr) => {
         setRecords((prev) => [...prev, ...newlyAddedRecArr]);
-      }
+      },
     );
 
     return () => {
@@ -174,7 +174,7 @@ export default function Main() {
         setStatesRelatedToTimer(data.timersStates);
         setCurrentCycleInfo(data.currentCycleInfo);
         areDataForRunningTimerFetched.current[0] = true;
-      }
+      },
     );
 
     return () => {
@@ -185,11 +185,11 @@ export default function Main() {
   //* This is called later than the setRecordsUsingDataFromIDB()
   function subscribeToSuccessOfPersistingRecordsOfTodayToIDB() {
     const unsub = pubsub.subscribe(
-      "successOfPersistingRecordsOfTodayToIDB",
+      'successOfPersistingRecordsOfTodayToIDB',
       (data) => {
         setRecords(data);
         areDataForRunningTimerFetched.current[1] = true;
-      }
+      },
     );
 
     return () => {
@@ -241,7 +241,7 @@ export default function Main() {
         {isStatesRelatedToTimerReady &&
           isCurrentCycleInfoReady &&
           (isPomoSettingReady && isAutoStartSettingReady ? (
-            localStorage.getItem("user") === "authenticated" ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
+            localStorage.getItem('user') === 'authenticated' ? ( // Though the user item is authenticated, the auth variable`user` below could not be ready yet.
               isUserAuthReady ? (
                 // Though the user auth is ready, user's data needed to run a timer might not be ready.
                 areDataForRunningTimerFetchedCompletely ? (
@@ -263,14 +263,14 @@ export default function Main() {
                         />
                       </BoxShadowWrapper>
                     </GridItem>
-                    <GridItem width={"100%"}>
+                    <GridItem width={'100%'}>
                       {user !== null && (
                         <BoxShadowWrapper>
                           <CategoryList />
                         </BoxShadowWrapper>
                       )}
                     </GridItem>
-                    <GridItem width={"100%"}>
+                    <GridItem width={'100%'}>
                       {user !== null && isTodoistIntegrationEnabled && (
                         <BoxShadowWrapper>
                           <TodoistTasks />
@@ -279,11 +279,11 @@ export default function Main() {
                     </GridItem>
                   </Grid>
                 ) : (
-                  <h2 css={{ textAlign: "center" }}>fetching data...</h2>
+                  <h2 css={{ textAlign: 'center' }}>fetching data...</h2>
                 )
               ) : (
                 // User auth: NOT READY, user's data required to run timer: NOT READY
-                <h2 css={{ textAlign: "center" }}>loading timer...</h2>
+                <h2 css={{ textAlign: 'center' }}>loading timer...</h2>
               )
             ) : (
               // When a user logs out,
@@ -308,7 +308,7 @@ export default function Main() {
               </Grid>
             )
           ) : (
-            <h2 css={{ textAlign: "center" }}>loading timer...</h2>
+            <h2 css={{ textAlign: 'center' }}>loading timer...</h2>
           ))}
       </section>
     </main>

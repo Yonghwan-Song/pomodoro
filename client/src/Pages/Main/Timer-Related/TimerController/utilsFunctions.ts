@@ -118,17 +118,17 @@ function identifySession({
 function wrapUpSession({ session }: { session: Session }) {
   switch (session) {
     case Session.Pomo:
-      console.log("This was a pomo, prepare a short break");
+      console.log('This was a pomo, prepare a short break');
 
       break;
     case Session.ShortBreak:
-      console.log("This was a short break, prepare a pomo");
+      console.log('This was a short break, prepare a pomo');
       break;
     case Session.LastPomo:
-      console.log("This was the last pomo, prepare a long break");
+      console.log('This was the last pomo, prepare a long break');
       break;
     case Session.LongBreak:
-      console.log("This was a long break, prepare a new cycle");
+      console.log('This was a long break, prepare a new cycle');
       break;
     default:
       break;

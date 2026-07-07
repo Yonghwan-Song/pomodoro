@@ -1,5 +1,5 @@
-import styled from "styled-components";
-import { css } from "styled-components";
+import styled from 'styled-components';
+import { css } from 'styled-components';
 
 // export type StyledBoxProp = {
 //   fontSize?: string;
@@ -46,31 +46,26 @@ export type StyledBoxProps = {
 export const StyledBox = styled.div<StyledBoxProps>`
   position: relative;
 
-  ${({ padding = "0.5em" }) =>
-    css`
-      padding: ${padding};
-    `}
-  ${({ paddingLeft = "0.5em" }) =>
-    css`
-      padding-left: ${paddingLeft};
-    `}
-  ${({ paddingRight = "0.5em" }) =>
-    css`
-      padding-right: ${paddingRight};
-    `}
-  ${({ paddingTop = "0.5em" }) =>
-    css`
-      padding-top: ${paddingTop};
-    `}
-  ${({ paddingBottom = "0.5em" }) =>
-    css`
-      padding-bottom: ${paddingBottom};
-    `}
-  ${({ borderRadius = "0.5em" }) => css`
+  ${({ padding = '0.5em' }) => css`
+    padding: ${padding};
+  `}
+  ${({ paddingLeft = '0.5em' }) => css`
+    padding-left: ${paddingLeft};
+  `}
+  ${({ paddingRight = '0.5em' }) => css`
+    padding-right: ${paddingRight};
+  `}
+  ${({ paddingTop = '0.5em' }) => css`
+    padding-top: ${paddingTop};
+  `}
+  ${({ paddingBottom = '0.5em' }) => css`
+    padding-bottom: ${paddingBottom};
+  `}
+  ${({ borderRadius = '0.5em' }) => css`
     border-radius: ${borderRadius};
   `}
 
-  ${({ inset, boxShadowColor = "rgba(0,0,0,0.7)" }) =>
+  ${({ inset, boxShadowColor = 'rgba(0,0,0,0.7)' }) =>
     inset
       ? css`
           box-shadow: inset 0px 0px 10px 0px ${boxShadowColor};

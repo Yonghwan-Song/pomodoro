@@ -1,6 +1,6 @@
-import { create, StateCreator } from "zustand";
-import { immer } from "zustand/middleware/immer";
-import { devtools } from "zustand/middleware";
+import { create, StateCreator } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
+import { devtools } from 'zustand/middleware';
 import {
   AutoStartSettingType,
   Category,
@@ -11,16 +11,16 @@ import {
   PomoSettingType,
   TaskTrackingDocument,
   TimersStatesType,
-} from "../types/clientStatesType";
+} from '../types/clientStatesType';
 import {
   TaskChangeInfo,
   TodoistTasksWithFocusDuration,
   TaskWithFocusDurationAndChildren,
-} from "../types/todoistRelatedTypes";
+} from '../types/todoistRelatedTypes';
 import {
   generateTaskDictionaryAndTree,
   updateMatchingTaskInTree,
-} from "../Pages/Main/Todoist-Related/todoist-utility";
+} from '../Pages/Main/Todoist-Related/todoist-utility';
 
 /**
  * These states are required to run a timer; in other words, to run a session either it is a focus or a break.
@@ -77,7 +77,7 @@ interface CategorySlice extends CategorySliceStates {
   setIsUnCategorizedOnStat: (isUnCategorizedOnStat: boolean) => void;
   setColorForUnCategorized: (colorForUnCategorized: string) => void;
   setCategoryChangeInfoArray: (
-    categoryChangeInfoArray: CategoryChangeInfo[]
+    categoryChangeInfoArray: CategoryChangeInfo[],
   ) => void;
   setDoesItJustChangeCategory: (doesItJustChangeCategory: boolean) => void;
 }
@@ -118,25 +118,25 @@ const createTodoistIntegrationSlice: StateCreator<
     GoalSlice &
     TodoistIntegrationSlice &
     SharedSlice,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   TodoistIntegrationSlice
 > = (set) => ({
   isTodoistIntegrationEnabled: false,
   taskTreeForUI: [],
   taskChangeInfoArray: [],
-  currentTaskId: "",
+  currentTaskId: '',
   setIsTodoistIntegrationEnabled: (enabled) =>
     set(
       { isTodoistIntegrationEnabled: enabled },
       undefined,
-      "todoist/setIsTodoistIntegrationEnabled"
+      'todoist/setIsTodoistIntegrationEnabled',
     ),
   setTaskChangeInfoArray: (arr) => {
     set(
       { taskChangeInfoArray: arr },
       undefined,
-      "todoist/setTaskChangeInfoArray"
+      'todoist/setTaskChangeInfoArray',
     );
   },
   addTaskChangeInfo: (info) =>
@@ -147,10 +147,10 @@ const createTodoistIntegrationSlice: StateCreator<
         };
       },
       undefined,
-      "todoist/addTaskChangeInfo"
+      'todoist/addTaskChangeInfo',
     ),
   setCurrentTaskId: (id: string) =>
-    set({ currentTaskId: id }, undefined, "todoist/setCurrentTaskId"),
+    set({ currentTaskId: id }, undefined, 'todoist/setCurrentTaskId'),
   updateTaskTreeForUI: (pairs) => {
     set(
       (states) => {
@@ -159,11 +159,11 @@ const createTodoistIntegrationSlice: StateCreator<
         }
       },
       undefined,
-      "todoist/updateTaskTreeForUI"
+      'todoist/updateTaskTreeForUI',
     );
   },
   setTaskTreeForUI: (tree) =>
-    set({ taskTreeForUI: tree }, undefined, "todoist/setTaskTreeUI"),
+    set({ taskTreeForUI: tree }, undefined, 'todoist/setTaskTreeUI'),
 });
 //#endregion
 
@@ -173,7 +173,7 @@ export type DataFromServer = {
   autoStartSetting: AutoStartSettingType;
   cycleSettings: Array<CycleSetting>;
 } & CycleInfoSliceStates &
-  Omit<CategorySliceStates, "doesItJustChangeCategory"> &
+  Omit<CategorySliceStates, 'doesItJustChangeCategory'> &
   GoalSliceStates &
   TodoistIntegrationSliceStates & {
     todoistTasks: TodoistTasksWithFocusDuration[];
@@ -183,7 +183,7 @@ interface SharedSlice {
   populateExistingUserStates: (data: DataFromServer) => void;
   populateNonSignInUserStates: (
     // data: TimerSliceStates & CycleInfoSliceStates
-    data: Omit<TimerSliceStates, "cycleSettings"> & CycleInfoSliceStates
+    data: Omit<TimerSliceStates, 'cycleSettings'> & CycleInfoSliceStates,
   ) => void;
 }
 
@@ -194,7 +194,7 @@ const createTimerSlice: StateCreator<
     GoalSlice &
     TodoistIntegrationSlice &
     SharedSlice,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   TimerSlice
 > = (set, get) => ({
@@ -212,24 +212,24 @@ const createTimerSlice: StateCreator<
   },
   cycleSettings: [],
   setPomoSetting: (pomoSetting) =>
-    set((state) => ({ pomoSetting }), undefined, "timer/setPomoSetting"),
+    set((state) => ({ pomoSetting }), undefined, 'timer/setPomoSetting'),
   setAutoStartSetting: (autoStartSetting) =>
     set(
       (state) => ({ autoStartSetting }),
       undefined,
-      "timer/setAutoStartSetting"
+      'timer/setAutoStartSetting',
     ),
   setCycleSettings: (cycleSettings) =>
-    set((state) => ({ cycleSettings }), undefined, "timer/setCycleSettings"),
+    set((state) => ({ cycleSettings }), undefined, 'timer/setCycleSettings'),
   setTimersStates: (timersStates) =>
-    set((state) => ({ timersStates }), undefined, "timer/setTimersStates"),
+    set((state) => ({ timersStates }), undefined, 'timer/setTimersStates'),
   setTimersStatesPartial: (partial) =>
     set(
       (state) => ({
         timersStates: { ...state.timersStates, ...partial },
       }),
       undefined,
-      "timer/updateTimersStatesPartial"
+      'timer/updateTimersStatesPartial',
     ),
   checkIfSessionIsNotStartedYet: () => {
     const timersStates = get().timersStates;
@@ -245,7 +245,7 @@ const createCycleInfoSlice: StateCreator<
     GoalSlice &
     TodoistIntegrationSlice &
     SharedSlice,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   CycleInfoSlice
 > = (set) => ({
@@ -265,40 +265,40 @@ const createCategorySlice: StateCreator<
     GoalSlice &
     TodoistIntegrationSlice &
     SharedSlice,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   CategorySlice
 > = (set) => ({
   categories: [],
   isUnCategorizedOnStat: true,
-  colorForUnCategorized: "#f04005",
+  colorForUnCategorized: '#f04005',
   categoryChangeInfoArray: [],
   doesItJustChangeCategory: false,
   setCategories: (categories) =>
-    set((state) => ({ categories }), undefined, "category/setCategories"),
+    set((state) => ({ categories }), undefined, 'category/setCategories'),
   setIsUnCategorizedOnStat: (isUnCategorizedOnStat: boolean) =>
     set(
       (state) => ({ isUnCategorizedOnStat }),
       undefined,
-      "category/setIsUnCategorizedOnStat"
+      'category/setIsUnCategorizedOnStat',
     ),
   setColorForUnCategorized: (colorForUnCategorized: string) =>
     set(
       (state) => ({ colorForUnCategorized }),
       undefined,
-      "category/setColorForUnCategorized"
+      'category/setColorForUnCategorized',
     ),
   setCategoryChangeInfoArray: (categoryChangeInfoArray: CategoryChangeInfo[]) =>
     set(
       (state) => ({ categoryChangeInfoArray }),
       undefined,
-      "category/setCategoryChangeInfoArray"
+      'category/setCategoryChangeInfoArray',
     ),
   setDoesItJustChangeCategory: (doesItJustChangeCategory: boolean) =>
     set(
       (state) => ({ doesItJustChangeCategory }),
       undefined,
-      "category/setDoesItJustChangeCategory"
+      'category/setDoesItJustChangeCategory',
     ),
 });
 
@@ -309,7 +309,7 @@ const createGoalSlice: StateCreator<
     GoalSlice &
     TodoistIntegrationSlice &
     SharedSlice,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   GoalSlice
 > = (set) => ({
@@ -334,7 +334,7 @@ const createGoalSlice: StateCreator<
         state.goals.weeklyGoal.minimum = minimum;
       },
       undefined,
-      "goal/setWeeklyMinimum"
+      'goal/setWeeklyMinimum',
     ),
   setWeeklyIdeal: (ideal: number) =>
     set(
@@ -342,7 +342,7 @@ const createGoalSlice: StateCreator<
         state.goals.weeklyGoal.ideal = ideal;
       },
       undefined,
-      "goal/setWeeklyIdeal"
+      'goal/setWeeklyIdeal',
     ),
   setDailyGoals: (dailyGoals) =>
     set(
@@ -350,7 +350,7 @@ const createGoalSlice: StateCreator<
         state.goals.dailyGoals = dailyGoals;
       },
       undefined,
-      "goal/setDailyGoals"
+      'goal/setDailyGoals',
     ),
 });
 
@@ -361,7 +361,7 @@ const createSharedSlice: StateCreator<
     GoalSlice &
     TodoistIntegrationSlice &
     SharedSlice,
-  [["zustand/devtools", never], ["zustand/immer", never]],
+  [['zustand/devtools', never], ['zustand/immer', never]],
   [],
   SharedSlice
 > = (set) => ({
@@ -370,18 +370,18 @@ const createSharedSlice: StateCreator<
       (state) => {
         //* For now, we do not care about whether a user's todoistIntegration is enabled or not.
         //* If it is disabled, data.currentTaskId will just be "".
-        sessionStorage.setItem("currentTaskId", data.currentTaskId);
+        sessionStorage.setItem('currentTaskId', data.currentTaskId);
 
         // [{ id: null, taskChangeTimestamp: 0 }] - default value
         let taskChangeInfoArray: TaskChangeInfo[] = [];
         if (data.taskChangeInfoArray.length === 0) {
-          taskChangeInfoArray = [{ id: "", taskChangeTimestamp: 0 }];
+          taskChangeInfoArray = [{ id: '', taskChangeTimestamp: 0 }];
         } else {
           taskChangeInfoArray = data.taskChangeInfoArray;
         }
 
         const todoistTasksTreeAndMap = generateTaskDictionaryAndTree(
-          data.todoistTasks
+          data.todoistTasks,
         );
         const { rootTasks, taskMap } = todoistTasksTreeAndMap;
 
@@ -403,7 +403,7 @@ const createSharedSlice: StateCreator<
         };
       },
       undefined,
-      "shared/populate"
+      'shared/populate',
     );
   },
   populateNonSignInUserStates: (data) => {
@@ -415,7 +415,7 @@ const createSharedSlice: StateCreator<
         currentCycleInfo: data.currentCycleInfo,
       }),
       undefined,
-      "timer/populateNonSignInUserStates"
+      'timer/populateNonSignInUserStates',
     );
   },
 });
@@ -436,8 +436,8 @@ export const useBoundedPomoInfoStore = create<
       ...createGoalSlice(...a),
       ...createTodoistIntegrationSlice(...a),
       ...createSharedSlice(...a),
-    }))
-  )
+    })),
+  ),
 );
 
 // Export store API separately

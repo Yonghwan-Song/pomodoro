@@ -1,13 +1,13 @@
-import ReactDOM from "react-dom/client";
-import "./index.css";
-import App from "./App";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import { Main, Signin, Settings, Statistics, GroupStudy } from "./Pages/index";
-import { RoomList } from "./Pages/GroupStudy/RoomList";
-import { Room } from "./Pages/GroupStudy/Room";
-import Protected from "./ReusableComponents/Protected";
-import { IDBPDatabase, DBSchema, openDB } from "idb";
-import { PauseType } from "./Pages/Main/Timer-Related/reducers";
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { Main, Signin, Settings, Statistics, GroupStudy } from './Pages/index';
+import { RoomList } from './Pages/GroupStudy/RoomList';
+import { Room } from './Pages/GroupStudy/Room';
+import Protected from './ReusableComponents/Protected';
+import { IDBPDatabase, DBSchema, openDB } from 'idb';
+import { PauseType } from './Pages/Main/Timer-Related/reducers';
 import {
   TimerStateType,
   PatternTimerStatesType,
@@ -18,9 +18,9 @@ import {
   CycleInfoType,
   TimersStatesTypeWithCurrentCycleInfo,
   CycleRecord,
-} from "./types/clientStatesType";
-import { Vacant } from "./Pages/Vacant/Vacant";
-import { PomoSettingType } from "./types/clientStatesType";
+} from './types/clientStatesType';
+import { Vacant } from './Pages/Vacant/Vacant';
+import { PomoSettingType } from './types/clientStatesType';
 import {
   CacheName,
   IDB_VERSION,
@@ -38,29 +38,29 @@ import {
   FAILED_REQUESTS_STORE_NAME,
   CATEGORY_CHANGE_INFO_STORE_NAME,
   TASK_DURATION_TRACKING_STORE_NAME,
-} from "./constants";
-import { pubsub } from "./pubsub";
-import { User, onAuthStateChanged, getIdToken } from "firebase/auth";
-import { auth } from "./firebase";
-import { defineInterceptorsForAxiosInstance } from "./axios-and-error-handling/axios-interceptors";
-import { axiosInstance } from "./axios-and-error-handling/axios-instances";
+} from './constants';
+import { pubsub } from './pubsub';
+import { User, onAuthStateChanged, getIdToken } from 'firebase/auth';
+import { auth } from './firebase';
+import { defineInterceptorsForAxiosInstance } from './axios-and-error-handling/axios-interceptors';
+import { axiosInstance } from './axios-and-error-handling/axios-instances';
 import {
   ERR_CONTROLLER,
   errController,
-} from "./axios-and-error-handling/errorController";
-import { AxiosRequestConfig } from "axios";
-import { boundedPomoInfoStore } from "./zustand-stores/pomoInfoStoreUsingSlice";
-import { roundTo_X_DecimalPoints } from "./utils/number-related-utils";
+} from './axios-and-error-handling/errorController';
+import { AxiosRequestConfig } from 'axios';
+import { boundedPomoInfoStore } from './zustand-stores/pomoInfoStoreUsingSlice';
+import { roundTo_X_DecimalPoints } from './utils/number-related-utils';
 import {
   assignStartTimeToChangeInfoArrays,
   getCycleRecord,
-} from "./utils/anything";
-import { TaskChangeInfo } from "./types/todoistRelatedTypes";
-import { notify, makeSound } from "./utils/notify";
-import { recordPomo } from "./utils/recordPomo";
-import { persistRecOfTodayToServer } from "./utils/persistRecOfTodayToServer";
-import { handleSessionEndBySW } from "./utils/handleSessionEndBySW";
-import { handleEndOfCycle } from "./utils/handleEndOfCycle";
+} from './utils/anything';
+import { TaskChangeInfo } from './types/todoistRelatedTypes';
+import { notify, makeSound } from './utils/notify';
+import { recordPomo } from './utils/recordPomo';
+import { persistRecOfTodayToServer } from './utils/persistRecOfTodayToServer';
+import { handleSessionEndBySW } from './utils/handleSessionEndBySW';
+import { handleEndOfCycle } from './utils/handleEndOfCycle';
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
@@ -79,7 +79,7 @@ interface TimerRelatedDB extends DBSchema {
   };
   recOfToday: {
     value: {
-      kind: "pomo" | "break";
+      kind: 'pomo' | 'break';
       startTime: number;
 
       // startTime + duration
@@ -96,20 +96,20 @@ interface TimerRelatedDB extends DBSchema {
   failedReqInfo: {
     value: {
       userEmail: string;
-      value: ERR_CONTROLLER["failedReqInfo"]; //https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
+      value: ERR_CONTROLLER['failedReqInfo']; //https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
     };
     key: string;
   };
   categoryStore: {
     value: {
-      name: "changeInfoArray";
+      name: 'changeInfoArray';
       value: CategoryChangeInfo[];
     };
     key: string;
   };
   taskDurationTracking: {
     value: {
-      name: "taskChangeInfoArray";
+      name: 'taskChangeInfoArray';
       value: TaskChangeInfo[];
     };
     key: string;
@@ -146,12 +146,12 @@ export const deciderOfWhetherDataForRunningTimerFetched: [boolean, boolean] = [
 pubsub.subscribe(SUCCESS_PersistingTimersStatesWithCycleInfoToIDB, (data) => {
   deciderOfWhetherDataForRunningTimerFetched[0] = true;
 });
-pubsub.subscribe("successOfPersistingRecordsOfTodayToIDB", (data) => {
+pubsub.subscribe('successOfPersistingRecordsOfTodayToIDB', (data) => {
   deciderOfWhetherDataForRunningTimerFetched[1] = true;
 });
 
-const BC = new BroadcastChannel("pomodoro");
-const root = ReactDOM.createRoot(document.getElementById("root")!);
+const BC = new BroadcastChannel('pomodoro');
+const root = ReactDOM.createRoot(document.getElementById('root')!);
 //#endregion
 
 root.render(
@@ -173,7 +173,10 @@ root.render(
             <Route path="room/:roomId" element={<Room />} />
           </Route>
         ) : (
-          <Route path="group-study/*" element={<Navigate to="/timer" replace />} />
+          <Route
+            path="group-study/*"
+            element={<Navigate to="/timer" replace />}
+          />
         )}
         <Route
           path="statistics"
@@ -192,13 +195,13 @@ root.render(
 //#region event handlers
 // 필요한 이유: session이 종료될 때 해야하는 작업들 중, service worker thread에서는 처리할 수 없는 것들이 있기 때문에,
 // main thread에서 처리 할 수 있도록 message를 보내는 것. e.g) zustand store에 있는 global state들 update하는 경우.
-BC.addEventListener("message", async (ev) => {
+BC.addEventListener('message', async (ev) => {
   const userEmail = await getUserEmail();
 
   const { evName, payload } = ev.data;
 
   switch (evName) {
-    case "pomoAdded":
+    case 'pomoAdded':
       // type of the payload
       // {
       //   userEmail: string;
@@ -216,7 +219,7 @@ BC.addEventListener("message", async (ev) => {
       boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
 
       break;
-    case "endOfCycle": // payload is a cycleRecord
+    case 'endOfCycle': // payload is a cycleRecord
       handleEndOfCycle(payload, userEmail);
       break;
 
@@ -228,7 +231,7 @@ BC.addEventListener("message", async (ev) => {
      * 2. update the timersStates' running and startTime.
      * 3. reset the taskChangeInfoArray in the state store.
      */
-    case "sessionEndBySW":
+    case 'sessionEndBySW':
       pubsub.publish(evName, payload); // This event is subscribed by NavBar's useEffect callback.
       boundedPomoInfoStore.getState().setTimersStatesPartial({
         running: false,
@@ -239,7 +242,7 @@ BC.addEventListener("message", async (ev) => {
 
       if (
         sessionTypeJustFinished !== null &&
-        sessionTypeJustFinished.toUpperCase() === "POMO"
+        sessionTypeJustFinished.toUpperCase() === 'POMO'
       ) {
         const currentTaskId = boundedPomoInfoStore.getState().currentTaskId;
         const newTaskChangeInfo = {
@@ -257,11 +260,11 @@ BC.addEventListener("message", async (ev) => {
 
       break;
 
-    case "makeSound":
+    case 'makeSound':
       makeSound();
       break;
 
-    case "autoStartCurrentSession":
+    case 'autoStartCurrentSession':
       const {
         timersStates,
         currentCycleInfo,
@@ -270,7 +273,7 @@ BC.addEventListener("message", async (ev) => {
         prevSessionType,
       } = payload; // sw.js의 BC에 의해...
 
-      console.log("payload is not including currentCategoryName", payload);
+      console.log('payload is not including currentCategoryName', payload);
 
       // console.log("about to call autoStartCurrentSession in index.tsx");
       autoStartCurrentSession({
@@ -283,7 +286,7 @@ BC.addEventListener("message", async (ev) => {
       });
       break;
 
-    case "fetchCallFailed_Network_Error":
+    case 'fetchCallFailed_Network_Error':
       // console.log("A Payload of FetchCallFailed_Network_Error");
       // console.log(
       //   "Payload in BC event handler for fetchCallFailed_Network_Error",
@@ -299,7 +302,7 @@ BC.addEventListener("message", async (ev) => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // console.log("ev handler for DOMContentLoaded is called");
   try {
     defineInterceptorsForAxiosInstance();
@@ -308,7 +311,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     DynamicCache = await openCache(CacheName);
 
     //IMPT 로그아웃할때 unsub해야하는거 아니냐... -> //! 안해도 된다 왜냐하면, 로그아웃하고 앱 reload해서 어차피 다 사라짐.
-    pubsub.subscribe("connectionIsUp", async () => {
+    pubsub.subscribe('connectionIsUp', async () => {
       // I did not call unsub function of this subscription.
       const userEmail = await getUserEmail(); //TODO: 그런데 이거 중복이네 hanldeFailedReqs에서 userEmail을 arg로 받아서 사용할 수 있는 방법을 찾아보든가
       // console.log("userEmail from subscribe to connectionIsUp", userEmail);
@@ -332,9 +335,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-window.addEventListener("beforeunload", async (event) => {
+window.addEventListener('beforeunload', async (event) => {
   stopCountDownInBackground();
-  if (localStorage.getItem("user") === "authenticated") {
+  if (localStorage.getItem('user') === 'authenticated') {
     sessionStorage.removeItem(CURRENT_CATEGORY_NAME);
     sessionStorage.removeItem(CURRENT_TASK_ID); // When a user's todoistIntegration is diabled, the id is just an empty string. 그래서 없는거 지우는게 아님.
     await deleteCache(CacheName);
@@ -462,16 +465,16 @@ export async function clear__StateStore_RecOfToday_CategoryStore() {
   const db = DB || (await openIndexedDB());
   try {
     const stateStore = db
-      .transaction("stateStore", "readwrite")
-      .objectStore("stateStore");
+      .transaction('stateStore', 'readwrite')
+      .objectStore('stateStore');
     await stateStore.clear();
     const recOfToday = db
-      .transaction("recOfToday", "readwrite")
-      .objectStore("recOfToday");
+      .transaction('recOfToday', 'readwrite')
+      .objectStore('recOfToday');
     await recOfToday.clear();
     const categoryStore = db
-      .transaction("categoryStore", "readwrite")
-      .objectStore("categoryStore");
+      .transaction('categoryStore', 'readwrite')
+      .objectStore('categoryStore');
     await categoryStore.clear();
   } catch (error) {
     console.warn(error);
@@ -482,15 +485,15 @@ export async function setStateStoreToDefault() {
   // console.log("setStateStoreToDefault");
   const db = DB || (await openIndexedDB());
   try {
-    const tx = db.transaction("stateStore", "readwrite");
+    const tx = db.transaction('stateStore', 'readwrite');
     await Promise.all([
-      tx.store.put({ name: "duration", value: 25 }),
-      tx.store.put({ name: "repetitionCount", value: 0 }),
-      tx.store.put({ name: "running", value: false }),
-      tx.store.put({ name: "startTime", value: 0 }),
-      tx.store.put({ name: "pause", value: { totalLength: 0, record: [] } }),
+      tx.store.put({ name: 'duration', value: 25 }),
+      tx.store.put({ name: 'repetitionCount', value: 0 }),
+      tx.store.put({ name: 'running', value: false }),
+      tx.store.put({ name: 'startTime', value: 0 }),
+      tx.store.put({ name: 'pause', value: { totalLength: 0, record: [] } }),
       tx.store.put({
-        name: "currentCycleInfo",
+        name: 'currentCycleInfo',
         value: {
           totalFocusDuration: 100 * 60,
           cycleDuration: 130 * 60,
@@ -500,7 +503,7 @@ export async function setStateStoreToDefault() {
         },
       }),
       tx.store.put({
-        name: "pomoSetting",
+        name: 'pomoSetting',
         value: {
           pomoDuration: 25,
           shortBreakDuration: 5,
@@ -510,7 +513,7 @@ export async function setStateStoreToDefault() {
         },
       }),
       tx.store.put({
-        name: "autoStartSetting",
+        name: 'autoStartSetting',
         value: {
           doesPomoStartAutomatically: false,
           doesBreakStartAutomatically: false,
@@ -561,52 +564,52 @@ export async function delete_entry_of_cache(
 export async function openIndexedDB() {
   const db = await openDB<TimerRelatedDB>(TIMER_RELATED_DB, IDB_VERSION, {
     upgrade(db, oldVersion, newVersion, transaction, event) {
-      console.log("DB updated from version", oldVersion, "to", newVersion);
+      console.log('DB updated from version', oldVersion, 'to', newVersion);
 
       if (db.objectStoreNames.contains(STATE_STORE_NAME)) {
         db.deleteObjectStore(STATE_STORE_NAME);
       }
       db.createObjectStore(STATE_STORE_NAME, {
-        keyPath: "name",
+        keyPath: 'name',
       });
 
       if (db.objectStoreNames.contains(RECORDS_OF_TODAY_STORE_NAME)) {
         db.deleteObjectStore(RECORDS_OF_TODAY_STORE_NAME);
       }
       db.createObjectStore(RECORDS_OF_TODAY_STORE_NAME, {
-        keyPath: ["startTime"], //TODO: 이거는 왜 array야?
+        keyPath: ['startTime'], //TODO: 이거는 왜 array야?
       });
 
       if (db.objectStoreNames.contains(FAILED_REQUESTS_STORE_NAME)) {
         db.deleteObjectStore(FAILED_REQUESTS_STORE_NAME);
       }
       db.createObjectStore(FAILED_REQUESTS_STORE_NAME, {
-        keyPath: "userEmail",
+        keyPath: 'userEmail',
       });
 
       if (db.objectStoreNames.contains(CATEGORY_CHANGE_INFO_STORE_NAME)) {
         db.deleteObjectStore(CATEGORY_CHANGE_INFO_STORE_NAME);
       }
       db.createObjectStore(CATEGORY_CHANGE_INFO_STORE_NAME, {
-        keyPath: "name",
+        keyPath: 'name',
       });
 
       if (db.objectStoreNames.contains(TASK_DURATION_TRACKING_STORE_NAME)) {
         db.deleteObjectStore(TASK_DURATION_TRACKING_STORE_NAME);
       }
       db.createObjectStore(TASK_DURATION_TRACKING_STORE_NAME, {
-        keyPath: "name",
+        keyPath: 'name',
       });
     },
 
     blocking(currentVersion, blockedVersion, event) {
-      console.log("blocking", event);
+      console.log('blocking', event);
       window.location.reload();
     },
   });
 
   db.onclose = async (ev) => {
-    console.log("The database connection was unexpectedly closed", ev);
+    console.log('The database connection was unexpectedly closed', ev);
     DB = null;
     DB = await openIndexedDB();
   };
@@ -615,23 +618,23 @@ export async function openIndexedDB() {
 }
 
 export async function obtainStatesFromIDB(
-  opt: "withoutSettings",
+  opt: 'withoutSettings',
 ): Promise<TimersStatesTypeWithCurrentCycleInfo | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withSettings",
+  opt: 'withSettings',
 ): Promise<dataCombinedFromIDB | {}>;
 export async function obtainStatesFromIDB(
-  opt: "withoutSettings" | "withSettings",
+  opt: 'withoutSettings' | 'withSettings',
 ): Promise<any | {}> {
   const db = DB || (await openIndexedDB());
   // console.log("db", db);
-  const store = db.transaction("stateStore").objectStore("stateStore");
+  const store = db.transaction('stateStore').objectStore('stateStore');
   const dataArr = await store.getAll(); // dataArr gets [] if the store is empty.
   const states: dataCombinedFromIDB | {} = dataArr.reduce((acc, cur) => {
     return { ...acc, [cur.name]: cur.value };
   }, {});
   if (Object.keys(states).length !== 0) {
-    if (opt === "withoutSettings") {
+    if (opt === 'withoutSettings') {
       const {
         pomoSetting,
         autoStartSetting,
@@ -650,8 +653,8 @@ export async function obtainStatesFromIDB(
 export async function deleteRecordsBeforeTodayInIDB() {
   const db = DB || (await openIndexedDB());
   const store = db
-    .transaction("recOfToday", "readwrite")
-    .objectStore("recOfToday");
+    .transaction('recOfToday', 'readwrite')
+    .objectStore('recOfToday');
   const allSessions = await store.getAll();
   const now = new Date();
   const startOfTodayTimestamp = new Date(
@@ -670,11 +673,11 @@ export async function getCategoryChangeInfoArrayFromIDB() {
   const db = DB || (await openIndexedDB());
 
   const store = db
-    .transaction("categoryStore", "readwrite")
-    .objectStore("categoryStore");
+    .transaction('categoryStore', 'readwrite')
+    .objectStore('categoryStore');
 
   try {
-    return store.get("changeInfoArray");
+    return store.get('changeInfoArray');
   } catch (error) {
     console.warn(error);
   }
@@ -683,8 +686,8 @@ export async function getCategoryChangeInfoArrayFromIDB() {
 export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   const db = DB || (await openIndexedDB());
   const store = db
-    .transaction("recOfToday", "readonly")
-    .objectStore("recOfToday");
+    .transaction('recOfToday', 'readonly')
+    .objectStore('recOfToday');
   const allSessions = await store.getAll();
   // console.log("allSessions", allSessions);
   return allSessions;
@@ -693,9 +696,9 @@ export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
 export async function retrieveAutoStartSettingFromIDB() {
   const db = DB || (await openIndexedDB());
   const store = db
-    .transaction("stateStore", "readonly")
-    .objectStore("stateStore");
-  const result = await store.get("autoStartSetting");
+    .transaction('stateStore', 'readonly')
+    .objectStore('stateStore');
+  const result = await store.get('autoStartSetting');
   if (isAutoStartSettingRecord(result)) {
     return result.value;
   } else {
@@ -706,28 +709,28 @@ export async function retrieveAutoStartSettingFromIDB() {
 }
 
 function isAutoStartSettingRecord(
-  record: TimerRelatedDB["stateStore"]["value"] | undefined,
-): record is { name: "autoStartSetting"; value: AutoStartSettingType } {
+  record: TimerRelatedDB['stateStore']['value'] | undefined,
+): record is { name: 'autoStartSetting'; value: AutoStartSettingType } {
   if (record === undefined) return false;
-  if (record.name !== "autoStartSetting") return false;
+  if (record.name !== 'autoStartSetting') return false;
   const value = record.value as AutoStartSettingType;
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     value !== null &&
-    typeof value.doesPomoStartAutomatically === "boolean" &&
-    typeof value.doesBreakStartAutomatically === "boolean" &&
-    typeof value.doesCycleStartAutomatically === "boolean"
+    typeof value.doesPomoStartAutomatically === 'boolean' &&
+    typeof value.doesBreakStartAutomatically === 'boolean' &&
+    typeof value.doesCycleStartAutomatically === 'boolean'
   );
 }
 
 export async function persistFailedReqInfoToIDB(
-  data: TimerRelatedDB["failedReqInfo"]["value"],
+  data: TimerRelatedDB['failedReqInfo']['value'],
 ) {
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("failedReqInfo", "readwrite")
-      .objectStore("failedReqInfo");
+      .transaction('failedReqInfo', 'readwrite')
+      .objectStore('failedReqInfo');
 
     await store.put(data);
 
@@ -741,23 +744,23 @@ export async function persistSingleTodaySessionToIDB({
   kind,
   data,
 }: {
-  kind: "pomo" | "break";
-  data: Omit<TimerStateType, "running"> & {
+  kind: 'pomo' | 'break';
+  data: Omit<TimerStateType, 'running'> & {
     endTime: number;
     timeCountedDown: number;
   };
 }) {
   const db = DB || (await openIndexedDB());
   const store = db
-    .transaction("recOfToday", "readwrite")
-    .objectStore("recOfToday");
+    .transaction('recOfToday', 'readwrite')
+    .objectStore('recOfToday');
 
   // console.log("sessionData", { kind, ...data });
   try {
     if (data.startTime !== 0) {
       // if it is 0, it means user just clicks end button without having not started the session.
       await store.add({ kind, ...data });
-      if (kind === "pomo") {
+      if (kind === 'pomo') {
         // console.log(
         //   "adding pomo in --------------persistingSingleTodaySessionToIDB--------------",
         //   { kind, ...data }
@@ -773,8 +776,8 @@ export async function persistManyTodaySessionsToIDB(records: RecType[]) {
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("recOfToday", "readwrite")
-      .objectStore("recOfToday");
+      .transaction('recOfToday', 'readwrite')
+      .objectStore('recOfToday');
     for (const val of records) {
       await store.put(val);
     }
@@ -802,8 +805,8 @@ export async function persistStatesToIDB(
 ) {
   const db = DB || (await openIndexedDB());
   const store = db
-    .transaction("stateStore", "readwrite")
-    .objectStore("stateStore");
+    .transaction('stateStore', 'readwrite')
+    .objectStore('stateStore');
   try {
     // console.log("INSIDE PERSIST-STATES-TO-IDB");
     for (const [key, value] of Object.entries(states)) {
@@ -821,10 +824,10 @@ export async function persistCategoryChangeInfoArrayToIDB(
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("categoryStore", "readwrite")
-      .objectStore("categoryStore");
+      .transaction('categoryStore', 'readwrite')
+      .objectStore('categoryStore');
 
-    await store.put({ name: "changeInfoArray", value: infoArr });
+    await store.put({ name: 'changeInfoArray', value: infoArr });
   } catch (error) {
     console.warn(error);
   }
@@ -836,10 +839,10 @@ export async function persistTaskChangeInfoArrayToIDB(
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction(TASK_DURATION_TRACKING_STORE_NAME, "readwrite")
+      .transaction(TASK_DURATION_TRACKING_STORE_NAME, 'readwrite')
       .objectStore(TASK_DURATION_TRACKING_STORE_NAME);
 
-    await store.put({ name: "taskChangeInfoArray", value: infoArr });
+    await store.put({ name: 'taskChangeInfoArray', value: infoArr });
   } catch (error) {
     console.warn(error);
   }
@@ -849,8 +852,8 @@ export async function clearCategoryStore() {
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("categoryStore", "readwrite")
-      .objectStore("categoryStore");
+      .transaction('categoryStore', 'readwrite')
+      .objectStore('categoryStore');
     await store.clear();
   } catch (error) {
     console.warn(error);
@@ -861,8 +864,8 @@ export async function emptyStateStore() {
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("stateStore", "readwrite")
-      .objectStore("stateStore");
+      .transaction('stateStore', 'readwrite')
+      .objectStore('stateStore');
     await store.clear();
   } catch (error) {
     console.warn(error);
@@ -873,8 +876,8 @@ export async function clearRecOfToday() {
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("recOfToday", "readwrite")
-      .objectStore("recOfToday");
+      .transaction('recOfToday', 'readwrite')
+      .objectStore('recOfToday');
     await store.clear();
   } catch (error) {
     console.warn(error);
@@ -885,8 +888,8 @@ export async function emptyFailedReqInfo(userEmail: string) {
   try {
     const db = DB || (await openIndexedDB());
     const store = db
-      .transaction("failedReqInfo", "readwrite")
-      .objectStore("failedReqInfo");
+      .transaction('failedReqInfo', 'readwrite')
+      .objectStore('failedReqInfo');
     // console.log(`about to delete ${userEmail}`);
     await store.delete(userEmail);
   } catch (error) {
@@ -939,8 +942,7 @@ function computeTargetedDurations(pomoSetting: PomoSettingType) {
     (pomoDuration * numOfPomo +
       shortBreakDuration * (numOfPomo - 1) +
       longBreakDuration);
-  const totalDurationOfSetOfCyclesTargeted =
-    numOfCycle * cycleDurationTargeted;
+  const totalDurationOfSetOfCyclesTargeted = numOfCycle * cycleDurationTargeted;
   return {
     totalFocusDurationTargeted,
     cycleDurationTargeted,
@@ -989,15 +991,12 @@ async function prepareCategoryChangeAndPersistForSessionEnd(params: {
   const categoryChangeInfoArrayBeforeReset =
     categoryChangeInfoResult?.value ?? [];
   if (categoryChangeInfoArrayBeforeReset.length === 0) {
-    console.warn("categoryChangeInfoArray is missing in IDB");
+    console.warn('categoryChangeInfoArray is missing in IDB');
   }
 
   // NOTE: create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
   const firstCategoryChange = categoryChangeInfoArrayBeforeReset[0];
-  if (
-    firstCategoryChange &&
-    firstCategoryChange.categoryChangeTimestamp === 0
-  )
+  if (firstCategoryChange && firstCategoryChange.categoryChangeTimestamp === 0)
     firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
 
   const firstTaskChange = taskChangeInfoArray[0];
@@ -1060,7 +1059,7 @@ function handleAutoStartOrPersist(options: {
   autoStart: () => void;
 }) {
   if (options.autoStartSetting === undefined) {
-    console.warn("autoStartSetting is undefined");
+    console.warn('autoStartSetting is undefined');
     return;
   }
   if (options.shouldAutoStart) options.autoStart();
@@ -1084,7 +1083,7 @@ type SessionWrapUpContext = {
   kindOfSessionJustFinished: number;
 };
 
-export async function endTimer(action: "endTimer", payload: GoNextPayload) {
+export async function endTimer(action: 'endTimer', payload: GoNextPayload) {
   const { pomoSetting, timersStatesWithCurrentCycleInfo, taskChangeInfoArray } =
     payload;
   const { currentCycleInfo, ...timersStates } =
@@ -1158,10 +1157,10 @@ export async function endTimer(action: "endTimer", payload: GoNextPayload) {
 }
 
 export function stopCountDownInBackground() {
-  const id = localStorage.getItem("idOfSetInterval");
+  const id = localStorage.getItem('idOfSetInterval');
   if (id !== null) {
     clearInterval(Number(id));
-    localStorage.removeItem("idOfSetInterval");
+    localStorage.removeItem('idOfSetInterval');
   }
 }
 
@@ -1171,7 +1170,7 @@ export function stopCountDownInBackground() {
  *! The timersStates
  */
 export async function countDown(setIntervalId: number | string | null) {
-  const statesFromIDB = await obtainStatesFromIDB("withSettings"); // autoStartSetting 포함!
+  const statesFromIDB = await obtainStatesFromIDB('withSettings'); // autoStartSetting 포함!
 
   if (Object.entries(statesFromIDB).length !== 0) {
     const {
@@ -1211,12 +1210,12 @@ export async function countDown(setIntervalId: number | string | null) {
         if (remainingDuration <= 0) {
           // console.log("idOfSetInterval by countDown()", idOfSetInterval);
           clearInterval(idOfSetInterval);
-          localStorage.removeItem("idOfSetInterval");
+          localStorage.removeItem('idOfSetInterval');
           // console.log(
           //   "-------------------------------------About To Call EndTimer()-------------------------------------"
           // );
 
-          endTimer("endTimer", {
+          endTimer('endTimer', {
             pomoSetting,
             timersStatesWithCurrentCycleInfo,
             taskChangeInfoArray:
@@ -1225,7 +1224,7 @@ export async function countDown(setIntervalId: number | string | null) {
         }
       }, 500);
 
-      localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+      localStorage.setItem('idOfSetInterval', idOfSetInterval.toString());
     }
   }
 
@@ -1323,7 +1322,7 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
     taskChangeInfoArray,
     statesOfTimerReset,
   } = ctx;
-  notify("shortBreak");
+  notify('shortBreak');
 
   timersStatesForNextSession.duration = ctx.pomoSetting.shortBreakDuration;
   await persistTimerStatesToIDB({
@@ -1339,10 +1338,10 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
       sessionData,
     );
     await persistSingleTodaySessionToIDB({
-      kind: "pomo",
+      kind: 'pomo',
       data: sessionData,
     });
-    persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+    persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, idToken);
   }
 
   handleAutoStartOrPersist({
@@ -1372,7 +1371,7 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
     idToken,
     statesOfTimerReset,
   } = ctx;
-  notify("pomo");
+  notify('pomo');
 
   timersStatesForNextSession.duration = pomoSetting.pomoDuration;
 
@@ -1383,7 +1382,7 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
   });
 
   await persistSingleTodaySessionToIDB({
-    kind: "break",
+    kind: 'break',
     data: sessionData,
   });
 
@@ -1404,7 +1403,7 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
   });
 
   sessionData.startTime !== 0 &&
-    persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+    persistRecOfTodayToServer({ kind: 'break', ...sessionData }, idToken);
 }
 
 async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
@@ -1420,7 +1419,7 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
     taskChangeInfoArray,
     statesOfTimerReset,
   } = ctx;
-  notify("longBreak");
+  notify('longBreak');
 
   timersStatesForNextSession.duration = pomoSetting.longBreakDuration;
 
@@ -1436,9 +1435,9 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
       taskChangeInfoArray,
       sessionData,
     );
-    persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+    persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, idToken);
     await persistSingleTodaySessionToIDB({
-      kind: "pomo",
+      kind: 'pomo',
       data: sessionData,
     });
   }
@@ -1474,7 +1473,7 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     cycleDurationTargeted,
     totalDurationOfSetOfCyclesTargeted,
   } = ctx;
-  notify("cyclesCompleted");
+  notify('cyclesCompleted');
 
   const cycleRecordVeryLastPomo = getCycleRecord(
     currentCycleInfo.cycleDuration,
@@ -1520,10 +1519,10 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
       sessionData,
     );
     await persistSingleTodaySessionToIDB({
-      kind: "pomo",
+      kind: 'pomo',
       data: sessionData,
     });
-    persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, idToken);
+    persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, idToken);
   }
 }
 
@@ -1540,7 +1539,7 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
     totalFocusDurationTargeted,
     cycleDurationTargeted,
   } = ctx;
-  notify("nextCycle");
+  notify('nextCycle');
 
   const cycleRecordLongBreak = getCycleRecord(
     currentCycleInfo.cycleDuration,
@@ -1571,7 +1570,7 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
   });
 
   await persistSingleTodaySessionToIDB({
-    kind: "break",
+    kind: 'break',
     data: sessionData,
   });
 
@@ -1606,7 +1605,7 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
   });
 
   sessionData.startTime !== 0 &&
-    persistRecOfTodayToServer({ kind: "break", ...sessionData }, idToken);
+    persistRecOfTodayToServer({ kind: 'break', ...sessionData }, idToken);
 }
 
 // 1. 시작한다는 의미:
@@ -1668,12 +1667,12 @@ async function autoStartCurrentSession({
         //   idOfSetInterval
         // );
         clearInterval(idOfSetInterval);
-        localStorage.removeItem("idOfSetInterval");
+        localStorage.removeItem('idOfSetInterval');
 
         // console.log(
         //   "-------------------------------------About To Call EndTimer()-------------------------------------"
         // );
-        endTimer("endTimer", {
+        endTimer('endTimer', {
           // currentCategoryName,
           //* 그러니까 만약에 한 세션이 `/timer`이외의 다른 페이지에서 "자동시작"되었다고 가정하자.
           //* 이때, 그 current session의 category에 대한 변동을 위의 `currentCategoryName`은 반영할 수 없다.
@@ -1693,7 +1692,7 @@ async function autoStartCurrentSession({
         });
       }
     }, 500);
-    localStorage.setItem("idOfSetInterval", idOfSetInterval.toString());
+    localStorage.setItem('idOfSetInterval', idOfSetInterval.toString());
     //#endregion
 
     // const stateArr: {
@@ -1814,7 +1813,7 @@ export async function getCacheNames() {
     // console.log("Cache Names:", cacheNames);
     return cacheNames;
   } catch (error) {
-    console.error("Error fetching cache names:", error);
+    console.error('Error fetching cache names:', error);
   }
 }
 //#endregion

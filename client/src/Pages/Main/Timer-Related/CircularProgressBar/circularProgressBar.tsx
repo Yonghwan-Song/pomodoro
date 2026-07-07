@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
-import * as C from "../../../../constants/index";
-import styles from "./circularProgressBar.module.css";
+import React, { useEffect, useMemo, useState } from 'react';
+import * as C from '../../../../constants/index';
+import styles from './circularProgressBar.module.css';
 import {
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
   persistTimersStatesToServer,
-} from "../../../..";
-import { useAuthContext } from "../../../../Context/AuthContext";
-import { CategoryChangeInfoForCircularProgressBar } from "../../../../types/clientStatesType";
-import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
-import { useBoundedPomoInfoStore } from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
-import { isThisFocusSession } from "../utility-functions";
+} from '../../../..';
+import { useAuthContext } from '../../../../Context/AuthContext';
+import { CategoryChangeInfoForCircularProgressBar } from '../../../../types/clientStatesType';
+import { axiosInstance } from '../../../../axios-and-error-handling/axios-instances';
+import { useBoundedPomoInfoStore } from '../../../../zustand-stores/pomoInfoStoreUsingSlice';
+import { isThisFocusSession } from '../utility-functions';
 
 type CircularProgressBarProps = {
   progress: number;
@@ -69,10 +69,10 @@ const CircularProgressBar = ({
   setTotalDurationOfSetOfCyclesInSec,
 }: CircularProgressBarProps) => {
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.categoryChangeInfoArray
+    (state) => state.categoryChangeInfoArray,
   );
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.setCategoryChangeInfoArray
+    (state) => state.setCategoryChangeInfoArray,
   );
   const { user } = useAuthContext()!;
 
@@ -95,7 +95,7 @@ const CircularProgressBar = ({
    */
   const [infoArrayOfPrevCategories, currentCategoryInfo]: [
     CategoryChangeInfoForCircularProgressBar[],
-    { categoryName: string; color: string; progress: number }
+    { categoryName: string; color: string; progress: number },
   ] = useMemo(() => {
     if (user !== null) {
       if (categoryChangeInfoArray.length > 1) {
@@ -108,7 +108,7 @@ const CircularProgressBar = ({
             }
 
             return { ...info, segmentProgress };
-          }
+          },
         );
         changeInfoArrwithSegmentProgress.pop();
 
@@ -133,13 +133,13 @@ const CircularProgressBar = ({
         // for new users who do not have any categories yet.
         return [
           [],
-          { categoryName: "uncategorized", color: "#f04005", progress: 0 },
+          { categoryName: 'uncategorized', color: '#f04005', progress: 0 },
         ];
       }
     } else {
       return [
         [],
-        { categoryName: "uncategorized", color: "#f04005", progress: 0 },
+        { categoryName: 'uncategorized', color: '#f04005', progress: 0 },
       ];
     }
   }, [categoryChangeInfoArray, user]);
@@ -232,7 +232,7 @@ const CircularProgressBar = ({
           C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           {
             categoryChangeInfoArray: infoArray_upgraded,
-          }
+          },
         );
     }
   }
@@ -315,7 +315,7 @@ const CircularProgressBar = ({
             C.RESOURCE.USERS + C.SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
             {
               categoryChangeInfoArray: upgradedInfoArray,
-            }
+            },
           );
       }
     }
@@ -367,9 +367,9 @@ const CircularProgressBar = ({
           <circle
             key={index}
             style={{
-              fill: "none",
-              transform: "rotate(-0.25turn)",
-              transformOrigin: "center",
+              fill: 'none',
+              transform: 'rotate(-0.25turn)',
+              transformOrigin: 'center',
             }}
             // className={styles.circletwo} <--  이렇게 하면 삑남
             r={C.RADIUS}
@@ -379,11 +379,11 @@ const CircularProgressBar = ({
             strokeWidth={C.STROKE_WIDTH}
             strokeDashoffset={getOffset(info.progress)}
             strokeDasharray={`${getProgressSegment(
-              info.segmentProgress
+              info.segmentProgress,
             )} ${getRemainingSegment(info.segmentProgress)}`}
             onMouseEnter={() => {
               const segDurationInSec = Math.floor(
-                info.segmentProgress * durationInSeconds
+                info.segmentProgress * durationInSeconds,
               );
               // console.log(`${segDurationInSec}sec`);
               const dur = `${Math.floor(segDurationInSec / 60)}min ${
@@ -391,7 +391,7 @@ const CircularProgressBar = ({
               }sec`;
               // console.log(dur);
             }}
-            onMouseLeave={() => console.log("leave")}
+            onMouseLeave={() => console.log('leave')}
           ></circle>
         );
       })}
@@ -405,7 +405,7 @@ const CircularProgressBar = ({
         strokeWidth={C.STROKE_WIDTH}
         strokeDashoffset={getOffset(currentCategoryInfo.progress)}
         strokeDasharray={`${getProgressSegment(
-          progress - currentCategoryInfo.progress
+          progress - currentCategoryInfo.progress,
         )} ${getRemainingSegment(progress - currentCategoryInfo.progress)}`}
       ></circle>
 
@@ -428,7 +428,7 @@ const CircularProgressBar = ({
         y={C.SVG.HEGITH / 2 - 20}
       >
         {/* to make the sign easier to click, I created a transparent circle */}
-        <g onClick={() => setAddCount((prev) => prev + 1)} cursor={"pointer"}>
+        <g onClick={() => setAddCount((prev) => prev + 1)} cursor={'pointer'}>
           <circle cx={20} cy={20} r={20} fill="transparent" />
           <line
             x1="10"
@@ -459,7 +459,7 @@ const CircularProgressBar = ({
       >
         <g
           onClick={() => setSubtractCount((prev) => prev + 1)}
-          cursor={"pointer"}
+          cursor={'pointer'}
         >
           <circle cx={20} cy={20} r={20} fill="transparent" />
           <line

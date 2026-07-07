@@ -153,9 +153,7 @@ export class SignalingGateway
   }
 
   @SubscribeMessage(EventNames.CREATE_SEND_TRANSPORT)
-  async handleCreateSendTransportRequest(
-    clientSocket: Socket,
-  ): Promise<void> {
+  async handleCreateSendTransportRequest(clientSocket: Socket): Promise<void> {
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.id,
@@ -166,9 +164,7 @@ export class SignalingGateway
   }
 
   @SubscribeMessage(EventNames.CREATE_RECV_TRANSPORT)
-  async handleCreateRecvTransportRequest(
-    clientSocket: Socket,
-  ): Promise<void> {
+  async handleCreateRecvTransportRequest(clientSocket: Socket): Promise<void> {
     const transportOptions =
       await this.groupStudyManagementService.establishTransport(
         clientSocket.id,

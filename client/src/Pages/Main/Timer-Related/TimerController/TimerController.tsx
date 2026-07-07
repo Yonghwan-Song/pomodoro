@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
-import { useState, useMemo, useEffect, useRef, useReducer } from "react";
-import { AxiosError } from "axios";
+import { useState, useMemo, useEffect, useRef, useReducer } from 'react';
+import { AxiosError } from 'axios';
 import {
   CacheName,
   RESOURCE,
@@ -9,8 +9,8 @@ import {
   CURRENT_SESSION_TYPE,
   CURRENT_TASK_ID,
   BREAK_POINTS,
-} from "../../../../constants/index";
-import { useAuthContext } from "../../../../Context/AuthContext";
+} from '../../../../constants/index';
+import { useAuthContext } from '../../../../Context/AuthContext';
 import {
   DynamicCache,
   openCache,
@@ -21,10 +21,10 @@ import {
   openIndexedDB,
   DB,
   persistStatesToIDB,
-} from "../../../..";
-import { notify } from "../../../../utils/notify";
-import { recordPomo } from "../../../../utils/recordPomo";
-import { persistRecOfTodayToServer } from "../../../../utils/persistRecOfTodayToServer";
+} from '../../../..';
+import { notify } from '../../../../utils/notify';
+import { recordPomo } from '../../../../utils/recordPomo';
+import { persistRecOfTodayToServer } from '../../../../utils/persistRecOfTodayToServer';
 import {
   AutoStartSettingType,
   CategoryChangeInfo,
@@ -35,8 +35,8 @@ import {
   TimerStateType,
   TimersStatesType,
   TimersStatesTypeWithCurrentCycleInfo,
-} from "../../../../types/clientStatesType";
-import { axiosInstance } from "../../../../axios-and-error-handling/axios-instances";
+} from '../../../../types/clientStatesType';
+import { axiosInstance } from '../../../../axios-and-error-handling/axios-instances';
 import {
   calculateCycleCount,
   calculateNumOfRemainingPomoSessions,
@@ -44,21 +44,21 @@ import {
   getProgress,
   msToSec,
   isThisFocusSession,
-} from "../utility-functions";
-import { roundTo_X_DecimalPoints } from "../../../../utils/number-related-utils";
+} from '../utility-functions';
+import { roundTo_X_DecimalPoints } from '../../../../utils/number-related-utils';
 import {
   boundedPomoInfoStore,
   useBoundedPomoInfoStore,
-} from "../../../../zustand-stores/pomoInfoStoreUsingSlice";
-import { FlexBox } from "../../../../ReusableComponents/Layouts/FlexBox";
-import CircularProgressBar from "../CircularProgressBar/circularProgressBar";
-import { Tooltip } from "react-tooltip";
-import PauseTimer from "../PauseTimer";
-import { Button } from "../../../../ReusableComponents/Buttons/Button";
-import { ACTION, reducer, TimerAction } from "../reducers";
-import Time from "../Time/Time";
-import { getAverage, isSessionNotStartedYet } from "../../../../utils/anything";
-import { css } from "@emotion/react";
+} from '../../../../zustand-stores/pomoInfoStoreUsingSlice';
+import { FlexBox } from '../../../../ReusableComponents/Layouts/FlexBox';
+import CircularProgressBar from '../CircularProgressBar/circularProgressBar';
+import { Tooltip } from 'react-tooltip';
+import PauseTimer from '../PauseTimer';
+import { Button } from '../../../../ReusableComponents/Buttons/Button';
+import { ACTION, reducer, TimerAction } from '../reducers';
+import Time from '../Time/Time';
+import { getAverage, isSessionNotStartedYet } from '../../../../utils/anything';
+import { css } from '@emotion/react';
 
 type TimerControllerProps = {
   statesRelatedToTimer: TimersStatesType | {};
@@ -87,33 +87,33 @@ export function TimerController({
 }: TimerControllerProps) {
   //#region global states
   const categoriesFromStore = useBoundedPomoInfoStore(
-    (state) => state.categories
+    (state) => state.categories,
   );
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.categoryChangeInfoArray
+    (state) => state.categoryChangeInfoArray,
   );
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.setCategoryChangeInfoArray
+    (state) => state.setCategoryChangeInfoArray,
   );
   const taskChangeInfoArray = useBoundedPomoInfoStore(
-    (states) => states.taskChangeInfoArray
+    (states) => states.taskChangeInfoArray,
   );
   const setTaskChangeInfoArray = useBoundedPomoInfoStore(
-    (state) => state.setTaskChangeInfoArray
+    (state) => state.setTaskChangeInfoArray,
   );
 
   const colorForUnCategorized = useBoundedPomoInfoStore(
-    (state) => state.colorForUnCategorized
+    (state) => state.colorForUnCategorized,
   );
   const doesItJustChangeCategory = useBoundedPomoInfoStore(
-    (state) => state.doesItJustChangeCategory
+    (state) => state.doesItJustChangeCategory,
   );
   const cycleSettings = useBoundedPomoInfoStore((state) => state.cycleSettings);
   const updateCycleSettings = useBoundedPomoInfoStore(
-    (state) => state.setCycleSettings
+    (state) => state.setCycleSettings,
   );
   const setTimersStatesPartial = useBoundedPomoInfoStore(
-    (states) => states.setTimersStatesPartial
+    (states) => states.setTimersStatesPartial,
   );
   const { user } = useAuthContext()!;
   //#endregion
@@ -160,11 +160,11 @@ export function TimerController({
       startTime: 0,
       pause: { totalLength: 0, record: [] },
     },
-    initializeTimerState
+    initializeTimerState,
   );
   const endTimeRef = useRef(0);
   const [remainingDurationInSec, setRemainingDurationInSec] = useState(
-    initializeRemainingDuration
+    initializeRemainingDuration,
   );
 
   //#region Ratios and adherenceRate
@@ -207,22 +207,22 @@ export function TimerController({
 
   const ratioTargeted = roundTo_X_DecimalPoints(
     totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-    2
+    2,
   );
   const currentRatio = roundTo_X_DecimalPoints(
     totalFocusDurationInSec / cycleDurationInSec,
-    2
+    2,
   );
   const adherenceRateInPercent = roundTo_X_DecimalPoints(
     (currentRatio / ratioTargeted) * 100,
-    2
+    2,
   );
   //#endregion
 
   //
   const [tooltipText, setTooltipText] = useState<
     [string, string, string, string]
-  >(["", "", "", ""]);
+  >(['', '', '', '']);
 
   /**
    * !IMPT
@@ -261,13 +261,13 @@ export function TimerController({
     isBeforeStartOfCycles,
     numOfPomo,
     numOfCycle,
-    repetitionCount
+    repetitionCount,
   );
   let repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
     numOfPomo,
     numOfCycle,
     repetitionCount,
-    cycleCount
+    cycleCount,
   ) as number;
 
   // console.log("numOfPomo", numOfPomo);
@@ -306,7 +306,7 @@ export function TimerController({
         timePassed = Date.now() - startTime;
         timeCountedDown = timePassed - pause.totalLength;
         remainingDuration = Math.floor(
-          (durationInSeconds * 1000 - timeCountedDown) / 1000
+          (durationInSeconds * 1000 - timeCountedDown) / 1000,
         );
       } else if (startTime === 0) {
         //running === false && startTime === 0 -> timer has not yet started.
@@ -328,7 +328,7 @@ export function TimerController({
 
         timeCountedDown = timePassed - pause.totalLength;
         remainingDuration = Math.floor(
-          (durationInSeconds * 1000 - timeCountedDown) / 1000
+          (durationInSeconds * 1000 - timeCountedDown) / 1000,
         );
       }
     }
@@ -345,17 +345,17 @@ export function TimerController({
     end: number,
     cycleDurationInSec: number,
     totalFocusDurationInSec: number,
-    caller: string = "omitted"
+    caller: string = 'omitted',
   ) {
     const currentRatio = roundTo_X_DecimalPoints(
       totalFocusDurationInSec / cycleDurationInSec,
-      2
+      2,
     );
     const cycleRecord = {
       ratio: currentRatio,
       cycleAdherenceRate: roundTo_X_DecimalPoints(
         currentRatio / ratioTargeted,
-        2
+        2,
       ),
       start: end - cycleDurationInSec * 1000,
       end,
@@ -363,7 +363,7 @@ export function TimerController({
     };
     // console.log("cycleRecord from " + caller, cycleRecord);
     const cycleSettingsCloned = structuredClone(cycleSettings);
-    let name = "";
+    let name = '';
     let cycleStatPayload: CycleRecord[] = [];
     let averageAdherenceRatePayload = 1;
     for (let i = 0; i < cycleSettingsCloned.length; i++) {
@@ -374,11 +374,11 @@ export function TimerController({
         }
         cycleSettingsCloned[i].cycleStat.push(cycleRecord);
         const adherenceRateArr = cycleSettingsCloned[i].cycleStat.map(
-          (record) => record.cycleAdherenceRate
+          (record) => record.cycleAdherenceRate,
         );
         const averageAdherenceRate = roundTo_X_DecimalPoints(
           getAverage(adherenceRateArr),
-          2
+          2,
         );
         cycleSettingsCloned[i].averageAdherenceRate = averageAdherenceRate;
         averageAdherenceRatePayload = averageAdherenceRate;
@@ -451,7 +451,7 @@ export function TimerController({
       numOfPomo,
     });
     // console.log("prevSession", SESSION[prevSession]);
-    const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
+    const currentSessionType = +prevSession % 2 === 0 ? 'pomo' : 'break';
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
 
     wrapUpSession({
@@ -478,7 +478,7 @@ export function TimerController({
     numOfPomo: number;
   }): SESSION {
     if (howManyCountdown === 0) {
-      console.log("1");
+      console.log('1');
       return SESSION.VERY_LAST_POMO;
     }
 
@@ -492,7 +492,7 @@ export function TimerController({
     //! 그 setUp함수에서 이 conditional block으로 오는 경우는 없다. :::...
     //! 그러므로 그냥 %2값만 가지고도 Pomo인지 Break인지 판단해도 괜찮다. :::...
     if (howManyCountdown === 2 * numOfPomo * numOfCycle - 1) {
-      console.log("2");
+      console.log('2');
       return SESSION.VERY_LAST_POMO;
     }
 
@@ -502,29 +502,29 @@ export function TimerController({
         //                         = (2, 3) -> PBPL|PBPL|PBP
         if (howManyCountdown % 2 === 0) {
           if (howManyCountdown % (2 * numOfPomo) === 0) {
-            console.log("3");
+            console.log('3');
             return SESSION.LONG_BREAK;
           }
-          console.log("4");
+          console.log('4');
           return SESSION.SHORT_BREAK;
         }
         if (howManyCountdown % 2 === 1) {
           if ((howManyCountdown + 1) % (2 * numOfPomo) === 0) {
-            console.log("5");
+            console.log('5');
             return SESSION.LAST_POMO;
           }
-          console.log("6");
+          console.log('6');
           return SESSION.POMO;
         }
       } else if (numOfPomo === 1) {
         // numOfCycle = 3, 4 -> PL|PL|P, PL|PL|PL|P
         // Short break does not exist
         if (howManyCountdown % 2 === 0) {
-          console.log("7");
+          console.log('7');
           return SESSION.LONG_BREAK;
         }
         if (howManyCountdown % 2 === 1) {
-          console.log("8");
+          console.log('8');
           return SESSION.LAST_POMO;
         }
       }
@@ -533,21 +533,21 @@ export function TimerController({
       if (numOfPomo > 1) {
         // numOfPomo = 2, 5 -> PBP, PBPBPBPBP
         if (howManyCountdown % 2 === 1) {
-          console.log("9");
+          console.log('9');
           return SESSION.POMO;
         }
         if (howManyCountdown % 2 === 0) {
-          console.log("10");
+          console.log('10');
           return SESSION.SHORT_BREAK;
         }
       } else if (numOfPomo === 1) {
         // P
-        console.log("11");
+        console.log('11');
         return SESSION.VERY_LAST_POMO; // 여기까지 안오고 두번째 conditional block에 걸리네 그냥..
       }
     }
 
-    console.log("12");
+    console.log('12');
     return SESSION.POMO; //dummy
   }
   //#endregion
@@ -574,7 +574,7 @@ export function TimerController({
     data: {
       state: TimerStateType;
       timeCountedDownInMilliSeconds: number;
-      sessionData: Omit<RecType, "kind">;
+      sessionData: Omit<RecType, 'kind'>;
     };
   }) {
     // console.log("SESSION inside wrapUpSession", SESSION[prevSession]);
@@ -584,7 +584,7 @@ export function TimerController({
       const infoArr = [
         {
           categoryName:
-            currentCategory === null ? "uncategorized" : currentCategory.name,
+            currentCategory === null ? 'uncategorized' : currentCategory.name,
           categoryChangeTimestamp: 0,
           _uuid: currentCategory?._uuid,
           color:
@@ -642,7 +642,7 @@ export function TimerController({
 
     switch (prevSession) {
       case SESSION.POMO:
-        notify("shortBreak");
+        notify('shortBreak');
         //#region A
         // A - 1: F.E
         // 1)
@@ -676,7 +676,7 @@ export function TimerController({
         // B - 1: pomodoro records
         if (user) {
           let copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
+            categoryChangeInfoArray,
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
 
@@ -712,20 +712,20 @@ export function TimerController({
             (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
-              sessionData
+              sessionData,
             ));
         }
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         // New
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "pomo",
+            kind: 'pomo',
             data: sessionData,
           });
         }
@@ -734,7 +734,7 @@ export function TimerController({
         break;
 
       case SESSION.SHORT_BREAK:
-        notify("pomo");
+        notify('pomo');
 
         //#region A 다음 세션 진행하기 위한 정보의 변환
         // A - 1: F.E
@@ -761,14 +761,14 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "break", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'break', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "break",
+            kind: 'break',
             data: sessionData,
           });
         }
@@ -776,7 +776,7 @@ export function TimerController({
         break;
 
       case SESSION.LAST_POMO:
-        notify("longBreak");
+        notify('longBreak');
 
         //#region A 다음 세션 진행하기 위한 정보의 변환
         // A - 1: F.E
@@ -804,7 +804,7 @@ export function TimerController({
         // B - 1: pomodoro records
         if (user) {
           let copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
+            categoryChangeInfoArray,
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
 
@@ -827,19 +827,19 @@ export function TimerController({
             (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
-              sessionData
+              sessionData,
             ));
         }
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "pomo",
+            kind: 'pomo',
             data: sessionData,
           });
         }
@@ -848,20 +848,20 @@ export function TimerController({
         break;
 
       case SESSION.VERY_LAST_POMO:
-        notify("cyclesCompleted");
+        notify('cyclesCompleted');
 
         generateAndPushCycleRecord(
           endTimeRef.current,
           cycleDurationInSec - longBreakDuration * 60,
           totalFocusDurationInSec,
-          "VERY_LAST_POMO"
+          'VERY_LAST_POMO',
         );
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
         setCycleDurationInSec(cycleDurationTargetedInSec);
         setCycleStartTimestamp(0);
         setVeryFirstCycleStartTimestamp(0);
         setTotalDurationOfSetOfCyclesInSec(
-          cycleDurationTargetedInSec * numOfCycle
+          cycleDurationTargetedInSec * numOfCycle,
         );
         //#region A
         // A - 1: F.E
@@ -904,7 +904,7 @@ export function TimerController({
         // B - 1: pomodoro records
         if (user) {
           let copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray
+            categoryChangeInfoArray,
           );
           let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
 
@@ -927,19 +927,19 @@ export function TimerController({
             (await recordPomo(
               copiedCategoryChangeInfoArray,
               copiedTaskChangeInfoArray,
-              sessionData
+              sessionData,
             ));
         }
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "pomo", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: "pomo", ...sessionData }, user);
+          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
           // 3)
           await persistSingleTodaySessionToIDB({
-            kind: "pomo",
+            kind: 'pomo',
             data: sessionData,
           });
         }
@@ -947,13 +947,13 @@ export function TimerController({
         break;
 
       case SESSION.LONG_BREAK:
-        notify("nextCycle");
+        notify('nextCycle');
 
         generateAndPushCycleRecord(
           endTimeRef.current,
           cycleDurationInSec,
           totalFocusDurationInSec,
-          "LONG_BREAK"
+          'LONG_BREAK',
         );
         setCycleStartTimestamp(0);
         setTotalFocusDurationInSec(totalFocusDurationTargetedInSec);
@@ -999,12 +999,12 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: "break", ...sessionData }]);
+        setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
         // 2)
-        persistRecOfTodayToServer({ kind: "break", ...sessionData }, user);
+        persistRecOfTodayToServer({ kind: 'break', ...sessionData }, user);
         // 3)
         await persistSingleTodaySessionToIDB({
-          kind: "break",
+          kind: 'break',
           data: sessionData,
         });
         //#endregion
@@ -1031,13 +1031,13 @@ export function TimerController({
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        let states = await obtainStatesFromIDB("withoutSettings");
+        let states = await obtainStatesFromIDB('withoutSettings');
         const progress = getProgress(states as TimersStatesType);
 
         if (
-          SESSION[prevSessionType.current] === "SHORT_BREAK" ||
-          SESSION[prevSessionType.current] === "LONG_BREAK" ||
-          SESSION[prevSessionType.current] === "VERY_LAST_POMO"
+          SESSION[prevSessionType.current] === 'SHORT_BREAK' ||
+          SESSION[prevSessionType.current] === 'LONG_BREAK' ||
+          SESSION[prevSessionType.current] === 'VERY_LAST_POMO'
         ) {
           if (
             (states as TimersStatesTypeWithCurrentCycleInfo).running ===
@@ -1049,7 +1049,7 @@ export function TimerController({
               categoryName:
                 currentCategory !== null
                   ? currentCategory.name
-                  : "uncategorized",
+                  : 'uncategorized',
               categoryChangeTimestamp: 0,
               _uuid: currentCategory?._uuid,
               color:
@@ -1072,7 +1072,7 @@ export function TimerController({
                       progress: infoObj.progress,
                     },
                   ],
-                }
+                },
               );
           } else {
             // console.log("pomo session is on going");
@@ -1083,7 +1083,7 @@ export function TimerController({
               categoryName:
                 currentCategory !== null
                   ? currentCategory.name
-                  : "uncategorized",
+                  : 'uncategorized',
               categoryChangeTimestamp: Date.now(),
               _uuid: currentCategory?._uuid,
               color:
@@ -1125,18 +1125,18 @@ export function TimerController({
                       progress: infoObj.progress,
                     },
                   ],
-                }
+                },
               );
           }
         }
         if (
-          SESSION[prevSessionType.current] === "POMO" ||
-          SESSION[prevSessionType.current] === "LAST_POMO"
+          SESSION[prevSessionType.current] === 'POMO' ||
+          SESSION[prevSessionType.current] === 'LAST_POMO'
         ) {
           // console.log("break session");
           const infoObj = {
             categoryName:
-              currentCategory !== null ? currentCategory.name : "uncategorized",
+              currentCategory !== null ? currentCategory.name : 'uncategorized',
             categoryChangeTimestamp: 0,
             _uuid: currentCategory?._uuid,
             color:
@@ -1160,7 +1160,7 @@ export function TimerController({
                     progress: infoObj.progress,
                   },
                 ],
-              }
+              },
             );
         }
       }
@@ -1180,7 +1180,7 @@ export function TimerController({
           updated[updated.length - 1].color = currentCategory?.color;
         } else {
           delete updated[updated.length - 1]._uuid;
-          updated[updated.length - 1].categoryName = "uncategorized";
+          updated[updated.length - 1].categoryName = 'uncategorized';
           updated[updated.length - 1].color = colorForUnCategorized;
         }
 
@@ -1194,7 +1194,7 @@ export function TimerController({
                 const { _uuid, ...infoWithout_uuid } = info;
                 return infoWithout_uuid;
               }),
-            }
+            },
           );
       }
       // 0. idb (x)
@@ -1227,12 +1227,12 @@ export function TimerController({
     // );
     prevSessionType.current = prevSession;
 
-    let currentSessionType = "";
+    let currentSessionType = '';
     if (prevSession === 5) {
-      currentSessionType = "pomo";
+      currentSessionType = 'pomo';
     } else if (prevSession % 2 === 0) {
-      currentSessionType = "pomo";
-    } else currentSessionType = "break";
+      currentSessionType = 'pomo';
+    } else currentSessionType = 'break';
     // const currentSessionType = +prevSession % 2 === 0 ? "pomo" : "break";
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType); // CategoryList component에서 이 값이 필요함.
   }, [repetitionCount, numOfPomo]);
@@ -1317,8 +1317,8 @@ export function TimerController({
               (Date.now() -
                 timerState.startTime -
                 timerState.pause.totalLength)) /
-              1000
-          )
+              1000,
+          ),
         );
       }, 500);
       return () => {
@@ -1342,8 +1342,8 @@ export function TimerController({
       if (userEmail) {
         let db = DB || (await openIndexedDB());
         const store = db
-          .transaction("failedReqInfo", "readonly")
-          .objectStore("failedReqInfo");
+          .transaction('failedReqInfo', 'readonly')
+          .objectStore('failedReqInfo');
         const info = await store.get(userEmail);
         return !!info;
       } else {
@@ -1448,7 +1448,7 @@ export function TimerController({
         });
         axiosInstance.patch(
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-          { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
+          { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
         );
         if (taskChangeInfoArrayShallowCopied.length > 0) {
           axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
@@ -1547,7 +1547,7 @@ export function TimerController({
   //문제점: toggle이 나타내는 case들 중 분명 resume이라는게 존재하는데 조건식에서 resume이라는 단어는 코빼기도 보이지 않는다.
   async function toggleTimer(momentTimerIsToggled: number) {
     if (doWeStartTimer()) {
-      if (SESSION[prevSessionType.current] === "VERY_LAST_POMO") {
+      if (SESSION[prevSessionType.current] === 'VERY_LAST_POMO') {
         // console.log(
         //   "SESSION[prevSessionType.current]",
         //   SESSION[prevSessionType.current]
@@ -1599,14 +1599,14 @@ export function TimerController({
           });
           axiosInstance.patch(
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
+            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
           );
           if (taskChangeInfoArrayShallowCopied.length > 0) {
             axiosInstance.patch(
               RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
               {
                 taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-              }
+              },
             );
           }
         }
@@ -1647,14 +1647,14 @@ export function TimerController({
           });
           axiosInstance.patch(
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
-            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied }
+            { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
           );
           if (taskChangeInfoArrayShallowCopied.length > 0) {
             axiosInstance.patch(
               RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
               {
                 taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-              }
+              },
             );
           }
         }
@@ -1678,7 +1678,7 @@ export function TimerController({
         // );
 
         // start of a cycle
-        if (SESSION[prevSessionType.current] === "LONG_BREAK") {
+        if (SESSION[prevSessionType.current] === 'LONG_BREAK') {
           if (gapForLateStartInSec > 0) {
             // late start -> increases totalDurationOfSetOfCycles
             const newTotalDurationOfSetOfCycles =
@@ -1718,7 +1718,7 @@ export function TimerController({
         }
 
         // start of a session
-        if (SESSION[prevSessionType.current] !== "LONG_BREAK") {
+        if (SESSION[prevSessionType.current] !== 'LONG_BREAK') {
           if (gapForLateStartInSec > 0) {
             const newCycleDuration = cycleDurationInSec + gapForLateStartInSec;
             const newTotalDurationOfSetOfCycles =
@@ -1861,7 +1861,7 @@ export function TimerController({
           now,
           newCycleDuration,
           newTotalFocusDuration,
-          "endTimer - focus session"
+          'endTimer - focus session',
         );
       }
       setTotalFocusDurationInSec(newTotalFocusDuration);
@@ -1895,7 +1895,7 @@ export function TimerController({
           now,
           newCycleDuration,
           totalFocusDurationInSec,
-          "endTimer - break session"
+          'endTimer - break session',
         );
       }
       setCycleDurationInSec(newCycleDuration);
@@ -1967,12 +1967,12 @@ export function TimerController({
     numOfPomo: number;
   }): {
     duration: number;
-    kind: "pomoDuration" | "shortBreakDuration" | "longBreakDuration";
+    kind: 'pomoDuration' | 'shortBreakDuration' | 'longBreakDuration';
     repetitionCount?: number;
   } {
     let retVal: {
       duration: number;
-      kind: "pomoDuration" | "shortBreakDuration" | "longBreakDuration";
+      kind: 'pomoDuration' | 'shortBreakDuration' | 'longBreakDuration';
       repetitionCount?: number;
     } | null = null;
     // console.log(
@@ -1989,16 +1989,16 @@ export function TimerController({
     // );
     if (howManyCountdown < numOfPomo * 2 - 1) {
       if (howManyCountdown % 2 === 1) {
-        retVal = { duration: shortBreakDuration, kind: "shortBreakDuration" };
+        retVal = { duration: shortBreakDuration, kind: 'shortBreakDuration' };
       } else {
-        retVal = { duration: pomoDuration, kind: "pomoDuration" };
+        retVal = { duration: pomoDuration, kind: 'pomoDuration' };
       }
     } else if (howManyCountdown === numOfPomo * 2 - 1) {
-      retVal = { duration: longBreakDuration, kind: "longBreakDuration" };
+      retVal = { duration: longBreakDuration, kind: 'longBreakDuration' };
     } else {
       retVal = {
         duration: pomoDuration,
-        kind: "pomoDuration",
+        kind: 'pomoDuration',
         repetitionCount: 0,
       };
     }
@@ -2008,19 +2008,19 @@ export function TimerController({
 
   function calculateTooltipText(
     ev: React.MouseEvent<HTMLHeadingElement>,
-    moment: number
+    moment: number,
   ) {
     // console.log("ev.timeStamp", ev.timeStamp);
     // console.log("moment", moment);
     let sessionRange,
       cycleRange,
-      setOfCyclesRange = "";
+      setOfCyclesRange = '';
     let sessionStartString,
       sessionEndString,
       cycleStartString,
       cycleEndString,
       setOfCyclesStartString,
-      setOfCyclesEndString = "";
+      setOfCyclesEndString = '';
     let sessionEndTimestamp,
       cycleEndTimestamp,
       setOfCyclesEndTimestamp = 0;
@@ -2091,25 +2091,25 @@ export function TimerController({
       if (timerState.startTime !== 0) {
         // delayted start이 totalDurationOfSetOfCyclesInSec에 반영되어 있음.
         setOfCyclesStartString = new Date(
-          veryFirstCycleStartTimestamp
+          veryFirstCycleStartTimestamp,
         ).toLocaleTimeString();
         setOfCyclesEndTimestamp =
           veryFirstCycleStartTimestamp + totalDurationOfSetOfCyclesInSec * 1000;
         setOfCyclesEndString = new Date(
-          setOfCyclesEndTimestamp
+          setOfCyclesEndTimestamp,
         ).toLocaleTimeString();
       } else {
         // delayted start이 totalDurationOfSetOfCyclesInSec에 아직 반영되어있지 않음.
         const delayCalculatedOnMouseHoverInMs = moment - endTimeRef.current;
         setOfCyclesStartString = new Date(
-          veryFirstCycleStartTimestamp
+          veryFirstCycleStartTimestamp,
         ).toLocaleTimeString();
         setOfCyclesEndTimestamp =
           veryFirstCycleStartTimestamp +
           (delayCalculatedOnMouseHoverInMs +
             totalDurationOfSetOfCyclesInSec * 1000);
         setOfCyclesEndString = new Date(
-          setOfCyclesEndTimestamp
+          setOfCyclesEndTimestamp,
         ).toLocaleTimeString();
       }
     } else {
@@ -2117,7 +2117,7 @@ export function TimerController({
       setOfCyclesStartString = new Date(moment).toLocaleTimeString();
       setOfCyclesEndTimestamp = moment + totalDurationOfSetOfCyclesInSec * 1000;
       setOfCyclesEndString = new Date(
-        setOfCyclesEndTimestamp
+        setOfCyclesEndTimestamp,
       ).toLocaleTimeString();
     }
 
@@ -2132,8 +2132,8 @@ export function TimerController({
     const originalDuration = DURATIONS[sessionInfo.kind];
     const durationInfo = `${durationInSeconds / 60} = ${originalDuration} ${
       durationInSeconds / 60 - originalDuration >= 0
-        ? "+ " + (durationInSeconds / 60 - originalDuration)
-        : "- " + Math.abs(durationInSeconds / 60 - originalDuration)
+        ? '+ ' + (durationInSeconds / 60 - originalDuration)
+        : '- ' + Math.abs(durationInSeconds / 60 - originalDuration)
     }`;
     setTooltipText([sessionRange, cycleRange, setOfCyclesRange, durationInfo]);
   }
@@ -2145,7 +2145,7 @@ export function TimerController({
     ) : (
       <h2
         data-tooltip-id="session-info"
-        style={{ cursor: "pointer" }}
+        style={{ cursor: 'pointer' }}
         onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
       >
         <Time seconds={remainingDurationInSec} />
@@ -2157,7 +2157,7 @@ export function TimerController({
     ) : (
       <h2
         data-tooltip-id="session-info"
-        style={{ cursor: "pointer" }}
+        style={{ cursor: 'pointer' }}
         onMouseEnter={(ev) => calculateTooltipText(ev, Date.now())}
       >
         <Time seconds={durationInSeconds} />
@@ -2187,29 +2187,29 @@ export function TimerController({
         }
       `}
     >
-      <div css={{ alignSelf: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
         <FlexBox justifyContent="space-evenly">
-          <h2>{isThisFocusSession(repetitionCount) ? "POMO" : "BREAK"}</h2>
+          <h2>{isThisFocusSession(repetitionCount) ? 'POMO' : 'BREAK'}</h2>
           {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
         </FlexBox>
         <Tooltip id="session-info" place="top">
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              fontFamily: "monospace",
+              display: 'flex',
+              flexDirection: 'column',
+              fontFamily: 'monospace',
             }}
           >
             <h3>
-              {"Session\u00A0range"}:{"\u00A0\u00A0"}
+              {'Session\u00A0range'}:{'\u00A0\u00A0'}
               {tooltipText[0]}
             </h3>
             <h3>
-              {"Cycle\u00A0\u00A0\u00A0range"}:{"\u00A0\u00A0"}
+              {'Cycle\u00A0\u00A0\u00A0range'}:{'\u00A0\u00A0'}
               {tooltipText[1]}
             </h3>
             <h3>
-              {"Cycles\u00A0\u00A0range"}:{"\u00A0\u00A0"}
+              {'Cycles\u00A0\u00A0range'}:{'\u00A0\u00A0'}
               {tooltipText[2]}
             </h3>
             <h3>{tooltipText[3]}</h3>
@@ -2236,8 +2236,8 @@ export function TimerController({
             durationInSeconds === 0
               ? 0
               : remainingDurationInSec < 0
-              ? 1
-              : 1 - remainingDurationInSec / durationInSeconds
+                ? 1
+                : 1 - remainingDurationInSec / durationInSeconds
           }
           startTime={timerState.startTime}
           durationInSeconds={durationInSeconds}
@@ -2258,7 +2258,7 @@ export function TimerController({
         />
       </div>
 
-      <div css={{ alignSelf: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
         <PauseTimer
           isOnSession={timerState.running || timerState.startTime !== 0}
           isPaused={
@@ -2271,20 +2271,20 @@ export function TimerController({
         />
       </div>
 
-      <div css={{ alignSelf: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
         <FlexBox justifyContent="space-evenly">
           <Button
-            type={"submit"}
-            color={"primary"}
+            type={'submit'}
+            color={'primary'}
             handleClick={() => {
               toggleTimer(Date.now());
             }}
           >
             {timerState.running === true
-              ? "Pause"
+              ? 'Pause'
               : timerState.startTime === 0
-              ? "Start"
-              : "Resume"}
+                ? 'Start'
+                : 'Resume'}
           </Button>
           <Button
             handleClick={() => {
@@ -2293,33 +2293,33 @@ export function TimerController({
           >
             {isSessionNotStartedYet(
               timerState.running,
-              timerState.startTime
+              timerState.startTime,
             ) === true
-              ? "Skip"
-              : "End"}
+              ? 'Skip'
+              : 'End'}
           </Button>
         </FlexBox>
       </div>
 
-      <div css={{ alignSelf: "center" }}>
-        <h3 style={{ textAlign: "center" }}>
-          Remaining Pomo Sessions -{" "}
+      <div css={{ alignSelf: 'center' }}>
+        <h3 style={{ textAlign: 'center' }}>
+          Remaining Pomo Sessions -{' '}
           {calculateNumOfRemainingPomoSessions(
             numOfPomo,
-            repetitionCountWithinCycle
+            repetitionCountWithinCycle,
           )}
         </h3>
       </div>
 
-      <div css={{ alignSelf: "center" }}>
-        <h3 style={{ textAlign: "center" }}>
+      <div css={{ alignSelf: 'center' }}>
+        <h3 style={{ textAlign: 'center' }}>
           Cycle - {cycleCount} out of {numOfCycle}
         </h3>
       </div>
 
       <div
         css={{
-          placeSelf: "center",
+          placeSelf: 'center',
         }}
       >
         <div>

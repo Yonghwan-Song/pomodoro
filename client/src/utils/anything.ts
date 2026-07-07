@@ -1,14 +1,14 @@
-import { AxiosRequestConfig } from "axios";
-import { UpdateCategoryDTOWithUUID } from "../axios-and-error-handling/errorController";
-import { roundTo_X_DecimalPoints } from "./number-related-utils";
-import { PomoSettingType } from "../types/clientStatesType";
-import { boundedPomoInfoStore } from "../zustand-stores/pomoInfoStoreUsingSlice";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { RESOURCE, SUB_SET } from "../constants";
+import { AxiosRequestConfig } from 'axios';
+import { UpdateCategoryDTOWithUUID } from '../axios-and-error-handling/errorController';
+import { roundTo_X_DecimalPoints } from './number-related-utils';
+import { PomoSettingType } from '../types/clientStatesType';
+import { boundedPomoInfoStore } from '../zustand-stores/pomoInfoStoreUsingSlice';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { RESOURCE, SUB_SET } from '../constants';
 
 export function insert_UUID_to_reqConfig(
   reqConfig: AxiosRequestConfig<any>,
-  _uuid: string | undefined
+  _uuid: string | undefined,
 ) {
   if (!_uuid) return reqConfig; //? 그냥... non-undefined assertion하기 쫄려서..
 
@@ -25,7 +25,7 @@ export function getAverage(numbers: number[]): number {
 }
 
 export function calculateTargetFocusRatio(
-  pomoSetting: PomoSettingType
+  pomoSetting: PomoSettingType,
 ): number {
   const {
     pomoDuration,
@@ -43,7 +43,7 @@ export function calculateTargetFocusRatio(
       longBreakDuration);
   const ratioTargeted = roundTo_X_DecimalPoints(
     totalFocusDurationTargetedInSec / cycleDurationTargetedInSec,
-    2
+    2,
   );
   return ratioTargeted;
   // return roundTo_X_DecimalPoints(ratioTargeted, 2);
@@ -120,18 +120,18 @@ export function getCycleRecord(
   cycleDurationInSec: number,
   totalFocusDurationInSec: number,
   ratioTargeted: number,
-  endTime: number
+  endTime: number,
 ) {
   const currentRatio = roundTo_X_DecimalPoints(
     totalFocusDurationInSec / cycleDurationInSec,
-    2
+    2,
   );
 
   return {
     ratio: currentRatio,
     cycleAdherenceRate: roundTo_X_DecimalPoints(
       currentRatio / ratioTargeted,
-      2
+      2,
     ),
     start: endTime - cycleDurationInSec * 1000,
     end: endTime,

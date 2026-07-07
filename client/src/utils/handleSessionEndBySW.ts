@@ -1,8 +1,8 @@
-import { pubsub } from "../pubsub";
-import { boundedPomoInfoStore } from "../zustand-stores/pomoInfoStoreUsingSlice";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { CURRENT_SESSION_TYPE, RESOURCE, SUB_SET } from "../constants";
-import { CategoryChangeInfo } from "../types/clientStatesType";
+import { pubsub } from '../pubsub';
+import { boundedPomoInfoStore } from '../zustand-stores/pomoInfoStoreUsingSlice';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { CURRENT_SESSION_TYPE, RESOURCE, SUB_SET } from '../constants';
+import { CategoryChangeInfo } from '../types/clientStatesType';
 
 export async function handleSessionEndBySW({
   categoryChangeInfoArrAfterReset,
@@ -11,7 +11,7 @@ export async function handleSessionEndBySW({
   categoryChangeInfoArrAfterReset: CategoryChangeInfo[];
   userEmail: string | null;
 }) {
-  pubsub.publish("sessionEndBySW", categoryChangeInfoArrAfterReset); // This event is subscribed by NavBar's useEffect callback.
+  pubsub.publish('sessionEndBySW', categoryChangeInfoArrAfterReset); // This event is subscribed by NavBar's useEffect callback.
 
   // console.log("payload at endbysw", payload);
 
@@ -40,7 +40,7 @@ export async function handleSessionEndBySW({
   // changeInfoArray가 여러개의 taskChangeInfo에 의해 더럽혀?졌을 가능성이 있기 때문에 그것을 초기화 해주는 것임.
   if (
     sessionTypeJustFinished !== null &&
-    sessionTypeJustFinished.toUpperCase() === "POMO"
+    sessionTypeJustFinished.toUpperCase() === 'POMO'
   ) {
     const currentTaskId = boundedPomoInfoStore.getState().currentTaskId; // the same value as the one in the sesionStorage.
     const newTaskChangeInfo = {

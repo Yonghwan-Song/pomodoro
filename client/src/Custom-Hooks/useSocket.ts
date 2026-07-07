@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
-import { auth } from "../firebase";
-import { BASE_URL } from "../constants";
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { auth } from '../firebase';
+import { BASE_URL } from '../constants';
 
 export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -10,13 +10,13 @@ export function useSocket() {
   useEffect(() => {
     const initSocket = async () => {
       const user = auth.currentUser;
-      let token = "";
+      let token = '';
 
       if (user) {
         token = await user.getIdToken();
       }
 
-      console.log("Initializing socket with URL:", BASE_URL);
+      console.log('Initializing socket with URL:', BASE_URL);
 
       const newSocket = io(BASE_URL, {
         auth: {
@@ -26,13 +26,13 @@ export function useSocket() {
 
       setSocket(newSocket);
 
-      newSocket.on("connect", () => {
-        console.log("socket.connected", newSocket.connected);
+      newSocket.on('connect', () => {
+        console.log('socket.connected', newSocket.connected);
         setConnected(true);
       });
 
-      newSocket.on("disconnect", () => {
-        console.log("Socket disconnected");
+      newSocket.on('disconnect', () => {
+        console.log('Socket disconnected');
         setConnected(false);
       });
 

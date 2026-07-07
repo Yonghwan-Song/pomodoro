@@ -1,6 +1,6 @@
 //#region //TODO - name this region
 
-import { Goal } from "../../types/clientStatesType";
+import { Goal } from '../../types/clientStatesType';
 
 /**
  * 필요한 이유:

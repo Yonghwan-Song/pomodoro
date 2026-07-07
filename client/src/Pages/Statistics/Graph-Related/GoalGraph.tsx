@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   ResponsiveContainer,
   Tooltip,
@@ -8,7 +8,7 @@ import {
   TooltipProps,
   BarChart,
   Bar,
-} from "recharts";
+} from 'recharts';
 import {
   CategoryDetail,
   CategorySubtotal,
@@ -16,20 +16,20 @@ import {
   DayStatForGraph,
   DayStatWithGoal,
   StatDataForGraph_DailyPomoStat,
-} from "../statRelatedTypes";
-import { endOfWeek, startOfWeek } from "date-fns";
-import { BoxShadowWrapper } from "../../../ReusableComponents/Wrapper";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+} from '../statRelatedTypes';
+import { endOfWeek, startOfWeek } from 'date-fns';
+import { BoxShadowWrapper } from '../../../ReusableComponents/Wrapper';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   LeftArrow,
   RightArrow,
-} from "../../../ReusableComponents/Icons/ChevronArrows";
-import { _24h } from "../../../constants";
+} from '../../../ReusableComponents/Icons/ChevronArrows';
+import { _24h } from '../../../constants';
 import {
   getHHmm,
   getMessageForRemainingDuration,
   roundTo_X_DecimalPoints,
-} from "../../../utils/number-related-utils";
+} from '../../../utils/number-related-utils';
 
 type GoalGraphProps = {
   statData: StatDataForGraph_DailyPomoStat | null;
@@ -68,10 +68,10 @@ export default function GoalGraph({
     });
   });
   const [weekStart, setWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime(),
   );
   const [weekEnd, setWeekEnd] = useState(
-    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime(),
   );
   const [weekRange, setWeekRange] = useState(weekRangeForThisWeek);
 
@@ -107,7 +107,7 @@ export default function GoalGraph({
             dayStat.withoutCategory =
               statData[statData.length - 1].withoutCategory;
             dayStat.subtotalByCategory = JSON.parse(
-              JSON.stringify(statData[statData.length - 1].subtotalByCategory)
+              JSON.stringify(statData[statData.length - 1].subtotalByCategory),
             );
           }
 
@@ -125,7 +125,7 @@ export default function GoalGraph({
       if (stat.total)
         return stat.total >= stat.goal.ideal ? stat.total : stat.goal.ideal;
       else return stat.goal.ideal;
-    })
+    }),
   );
   const maxTickOfYAxis = maxValueOfData - (maxValueOfData % 60) + 60;
   const desirableTickCount = maxTickOfYAxis / 60 + 1;
@@ -145,12 +145,12 @@ export default function GoalGraph({
    * @param {*} pomodoroDailyStat the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function calculateNextWeekData(
-    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
+    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null,
   ) {
     let weekCloned = [...dailyStatOfWeekWithGoal];
 
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
-      alert("No more data");
+      alert('No more data');
     } else {
       let newWeekStart = weekStart + 7 * _24h;
       let newWeekEnd = weekEnd + 7 * _24h;
@@ -177,9 +177,9 @@ export default function GoalGraph({
       setWeekRange(
         `${weekCloned[0].date
           .slice(0, -5)
-          .replace("/", ". ")} - ${weekCloned[6].date
+          .replace('/', '. ')} - ${weekCloned[6].date
           .slice(0, -5)
-          .replace("/", ". ")}`
+          .replace('/', '. ')}`,
       );
       setDailyStatOfWeekWithGoal(weekCloned);
     }
@@ -192,7 +192,7 @@ export default function GoalGraph({
    * @param {DayStat[]} pomodoroDailyStat the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function calculatePrevWeekData(
-    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
+    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null,
   ) {
     let weekCloned = [...dailyStatOfWeekWithGoal];
     let newWeekStart = weekStart - 7 * _24h;
@@ -217,9 +217,9 @@ export default function GoalGraph({
     setWeekRange(
       `${weekCloned[0].date
         .slice(0, -5)
-        .replace("/", ". ")} - ${weekCloned[6].date
+        .replace('/', '. ')} - ${weekCloned[6].date
         .slice(0, -5)
-        .replace("/", ". ")}`
+        .replace('/', '. ')}`,
     );
     setDailyStatOfWeekWithGoal(weekCloned);
   }
@@ -232,7 +232,7 @@ export default function GoalGraph({
    */
   function extractWeekData(
     statArray: DayStat[],
-    range: [number, number]
+    range: [number, number],
   ): DayStat[] {
     return statArray.filter((ele) => {
       return (
@@ -256,11 +256,11 @@ export default function GoalGraph({
       subtotalByCategory?: CategorySubtotal;
       withoutCategory?: number;
     }[],
-    weekStatFromData: DayStat[]
+    weekStatFromData: DayStat[],
   ) {
     for (let cloned of weekCloned) {
       let matchingStat = weekStatFromData.find(
-        (fromData) => fromData.date === cloned.date
+        (fromData) => fromData.date === cloned.date,
       );
       // console.log(
       //   "matchingStat from weekStatFromData in fillWeekCloned",
@@ -306,7 +306,7 @@ export default function GoalGraph({
 
         return previousValue;
       },
-      {}
+      {},
     );
     // console.log(retVal);
     return retVal;
@@ -316,15 +316,15 @@ export default function GoalGraph({
     <BoxShadowWrapper>
       <div
         style={{
-          position: "absolute",
-          display: "flex",
-          right: "5px",
-          top: "6px",
+          position: 'absolute',
+          display: 'flex',
+          right: '5px',
+          top: '6px',
           zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
-        <p style={{ width: "95px", textAlign: "center" }}>{weekRange}</p>
+        <p style={{ width: '95px', textAlign: 'center' }}>{weekRange}</p>
         <RightArrow handleClick={() => calculateNextWeekData(statData)} />
       </div>
       <ResponsiveContainer width="100%" minHeight={300}>
@@ -343,8 +343,8 @@ export default function GoalGraph({
             interval={0}
           />
           <Tooltip isAnimationActive={true} content={CustomTooltip} />
-          <Bar dataKey={"goal.minimum"} fill="#4081e9" stackId={"a"} />
-          <Bar dataKey={"goal.gap"} fill="#5cca90" stackId={"a"} />
+          <Bar dataKey={'goal.minimum'} fill="#4081e9" stackId={'a'} />
+          <Bar dataKey={'goal.gap'} fill="#5cca90" stackId={'a'} />
           <Bar dataKey="total" fill="#ffc658" />
           {/* <Bar dataKey="total" fill="#e0b73e" /> */}
         </BarChart>
@@ -364,11 +364,11 @@ function CustomTooltip({
     const todayTotal = payload[0].payload.total;
     const minimumGoalRateInPercent = roundTo_X_DecimalPoints(
       (todayTotal / minimum) * 100,
-      1
+      1,
     ); // Round to two decimal points
     const idealGoalRateInPercent = roundTo_X_DecimalPoints(
       (todayTotal / ideal) * 100,
-      1
+      1,
     );
     // const percentRoundedToTwoDecimalPoints =
     //   Math.round(minimumGoalRateInPercent * 100) / 100;
@@ -379,12 +379,12 @@ function CustomTooltip({
     return (
       <div
         style={{
-          borderRadius: "0.25rem",
-          background: "#fff",
-          padding: "1rem",
-          boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
-          textAlign: "left",
-          fontWeight: "bold",
+          borderRadius: '0.25rem',
+          background: '#fff',
+          padding: '1rem',
+          boxShadow: '15px 30px 40px 5px rgba(0, 0, 0, 0.5)',
+          textAlign: 'left',
+          fontWeight: 'bold',
         }}
       >
         <p>
@@ -392,16 +392,16 @@ function CustomTooltip({
         </p>
 
         {payload.map((dayData, index) => {
-          let name = "";
+          let name = '';
           let duration = 0;
-          if (dayData.name === "goal.minimum") {
-            name = "Minimum";
+          if (dayData.name === 'goal.minimum') {
+            name = 'Minimum';
             duration = minimum;
-          } else if (dayData.name === "goal.gap") {
-            name = "Ideal";
+          } else if (dayData.name === 'goal.gap') {
+            name = 'Ideal';
             duration = ideal;
-          } else if (dayData.name === "total") {
-            name = "Today";
+          } else if (dayData.name === 'total') {
+            name = 'Today';
             duration = todayTotal;
           }
 
@@ -409,19 +409,19 @@ function CustomTooltip({
             <div key={index}>
               {index === 0 && todayTotal !== undefined && (
                 <div
-                  style={{ display: "flex", justifyContent: "space-evenly" }}
+                  style={{ display: 'flex', justifyContent: 'space-evenly' }}
                 >
-                  <p style={{ color: "#4081e9" }}>
+                  <p style={{ color: '#4081e9' }}>
                     {minimumGoalRateInPercent}%
                   </p>
-                  <p style={{ color: "#5cca90" }}>{idealGoalRateInPercent}%</p>
+                  <p style={{ color: '#5cca90' }}>{idealGoalRateInPercent}%</p>
                 </div>
               )}
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  columnGap: "6px",
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  columnGap: '6px',
                   color: dayData.color,
                 }}
               >
@@ -430,13 +430,13 @@ function CustomTooltip({
               </div>
               <p
                 style={{
-                  fontStyle: "italic",
+                  fontStyle: 'italic',
                 }}
               >
                 {index === 2 &&
                   getMessageForRemainingDuration(
                     remainingUntilMinimum,
-                    remainingUntilIdeal
+                    remainingUntilIdeal,
                   )}
               </p>
             </div>

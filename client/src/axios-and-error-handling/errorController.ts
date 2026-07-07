@@ -1,13 +1,13 @@
-import { AxiosRequestConfig, AxiosResponse } from "axios";
-import { axiosInstance } from "./axios-instances";
+import { AxiosRequestConfig, AxiosResponse } from 'axios';
+import { axiosInstance } from './axios-instances';
 import {
   DB,
   emptyFailedReqInfo,
   getUserEmail,
   openIndexedDB,
   persistFailedReqInfoToIDB,
-} from "..";
-import { RESOURCE, SUB_SET } from "../constants";
+} from '..';
+import { RESOURCE, SUB_SET } from '../constants';
 
 /**
  * Why I Need This and What This Does:
@@ -72,7 +72,7 @@ export interface ERR_CONTROLLER {
 }
 
 export const errController: ERR_CONTROLLER = {
-  owner: "",
+  owner: '',
   failedReqInfo: {
     GET: [],
     POST: [],
@@ -86,14 +86,14 @@ export const errController: ERR_CONTROLLER = {
     if (!method || !url) return;
 
     switch (method.toUpperCase()) {
-      case "POST":
+      case 'POST':
         this.failedReqInfo.POST.push({
           url,
           data: JSON.parse(data),
         });
         break;
 
-      case "PATCH":
+      case 'PATCH':
         this.handlePatchRequests(url, data);
         break;
 
@@ -127,13 +127,13 @@ export const errController: ERR_CONTROLLER = {
        * becuase of the structure of the DTO class at 'nest-server/src/categories/dto/update-category.dto.ts'
        */
       case RESOURCE.CATEGORIES:
-        let batchUrl = url + "/batch";
+        let batchUrl = url + '/batch';
         const existingEntry = this.failedReqInfo.PATCH.get(batchUrl);
         if (existingEntry) {
-          if ("isCurrent" in parsedData.data) {
+          if ('isCurrent' in parsedData.data) {
             let currentCategoryDTO = existingEntry.data.categories.find(
               (category: UpdateCategoryDTOWithUUID) =>
-                "isCurrent" in category.data && category.data.isCurrent
+                'isCurrent' in category.data && category.data.isCurrent,
             );
             if (currentCategoryDTO) {
               currentCategoryDTO.data.isCurrent = false;
@@ -141,7 +141,8 @@ export const errController: ERR_CONTROLLER = {
           }
 
           const matchingCategory = existingEntry.data.categories.find(
-            (category: { _uuid: string }) => category._uuid === parsedData._uuid
+            (category: { _uuid: string }) =>
+              category._uuid === parsedData._uuid,
           );
           if (matchingCategory) {
             const dataOfMatchingCategoryCloned = (
@@ -225,9 +226,9 @@ export const errController: ERR_CONTROLLER = {
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "PATCH",
+          method: 'PATCH',
         });
-      })
+      }),
     );
 
     this.failedReqInfo.PATCH.clear();
@@ -238,9 +239,9 @@ export const errController: ERR_CONTROLLER = {
         return axiosInstance.request({
           url: urlAndData.url,
           data: urlAndData.data,
-          method: "POST",
+          method: 'POST',
         });
-      })
+      }),
     );
 
     this.failedReqInfo.POST = [];
@@ -263,8 +264,8 @@ export const errController: ERR_CONTROLLER = {
     if (userEmail) {
       let db = DB || (await openIndexedDB());
       const store = db
-        .transaction("failedReqInfo", "readonly")
-        .objectStore("failedReqInfo");
+        .transaction('failedReqInfo', 'readonly')
+        .objectStore('failedReqInfo');
       const failedReqInfoFromIDB = await store.get(userEmail);
 
       if (failedReqInfoFromIDB !== undefined) {

@@ -460,9 +460,9 @@ export class GroupStudyManagementService
       .to(roomId)
       .emit(EventNames.ROOM_PEER_JOINED, { peerId: clientSocket.id });
 
-    const existingProducers = room.getAllProducers().filter(
-      (p) => p.socketId !== clientSocket.id,
-    );
+    const existingProducers = room
+      .getAllProducers()
+      .filter((p) => p.socketId !== clientSocket.id);
     const routerRtpCapabilities = this.mediasoupService.getRtcCapabilities();
     const peers = room
       .getPeers()

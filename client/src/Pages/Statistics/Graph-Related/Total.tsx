@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 type TotalProps = {
   thisTotal: number;
@@ -7,14 +7,14 @@ type TotalProps = {
 };
 
 export function TotalComparison({ thisTotal, lastTotal, target }: TotalProps) {
-  const [sign, setSign] = useState<"+" | "-">(() => {
-    const SIGN = thisTotal - lastTotal >= 0 ? "+" : "-";
+  const [sign, setSign] = useState<'+' | '-'>(() => {
+    const SIGN = thisTotal - lastTotal >= 0 ? '+' : '-';
 
     return SIGN;
   });
 
   useEffect(() => {
-    setSign(thisTotal - lastTotal >= 0 ? "+" : "-");
+    setSign(thisTotal - lastTotal >= 0 ? '+' : '-');
     // console.log("TARGET =>", target);
     // console.log(`thisTotal - ${thisTotal}`);
     // console.log(`lastTotal - ${lastTotal}`);
@@ -22,16 +22,16 @@ export function TotalComparison({ thisTotal, lastTotal, target }: TotalProps) {
 
   const styles = {
     opt1: {
-      color: "#6272a4",
-      fontWeight: "bold",
-      fontSize: "1.2em",
+      color: '#6272a4',
+      fontWeight: 'bold',
+      fontSize: '1.2em',
     },
     opt2: {
-      fontSize: "1.5em",
-      fontWeight: "bold",
+      fontSize: '1.5em',
+      fontWeight: 'bold',
     },
-    opt3: { color: sign === "+" ? "blue" : "red", fontWeight: "bold" },
-    opt4: { color: sign === "+" ? "blue" : "red" },
+    opt3: { color: sign === '+' ? 'blue' : 'red', fontWeight: 'bold' },
+    opt4: { color: sign === '+' ? 'blue' : 'red' },
   };
 
   const ABSOLUTE_DIFF = `${Math.floor(Math.abs(thisTotal - lastTotal) / 60)}h ${
@@ -40,7 +40,7 @@ export function TotalComparison({ thisTotal, lastTotal, target }: TotalProps) {
 
   return (
     <div>
-      <h4>{target === "day" ? "To" + target : "This " + target}</h4>
+      <h4>{target === 'day' ? 'To' + target : 'This ' + target}</h4>
       <h3 style={styles.opt1}>
         {Math.floor(thisTotal / 60)}h {thisTotal % 60}m
       </h3>

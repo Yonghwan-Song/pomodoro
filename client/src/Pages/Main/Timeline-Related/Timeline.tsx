@@ -1,9 +1,9 @@
-import { useRef, useEffect, useCallback } from "react";
-import Session from "./Session";
-import { SessionType } from "../../../types/clientStatesType";
-import Scale from "../../../ReusableComponents/Scale/Scale";
-import DetailArea from "./DetailArea";
-import { MINIMUMS, PIXEL, VH_RATIO } from "../../../constants";
+import { useRef, useEffect, useCallback } from 'react';
+import Session from './Session';
+import { SessionType } from '../../../types/clientStatesType';
+import Scale from '../../../ReusableComponents/Scale/Scale';
+import DetailArea from './DetailArea';
+import { MINIMUMS, PIXEL, VH_RATIO } from '../../../constants';
 
 import {
   mobileRange,
@@ -12,7 +12,7 @@ import {
   qhdRange,
   uhdRange,
   calculateLeftAndRight,
-} from "./mediaQueryLists";
+} from './mediaQueryLists';
 
 type TimelineProps = {
   arrOfSessions: SessionType[];
@@ -31,18 +31,18 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
   //#region About Responsiveness
   const fullWidthOfTimeline = useRef<number>(1920 * 6);
   let initialLeftAndRight = {
-    left: "0px",
-    right: "",
+    left: '0px',
+    right: '',
   };
   const currentRule = useRef<number>(8 / 60);
 
   //#region Listen to the change events of every range
   const handleMobileRange = useCallback((ev: MediaQueryListEvent) => {
     if (ev.matches && divRef.current) {
-      console.log("------------mobile------------");
+      console.log('------------mobile------------');
 
       fullWidthOfTimeline.current = PIXEL.PER_HR.IN_MOBILE * 24;
-      console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
+      console.log('fullWidthOfTimeline', fullWidthOfTimeline.current);
 
       calculateNewLeft({
         prevRule: currentRule.current,
@@ -50,15 +50,15 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       });
       currentRule.current = PIXEL.PER_SEC.IN_MOBILE;
 
-      divRef.current.style.width = fullWidthOfTimeline.current + "px";
+      divRef.current.style.width = fullWidthOfTimeline.current + 'px';
       checkAndAdjustTimelinePosition();
     }
   }, []);
   const handleTabletRange = useCallback((ev: MediaQueryListEvent) => {
     if (ev.matches && divRef.current) {
-      console.log("------------tablet------------");
+      console.log('------------tablet------------');
       fullWidthOfTimeline.current = PIXEL.PER_HR.IN_TABLET * 24;
-      console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
+      console.log('fullWidthOfTimeline', fullWidthOfTimeline.current);
 
       calculateNewLeft({
         prevRule: currentRule.current,
@@ -66,15 +66,15 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       });
       currentRule.current = PIXEL.PER_SEC.IN_TABLET;
 
-      divRef.current.style.width = fullWidthOfTimeline.current + "px";
+      divRef.current.style.width = fullWidthOfTimeline.current + 'px';
       checkAndAdjustTimelinePosition();
     }
   }, []);
   const handleFHD_Range = useCallback((ev: MediaQueryListEvent) => {
     if (ev.matches && divRef.current) {
-      console.log("------------fhd------------");
+      console.log('------------fhd------------');
       fullWidthOfTimeline.current = PIXEL.PER_HR.IN_FHD * 24;
-      console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
+      console.log('fullWidthOfTimeline', fullWidthOfTimeline.current);
 
       calculateNewLeft({
         prevRule: currentRule.current,
@@ -82,15 +82,15 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       });
       currentRule.current = PIXEL.PER_SEC.IN_FHD;
 
-      divRef.current.style.width = fullWidthOfTimeline.current + "px";
+      divRef.current.style.width = fullWidthOfTimeline.current + 'px';
       checkAndAdjustTimelinePosition();
     }
   }, []);
   const handleQHD_Range = useCallback((ev: MediaQueryListEvent) => {
     if (ev.matches && divRef.current) {
-      console.log("------------qhd------------");
+      console.log('------------qhd------------');
       fullWidthOfTimeline.current = PIXEL.PER_HR.IN_QHD * 24;
-      console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
+      console.log('fullWidthOfTimeline', fullWidthOfTimeline.current);
 
       calculateNewLeft({
         prevRule: currentRule.current,
@@ -98,15 +98,15 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       });
       currentRule.current = PIXEL.PER_SEC.IN_QHD;
 
-      divRef.current.style.width = fullWidthOfTimeline.current + "px";
+      divRef.current.style.width = fullWidthOfTimeline.current + 'px';
       checkAndAdjustTimelinePosition();
     }
   }, []);
   const handleUHD_Range = useCallback((ev: MediaQueryListEvent) => {
     if (ev.matches && divRef.current) {
-      console.log("------------uhd------------");
+      console.log('------------uhd------------');
       fullWidthOfTimeline.current = PIXEL.PER_HR.IN_UHD * 24;
-      console.log("fullWidthOfTimeline", fullWidthOfTimeline.current);
+      console.log('fullWidthOfTimeline', fullWidthOfTimeline.current);
 
       calculateNewLeft({
         prevRule: currentRule.current,
@@ -114,16 +114,16 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       });
       currentRule.current = PIXEL.PER_SEC.IN_UHD;
 
-      divRef.current.style.width = fullWidthOfTimeline.current + "px";
+      divRef.current.style.width = fullWidthOfTimeline.current + 'px';
       checkAndAdjustTimelinePosition();
     }
   }, []);
 
-  mobileRange.addEventListener("change", handleMobileRange);
-  tabletRange.addEventListener("change", handleTabletRange);
-  fhdRange.addEventListener("change", handleFHD_Range);
-  qhdRange.addEventListener("change", handleQHD_Range);
-  uhdRange.addEventListener("change", handleUHD_Range);
+  mobileRange.addEventListener('change', handleMobileRange);
+  tabletRange.addEventListener('change', handleTabletRange);
+  fhdRange.addEventListener('change', handleFHD_Range);
+  qhdRange.addEventListener('change', handleQHD_Range);
+  uhdRange.addEventListener('change', handleUHD_Range);
   //#endregion
 
   //#region To get initial position of timeline
@@ -187,7 +187,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       );
       // 오른쪽으로 드래그하면 right 속성 제거
       (isTouching.current ? deltaX > 0 : isTimelineDraggedToTheRight()) &&
-        (divRef.current!.style.right = "");
+        (divRef.current!.style.right = '');
     }
 
     // 3. 새로운 left 위치 = 시작위치 + 움직인거리
@@ -199,7 +199,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       // to the extent that an empty span appears between the left edge of viewport and the start of timeline.
       //                 left edge     right edge
       // |<------| (o),    |   <---------| (x).
-      divRef.current!.style.left = "0px";
+      divRef.current!.style.left = '0px';
     } else if (
       //   <-------|: -newLeftVal,    |----------------|: clientWidth,  <--------------------> : timeline
       //                          left edge       right edge
@@ -212,11 +212,11 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
       fullWidthOfTimeline.current
     ) {
       // 너무 왼쪽으로 드래그 → 끝점 고정
-      divRef.current!.style.right = "0px";
-      divRef.current!.style.left = "";
+      divRef.current!.style.right = '0px';
+      divRef.current!.style.left = '';
     } else {
       // 정상 범위 → left 값 업데이트
-      divRef.current!.style.left = newLeftVal + "px";
+      divRef.current!.style.left = newLeftVal + 'px';
     }
 
     // 헬퍼 함수들
@@ -326,7 +326,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
         fullWidthOfTimeline.current - document.documentElement.clientWidth
       );
       // 위로 스크롤하면 right 속성 제거
-      ev.deltaY < 0 && (divRef.current!.style.right = "");
+      ev.deltaY < 0 && (divRef.current!.style.right = '');
     } else {
       // 일반적인 경우
       currentLeft = parseInt(divRef.current!.style.left);
@@ -338,17 +338,17 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
     // 3. 경계 처리 (moveTimelineByDragging과 동일한 로직)
     if (newLeftVal > 0) {
       // 너무 오른쪽 → 시작점 고정
-      divRef.current!.style.left = "0px";
+      divRef.current!.style.left = '0px';
     } else if (
       -newLeftVal + document.documentElement.clientWidth >
       fullWidthOfTimeline.current
     ) {
       // 너무 왼쪽 → 끝점 고정
-      divRef.current!.style.right = "0px";
-      divRef.current!.style.left = "";
+      divRef.current!.style.right = '0px';
+      divRef.current!.style.left = '';
     } else {
       // 정상 범위 → left 값 업데이트
-      divRef.current!.style.left = newLeftVal + "px";
+      divRef.current!.style.left = newLeftVal + 'px';
     }
   }
 
@@ -372,8 +372,8 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
           Math.abs(parseInt(divRef.current!.style.left))
     ) {
       // 뷰포트가 남은 타임라인보다 크면 끝점에 고정
-      divRef.current.style.right = "0px";
-      divRef.current.style.left = "";
+      divRef.current.style.right = '0px';
+      divRef.current.style.left = '';
     }
   }
 
@@ -391,12 +391,12 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
     if (divRef.current && divRef.current.style.left.length !== 0) {
       // 이전 규칙 기준 위치를 새 규칙 기준으로 변환
       let newLeft = (parseInt(divRef.current.style.left) / prevRule) * newRule;
-      divRef.current.style.left = newLeft + "px";
+      divRef.current.style.left = newLeft + 'px';
     }
   }
 
   // 타임라인에서 휠 스크롤시 페이지 스크롤 방지
-  divRef.current?.addEventListener("wheel", preventScroll, { passive: false });
+  divRef.current?.addEventListener('wheel', preventScroll, { passive: false });
   function preventScroll(ev: any) {
     ev.preventDefault();
   }
@@ -405,7 +405,7 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
   useEffect(() => {
     let divNode = divRef.current;
     return () => {
-      divNode && divNode.removeEventListener("wheel", preventScroll);
+      divNode && divNode.removeEventListener('wheel', preventScroll);
     };
   }, []);
 
@@ -421,11 +421,11 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
 
   useEffect(() => {
     return () => {
-      mobileRange.removeEventListener("change", handleMobileRange);
-      tabletRange.removeEventListener("change", handleTabletRange);
-      fhdRange.removeEventListener("change", handleFHD_Range);
-      qhdRange.removeEventListener("change", handleQHD_Range);
-      uhdRange.removeEventListener("change", handleUHD_Range);
+      mobileRange.removeEventListener('change', handleMobileRange);
+      tabletRange.removeEventListener('change', handleTabletRange);
+      fhdRange.removeEventListener('change', handleFHD_Range);
+      qhdRange.removeEventListener('change', handleQHD_Range);
+      uhdRange.removeEventListener('change', handleUHD_Range);
     };
   }, []);
   //#endregion
@@ -445,13 +445,13 @@ export default function Timeline({ arrOfSessions }: TimelineProps) {
     <div
       ref={divRef}
       style={{
-        position: "absolute",
+        position: 'absolute',
         height: `max(${MINIMUMS.TIMELINE}px, ${VH_RATIO.TIMELINE}vh)`,
-        backgroundColor: "#c6d1e6",
+        backgroundColor: '#c6d1e6',
         left: initialLeftAndRight.left,
         right: initialLeftAndRight.right,
         width: `${fullWidthOfTimeline.current}px`,
-        touchAction: "none", // 브라우저 기본 터치 동작 비활성화
+        touchAction: 'none', // 브라우저 기본 터치 동작 비활성화
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

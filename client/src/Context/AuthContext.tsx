@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, createContext } from "react";
+import React, { useContext, useEffect, useState, createContext } from 'react';
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -6,28 +6,28 @@ import {
   onAuthStateChanged,
   getAdditionalUserInfo,
   User,
-} from "firebase/auth";
+} from 'firebase/auth';
 
-import { auth } from "../firebase";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
+import { auth } from '../firebase';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
 import {
   CURRENT_CATEGORY_NAME,
   RESOURCE,
   SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
-} from "../constants";
+} from '../constants';
 import {
   DataFromServer,
   useBoundedPomoInfoStore,
-} from "../zustand-stores/pomoInfoStoreUsingSlice";
+} from '../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   dataCombinedFromIDB,
   obtainStatesFromIDB,
   persistCategoryChangeInfoArrayToIDB,
   persistStatesToIDB,
   setStateStoreToDefault,
-} from "..";
-import { Category, CategoryChangeInfo } from "../types/clientStatesType";
-import { pubsub } from "../pubsub";
+} from '..';
+import { Category, CategoryChangeInfo } from '../types/clientStatesType';
+import { pubsub } from '../pubsub';
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;
@@ -52,16 +52,16 @@ export function AuthContextProvider({
   const [isUserNewlyRegistered, setIsUserNewlyRegistered] = useState(false);
   const [isUserNew, setIsUserNew] = useState(false);
   const populateExistingUserStates = useBoundedPomoInfoStore(
-    (state) => state.populateExistingUserStates
+    (state) => state.populateExistingUserStates,
   );
   const populateNonSignInUserStates = useBoundedPomoInfoStore(
-    (state) => state.populateNonSignInUserStates
+    (state) => state.populateNonSignInUserStates,
   );
   const updatePomoSetting = useBoundedPomoInfoStore(
-    (state) => state.setPomoSetting
+    (state) => state.setPomoSetting,
   );
   const updateAutoStartSetting = useBoundedPomoInfoStore(
-    (state) => state.setAutoStartSetting
+    (state) => state.setAutoStartSetting,
   );
 
   const googleSignIn = async () => {
@@ -120,7 +120,7 @@ export function AuthContextProvider({
         const response = await axiosInstance.get(RESOURCE.USERS);
         const states = response.data as DataFromServer;
         const pomoSetting = states.cycleSettings.find(
-          (setting) => setting.isCurrent
+          (setting) => setting.isCurrent,
         )?.pomoSetting;
 
         // console.log("data from server", states);
@@ -134,12 +134,12 @@ export function AuthContextProvider({
           currentCycleInfo: states.currentCycleInfo,
         });
         //2.
-        localStorage.setItem("user", "authenticated");
+        localStorage.setItem('user', 'authenticated');
 
         //3. to ensure that categories are uniquely identified on the client side.
         await addUUIDToCategory(
           states.categories,
-          states.categoryChangeInfoArray
+          states.categoryChangeInfoArray,
         );
 
         //4. assign states to the zustand store
@@ -159,7 +159,7 @@ export function AuthContextProvider({
 
         //
         await persistCategoryChangeInfoArrayToIDB(
-          states.categoryChangeInfoArray
+          states.categoryChangeInfoArray,
         );
         pubsub.publish(SUCCESS_PersistingTimersStatesWithCycleInfoToIDB, {
           timersStates: states.timersStates,
@@ -168,7 +168,7 @@ export function AuthContextProvider({
 
         //
         const currentCategory = states.categories.find(
-          (category) => category.isCurrent
+          (category) => category.isCurrent,
         );
         if (currentCategory) {
           sessionStorage.setItem(CURRENT_CATEGORY_NAME, currentCategory.name);
@@ -215,7 +215,7 @@ export function AuthContextProvider({
      */
 
     async function getAndSetStatesFromIDBForNonSignedInUsers() {
-      let states = await obtainStatesFromIDB("withSettings");
+      let states = await obtainStatesFromIDB('withSettings');
 
       // 1. non-signed-in user가 이전에 사용하던 정보가 Indexed DB에 존재하는 경우.
       if (Object.entries(states).length !== 0) {
@@ -251,7 +251,7 @@ export function AuthContextProvider({
     }
 
     function isNonSignInUser() {
-      return localStorage.getItem("user") !== "authenticated";
+      return localStorage.getItem('user') !== 'authenticated';
     }
 
     if (isNonSignInUser()) {
@@ -296,7 +296,7 @@ export const useAuthContext = () => {
 
 async function addUUIDToCategory(
   categories: Category[],
-  categoryChangeInfoArray: CategoryChangeInfo[]
+  categoryChangeInfoArray: CategoryChangeInfo[],
 ) {
   categories.forEach((category) => {
     category._uuid = window.crypto.randomUUID();
@@ -304,7 +304,7 @@ async function addUUIDToCategory(
 
   for (const info of categoryChangeInfoArray) {
     const matchingCategory = categories.find(
-      (category) => category.name === info.categoryName
+      (category) => category.name === info.categoryName,
     );
     info._uuid = matchingCategory?._uuid;
   }

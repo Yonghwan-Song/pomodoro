@@ -14,9 +14,7 @@ export class Room {
 
   addPeer(peer: Peer): void {
     this.peers.set(peer.id, peer);
-    console.log(
-      `[room.entity:addPeer] Peer ${peer.id} joined room ${this.id}`,
-    );
+    console.log(`[room.entity:addPeer] Peer ${peer.id} joined room ${this.id}`);
   }
 
   removePeer(peerId: string): Peer | undefined {

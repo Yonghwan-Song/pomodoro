@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { PauseType } from "./reducers";
-import Time from "./Time/Time";
-import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
+import { useEffect, useState } from 'react';
+import { PauseType } from './reducers';
+import Time from './Time/Time';
+import { FlexBox } from '../../../ReusableComponents/Layouts/FlexBox';
 
 type PauseTimerProps = {
   isPaused: boolean;
@@ -52,7 +52,7 @@ export default function PauseTimer({
       <h2>
         <Time seconds={Math.floor(pauseData.totalLength / 1000)} />
       </h2>
-      <h3 style={{ textAlign: "center" }}>
+      <h3 style={{ textAlign: 'center' }}>
         <Time seconds={count} />
       </h3>
     </FlexBox>

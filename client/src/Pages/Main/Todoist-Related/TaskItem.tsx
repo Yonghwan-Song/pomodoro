@@ -1,39 +1,39 @@
-import { Task } from "@doist/todoist-api-typescript";
-import styled from "styled-components";
+import { Task } from '@doist/todoist-api-typescript';
+import styled from 'styled-components';
 import {
   TaskChangeInfo,
   TaskWithFocusDurationAndChildren,
-} from "../../../types/todoistRelatedTypes";
-import React, { useEffect, useState } from "react";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
+} from '../../../types/todoistRelatedTypes';
+import React, { useEffect, useState } from 'react';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   COLOR_FOR_CURRENT_STH,
   CURRENT_SESSION_TYPE,
   CURRENT_TASK_ID,
   RESOURCE,
   SUB_SET,
-} from "../../../constants";
-import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
-import { useTaskSelectionHandler } from "./todoist-utility";
+} from '../../../constants';
+import { axiosInstance } from '../../../axios-and-error-handling/axios-instances';
+import { useTaskSelectionHandler } from './todoist-utility';
 
 const TaskContainer = styled.div`
   margin-bottom: 0.5rem;
 `;
 
-const TaskCard = styled.div<{ priority: Task["priority"] }>`
+const TaskCard = styled.div<{ priority: Task['priority'] }>`
   padding: 0.75rem;
   border-radius: 0.375rem;
   background-color: ${({ priority }) => {
     switch (priority) {
       case 4:
-        return "#FEE2E2";
+        return '#FEE2E2';
       case 3:
-        return "#FEF3C7";
+        return '#FEF3C7';
       case 2:
-        return "#DBEAFE";
+        return '#DBEAFE';
       default:
         // return "#F3F4F6";
-        return "#e5e7eb";
+        return '#e5e7eb';
     }
   }};
 `;
@@ -66,11 +66,11 @@ const TaskTitle = styled.span<{ isCurrent: boolean }>`
   display: inline-block;
   font-weight: 500;
   cursor: pointer;
-  border-radius: ${({ isCurrent }) => isCurrent && "4px"};
-  /* padding: ${({ isCurrent }) => isCurrent && "4px"}; */
-  padding: ${({ isCurrent }) => isCurrent && "9px"};
+  border-radius: ${({ isCurrent }) => isCurrent && '4px'};
+  /* padding: ${({ isCurrent }) => isCurrent && '4px'}; */
+  padding: ${({ isCurrent }) => isCurrent && '9px'};
   border: ${({ isCurrent }) =>
-    isCurrent ? `1px solid ${COLOR_FOR_CURRENT_STH}` : "none"};
+    isCurrent ? `1px solid ${COLOR_FOR_CURRENT_STH}` : 'none'};
 `;
 //#endregion
 
@@ -147,22 +147,22 @@ export const TaskItem = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const currentTaskId = useBoundedPomoInfoStore(
-    (states) => states.currentTaskId
+    (states) => states.currentTaskId,
   );
   const taskChangeInfoArray = useBoundedPomoInfoStore(
-    (states) => states.taskChangeInfoArray
+    (states) => states.taskChangeInfoArray,
   );
   const setCurrentTaskId = useBoundedPomoInfoStore(
-    (states) => states.setCurrentTaskId
+    (states) => states.setCurrentTaskId,
   );
   const addTaskChangeInfo = useBoundedPomoInfoStore(
-    (states) => states.addTaskChangeInfo
+    (states) => states.addTaskChangeInfo,
   );
   const setTaskChangeInfoArray = useBoundedPomoInfoStore(
-    (states) => states.setTaskChangeInfoArray
+    (states) => states.setTaskChangeInfoArray,
   );
   const checkIfSessionIsNotStartedYet = useBoundedPomoInfoStore(
-    (states) => states.checkIfSessionIsNotStartedYet
+    (states) => states.checkIfSessionIsNotStartedYet,
   );
 
   // New Way
@@ -174,21 +174,21 @@ export const TaskItem = ({
 
   const handleTaskClick = (
     ev: React.MouseEvent<HTMLSpanElement>,
-    moment: number
+    moment: number,
   ) => {
     if (currentTaskId === task.id) return;
 
     const currentSessionType = sessionStorage.getItem(CURRENT_SESSION_TYPE);
     if (currentSessionType === null) {
-      alert("Please click the task again");
+      alert('Please click the task again');
       return;
     }
 
     const sessionType = currentSessionType.toUpperCase();
-    const isPomo = sessionType === "POMO";
-    const isBreak = sessionType === "BREAK";
+    const isPomo = sessionType === 'POMO';
+    const isBreak = sessionType === 'BREAK';
 
-    console.log("sessionType", sessionType);
+    console.log('sessionType', sessionType);
 
     // Always update currentTaskId and sessionStorage
     setCurrentTaskId(task.id);
@@ -198,7 +198,7 @@ export const TaskItem = ({
     let newTaskChange: TaskChangeInfo;
     let shouldAddTaskChange = false;
     let shouldSetTaskChangeArray = false;
-    let patchUrl = "";
+    let patchUrl = '';
     let patchData: any = {};
 
     //* IMPT -  focus session이고 세션이 이미 시작했다면, recordPrev방식. (아직 task change의 경우에는 justChange방식을 구현하지 않았음.)
@@ -218,8 +218,8 @@ export const TaskItem = ({
     //* because the timestamp is not just 0, but is when the break was started. It should not be changed to 0 by the newTaskChange object.
     else if ((isPomo && checkIfSessionIsNotStartedYet()) || isBreak) {
       console.log(
-        "taskChangeInfoArray in the handleTaskClick",
-        taskChangeInfoArray
+        'taskChangeInfoArray in the handleTaskClick',
+        taskChangeInfoArray,
       );
       const preservedTaskChangeTimestamp =
         taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0;
@@ -246,7 +246,7 @@ export const TaskItem = ({
       }
       axiosInstance.patch(patchUrl, patchData);
     } catch (error) {
-      console.error("Error handling task click:", error);
+      console.error('Error handling task click:', error);
     }
   };
 
@@ -262,9 +262,9 @@ export const TaskItem = ({
             {hasChildren ? (
               <ExpandButton
                 onClick={() => setExpanded((prev) => !prev)}
-                aria-label={expanded ? "Collapse task" : "Expand task"}
+                aria-label={expanded ? 'Collapse task' : 'Expand task'}
               >
-                {expanded ? "−" : "+"}
+                {expanded ? '−' : '+'}
               </ExpandButton>
             ) : null}
           </ButtonOrSpacer>
@@ -278,7 +278,7 @@ export const TaskItem = ({
             >
               {task.content}
               {/* Show focus duration if available */}
-              {typeof task.taskFocusDuration === "number" &&
+              {typeof task.taskFocusDuration === 'number' &&
                 task.taskFocusDuration > 0 && (
                   <TaskFocusDuration>
                     ⏱ {formatDuration(task.taskFocusDuration)}

@@ -1,26 +1,26 @@
-import { useMemo, useState } from "react";
-import { axiosInstance } from "../../../axios-and-error-handling/axios-instances";
+import { useMemo, useState } from 'react';
+import { axiosInstance } from '../../../axios-and-error-handling/axios-instances';
 import {
   COLOR_FOR_CURRENT_STH,
   CURRENT_CATEGORY_NAME,
   CURRENT_SESSION_TYPE,
   RESOURCE,
-} from "../../../constants";
-import { FlexBox } from "../../../ReusableComponents/Layouts/FlexBox";
-import ReactModal from "react-modal";
-import { Button } from "../../../ReusableComponents/Buttons/Button";
-import { useBoundedPomoInfoStore } from "../../../zustand-stores/pomoInfoStoreUsingSlice";
-import { errController } from "../../../axios-and-error-handling/errorController";
-import { insert_UUID_to_reqConfig } from "../../../utils/anything";
+} from '../../../constants';
+import { FlexBox } from '../../../ReusableComponents/Layouts/FlexBox';
+import ReactModal from 'react-modal';
+import { Button } from '../../../ReusableComponents/Buttons/Button';
+import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
+import { errController } from '../../../axios-and-error-handling/errorController';
+import { insert_UUID_to_reqConfig } from '../../../utils/anything';
 
 const customModalStyles = {
   content: {
-    top: "50%",
-    left: "50%",
-    right: "auto",
-    bottom: "auto",
-    marginRight: "-50%",
-    transform: "translate(-50%, -50%)",
+    top: '50%',
+    left: '50%',
+    right: 'auto',
+    bottom: 'auto',
+    marginRight: '-50%',
+    transform: 'translate(-50%, -50%)',
   },
 };
 
@@ -34,13 +34,13 @@ const customModalStyles = {
 export default function CategoryList() {
   const categories = useBoundedPomoInfoStore((state) => state.categories);
   const colorForUnCategorized = useBoundedPomoInfoStore(
-    (state) => state.colorForUnCategorized
+    (state) => state.colorForUnCategorized,
   );
   const updateCategories = useBoundedPomoInfoStore(
-    (state) => state.setCategories
+    (state) => state.setCategories,
   );
   const updateDoesItJustChangeCategory = useBoundedPomoInfoStore(
-    (state) => state.setDoesItJustChangeCategory
+    (state) => state.setDoesItJustChangeCategory,
   );
   const [currentCategoryName, currentCategoryUUID] = useMemo(() => {
     const currentCategory = categories.find((c) => c.isCurrent === true);
@@ -48,10 +48,10 @@ export default function CategoryList() {
   }, [categories]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clickedCategoryName, setClickedCategoryName] = useState<string | null>(
-    null
+    null,
   );
   const [clickedCategoryUUID, setClickedCategoryUUID] = useState<string | null>(
-    null
+    null,
   );
 
   //#region New with a state variable
@@ -102,7 +102,7 @@ export default function CategoryList() {
         if (_uuid) {
           // TODO 이런거 좀 어떻게 안되나.. cannot assign `string | null` to `string | undefined`
           errController.registerFailedReqInfo(
-            insert_UUID_to_reqConfig(reqConfig, _uuid)
+            insert_UUID_to_reqConfig(reqConfig, _uuid),
           );
         }
       }
@@ -142,7 +142,7 @@ export default function CategoryList() {
         .catch((reqConfig) => {
           currentCategoryUUID &&
             errController.registerFailedReqInfo(
-              insert_UUID_to_reqConfig(reqConfig, currentCategoryUUID)
+              insert_UUID_to_reqConfig(reqConfig, currentCategoryUUID),
             );
         });
     }
@@ -158,9 +158,9 @@ export default function CategoryList() {
   //* isCurrent to false로 해야해서 else에 있는 함수에도 `_uuid`보내야함.
   function changeCategoryWhenSessionIsBreak(
     nameOfCategoryClicked: string,
-    _uuid: string
+    _uuid: string,
   ) {
-    if (nameOfCategoryClicked !== "uncategorized") {
+    if (nameOfCategoryClicked !== 'uncategorized') {
       selectCurrent({
         doesItJustChangeCategory: true,
         nameOfCategoryClicked,
@@ -203,10 +203,10 @@ export default function CategoryList() {
             data-name={category.name}
             key={index}
             style={{
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              columnGap: "8px",
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              columnGap: '8px',
             }}
             onClick={() => {
               const currentSessionType =
@@ -215,18 +215,18 @@ export default function CategoryList() {
               //! clickedCategoryName is category.name
               if (
                 category.name !== currentCategoryName &&
-                currentSessionType === "break"
+                currentSessionType === 'break'
               ) {
                 //Just change it
                 category._uuid &&
                   changeCategoryWhenSessionIsBreak(
                     category.name,
-                    category._uuid
+                    category._uuid,
                   );
               }
               if (
                 category.name !== currentCategoryName &&
-                currentSessionType === "pomo"
+                currentSessionType === 'pomo'
               ) {
                 if (category._uuid) openModal(category.name, category._uuid);
               }
@@ -234,16 +234,16 @@ export default function CategoryList() {
           >
             <div
               style={{
-                width: "50px",
-                height: "50px",
+                width: '50px',
+                height: '50px',
                 backgroundColor: `${category.color}`,
-                borderRadius: "50%",
+                borderRadius: '50%',
               }}
             ></div>
             <div
               style={{
-                color: category.isCurrent ? COLOR_FOR_CURRENT_STH : "black",
-                fontWeight: category.isCurrent ? "bold" : "normal",
+                color: category.isCurrent ? COLOR_FOR_CURRENT_STH : 'black',
+                fontWeight: category.isCurrent ? 'bold' : 'normal',
               }}
             >
               {category.name}
@@ -255,35 +255,35 @@ export default function CategoryList() {
       {/* Uncategorized circle icon */}
       <div
         style={{
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          columnGap: "8px",
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          columnGap: '8px',
         }}
         onClick={() => {
           const currentSessionType =
             sessionStorage.getItem(CURRENT_SESSION_TYPE);
 
-          if (currentCategoryName && currentSessionType === "break") {
+          if (currentCategoryName && currentSessionType === 'break') {
             runSessionUncategorized({ doesItJustChangeCategory: true });
           }
-          if (currentCategoryName && currentSessionType === "pomo") {
-            openModalForUncategorized("uncategorized");
+          if (currentCategoryName && currentSessionType === 'pomo') {
+            openModalForUncategorized('uncategorized');
           }
         }}
       >
         <div
           style={{
-            width: "50px",
-            height: "50px",
+            width: '50px',
+            height: '50px',
             backgroundColor: colorForUnCategorized,
-            borderRadius: "50%",
+            borderRadius: '50%',
           }}
         ></div>
         <div
           style={{
-            color: currentCategoryName === undefined ? "#ff8522" : "black",
-            fontWeight: currentCategoryName === undefined ? "bold" : "normal",
+            color: currentCategoryName === undefined ? '#ff8522' : 'black',
+            fontWeight: currentCategoryName === undefined ? 'bold' : 'normal',
           }}
         >
           Uncategorized
@@ -297,7 +297,7 @@ export default function CategoryList() {
         contentLabel="Category Change Confirmation"
       >
         <p>
-          Category change from <b>{currentCategoryName ?? "uncategorized"}</b>{" "}
+          Category change from <b>{currentCategoryName ?? 'uncategorized'}</b>{' '}
           to <b>{clickedCategoryName}</b>
         </p>
         <br></br>
@@ -306,16 +306,16 @@ export default function CategoryList() {
         </p>
         <div
           style={{
-            display: "flex",
-            gap: "1.5rem",
-            justifyContent: "space-around",
-            marginTop: "5px",
+            display: 'flex',
+            gap: '1.5rem',
+            justifyContent: 'space-around',
+            marginTop: '5px',
           }}
         >
           <Button
             color="primary"
             onClick={() => {
-              if (clickedCategoryName !== "uncategorized") {
+              if (clickedCategoryName !== 'uncategorized') {
                 selectCurrent({ doesItJustChangeCategory: false });
               } else {
                 runSessionUncategorized({ doesItJustChangeCategory: false });
@@ -330,7 +330,7 @@ export default function CategoryList() {
           <Button
             color="primary"
             onClick={() => {
-              if (clickedCategoryName !== "uncategorized") {
+              if (clickedCategoryName !== 'uncategorized') {
                 selectCurrent({ doesItJustChangeCategory: true });
               } else {
                 runSessionUncategorized({ doesItJustChangeCategory: true });

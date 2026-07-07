@@ -1,11 +1,11 @@
-import { Outlet } from "react-router-dom";
-import { useEffect } from "react";
-import { AuthContextProvider } from "./Context/AuthContext";
-import { RecordsOfTodayContextProvider } from "./Context/RecordsOfTodayContext";
-import Navbar from "./Pages/NavBar/NavBar";
-import { DefaultTheme, ThemeProvider } from "styled-components";
-import { pubsub } from "./pubsub";
-import { ToastContainer } from "react-toastify";
+import { Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { AuthContextProvider } from './Context/AuthContext';
+import { RecordsOfTodayContextProvider } from './Context/RecordsOfTodayContext';
+import Navbar from './Pages/NavBar/NavBar';
+import { DefaultTheme, ThemeProvider } from 'styled-components';
+import { pubsub } from './pubsub';
+import { ToastContainer } from 'react-toastify';
 export interface ThemeCustomized extends DefaultTheme {
   colors: {
     navBar: string;
@@ -18,35 +18,35 @@ export interface ThemeCustomized extends DefaultTheme {
 
 const theme = {
   colors: {
-    navBar: "#44475a",
-    link: "#50fa7b",
-    text: "#181313",
+    navBar: '#44475a',
+    link: '#50fa7b',
+    text: '#181313',
   },
   //TODO: 이거 src/constants/index.ts와 중복인데..
-  tablet: "1024px",
-  mobile: "768px",
+  tablet: '1024px',
+  mobile: '768px',
 };
 
 function App() {
   //#region side effects
   useEffect(() => {
     function networkIsDown() {
-      console.log("network is down");
-      pubsub.publish("connectionIsDown", Date.now());
+      console.log('network is down');
+      pubsub.publish('connectionIsDown', Date.now());
     }
     function networkIsUp() {
-      console.log("network is up");
+      console.log('network is up');
       setTimeout(() => {
-        pubsub.publish("connectionIsUp", Date.now());
+        pubsub.publish('connectionIsUp', Date.now());
       }, 2500);
     }
 
-    window.addEventListener("offline", networkIsDown);
-    window.addEventListener("online", networkIsUp);
+    window.addEventListener('offline', networkIsDown);
+    window.addEventListener('online', networkIsUp);
 
     return () => {
-      window.removeEventListener("offline", networkIsDown);
-      window.removeEventListener("online", networkIsUp);
+      window.removeEventListener('offline', networkIsDown);
+      window.removeEventListener('online', networkIsUp);
     };
   }, []);
 
@@ -64,16 +64,16 @@ function App() {
 
   //#region notification
   useEffect(() => {
-    if ("Notification" in window) {
-      console.log("The Notification property exists in the window namespace");
-      if (Notification.permission === "granted") {
-        console.log("Permission is granted");
+    if ('Notification' in window) {
+      console.log('The Notification property exists in the window namespace');
+      if (Notification.permission === 'granted') {
+        console.log('Permission is granted');
       } else {
         Notification.requestPermission()
           .then(function (result) {
-            console.log("result:", result);
-            if (Notification.permission === "granted") {
-              console.log("Permission is granted");
+            console.log('result:', result);
+            if (Notification.permission === 'granted') {
+              console.log('Permission is granted');
             }
           })
           .catch((err) => {
@@ -82,7 +82,7 @@ function App() {
       }
     } else {
       console.log(
-        "The Notification property does not exist in the window namespace"
+        'The Notification property does not exist in the window namespace',
       );
     }
   }, []);

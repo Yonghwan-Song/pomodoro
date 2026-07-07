@@ -1,5 +1,5 @@
-import Second from "./Second";
-import Mintue from "./Mintue";
+import Second from './Second';
+import Mintue from './Mintue';
 
 type TimeProps = {
   seconds: number;

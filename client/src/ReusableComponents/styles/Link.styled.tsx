@@ -1,5 +1,5 @@
-import { Link, LinkProps } from "react-router-dom";
-import styled, { css } from "styled-components";
+import { Link, LinkProps } from 'react-router-dom';
+import styled, { css } from 'styled-components';
 
 type LinkkProps = LinkProps & {
   color?: string;
@@ -60,10 +60,10 @@ export const StyledLink = styled(Linkk)`
     1.5rem,
     3.2424vh
   );  */
-  /* font-size: ${({ size }) => size || "1.5rem"}; */
-  letter-spacing: ${({ letterSpacing }) => letterSpacing || "normal"};
+  /* font-size: ${({ size }) => size || '1.5rem'}; */
+  letter-spacing: ${({ letterSpacing }) => letterSpacing || 'normal'};
 
   &:hover {
-    font-weight: ${({ hover }) => (hover ? "bold" : "normal")};
+    font-weight: ${({ hover }) => (hover ? 'bold' : 'normal')};
   }
 `;

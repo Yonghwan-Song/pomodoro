@@ -4,20 +4,20 @@ import {
   DurationOfCategoryTaskCombination,
   RecType,
   TaskTrackingDocument,
-} from "../types/clientStatesType";
-import { PomodoroSessionDocument } from "../Pages/Statistics/statRelatedTypes";
+} from '../types/clientStatesType';
+import { PomodoroSessionDocument } from '../Pages/Statistics/statRelatedTypes';
 import {
   makeTimestampsFromRawData,
   makeSegmentsFromTimestamps,
   makeDurationsFromSegmentsByCategoryAndTaskCombination,
   makePomoRecordsFromDurations,
   getTaskDurationMapFromSegments,
-} from "../Pages/Main/Category-Related/category-change-utility";
-import { axiosInstance } from "../axios-and-error-handling/axios-instances";
-import { boundedPomoInfoStore } from "../zustand-stores/pomoInfoStoreUsingSlice";
-import { DynamicCache, openCache } from "../index";
-import { CacheName, BASE_URL, RESOURCE } from "../constants";
-import { pubsub } from "../pubsub";
+} from '../Pages/Main/Category-Related/category-change-utility';
+import { axiosInstance } from '../axios-and-error-handling/axios-instances';
+import { boundedPomoInfoStore } from '../zustand-stores/pomoInfoStoreUsingSlice';
+import { DynamicCache, openCache } from '../index';
+import { CacheName, BASE_URL, RESOURCE } from '../constants';
+import { pubsub } from '../pubsub';
 
 export async function recordPomo(
   categoryChangeInfoArray: {
@@ -28,14 +28,14 @@ export async function recordPomo(
     id: string;
     taskChangeTimestamp: number;
   }[],
-  sessionData: Omit<RecType, "kind">
+  sessionData: Omit<RecType, 'kind'>,
 ) {
   try {
     const invalidTaskChangeInfo = taskChangeInfoArray.filter(
-      (info) => typeof info.id !== "string"
+      (info) => typeof info.id !== 'string',
     );
     if (invalidTaskChangeInfo.length > 0) {
-      console.warn("[recordPomo] invalid taskChangeInfoArray.id detected", {
+      console.warn('[recordPomo] invalid taskChangeInfoArray.id detected', {
         invalidTaskChangeInfo,
         taskChangeInfoArray,
         sessionStartTime: sessionData.startTime,
@@ -50,7 +50,7 @@ export async function recordPomo(
         start: number;
         end: number;
       }[],
-      sessionData.endTime
+      sessionData.endTime,
     );
     const segments: Array<SessionSegment> =
       makeSegmentsFromTimestamps(timestamps);
@@ -60,14 +60,14 @@ export async function recordPomo(
       makePomoRecordsFromDurations(durations, sessionData.startTime);
     const taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
     const taskTrackingArr: TaskTrackingDocument[] = Array.from(
-      taskFocusDurationMap.entries()
+      taskFocusDurationMap.entries(),
     ).map(([taskId, duration]) => ({
       taskId,
       duration: Math.floor(duration / (60 * 1000)),
     }));
 
     boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
-    pubsub.publish("pomoAdded", pomodoroRecordArr);
+    pubsub.publish('pomoAdded', pomodoroRecordArr);
     //#endregion
 
     //#region Update cache
@@ -81,7 +81,7 @@ export async function recordPomo(
 
       await cache.put(
         BASE_URL + RESOURCE.POMODOROS,
-        new Response(JSON.stringify(statData))
+        new Response(JSON.stringify(statData)),
       );
     }
     //#endregion

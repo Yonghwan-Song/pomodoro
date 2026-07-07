@@ -1,8 +1,8 @@
-import { BoxShadowWrapper } from "../../../ReusableComponents/Wrapper";
+import { BoxShadowWrapper } from '../../../ReusableComponents/Wrapper';
 import {
   LeftArrow,
   RightArrow,
-} from "../../../ReusableComponents/Icons/ChevronArrows";
+} from '../../../ReusableComponents/Icons/ChevronArrows';
 import {
   AreaChart,
   Area,
@@ -12,16 +12,16 @@ import {
   YAxis,
   TooltipProps,
   CartesianGrid,
-} from "recharts";
+} from 'recharts';
 import {
   CategoryDetail,
   CategorySubtotal,
   DayStat,
   DayStatForGraph,
   StatDataForGraph_DailyPomoStat,
-} from "../statRelatedTypes";
-import { useState, useEffect } from "react";
-import { startOfWeek, endOfWeek } from "date-fns";
+} from '../statRelatedTypes';
+import { useState, useEffect } from 'react';
+import { startOfWeek, endOfWeek } from 'date-fns';
 
 type GraphProps = {
   statData: DayStat[] | null;
@@ -41,14 +41,14 @@ export function CategoryGraph({
   colorForUnCategorized,
 }: GraphProps) {
   const [dailyStatOfWeek, setDailyStatOfWeek] = useState<DayStatForGraph[]>(
-    structuredClone(dailyStatOfThisWeek)
+    structuredClone(dailyStatOfThisWeek),
   );
 
   const [weekStart, setWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+    startOfWeek(new Date(), { weekStartsOn: 1 }).getTime(),
   );
   const [weekEnd, setWeekEnd] = useState(
-    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime()
+    endOfWeek(new Date(), { weekStartsOn: 1 }).getTime(),
   );
   const [weekRange, setWeekRange] = useState(weekRangeForThisWeek);
   const _24h = 24 * 60 * 60 * 1000;
@@ -77,7 +77,7 @@ export function CategoryGraph({
             dayStat.withoutCategory =
               statData[statData.length - 1].withoutCategory;
             dayStat.subtotalByCategory = JSON.parse(
-              JSON.stringify(statData[statData.length - 1].subtotalByCategory)
+              JSON.stringify(statData[statData.length - 1].subtotalByCategory),
             );
           }
 
@@ -97,12 +97,12 @@ export function CategoryGraph({
    * @param {*} pomodoroDailyStat the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function calculateNextWeekData(
-    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
+    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null,
   ) {
     let weekCloned = [...dailyStatOfWeek];
 
     if (weekStart === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime()) {
-      alert("No more data");
+      alert('No more data');
     } else {
       let newWeekStart = weekStart + 7 * _24h;
       let newWeekEnd = weekEnd + 7 * _24h;
@@ -140,9 +140,9 @@ export function CategoryGraph({
       setWeekRange(
         `${weekCloned[0].date
           .slice(0, -5)
-          .replace("/", ". ")} - ${weekCloned[6].date
+          .replace('/', '. ')} - ${weekCloned[6].date
           .slice(0, -5)
-          .replace("/", ". ")}`
+          .replace('/', '. ')}`,
       );
       setDailyStatOfWeek(weekCloned);
     }
@@ -155,7 +155,7 @@ export function CategoryGraph({
    * @param {DayStat[]} pomodoroDailyStat the data retrieved from database e.g. [{date:"8/29/2022", timestamp: 1661745600000, dayOfWeek: "Mon", total: 700},...]
    */
   function calculatePrevWeekData(
-    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null
+    pomodoroDailyStat: StatDataForGraph_DailyPomoStat | null,
   ) {
     let weekCloned = [...dailyStatOfWeek];
     let newWeekStart = weekStart - 7 * _24h;
@@ -184,9 +184,9 @@ export function CategoryGraph({
     setWeekRange(
       `${weekCloned[0].date
         .slice(0, -5)
-        .replace("/", ". ")} - ${weekCloned[6].date
+        .replace('/', '. ')} - ${weekCloned[6].date
         .slice(0, -5)
-        .replace("/", ". ")}`
+        .replace('/', '. ')}`,
     );
     setDailyStatOfWeek(weekCloned);
   }
@@ -200,7 +200,7 @@ export function CategoryGraph({
    */
   function extractWeekData(
     statArray: DayStat[],
-    range: [number, number]
+    range: [number, number],
   ): DayStat[] {
     return statArray.filter((ele) => {
       return (
@@ -225,11 +225,11 @@ export function CategoryGraph({
       subtotalByCategory?: CategorySubtotal;
       withoutCategory?: number;
     }[],
-    weekStatFromData: DayStat[]
+    weekStatFromData: DayStat[],
   ) {
     for (let cloned of weekCloned) {
       let matchingStat = weekStatFromData.find(
-        (fromData) => fromData.date === cloned.date
+        (fromData) => fromData.date === cloned.date,
       );
       // console.log(
       //   "matchingStat from weekStatFromData in fillWeekCloned",
@@ -275,7 +275,7 @@ export function CategoryGraph({
 
         return previousValue;
       },
-      {}
+      {},
     );
     // console.log(retVal);
     return retVal;
@@ -290,7 +290,7 @@ export function CategoryGraph({
       } else {
         return 0;
       }
-    }
+    },
   );
 
   /**
@@ -301,12 +301,12 @@ export function CategoryGraph({
    */
   function getMaxOfWeek(
     dailyStatOfWeek: DayStatForGraph[],
-    categoryDetail: CategoryDetail
+    categoryDetail: CategoryDetail,
   ) {
     const durationArray = dailyStatOfWeek.map((stat) =>
       stat.subtotalByCategory !== undefined
         ? stat.subtotalByCategory[categoryDetail.name].duration
-        : 0
+        : 0,
     );
     return Math.max(...durationArray);
   }
@@ -319,7 +319,7 @@ export function CategoryGraph({
 
   const maxValueOfData = Math.max(
     ...maxCandidatesOfEachCategory,
-    maxOfUnCategorized
+    maxOfUnCategorized,
   );
   const maxTickOfYAxis = maxValueOfData - (maxValueOfData % 60) + 60;
   const desirableTickCount = maxTickOfYAxis / 60 + 1;
@@ -333,15 +333,15 @@ export function CategoryGraph({
     <BoxShadowWrapper>
       <div
         style={{
-          position: "absolute",
-          display: "flex",
-          right: "5px",
-          top: "6px",
+          position: 'absolute',
+          display: 'flex',
+          right: '5px',
+          top: '6px',
           zIndex: 2,
         }}
       >
         <LeftArrow handleClick={() => calculatePrevWeekData(statData)} />
-        <p style={{ width: "95px", textAlign: "center" }}>{weekRange}</p>
+        <p style={{ width: '95px', textAlign: 'center' }}>{weekRange}</p>
         <RightArrow handleClick={() => calculateNextWeekData(statData)} />
       </div>
 
@@ -351,7 +351,7 @@ export function CategoryGraph({
           margin={{ top: 10, right: 10, left: -27, bottom: -10 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={"dayOfWeek"} />
+          <XAxis dataKey={'dayOfWeek'} />
           {/* //*IMPT: Since these Area Graphs are not stacked, dataMax parameter in the callback below changes depending on what areas we select to draw on the graph. */}
           {/* //*Therefore, tickCount should be calculated differently than we did at the `StackedGraph.tsx` */}
           <YAxis
@@ -372,7 +372,7 @@ export function CategoryGraph({
                   dot={{
                     strokeWidth: 1.5,
                     r: 3,
-                    fill: "#ffffff",
+                    fill: '#ffffff',
                   }}
                   dataKey={`subtotalByCategory.${detail.name}.duration`}
                   stroke={detail.color}
@@ -391,7 +391,7 @@ export function CategoryGraph({
               dot={{
                 strokeWidth: 1.5,
                 r: 3,
-                fill: "#ffffff",
+                fill: '#ffffff',
               }}
               stroke={colorForUnCategorized}
               strokeWidth={1.5}
@@ -440,12 +440,12 @@ function CustomTooltip({
     return (
       <div
         style={{
-          borderRadius: "0.25rem",
-          background: "#fff",
-          padding: "1rem",
-          boxShadow: "15px 30px 40px 5px rgba(0, 0, 0, 0.5)",
-          textAlign: "left",
-          fontWeight: "bold",
+          borderRadius: '0.25rem',
+          background: '#fff',
+          padding: '1rem',
+          boxShadow: '15px 30px 40px 5px rgba(0, 0, 0, 0.5)',
+          textAlign: 'left',
+          fontWeight: 'bold',
         }}
       >
         <p>
@@ -456,9 +456,9 @@ function CustomTooltip({
             <div
               key={index}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                columnGap: "6px",
+                display: 'flex',
+                justifyContent: 'space-between',
+                columnGap: '6px',
                 color: dayData.color,
               }}
             >
@@ -481,7 +481,7 @@ function getHHmm(duration: number | undefined) {
   if (duration) {
     return `${Math.trunc(duration / 60)}h ${duration % 60}m`;
   } else {
-    return "0m";
+    return '0m';
   }
 }
 

@@ -1,19 +1,19 @@
-import { BREAK_POINTS } from "../../../constants";
+import { BREAK_POINTS } from '../../../constants';
 
 export const mobileRange = window.matchMedia(
-  `(width <= ${BREAK_POINTS.MOBILE})`
+  `(width <= ${BREAK_POINTS.MOBILE})`,
 );
 export const tabletRange = window.matchMedia(
-  `(${BREAK_POINTS.MOBILE} < width <= ${BREAK_POINTS.TABLET})`
+  `(${BREAK_POINTS.MOBILE} < width <= ${BREAK_POINTS.TABLET})`,
 );
 export const fhdRange = window.matchMedia(
-  `(${BREAK_POINTS.TABLET} < width <= ${BREAK_POINTS.FHD})`
+  `(${BREAK_POINTS.TABLET} < width <= ${BREAK_POINTS.FHD})`,
 );
 export const qhdRange = window.matchMedia(
-  `(${BREAK_POINTS.FHD} < width <= ${BREAK_POINTS.QHD})`
+  `(${BREAK_POINTS.FHD} < width <= ${BREAK_POINTS.QHD})`,
 );
 export const uhdRange = window.matchMedia(
-  `(${BREAK_POINTS.QHD} < width <= ${BREAK_POINTS.UHD})`
+  `(${BREAK_POINTS.QHD} < width <= ${BREAK_POINTS.UHD})`,
 );
 
 export function calculateLeftAndRight({
@@ -32,9 +32,9 @@ export function calculateLeftAndRight({
   let n_th_slot = Math.floor(currentHour / slotHour);
 
   if (isAtTheLastTimeSlot(n_th_slot)) {
-    return { left: "", right: "0px" };
+    return { left: '', right: '0px' };
   } else {
-    return { left: -slotSize * n_th_slot + "px", right: "" };
+    return { left: -slotSize * n_th_slot + 'px', right: '' };
   }
 
   function isAtTheLastTimeSlot(n_th_slot: number) {

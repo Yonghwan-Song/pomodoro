@@ -1,5 +1,5 @@
-import { persistStatesToIDB } from "../../..";
-import { TimerStateType } from "../../../types/clientStatesType";
+import { persistStatesToIDB } from '../../..';
+import { TimerStateType } from '../../../types/clientStatesType';
 
 export type PauseType = {
   totalLength: number;
@@ -23,13 +23,13 @@ type ContinueAction = {
   type: Continue;
   payload: TimerStateType;
 };
-type Update = "start" | "pause" | "resume";
-type Reset = "reset";
-type Continue = "continue";
+type Update = 'start' | 'pause' | 'resume';
+type Reset = 'reset';
+type Continue = 'continue';
 
 export function reducer(
   state: TimerStateType,
-  action: TimerAction
+  action: TimerAction,
 ): TimerStateType {
   switch (action.type) {
     case ACTION.START:
@@ -139,9 +139,9 @@ export const ACTION: {
   RESET: Reset;
   CONTINUE: Continue;
 } = {
-  START: "start",
-  PAUSE: "pause",
-  RESUME: "resume",
-  RESET: "reset",
-  CONTINUE: "continue",
+  START: 'start',
+  PAUSE: 'pause',
+  RESUME: 'resume',
+  RESET: 'reset',
+  CONTINUE: 'continue',
 };

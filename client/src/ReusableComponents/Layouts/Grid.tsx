@@ -1,5 +1,5 @@
-import { CSSProperties } from "react";
-import { StyledGrid } from "../styles/Grid.styled";
+import { CSSProperties } from 'react';
+import { StyledGrid } from '../styles/Grid.styled';
 
 type GridProps = {
   children?: React.ReactNode;

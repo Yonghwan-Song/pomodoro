@@ -1,7 +1,7 @@
 import {
   StyledToggleSwitchButton,
   StyledToggleSwitchButtonPropsType,
-} from "../styles/ToggleSwitchButton.styled";
+} from '../styles/ToggleSwitchButton.styled';
 
 export default function ToggleSwitchButton({
   isSwitchOn,

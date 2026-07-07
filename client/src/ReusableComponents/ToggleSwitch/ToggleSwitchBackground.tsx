@@ -2,7 +2,7 @@ import {
   StyledLeftBox,
   StyledLeftRightBoxPropsType,
   StyledRightBox,
-} from "../styles/ToggleSwitchLeftAndRightBox.styled";
+} from '../styles/ToggleSwitchLeftAndRightBox.styled';
 
 export default function ToggleSwitchBackground({
   isSwitchOn,

@@ -1,5 +1,5 @@
-import { css } from "../../../../../styled-system/css";
-import VideoPlayer from "../media/VideoPlayer";
+import { css } from '../../../../../styled-system/css';
+import VideoPlayer from '../media/VideoPlayer';
 
 interface VideoGridProps {
   localStream: MediaStream | null;
@@ -10,27 +10,27 @@ export function VideoGrid({ localStream, remoteStreams }: VideoGridProps) {
   return (
     <div
       className={css({
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-        gap: "4",
-        marginTop: "4",
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+        gap: '4',
+        marginTop: '4',
       })}
     >
       {localStream && (
         <div
           className={css({
-            backgroundColor: "gray.800",
-            borderRadius: "lg",
-            padding: "3",
-            boxShadow: "md",
+            backgroundColor: 'gray.800',
+            borderRadius: 'lg',
+            padding: '3',
+            boxShadow: 'md',
           })}
         >
           <h3
             className={css({
-              fontSize: "sm",
-              fontWeight: "medium",
-              color: "gray.300",
-              marginBottom: "2",
+              fontSize: 'sm',
+              fontWeight: 'medium',
+              color: 'gray.300',
+              marginBottom: '2',
             })}
           >
             My Video
@@ -43,18 +43,18 @@ export function VideoGrid({ localStream, remoteStreams }: VideoGridProps) {
         <div
           key={peerId}
           className={css({
-            backgroundColor: "gray.800",
-            borderRadius: "lg",
-            padding: "3",
-            boxShadow: "md",
+            backgroundColor: 'gray.800',
+            borderRadius: 'lg',
+            padding: '3',
+            boxShadow: 'md',
           })}
         >
           <h3
             className={css({
-              fontSize: "sm",
-              fontWeight: "medium",
-              color: "gray.300",
-              marginBottom: "2",
+              fontSize: 'sm',
+              fontWeight: 'medium',
+              color: 'gray.300',
+              marginBottom: '2',
             })}
           >
             {peerId.substring(0, 6)}
