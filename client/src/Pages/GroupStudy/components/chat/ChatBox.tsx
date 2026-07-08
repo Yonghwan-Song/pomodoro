@@ -87,21 +87,12 @@ export function ChatBox({
         onClick={() => setIsOpen(!isOpen)}
         className={css({
           padding: '4',
-<<<<<<< HEAD
-          backgroundColor: 'gray.50',
-          borderBottom: isOpen ? '1px solid' : 'none',
-          borderColor: 'gray.200',
-          fontWeight: 'semibold',
-          fontSize: 'md',
-          color: 'gray.900',
-=======
           backgroundColor: 'bg.surface', // 헤더 배경색 (비디오 카드 헤더와 동일하게)
           borderBottom: isOpen ? '1px solid' : 'none',
           borderColor: 'borders.subtle',
           fontWeight: 'semibold',
           fontSize: 'md',
           color: 'text.main',
->>>>>>> feature/integrate-webrtc
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
