@@ -47,15 +47,11 @@ import { Peer } from 'src/group-study-management/entities/peer.entity';
   cors: {
     origin: [
       'http://localhost:5173',
-<<<<<<< HEAD
-      'https://pomodoro-yhs.vercel.app',
-=======
       'http://localhost:4173',
       'https://pomodoro-yhs.vercel.app',
       'https://pomodoro-4sfpbz4x8-yhs-projects-00a441cb.vercel.app',
       'https://pomodoro-git-feature-integrate-webrtc-yhs-projects-00a441cb.vercel.app',
       'https://pomodoro-git-main-yhs-projects-00a441cb.vercel.app',
->>>>>>> feature/integrate-webrtc
       'http://localhost:3001',
       'http://localhost:3000',
     ],
@@ -791,8 +787,5 @@ export class SignalingGateway
     const roomsList = this.groupStudyManagementService.getRoomList();
     this.server.emit(EventNames.ROOMS_LIST, roomsList);
   }
-<<<<<<< HEAD
-=======
   //#endregion Room related
->>>>>>> feature/integrate-webrtc
 }
