@@ -25,10 +25,33 @@ import { errController } from '../../axios-and-error-handling/errorController';
 import { pubsub } from '../../pubsub';
 import * as CONSTANTS from '../../constants/index';
 import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { useConnectionStore } from '../../zustand-stores/connectionStore';
 
 function Navbar() {
   const updateCategoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.setCategoryChangeInfoArray,
+  );
+  const disconnectSocket = useConnectionStore((s) => s.disconnect);
+  const initializeRoomSliceStates = useConnectionStore(
+    (s) => s.initializeRoomSliceStates,
+  );
+  const initializeSocketSliceStates = useConnectionStore(
+    (s) => s.initializeSocketSliceStates,
+  );
+  const initializeMediaStreamSliceStates = useConnectionStore(
+    (s) => s.initializeMediaStreamSliceStates,
+  );
+  const initializeDeviceSliceStates = useConnectionStore(
+    (s) => s.initializeDeviceSliceStates,
+  );
+  const initializeTransportSliceStates = useConnectionStore(
+    (s) => s.initializeTransportSliceStates,
+  );
+  const initializeProducerSliceStates = useConnectionStore(
+    (s) => s.initializeProducerSliceStates,
+  );
+  const initializeConsumerSliceStates = useConnectionStore(
+    (s) => s.initializeConsumerSliceStates,
   );
   const { user, logOut } = useAuthContext()!; //TODO: NavBar는 Login안해도 render되니까.. non-null assertion 하면 안되나? 이거 navBar가 먼저 render되는 것 같아 contexts 보다. non-null assertion 다시 확인해봐
   const [isActive, setIsActive] = useState(false);
@@ -64,6 +87,17 @@ function Navbar() {
       // deciderOfWhetherDataForRunningTimerFetched[1] = false;
       //#endregion
       await logOut();
+
+      // NOTE: Things to be done for gracefully clean-up resources/states closely related to webRTC connection.
+      disconnectSocket();
+      initializeRoomSliceStates();
+      initializeSocketSliceStates();
+      initializeMediaStreamSliceStates();
+      initializeDeviceSliceStates();
+      initializeTransportSliceStates();
+      initializeProducerSliceStates();
+      initializeConsumerSliceStates();
+
       //#region New - 위치가 logOut()다음에 와야하는거 아닌가 싶어서. Error로 로그아웃 안되었을 때 저거 다 지워지면 제대로 뭐 못하잖아.
       localStorage.setItem('user', 'unAuthenticated');
       sessionStorage.removeItem(CONSTANTS.CURRENT_CATEGORY_NAME);
@@ -96,7 +130,7 @@ function Navbar() {
     });
 
     // Apply animation to the li elements
-    let navLinks = Array.from(
+    const navLinks = Array.from(
       ulRef.current!.children as HTMLCollectionOf<HTMLLIElement>,
     ); // children property is inhertied from the Element interface
     // console.log(navLinks);
@@ -177,7 +211,7 @@ function Navbar() {
             </StyledLink>
           </li>
         )}
-        {user !== null && CONSTANTS.FEATURES.groupStudy && (
+        {user !== null && (
           <li>
             <StyledLink
               to="/group-study"

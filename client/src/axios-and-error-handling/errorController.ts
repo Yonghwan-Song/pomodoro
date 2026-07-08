@@ -81,6 +81,10 @@ export const errController: ERR_CONTROLLER = {
   },
 
   registerFailedReqInfo(reqConfig: AxiosRequestConfig) {
+    console.log(
+      'registerFailedReqInfo is invoked with this reqConfig',
+      reqConfig,
+    );
     const { method, url, data } = reqConfig;
 
     if (!method || !url) return;
@@ -127,11 +131,11 @@ export const errController: ERR_CONTROLLER = {
        * becuase of the structure of the DTO class at 'nest-server/src/categories/dto/update-category.dto.ts'
        */
       case RESOURCE.CATEGORIES:
-        let batchUrl = url + '/batch';
+        const batchUrl = url + '/batch';
         const existingEntry = this.failedReqInfo.PATCH.get(batchUrl);
         if (existingEntry) {
           if ('isCurrent' in parsedData.data) {
-            let currentCategoryDTO = existingEntry.data.categories.find(
+            const currentCategoryDTO = existingEntry.data.categories.find(
               (category: UpdateCategoryDTOWithUUID) =>
                 'isCurrent' in category.data && category.data.isCurrent,
             );
@@ -199,7 +203,7 @@ export const errController: ERR_CONTROLLER = {
   },
 
   mergeData(existingData: any, newReqConfig: AxiosRequestConfig) {
-    let newData = JSON.parse(newReqConfig.data);
+    const newData = JSON.parse(newReqConfig.data);
     for (const key in newData) {
       existingData[key] = newData[key];
     }
@@ -262,7 +266,7 @@ export const errController: ERR_CONTROLLER = {
     // console.log("userEmail inside getAndResendFailedReqsFromIDB", userEmail);
 
     if (userEmail) {
-      let db = DB || (await openIndexedDB());
+      const db = DB || (await openIndexedDB());
       const store = db
         .transaction('failedReqInfo', 'readonly')
         .objectStore('failedReqInfo');
@@ -282,7 +286,7 @@ export const errController: ERR_CONTROLLER = {
   },
 
   storeFailedReqsToIDB: async function () {
-    let userEmail = await getUserEmail();
+    const userEmail = await getUserEmail();
     if (userEmail) {
       persistFailedReqInfoToIDB({
         userEmail,

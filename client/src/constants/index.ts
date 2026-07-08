@@ -19,8 +19,10 @@ const ENV = 'production'; // Change this to 'production' when deploying
 // const ENV = "development"; // Change this to 'production' when deploying
 
 const BASE_URLS = {
-  development: 'http://localhost:3000',
-  production: 'https://pomodoro-nest-apis.onrender.com',
+  // development: "http://localhost:3000",
+  // production: "https://pomodoro-nest-apis.onrender.com"
+  development: 'https://pomodoro-nest.duckdns.org',
+  production: 'https://pomodoro-nest.duckdns.org',
 };
 
 export const BASE_URL = BASE_URLS[ENV];

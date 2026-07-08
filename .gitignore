@@ -2,6 +2,15 @@
 
 .vscode/
 
+# Editor / local notes (repo root only — use this file for workspace-wide ignores)
+.cursor/
+zed-chat-md/
+scribble.md
+docs/
+logs/
+bash_scripts/
+scribble/
+
 # Dependencies
 client/node_modules
 server/node_modules

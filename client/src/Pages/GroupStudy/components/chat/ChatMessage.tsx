@@ -1,50 +1,52 @@
 import { css } from '../../../../../styled-system/css';
-
-export interface ChatMessageData {
-  senderId: string;
-  message: string;
-  timestamp: string;
-}
+import { ChatMessageInfo } from '../../../../common/webrtc/payloadRelated';
 
 interface ChatMessageProps {
-  data: ChatMessageData;
+  data: ChatMessageInfo;
+  mySocketId: string;
 }
 
-export function ChatMessage({ data }: ChatMessageProps) {
-  const isMe = data.senderId === 'Me';
+export function ChatMessage({ data, mySocketId }: ChatMessageProps) {
+  const isMe = data.senderId === mySocketId;
 
   return (
     <div
       className={css({
         alignSelf: isMe ? 'flex-end' : 'flex-start',
-        maxWidth: '75%',
+        maxWidth: '82%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: isMe ? 'flex-end' : 'flex-start',
+        gap: '1',
       })}
     >
       {!isMe && (
         <span
           className={css({
-            fontSize: '11px',
-            color: 'gray.500',
-            marginBottom: '1',
-            paddingLeft: '1',
+            fontSize: '10px',
+            color: 'text.subtle',
+            paddingLeft: '2',
+            fontWeight: 'medium',
+            letterSpacing: '0.02em',
           })}
         >
-          {data.senderId.substring(0, 6)}
+          {data.senderNickname}
         </span>
       )}
 
       <div
         className={css({
-          backgroundColor: isMe ? 'blue.500' : 'gray.100',
-          color: isMe ? 'white' : 'gray.800',
-          padding: '10px 14px',
-          borderRadius: isMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+          backgroundColor: isMe ? 'accent.secondary' : 'bg.elevated',
+          color: isMe ? 'bg.canvas' : 'text.strong',
+          border: isMe ? 'none' : '1px solid',
+          borderColor: isMe ? 'transparent' : 'borders.subtle',
+          padding: '10px 13px',
+          borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
           fontSize: '14px',
           lineHeight: '1.5',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+          boxShadow: isMe
+            ? '0 6px 18px rgba(139, 233, 253, 0.22)'
+            : '0 2px 8px rgba(15, 23, 42, 0.08)',
           wordBreak: 'break-word',
         })}
       >
@@ -54,9 +56,8 @@ export function ChatMessage({ data }: ChatMessageProps) {
       <span
         className={css({
           fontSize: '10px',
-          color: 'gray.400',
-          marginTop: '0.5',
-          paddingX: '1',
+          color: 'text.muted',
+          paddingX: '2',
         })}
       >
         {new Date(data.timestamp).toLocaleTimeString([], {

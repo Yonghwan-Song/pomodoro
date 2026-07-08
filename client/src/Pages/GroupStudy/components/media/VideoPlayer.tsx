@@ -1,27 +1,394 @@
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { css } from '../../../../../styled-system/css';
+import { useConnectionStore } from '../../../../zustand-stores/connectionStore';
+import ImageMemoized from '../../../../ReusableComponents/ImageMemoized';
 
 interface VideoPlayerProps {
-  stream: MediaStream;
+  stream?: MediaStream | null;
   isLocal?: boolean; // 로컬 비디오인지 여부를 나타내는 prop
+  consumerId?: string; // 원격 비디오의 화질 조절을 위한 consumer ID
+  picture: string | null; // 구글 프로필 이미지 url
 }
 
-const VideoPlayer = ({ stream, isLocal = false }: VideoPlayerProps) => {
+function getLayerLabel(layer?: number) {
+  if (layer === 0) return 'Low';
+  if (layer === 1) return 'Mid';
+  if (layer === 2) return 'High';
+  return undefined;
+}
+
+function getCurrentLayerText(layer?: number) {
+  return layer == null ? '동기화 중' : `현재 ${getLayerLabel(layer)}`;
+}
+
+function getRequestedLayerText(layer?: number) {
+  return layer == null ? '요청 자동' : `요청 ${getLayerLabel(layer)}`;
+}
+
+const VideoPlayer = ({
+  stream,
+  isLocal = false,
+  consumerId,
+  picture,
+}: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // 화질 조절을 위한 store action 및 상태 가져오기
+  const setPreferredVideoQuality = useConnectionStore(
+    (state) => state.setPreferredVideoQuality,
+  );
+  const pauseOrResumeVideo = useConnectionStore(
+    (state) => state.pauseOrResumeVideo,
+  );
+  const consumerState = useConnectionStore((state) =>
+    consumerId ? state.consumerLayers?.get(consumerId) : undefined,
+  );
+  const {
+    requestedSpatialLayer,
+    currentSpatialLayer,
+    isPausedByProducer,
+    isPausedLocallyByViewer,
+  } = consumerState ?? {};
+  const requestedLayerLabel = getRequestedLayerText(requestedSpatialLayer);
+  const currentLayerLabel = getCurrentLayerText(currentSpatialLayer);
+
+  // layerState가 존재하지만 currentSpatialLayer가 undefined이면
+  // mediasoup가 현재 어떤 레이어도 forwarding하지 않고 있다는 뜻.
+  // 원인은 다양함 (producer pause, 대역폭 부족, 초기 연결 등).
+  const isRemote = isLocal === false;
+  const noActiveLayer =
+    isRemote &&
+    consumerId != null &&
+    consumerState != null &&
+    currentSpatialLayer === undefined;
+
+  const showLocalPausedOverlay =
+    isRemote && consumerId != null && isPausedLocallyByViewer === true;
+  const showProducerPausedOverlay =
+    isRemote &&
+    consumerId != null &&
+    isPausedByProducer === true &&
+    !showLocalPausedOverlay;
+  const showWaitingOverlay =
+    noActiveLayer && !showProducerPausedOverlay && !showLocalPausedOverlay;
+
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-    }
+    if (!videoRef.current) return;
+
+    videoRef.current.srcObject = stream ?? null;
   }, [stream]);
 
+  // 이것도... 그냥 Room으로 넘겨서 한단계 더 추상화 하면 이해하기는 더 편할듯.
+  const handleQualityChange = (layer: number) => {
+    if (consumerId) {
+      setPreferredVideoQuality(consumerId, layer);
+    }
+  };
+
+  if (!stream) {
+    // NOTE: isLocal === true 인 경우는 (즉, 자기 자신 화면을 render하는 경우) stream이 없는 경우는 없다.
+    // room에 입장할 때 받아서 들어옴.
+    // 그런데, 그런거 뭐 상관 없이 picture를 기본적으로 stream이 없는 경우에 사용해서 화면에 보여준다.
+    // 그리고 그마저도 없으면 (null값일 수 있음) 그냥 아래의 div를 그대로 사용한다.
+
+    return <ImageMemoized picture={picture} />;
+  }
+
   return (
-    <video
-      ref={videoRef}
-      autoPlay
-      playsInline
-      muted={isLocal}
-      style={{ width: '320px', margin: '5px', border: '1px solid black' }}
-    />
+    <div
+      className={css({
+        width: '100%',
+      })}
+    >
+      <div
+        className={css({
+          position: 'relative',
+          width: '100%',
+        })}
+      >
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={isLocal}
+          className={css({
+            display: 'block',
+            width: '100%',
+            maxWidth: '100%',
+            aspectRatio: '16 / 9',
+            objectFit: 'cover',
+            borderRadius: 'lg',
+            backgroundColor: 'bg.canvas',
+          })}
+        />
+        {showWaitingOverlay && (
+          <div
+            className={css({
+              position: 'absolute',
+              inset: '0',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.55)',
+              borderRadius: 'lg',
+              zIndex: 5,
+              gap: '3',
+            })}
+          >
+            <div
+              className={css({
+                width: '8',
+                height: '8',
+                border: '3px solid rgba(255, 255, 255, 0.25)',
+                borderTopColor: 'white',
+                borderRadius: 'full',
+                animation: 'spin 1s linear infinite',
+              })}
+            />
+            <span
+              className={css({
+                color: 'white',
+                fontSize: 'sm',
+                fontWeight: 'medium',
+              })}
+            >
+              영상 수신 대기 중
+            </span>
+          </div>
+        )}
+        {showProducerPausedOverlay && (
+          <div
+            className={css({
+              position: 'absolute',
+              inset: '0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.55)',
+              borderRadius: 'lg',
+              zIndex: 6,
+            })}
+          >
+            <span
+              className={css({
+                color: 'white',
+                fontSize: 'sm',
+                fontWeight: 'medium',
+              })}
+            >
+              상대방이 영상을 일시중지함
+            </span>
+          </div>
+        )}
+        {showLocalPausedOverlay && (
+          <div
+            className={css({
+              position: 'absolute',
+              inset: '0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0, 0, 0, 0.55)',
+              borderRadius: 'lg',
+              zIndex: 7,
+            })}
+          >
+            <span
+              className={css({
+                color: 'white',
+                fontSize: 'sm',
+                fontWeight: 'medium',
+              })}
+            >
+              내가 영상을 일시정지함
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* layerStates and Buttons */}
+      {!isLocal && consumerId && (
+        <div
+          className={css({
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '2',
+            padding: '2',
+            marginTop: '2',
+            width: '100%',
+            backgroundColor: 'bg.canvas',
+            borderRadius: 'lg',
+            border: '1px solid',
+            borderColor: 'borders.subtle',
+            color: 'text.main',
+            fontSize: 'xs',
+            minWidth: 0,
+          })}
+        >
+          <div
+            className={css({
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1.5',
+            })}
+          >
+            {/* layerStates */}
+            <span
+              className={css({
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'full',
+                backgroundColor: 'bg.surface',
+                border: '1px solid',
+                borderColor: 'borders.subtle',
+                color: 'text.main',
+                whiteSpace: 'nowrap',
+              })}
+            >
+              {currentLayerLabel}
+            </span>
+            <span
+              className={css({
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'full',
+                backgroundColor: 'bg.surface',
+                border: '1px solid',
+                borderColor: 'borders.subtle',
+                color: 'text.muted',
+                whiteSpace: 'nowrap',
+              })}
+            >
+              {requestedLayerLabel}
+            </span>
+          </div>
+
+          <div
+            className={css({
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '1',
+              padding: '1',
+              borderRadius: 'md',
+              backgroundColor: 'bg.surface',
+              border: '1px solid',
+              borderColor: 'borders.subtle',
+            })}
+          >
+            {/* Buttons */}
+            <button
+              type="button"
+              onClick={() => {
+                if (consumerId) pauseOrResumeVideo(consumerId);
+              }}
+              title={isPausedLocallyByViewer ? '영상 재개' : '영상 일시정지'}
+              className={css({
+                minWidth: '7',
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'sm',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor: 'transparent',
+                backgroundColor: 'transparent',
+                color: 'text.main',
+                _hover: {
+                  borderColor: 'borders.subtle',
+                  backgroundColor: 'bg.surface',
+                },
+              })}
+            >
+              {isPausedLocallyByViewer ? '▶️' : '⏸️'}
+            </button>
+            <div
+              className={css({
+                width: '1px',
+                height: '4',
+                backgroundColor: 'borders.subtle',
+                marginX: '0.5',
+              })}
+            />
+            <button
+              type="button"
+              onClick={() => handleQualityChange(0)}
+              className={css({
+                minWidth: '11',
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'sm',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor:
+                  requestedSpatialLayer === 0 ? 'blue.300' : 'transparent',
+                backgroundColor:
+                  requestedSpatialLayer === 0 ? 'bg.surface' : 'transparent',
+                color: requestedSpatialLayer === 0 ? 'blue.300' : 'text.main',
+                _hover: {
+                  borderColor:
+                    requestedSpatialLayer === 0 ? 'blue.300' : 'borders.subtle',
+                  backgroundColor: 'bg.surface',
+                },
+              })}
+            >
+              Low
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQualityChange(1)}
+              className={css({
+                minWidth: '11',
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'sm',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor:
+                  requestedSpatialLayer === 1 ? 'blue.300' : 'transparent',
+                backgroundColor:
+                  requestedSpatialLayer === 1 ? 'bg.surface' : 'transparent',
+                color: requestedSpatialLayer === 1 ? 'blue.300' : 'text.main',
+                _hover: {
+                  borderColor:
+                    requestedSpatialLayer === 1 ? 'blue.300' : 'borders.subtle',
+                  backgroundColor: 'bg.surface',
+                },
+              })}
+            >
+              Mid
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQualityChange(2)}
+              className={css({
+                minWidth: '11',
+                paddingX: '2',
+                paddingY: '1',
+                borderRadius: 'sm',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor:
+                  requestedSpatialLayer === 2 ? 'blue.300' : 'transparent',
+                backgroundColor:
+                  requestedSpatialLayer === 2 ? 'bg.surface' : 'transparent',
+                color: requestedSpatialLayer === 2 ? 'blue.300' : 'text.main',
+                _hover: {
+                  borderColor:
+                    requestedSpatialLayer === 2 ? 'blue.300' : 'borders.subtle',
+                  backgroundColor: 'bg.surface',
+                },
+              })}
+            >
+              High
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

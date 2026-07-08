@@ -67,6 +67,7 @@ type TimerControllerProps = {
   autoStartSetting: AutoStartSettingType;
   records: RecType[];
   setRecords: React.Dispatch<React.SetStateAction<RecType[]>>;
+  variant?: 'default' | 'mini';
 };
 
 enum SESSION {
@@ -84,6 +85,7 @@ export function TimerController({
   autoStartSetting,
   records,
   setRecords,
+  variant = 'default',
 }: TimerControllerProps) {
   //#region global states
   const categoriesFromStore = useBoundedPomoInfoStore(
@@ -255,15 +257,15 @@ export function TimerController({
 
   //
   const durationInSeconds = durationInMinutes * 60;
-  let isBeforeStartOfCycles =
+  const isBeforeStartOfCycles =
     repetitionCount === 0 && timerState.startTime === 0;
-  let cycleCount = calculateCycleCount(
+  const cycleCount = calculateCycleCount(
     isBeforeStartOfCycles,
     numOfPomo,
     numOfCycle,
     repetitionCount,
   );
-  let repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
+  const repetitionCountWithinCycle = calculateRepetitionCountWithinCycle(
     numOfPomo,
     numOfCycle,
     repetitionCount,
@@ -298,9 +300,9 @@ export function TimerController({
     let timeCountedDown = 0; // timeCountedDown = timePassed - pause.totalLength
 
     if (Object.keys(statesRelatedToTimer).length !== 0) {
-      let { duration, pause, running, startTime } =
+      const { duration, pause, running, startTime } =
         statesRelatedToTimer as TimersStatesType;
-      let durationInSeconds = duration * 60;
+      const durationInSeconds = duration * 60;
 
       if (running) {
         timePassed = Date.now() - startTime;
@@ -579,7 +581,7 @@ export function TimerController({
   }) {
     // console.log("SESSION inside wrapUpSession", SESSION[prevSession]);
 
-    let { sessionData } = data;
+    const { sessionData } = data;
     if (user) {
       const infoArr = [
         {
@@ -675,10 +677,11 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
         if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
+          const copiedCategoryChangeInfoArray = structuredClone(
             categoryChangeInfoArray,
           );
-          let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+          const copiedTaskChangeInfoArray =
+            structuredClone(taskChangeInfoArray);
 
           // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
           const firstCategoryChange = copiedCategoryChangeInfoArray[0];
@@ -803,10 +806,11 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
         if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
+          const copiedCategoryChangeInfoArray = structuredClone(
             categoryChangeInfoArray,
           );
-          let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+          const copiedTaskChangeInfoArray =
+            structuredClone(taskChangeInfoArray);
 
           const firstCategoryChange = copiedCategoryChangeInfoArray[0];
           if (
@@ -903,10 +907,11 @@ export function TimerController({
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
         if (user) {
-          let copiedCategoryChangeInfoArray = structuredClone(
+          const copiedCategoryChangeInfoArray = structuredClone(
             categoryChangeInfoArray,
           );
-          let copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+          const copiedTaskChangeInfoArray =
+            structuredClone(taskChangeInfoArray);
 
           const firstCategoryChange = copiedCategoryChangeInfoArray[0];
           if (
@@ -968,11 +973,11 @@ export function TimerController({
           duration: pomoDuration,
           repetitionCount: repetitionCount + 1,
           currentCycleInfo: {
-            cycleStartTimestamp: 0,
             totalFocusDuration: totalFocusDurationTargetedInSec,
             cycleDuration: cycleDurationTargetedInSec,
+            cycleStartTimestamp: 0,
             veryFirstCycleStartTimestamp: veryFirstCycleStartTimestamp,
-            totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesInSec,
+            totalDurationOfSetOfCycles: totalFocusDurationInSec,
           },
         });
 
@@ -1031,7 +1036,7 @@ export function TimerController({
       if (isFirstRender.current) {
         isFirstRender.current = false;
       } else {
-        let states = await obtainStatesFromIDB('withoutSettings');
+        const states = await obtainStatesFromIDB('withoutSettings');
         const progress = getProgress(states as TimersStatesType);
 
         if (
@@ -1338,13 +1343,14 @@ export function TimerController({
     check(timerState.startTime);
 
     async function doesFailedReqInfoExistInIDB() {
-      let userEmail = user?.email;
+      const userEmail = user?.email;
       if (userEmail) {
-        let db = DB || (await openIndexedDB());
+        const db = DB || (await openIndexedDB());
         const store = db
           .transaction('failedReqInfo', 'readonly')
           .objectStore('failedReqInfo');
         const info = await store.get(userEmail);
+        // console.log("failedReqInfo in doesFailedReqInfoExistInIDB()", info); // ? 이거 왜 자꾸 undefined로 뜨는거야?
         return !!info;
       } else {
         // it should be always false for unlogged-in user.
@@ -1354,7 +1360,7 @@ export function TimerController({
 
     async function check(startTime: number) {
       if (startTime !== 0) {
-        let flag = await doesFailedReqInfoExistInIDB();
+        const flag = await doesFailedReqInfoExistInIDB();
         if (
           remainingDurationInSec === 0 ||
           (remainingDurationInSec < 0 && flag === false) //! 앱 다시 열자마자 이 함수가 호출되니까... 만약 failedReq이 있다면.. 그것을 처리하고 판이 다시 짜지기 때문에..
@@ -1426,12 +1432,10 @@ export function TimerController({
       updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
       const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
-      if (taskChangeInfoArrayShallowCopied.length > 0) {
-        taskChangeInfoArrayShallowCopied[0] = {
-          ...taskChangeInfoArrayShallowCopied[0],
-          taskChangeTimestamp: startTime,
-        };
-      }
+      taskChangeInfoArrayShallowCopied[0] = {
+        ...taskChangeInfoArrayShallowCopied[0],
+        taskChangeTimestamp: startTime,
+      };
       setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
 
       setTimersStatesPartial({
@@ -1450,17 +1454,15 @@ export function TimerController({
           RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
           { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
         );
-        if (taskChangeInfoArrayShallowCopied.length > 0) {
-          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
-            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-          });
-        }
+        axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+          taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
+        });
       }
 
       // 2.
       let gapForLateStartInMs = startTime - endTimeRef.current; // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
       if (gapForLateStartInMs < 0) gapForLateStartInMs = 0;
-      let gapForLateStartInSec = msToSec(gapForLateStartInMs);
+      const gapForLateStartInSec = msToSec(gapForLateStartInMs);
       // console.log(
       //   "[gapForLateStartInMs, gapForLateStartInSec] at autoStartCurrentSession()",
       //   [gapForLateStartInMs, gapForLateStartInSec]
@@ -1536,7 +1538,6 @@ export function TimerController({
               cycleDuration: newCycleDuration,
               totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
             });
-        } else {
         }
       }
     }
@@ -1563,12 +1564,10 @@ export function TimerController({
         updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
         const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
-        if (taskChangeInfoArrayShallowCopied.length > 0) {
-          taskChangeInfoArrayShallowCopied[0] = {
-            ...taskChangeInfoArrayShallowCopied[0],
-            taskChangeTimestamp: momentTimerIsToggled,
-          };
-        }
+        taskChangeInfoArrayShallowCopied[0] = {
+          ...taskChangeInfoArrayShallowCopied[0],
+          taskChangeTimestamp: momentTimerIsToggled,
+        };
         setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
         setTimersStatesPartial({
           running: true,
@@ -1601,14 +1600,9 @@ export function TimerController({
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
             { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
           );
-          if (taskChangeInfoArrayShallowCopied.length > 0) {
-            axiosInstance.patch(
-              RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
-              {
-                taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-              },
-            );
-          }
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
+          });
         }
       }
 
@@ -1625,12 +1619,10 @@ export function TimerController({
         updateCategoryChangeInfoArray(categoryChangeInfoArrayShallowCopied);
 
         const taskChangeInfoArrayShallowCopied = [...taskChangeInfoArray];
-        if (taskChangeInfoArrayShallowCopied.length > 0) {
-          taskChangeInfoArrayShallowCopied[0] = {
-            ...taskChangeInfoArrayShallowCopied[0],
-            taskChangeTimestamp: momentTimerIsToggled,
-          };
-        }
+        taskChangeInfoArrayShallowCopied[0] = {
+          ...taskChangeInfoArrayShallowCopied[0],
+          taskChangeTimestamp: momentTimerIsToggled,
+        };
 
         setTaskChangeInfoArray(taskChangeInfoArrayShallowCopied);
         setTimersStatesPartial({
@@ -1649,14 +1641,9 @@ export function TimerController({
             RESOURCE.USERS + SUB_SET.CATEGORY_CHANGE_INFO_ARRAY,
             { categoryChangeInfoArray: categoryChangeInfoArrayShallowCopied },
           );
-          if (taskChangeInfoArrayShallowCopied.length > 0) {
-            axiosInstance.patch(
-              RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
-              {
-                taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
-              },
-            );
-          }
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY, {
+            taskChangeInfoArray: taskChangeInfoArrayShallowCopied,
+          });
         }
 
         //TODO - if a user clicks the start button as soon as a break ends, the same problem we had when it comes to auto-start will occur.
@@ -1664,13 +1651,13 @@ export function TimerController({
         //* 다른 페이지로 갔다가 다시 돌아오면 endTimeRef는 0으로 초기화 된다는 것. 그런데 신기한점은, 어차피 다른 페이지 갔다오면 endTimeRef가 필요한 경우가 아니게 된다.
         //* 그만큼 늦게 시작할 수 밖에 없기 때문에, records가 이미 최근에 종료된 session을 반영한 이후일 것임. 그래서 둘다 사용하자.
         //! 만약 endTimeRef가 0이 아니면, 그냥 그거 쓰면 되고 0이면 records의 마지막 값 이용하면 된다.
-        let lastSessionEndTime =
+        const lastSessionEndTime =
           endTimeRef.current !== 0
             ? endTimeRef.current
             : records[records.length - 1].endTime;
         let gapForLateStartInMs = momentTimerIsToggled - lastSessionEndTime; // negative value is not supposed to be calculated here. It is an error and before debugging it, I am just going to handle it with if conditional blocks.
         if (gapForLateStartInMs < 0) gapForLateStartInMs = 0;
-        let gapForLateStartInSec = msToSec(gapForLateStartInMs); //* Whether the current session is a focus session or break session does not matter. In both cases, what only changes is the cycleDuration.
+        const gapForLateStartInSec = msToSec(gapForLateStartInMs); //* Whether the current session is a focus session or break session does not matter. In both cases, what only changes is the cycleDuration.
 
         // console.log(
         //   "[gapForLateStartInMs, gapForLateStartInSec] at toggleTimer()",
@@ -1749,7 +1736,7 @@ export function TimerController({
       setTimersStatesPartial({
         running: true,
       });
-      let pause = {
+      const pause = {
         record: timerState.pause!.record.map((obj) => {
           if (obj.end === undefined) {
             return {
@@ -1918,7 +1905,7 @@ export function TimerController({
     }
 
     if (isThisSessionPaused()) {
-      let stateCloned = { ...timerState };
+      const stateCloned = { ...timerState };
       stateCloned.pause.totalLength +=
         now -
         stateCloned.pause.record[stateCloned.pause.record.length - 1].start;
@@ -2139,7 +2126,7 @@ export function TimerController({
   }
 
   //#region from CountDownTimer
-  let durationRemaining =
+  const durationRemaining =
     remainingDurationInSec < 0 ? (
       <h2>ending session...</h2>
     ) : (
@@ -2151,7 +2138,7 @@ export function TimerController({
         <Time seconds={remainingDurationInSec} />
       </h2>
     );
-  let durationBeforeStart =
+  const durationBeforeStart =
     !!(durationInSeconds / 60) === false ? (
       <h2>"loading data..."</h2>
     ) : (
@@ -2164,6 +2151,81 @@ export function TimerController({
       </h2>
     );
   //#endregion
+
+  if (variant === 'mini') {
+    return (
+      <div
+        css={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px',
+          fontFamily: 'monospace',
+          fontSize: '1.2rem',
+          color: 'var(--colors-text-strong)',
+        }}
+      >
+        <span
+          css={{
+            color: isThisFocusSession(repetitionCount)
+              ? 'var(--colors-status-break)'
+              : 'var(--colors-status-running)',
+          }}
+        >
+          {isThisFocusSession(repetitionCount) ? '🔥 POMO' : '☕️ BREAK'}
+        </span>
+        <span css={{ fontWeight: 'bold' }}>
+          {timerState.startTime === 0 ? durationBeforeStart : durationRemaining}
+        </span>
+        <div css={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={() => toggleTimer(Date.now())}
+            css={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--colors-text-strong)',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              padding: '5px',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'scale(1.1)',
+                color: 'var(--colors-accent-secondary)',
+              },
+            }}
+          >
+            {timerState.running === true
+              ? '⏸️'
+              : timerState.startTime === 0
+                ? '▶️'
+                : '▶️'}
+          </button>
+          <button
+            onClick={() => endTimer(Date.now())}
+            css={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--colors-text-strong)',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              padding: '5px',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'scale(1.1)',
+                color: 'var(--colors-accent-secondary)',
+              },
+            }}
+          >
+            {isSessionNotStartedYet(
+              timerState.running,
+              timerState.startTime,
+            ) === true
+              ? '⏭️'
+              : '⏹️'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

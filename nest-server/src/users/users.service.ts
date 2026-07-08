@@ -37,7 +37,11 @@ export class UsersService {
     private cycleSettingModel: Model<CycleSetting>,
   ) {}
 
-  async create(createUserDto: CreateUserDto, userEmail: string) {
+  async create(
+    createUserDto: CreateUserDto,
+    userEmail: string,
+    userNickname: string,
+  ) {
     const defaultCycleSettingForANewUser = new this.cycleSettingModel({
       userEmail,
       name: 'Default cycle setting',
@@ -51,6 +55,7 @@ export class UsersService {
     const newUser = new this.userModel({
       ...createUserDto,
       userEmail,
+      userNickname,
       cycleSettings: [defaultCycleSettingForANewUser._id],
     });
 
@@ -102,10 +107,10 @@ export class UsersService {
       }
     }
 
-    console.log('A user doc by getUserInfo() in the UsersService class', {
-      ...userInfoWithoutAccessToken,
-      todoistTasks,
-    });
+    // console.log('A user doc by getUserInfo() in the UsersService class', {
+    //   ...userInfoWithoutAccessToken,
+    //   todoistTasks
+    // });
 
     return {
       ...userInfoWithoutAccessToken,
@@ -328,7 +333,7 @@ export class UsersService {
         // []일 수도 있잖아.. - 아예 이 기능을 처음 사용하는 사용자가, Pomo에서 Task를 하나 선택하는데,
         // 하필이면 just change option? 을 선택하면. []의 -1번째 element에 access할테니 error.
         // 그러니까.. []이면 just change를 못하게 만들어야함. 그런데 그게 사용자에게 딱 한번 발생하는 현상인데,
-        // 그것 때문에 조건문을 매번 확인하는거는 매우 비효율적.//TODO 씨발 어쩌라고...그래서
+        // 그것 때문에 조건문을 매번 확인하는거는 매우 비효율적.
         user.taskChangeInfoArray[user.taskChangeInfoArray.length - 1].id =
           updateCurrentTaskIdDto.currentTaskId;
       } else {

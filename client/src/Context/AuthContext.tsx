@@ -67,6 +67,16 @@ export function AuthContextProvider({
   const googleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      // TODO: add it.
+      // NOTE: signInWithPopup -> authDomain (referer) -> 키 제한에 허용시켜야
+      // localhost:3001에서 앱을 열어도, Firebase Google 로그인은 내부적으로 authDomain(지금
+      // 은 pomodoro-ef5e0.firebaseapp.com)의 iframe/popup을 통해 통신합니다.
+      // 그래서 API 서버 입장에서는 요청 referer가
+      // https://pomodoro-ef5e0.firebaseapp.com/...로 보일 수 있어요.
+      // 즉:
+      // - 앱 시작: http://localhost:3001
+      // - 실제 인증 보조 요청: https://pomodoro-ef5e0.firebaseapp.com 쪽에서 발생
+      // - 그래서 키 제한에 firebaseapp.com 도메인도 허용 필요
       const result = await signInWithPopup(auth, provider);
       const details = getAdditionalUserInfo(result);
 
@@ -103,7 +113,7 @@ export function AuthContextProvider({
    */
   async function registerUser(user: User) {
     try {
-      let response = await axiosInstance.post(RESOURCE.USERS, {
+      const response = await axiosInstance.post(RESOURCE.USERS, {
         firebaseUid: user.uid,
       });
       setIsNewUserRegistered(true);
@@ -215,7 +225,7 @@ export function AuthContextProvider({
      */
 
     async function getAndSetStatesFromIDBForNonSignedInUsers() {
-      let states = await obtainStatesFromIDB('withSettings');
+      const states = await obtainStatesFromIDB('withSettings');
 
       // 1. non-signed-in user가 이전에 사용하던 정보가 Indexed DB에 존재하는 경우.
       if (Object.entries(states).length !== 0) {

@@ -33,6 +33,17 @@ interface TimerSliceStates {
   cycleSettings: Array<CycleSetting>;
 }
 
+interface StatSliceStates {
+  // DESIGN: This is for the today total duration of this peer himself.
+  // And he also has a map of peerIds of participants and their todayTotalDurations defined in the roomslice.
+  todayTotalDuration: number;
+}
+
+interface StatSlice extends StatSliceStates {
+  setTodayTotalDuration: (duration: number) => void;
+  incrementTodayTotalDuration: (duration: number) => number;
+}
+
 interface CycleInfoSliceStates {
   currentCycleInfo: {
     totalFocusDuration: number;
@@ -113,6 +124,7 @@ interface TodoistIntegrationSlice extends TodoistIntegrationSliceStates {
 
 const createTodoistIntegrationSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -189,6 +201,7 @@ interface SharedSlice {
 
 const createTimerSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -238,8 +251,52 @@ const createTimerSlice: StateCreator<
   },
 });
 
+const createStatSlice: StateCreator<
+  TimerSlice &
+    StatSlice &
+    CycleInfoSlice &
+    CategorySlice &
+    GoalSlice &
+    TodoistIntegrationSlice &
+    SharedSlice,
+  [['zustand/devtools', never], ['zustand/immer', never]],
+  [],
+  StatSlice
+> = (set, get) => {
+  return {
+    todayTotalDuration: 0,
+    setTodayTotalDuration: (duration: number) =>
+      set(
+        (state) => {
+          console.log(
+            `[Zustand Store] todayTotalDuration updated: ${state.todayTotalDuration} -> ${duration}`,
+          );
+          state.todayTotalDuration = duration;
+        },
+        false,
+        'cycleInfo/setTodayTotalDuration',
+      ),
+    incrementTodayTotalDuration: (duration: number) => {
+      let newTotal = 0;
+      set(
+        (state) => {
+          newTotal = state.todayTotalDuration + duration;
+          console.log(
+            `[Zustand Store] todayTotalDuration incremented by ${duration}: ${state.todayTotalDuration} -> ${newTotal}`,
+          );
+          state.todayTotalDuration = newTotal;
+        },
+        false,
+        'cycleInfo/incrementTodayTotalDuration',
+      );
+      return newTotal;
+    },
+  };
+};
+
 const createCycleInfoSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -260,6 +317,7 @@ const createCycleInfoSlice: StateCreator<
 
 const createCategorySlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -304,6 +362,7 @@ const createCategorySlice: StateCreator<
 
 const createGoalSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -356,6 +415,7 @@ const createGoalSlice: StateCreator<
 
 const createSharedSlice: StateCreator<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -374,6 +434,10 @@ const createSharedSlice: StateCreator<
 
         // [{ id: null, taskChangeTimestamp: 0 }] - default value
         let taskChangeInfoArray: TaskChangeInfo[] = [];
+        // WARNING: ORIGIN/MAIN의 7b78feeec4afd1450d8f64a462c499848bc14d62 commit과 겹침.
+        // branch history가 상당히 많이 꼬여서 어찌 할지 모르겠으니 우선 아래의 변화는 무조건 commit의 대상에서 제외하겠음.
+        // 추후에 기능 마무리 지은 후에 pull origin할 때, 적당히 잘 conflict 해결할 수 있도록 메모를 남김.
+        // 위의 commit은 지금 이 branch의 911b26798d5439060dd2ff57e474267e51df018d, e783b62469885f8a8d11fc0f6023dd4cbe9a4d80를 포함. :::...
         if (data.taskChangeInfoArray.length === 0) {
           taskChangeInfoArray = [{ id: '', taskChangeTimestamp: 0 }];
         } else {
@@ -422,6 +486,7 @@ const createSharedSlice: StateCreator<
 
 export const useBoundedPomoInfoStore = create<
   TimerSlice &
+    StatSlice &
     CycleInfoSlice &
     CategorySlice &
     GoalSlice &
@@ -431,6 +496,7 @@ export const useBoundedPomoInfoStore = create<
   devtools(
     immer((...a) => ({
       ...createTimerSlice(...a),
+      ...createStatSlice(...a),
       ...createCycleInfoSlice(...a),
       ...createCategorySlice(...a),
       ...createGoalSlice(...a),

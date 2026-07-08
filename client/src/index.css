@@ -1,7 +1,13 @@
-* {
-  margin: 0px;
-  padding: 0px;
-  box-sizing: border-box;
+@layer reset, base, tokens, recipes, utilities; /* 선언 */
+
+/* 여기! reset 레이어 안으로 넣기 */
+/* 정의 */
+@layer reset {
+  * {
+    margin: 0;
+    /* padding: 0;  // 이 줄은 빼는 걸 강력 추천 */
+    box-sizing: border-box;
+  }
 }
 
 html {

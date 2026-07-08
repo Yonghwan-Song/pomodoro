@@ -1,7 +1,7 @@
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Main, Signin, Settings, Statistics, GroupStudy } from './Pages/index';
 import { RoomList } from './Pages/GroupStudy/RoomList';
 import { Room } from './Pages/GroupStudy/Room';
@@ -150,6 +150,7 @@ pubsub.subscribe('successOfPersistingRecordsOfTodayToIDB', (data) => {
   deciderOfWhetherDataForRunningTimerFetched[1] = true;
 });
 
+// TODO: 이제 아예 이 BroadcastChannel은 필요 없는거 아니야?.. 확인하고 필요 없으면 지우기.
 const BC = new BroadcastChannel('pomodoro');
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 //#endregion
@@ -178,6 +179,17 @@ root.render(
             element={<Navigate to="/timer" replace />}
           />
         )}
+        <Route
+          path="group-study"
+          element={
+            <Protected>
+              <GroupStudy />
+            </Protected>
+          }
+        >
+          <Route index element={<RoomList />} />
+          <Route path="room/:roomId" element={<Room />} />
+        </Route>
         <Route
           path="statistics"
           element={
