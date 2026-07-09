@@ -1,7 +1,7 @@
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Main, Signin, Settings, Statistics, GroupStudy } from './Pages/index';
 import { RoomList } from './Pages/GroupStudy/RoomList';
 import { Room } from './Pages/GroupStudy/Room';
@@ -17,7 +17,6 @@ import {
   CategoryChangeInfo,
   CycleInfoType,
   TimersStatesTypeWithCurrentCycleInfo,
-  CycleRecord,
 } from './types/clientStatesType';
 import { Vacant } from './Pages/Vacant/Vacant';
 import { PomoSettingType } from './types/clientStatesType';

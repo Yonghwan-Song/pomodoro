@@ -12,6 +12,7 @@ const ImageMemoized = memo(function ImageMemoized({
       <img
         src={picture}
         alt="google profile image of the participant"
+        referrerPolicy="no-referrer"
         className={css({
           width: '100%',
           maxWidth: '100%',
