@@ -27,10 +27,9 @@ export class CategoriesController {
   ) {
     console.log(createCategoryDto);
     // console.log(request);
-    return await this.categoriesService.create(
-      createCategoryDto,
-      request.userEmail,
-    );
+    await this.categoriesService.create(createCategoryDto, request.userEmail);
+
+    return { success: true };
   }
 
   @Patch()
@@ -42,10 +41,9 @@ export class CategoriesController {
       '<------------------------updateCategoryDto in the controller------------------------>',
       updateCategoryDto,
     );
-    return await this.categoriesService.update(
-      updateCategoryDto,
-      request.userEmail,
-    );
+    await this.categoriesService.update(updateCategoryDto, request.userEmail);
+
+    return { success: true };
   }
 
   @Patch('batch')
@@ -53,14 +51,15 @@ export class CategoriesController {
     @Body(new ValidationPipe()) batchUpdateDto: BatchUpdateCategoryDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.categoriesService.batchUpdate(
-      batchUpdateDto,
-      request.userEmail,
-    );
+    await this.categoriesService.batchUpdate(batchUpdateDto, request.userEmail);
+
+    return { success: true };
   }
 
   @Delete(':name')
   async delete(@Param('name') name: string, @Req() request: CustomRequest) {
-    return await this.categoriesService.delete(name, request.userEmail);
+    await this.categoriesService.delete(name, request.userEmail);
+
+    return { success: true };
   }
 }

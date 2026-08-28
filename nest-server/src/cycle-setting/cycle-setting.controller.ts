@@ -17,6 +17,7 @@ import { UpdateCycleSettingDto } from './dto/update-cycle-setting.dto';
 export class CycleSettingController {
   constructor(private readonly cycleSettingService: CycleSettingService) {}
 
+  // NOTE: 프론트엔드 전체에서 POST /cycle-settings를 호출하는 곳은 Settings.tsx:464-476 딱 1곳뿐입니다.
   @Post()
   async create(
     @Body(new ValidationPipe()) createCycleSettingDto: CreateCycleSettingDto,
@@ -26,10 +27,13 @@ export class CycleSettingController {
       'createCycleSettingDto at create controller',
       createCycleSettingDto,
     );
-    return await this.cycleSettingService.create(
+
+    await this.cycleSettingService.create(
       createCycleSettingDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch()
@@ -42,15 +46,19 @@ export class CycleSettingController {
     console.log('request.userEmail', request.userEmail);
     console.log('----------------------------------------------------->');
 
-    return this.cycleSettingService.update(
+    await this.cycleSettingService.update(
       updateCycleSettingDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Delete(':name')
   async delete(@Param('name') name: string, @Req() request: CustomRequest) {
     console.log('name in delete controller', name);
-    return await this.cycleSettingService.delete(name, request.userEmail);
+    await this.cycleSettingService.delete(name, request.userEmail);
+
+    return { success: true };
   }
 }

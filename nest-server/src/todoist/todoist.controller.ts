@@ -112,6 +112,8 @@ export class TodoistController {
     }
   }
 
+  // TODO: Think about where I should use the newly defined get_and_sync method.
+  // Should I sync tasks every time I get tasks from todoist server?
   @Get('tasks')
   async getTodoistTasks(@Req() request: CustomRequest) {
     try {

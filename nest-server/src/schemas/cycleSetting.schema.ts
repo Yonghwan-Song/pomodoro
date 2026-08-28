@@ -19,13 +19,12 @@ export type CycleRecord = {
   cycleAdherenceRate: number;
   start: number;
   end: number;
-  date: Date;
 };
 
 @Schema({ timestamps: true })
 export class CycleSetting extends Document {
   @Prop({ required: true })
-  userEmail: string;
+  userEmail: string; // 이것이 User와 연결지점
 
   @Prop({ required: true })
   name: string; //? 이거 필요하냐....
@@ -42,12 +41,18 @@ export class CycleSetting extends Document {
       numOfCycle: { type: Number, default: 1, min: 1, max: 100 },
     }),
   )
+  // DESIGN: JSONB
+  // This object is ultimately going to be used as the same typescript object in the client side.
+  // Therefore, it would be not a good choice to flatten it.
   pomoSetting: PomoSetting;
 
   @Prop({ type: Array, default: [] })
+  // DESIGN: Separate table
+  // CycleSetting : cycleStat -> 1 : N
   cycleStat: [CycleRecord];
 
   @Prop({ type: Number, default: 1 })
+  // NOTE: 그러니까 cycle 하나가 끝날때 -> 1)Add a new cycle record. 2)Update an averageAdherenceRate.
   averageAdherenceRate: number;
 }
 

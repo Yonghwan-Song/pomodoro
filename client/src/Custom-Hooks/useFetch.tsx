@@ -50,7 +50,7 @@ export function useFetch<T, S = undefined>({
   params,
 }: ArgType<T, S>): CustomReturnType<T, S> {
   const [data, setData] = useState<DataType<T, S> | null>(null);
-  const { user } = useAuthContext()!;
+  const { user, isNewUserBeingRegistered } = useAuthContext()!;
 
   let moreDeps: DependencyList = additionalDeps ?? [];
 
@@ -121,13 +121,27 @@ export function useFetch<T, S = undefined>({
     }
 
     function isUserSignedIn() {
-      return user !== null;
+      // console.log('Inside isUserSignedIn()');
+      // console.log('------------------------------>');
+      // console.log('user', user);
+      // console.log('isNewUserBeingRegistered', isNewUserBeingRegistered);
+      // console.log('<------------------------------');
+
+      // WARNING: The wrong assumption
+      // The registration process of a new user is done before google auth provider service changes auth state
+      // by providing/creating user token object.
+      return user !== null && isNewUserBeingRegistered !== true;
+      // TODO: isNewUserBeingRegistered !== true can be interpreted as three cases.
+      // 1. It is when a new user's registration is started but not yet finished.
+      // 2. It is that a new user's registration process is going to be started.
+      // 3. It is when an existing user attempts to log in.
+      // WARNING: 그런데 우리는 1번에 해당할 것이라고 기대하고 있음. 그 기대가 현실이 될때만 이 코드가 작동한다.
     }
 
     function isAdditionalConditionSatisfiedWhenProvided() {
       return additionalCondition ?? true;
     }
-  }, [user, ...moreDeps]);
+  }, [user, isNewUserBeingRegistered, ...moreDeps]);
 
   return [data, setData];
 }

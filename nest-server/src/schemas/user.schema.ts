@@ -67,6 +67,8 @@ export class User {
 
   @Prop({ unique: true })
   userEmail: string;
+  // NOTE: We have userEmail field instead of uuid. Therefore, we need to find out correct uuid for documents using this information.
+  // And fortunately, users pg table includes 'userEmail' column. Get it from users and use it to find his cycleSettings.
 
   @Prop({ type: String, default: null, required: false })
   userNickname: string;
@@ -74,7 +76,7 @@ export class User {
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CycleSetting' }],
   })
-  cycleSettings: ObjectId[];
+  cycleSettings: ObjectId[]; // NOTE: SQL의 관점에서는 이게 이미 Join된 테이브처럼 작동하는 것임.
 
   @Prop(
     raw({
@@ -136,7 +138,7 @@ export class User {
   currentCycleInfo: CycleInfo;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }] })
-  categories: ObjectId[];
+  categories: ObjectId[]; // NOTE: SQL의 관점에서는 이게 이미 Join된 테이브처럼 작동하는 것임.
 
   @Prop({ default: true })
   isUnCategorizedOnStat: boolean;

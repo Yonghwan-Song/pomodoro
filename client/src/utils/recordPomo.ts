@@ -117,7 +117,7 @@ export async function recordPomo(
       pomodoroRecordArr,
       taskTrackingArr,
     };
-    axiosInstance.post(RESOURCE.POMODOROS, payload);
+    await axiosInstance.post(RESOURCE.POMODOROS, payload);
   } catch (err) {
     console.warn(err);
   }

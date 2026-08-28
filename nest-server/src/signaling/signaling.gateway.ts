@@ -697,9 +697,13 @@ export class SignalingGateway
 
   //#region Room related
   @SubscribeMessage(EventNames.GET_ROOMS) // 로비에서 RoomList.tsx에 의해
-  handleGetRooms(@ConnectedSocket() client: Socket): void {
-    const roomsList = this.groupStudyManagementService.getRoomList();
-    client.emit(EventNames.ROOMS_LIST, roomsList);
+  async handleGetRooms(@ConnectedSocket() client: Socket): Promise<void> {
+    try {
+      const roomsList = await this.groupStudyManagementService.getRoomList();
+      client.emit(EventNames.ROOMS_LIST, roomsList);
+    } catch (error) {
+      console.error('[SignalingGateway.handleGetRooms]', error);
+    }
   }
 
   @SubscribeMessage(EventNames.CREATE_ROOM)
@@ -707,11 +711,16 @@ export class SignalingGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: { name: string },
   ): Promise<AckResponse<{ roomId: string }>> {
-    const roomId = await this.groupStudyManagementService.createRoom(
-      payload.name,
-    );
-    this.broadcastRoomList();
-    return { success: true, data: { roomId } };
+    try {
+      const roomId = await this.groupStudyManagementService.createRoom(
+        payload.name,
+      );
+      await this.broadcastRoomList();
+      return { success: true, data: { roomId } };
+    } catch (error) {
+      console.error('[SignalingGateway.handleCreateRoom]', error);
+      return { success: false, error: 'Failed to create room' };
+    }
   }
 
   // [Client -> Server] 클라이언트가 "나 이 방에 들어갈래" 라고 서버에 요청하는 이벤트입니다.
@@ -738,7 +747,7 @@ export class SignalingGateway
     if (result.success) {
       // 로비(메인 화면)에서 방 목록을 보고 있는 모든 유저들에게
       // 해당 방의 참가자 수가 증가했음을 실시간으로 알리기 위해 전체 소켓에 갱신된 방 목록을 뿌려줍니다.
-      this.broadcastRoomList();
+      await this.broadcastRoomList();
     }
     return result;
   }
@@ -751,7 +760,7 @@ export class SignalingGateway
     const result =
       await this.groupStudyManagementService.leaveRoom(clientSocket);
     if (result.success) {
-      this.broadcastRoomList();
+      await this.broadcastRoomList();
     }
     return result;
   }
@@ -783,9 +792,13 @@ export class SignalingGateway
     );
   }
 
-  private broadcastRoomList() {
-    const roomsList = this.groupStudyManagementService.getRoomList();
-    this.server.emit(EventNames.ROOMS_LIST, roomsList);
+  private async broadcastRoomList(): Promise<void> {
+    try {
+      const roomsList = await this.groupStudyManagementService.getRoomList();
+      this.server.emit(EventNames.ROOMS_LIST, roomsList);
+    } catch (error) {
+      console.error('[SignalingGateway.broadcastRoomList]', error);
+    }
   }
   //#endregion Room related
 }

@@ -16,12 +16,12 @@ export const CIRCUMFERENCE = 2 * Math.PI * RADIUS; //910.6 with pi == 3.14
 
 //#region URLs
 const ENV = 'production'; // Change this to 'production' when deploying
-// const ENV = "development"; // Change this to 'production' when deploying
+// const ENV = 'development'; // Change this to 'production' when deploying
 
 const BASE_URLS = {
-  // development: "http://localhost:3000",
+  development: 'http://localhost:3000',
   // production: "https://pomodoro-nest-apis.onrender.com"
-  development: 'https://pomodoro-nest.duckdns.org',
+  // development: 'https://pomodoro-nest.duckdns.org',
   production: 'https://pomodoro-nest.duckdns.org',
 };
 
@@ -54,6 +54,7 @@ export const RESOURCE = {
   TODOIST: '/todoist',
 };
 export const SUB_SET = {
+  TODAY_TOTAL: '/today/total',
   POMODORO_SETTING: '/pomodoro-setting',
   AUTO_START_SETTING: '/auto-start-setting',
   TIMERS_STATES: '/timers-states',

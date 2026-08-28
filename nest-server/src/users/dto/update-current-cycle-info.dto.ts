@@ -19,5 +19,5 @@ export class UpdateCurrentCycleInfoDto {
 
   @IsOptional()
   @IsNumber()
-  totalDurationOfSetOfCyclesIn?: number;
+  totalDurationOfSetOfCycles?: number;
 }

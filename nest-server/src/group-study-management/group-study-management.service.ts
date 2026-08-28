@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   Logger,
   OnModuleInit,
   OnModuleDestroy,
@@ -27,9 +28,9 @@ import {
   NEW_PEER_JOINED_DATA,
   ProducerPayload,
 } from 'src/common/webrtc/payload-related';
-import { InjectModel } from '@nestjs/mongoose';
-import { Room as RoomSchemaClass, RoomDocument } from 'src/schemas/room.schema';
-import { Model } from 'mongoose';
+import { eq } from 'drizzle-orm';
+import * as schema from 'src/postgresql/schema';
+import { DrizzleDb, PG_DB_BY_DRIZZLE } from 'src/postgresql/pg-provider';
 
 @Injectable()
 export class GroupStudyManagementService
@@ -42,8 +43,8 @@ export class GroupStudyManagementService
 
   constructor(
     private readonly mediasoupService: MediasoupService,
-    @InjectModel(RoomSchemaClass.name)
-    private readonly roomModel: Model<RoomDocument>, // TODO: RoomDocument는 대체 정체가 뭐임...
+    @Inject(PG_DB_BY_DRIZZLE)
+    private readonly db: DrizzleDb,
   ) {}
 
   async onModuleInit() {
@@ -53,16 +54,32 @@ export class GroupStudyManagementService
 
   private async loadRoomsFromDB() {
     try {
-      const rooms = await this.roomModel.find().exec();
-      rooms.forEach((roomDoc) => {
-        const roomId = roomDoc._id.toString();
-        const room = new Room(roomId, roomDoc.name, roomDoc.isPermanent);
-        this.roomMap.set(roomId, room);
-      });
-      this.logger.log(`Loaded ${rooms.length} rooms from DB into memory.`);
+      const roomCount = await this.syncRoomsFromDB();
+
+      this.logger.log(`Loaded ${roomCount} rooms from PostgreSQL into memory.`);
     } catch (error) {
-      this.logger.error('Failed to load rooms from DB', error);
+      this.logger.error('Failed to load rooms from PostgreSQL', error);
+      throw error;
     }
+  }
+
+  private async syncRoomsFromDB(): Promise<number> {
+    const rooms = await this.db.query.rooms.findMany({
+      columns: {
+        id: true,
+        name: true,
+        isPermanent: true,
+      },
+    });
+
+    rooms.forEach((roomRow) => {
+      if (!this.roomMap.has(roomRow.id)) {
+        const room = new Room(roomRow.id, roomRow.name, roomRow.isPermanent);
+        this.roomMap.set(roomRow.id, room);
+      }
+    });
+
+    return rooms.length;
   }
 
   onModuleDestroy() {
@@ -965,24 +982,36 @@ export class GroupStudyManagementService
   //#endregion
 
   //#region Only Room
-  getRoomList() {
+  async getRoomList() {
+    await this.syncRoomsFromDB();
     return Array.from(this.roomMap.values()).map((room) => room.toClientInfo());
   }
 
   async createRoom(name: string) {
-    // 1. Create room in DB
-    const newRoomDoc = await new this.roomModel({
-      name: name || 'Untitled Room',
-    }).save();
-    const roomId = newRoomDoc._id.toString();
+    // 1. Create room in PostgreSQL
+    const [insertedRoom] = await this.db
+      .insert(schema.rooms)
+      .values({ name: name || 'Untitled Room' })
+      .returning({
+        id: schema.rooms.id,
+        name: schema.rooms.name,
+        isPermanent: schema.rooms.isPermanent,
+      });
+
+    if (!insertedRoom) {
+      throw new Error('PostgreSQL did not return the created room');
+    }
+
+    const roomId = insertedRoom.id;
 
     // 2. Create in-memory Room entity
-    const room = new Room(roomId, newRoomDoc.name, newRoomDoc.isPermanent);
+    const room = new Room(roomId, insertedRoom.name, insertedRoom.isPermanent);
     this.roomMap.set(roomId, room);
 
-    console.log(
-      `[group-study-management.service:createRoom] Room created: ${roomId} (${room.name})`,
-    );
+    console.log('pg result at create room');
+    console.log('--------------------------------------------------->');
+    console.dir(insertedRoom, { depth: null, colors: true });
+    console.log('<---------------------------------------------------');
 
     return roomId;
   }
@@ -1128,19 +1157,21 @@ export class GroupStudyManagementService
       this.notifyPeerLeft(clientSocket, room.id, peer.id);
 
       if (room.isEmpty() && !room.isPermanent) {
-        this.roomMap.delete(room.id);
-        // Also remove from DB to keep sync
-        try {
-          await this.roomModel.findByIdAndDelete(room.id).exec();
-          console.log(
-            `[group-study-management.service:leaveRoom] Room ${room.id} deleted from DB as it is empty`,
-          );
-        } catch (dbErr) {
-          console.error(
-            `[group-study-management.service:leaveRoom] Failed to delete room ${room.id} from DB`,
-            dbErr,
+        const [deletedRoom] = await this.db
+          .delete(schema.rooms)
+          .where(eq(schema.rooms.id, room.id))
+          .returning({ id: schema.rooms.id });
+
+        if (!deletedRoom) {
+          throw new Error(
+            `PostgreSQL room ${room.id} not found while deleting empty room`,
           );
         }
+
+        this.roomMap.delete(room.id);
+        console.log(
+          `[group-study-management.service:leaveRoom] Empty room ${deletedRoom.id} deleted from PostgreSQL`,
+        );
       }
 
       peer.closeTransports();

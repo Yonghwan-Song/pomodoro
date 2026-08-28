@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import { countDown } from '../..';
 import { axiosInstance } from '../../axios-and-error-handling/axios-instances';
 import { useBoundedPomoInfoStore } from '../../zustand-stores/pomoInfoStoreUsingSlice';
+import { RESOURCE, SUB_SET } from '../../constants';
 
 export default function GroupStudy() {
   const socket = useConnectionStore((s) => s.socket);
@@ -56,7 +57,7 @@ export default function GroupStudy() {
         // 서버에 오늘 날짜를 보내서 "오늘 하루 동안 집중한 총 시간(분)"을 가져옵니다.
         // GroupStudy 라우트에 진입할 때 딱 한 번만 호출하여 불필요한 API 요청을 줄입니다.
         const res = await axiosInstance.get(
-          `/pomodoros/today/total?date=${todayDateString}`,
+          `${RESOURCE.POMODOROS}${SUB_SET.TODAY_TOTAL}?date=${todayDateString}`,
         );
         console.log(
           "🔥 [GroupStudy] Today's Total Duration from Server:",

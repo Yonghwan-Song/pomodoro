@@ -22,10 +22,6 @@ export class CycleStat {
 
   @IsNumber()
   end: number;
-
-  @IsDefined()
-  @IsNotEmpty()
-  date: Date;
 }
 
 class PomoSetting {
@@ -72,4 +68,8 @@ export class CreateCycleSettingDto {
   @ValidateNested({ each: true })
   @Type(() => CycleStat)
   cycleStat: CycleStat[];
+
+  @IsOptional()
+  @IsNumber()
+  averageAdherenceRate?: number;
 }

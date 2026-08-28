@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
 
 interface Pause {
-  pause: {
-    totalLength: number;
-    record: [{ start: number; end: number }];
-  };
+  totalLength: number;
+  record: { start: number; end: number }[];
 }
 
 @Schema()
@@ -12,6 +10,7 @@ export class TodayRecord {
   @Prop({ required: true })
   userEmail: string;
 
+  // NOTE: If kind is 'pomo', I think it is possible to connect many pomodoro sessions to one TodayRecord.
   @Prop()
   kind: 'pomo' | 'break';
 

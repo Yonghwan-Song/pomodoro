@@ -58,7 +58,6 @@ export type CycleRecord = {
   cycleAdherenceRate: number;
   start: number;
   end: number;
-  date: Date;
 };
 
 export interface CycleSetting {

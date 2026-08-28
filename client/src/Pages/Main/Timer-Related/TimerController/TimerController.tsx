@@ -361,7 +361,6 @@ export function TimerController({
       ),
       start: end - cycleDurationInSec * 1000,
       end,
-      date: new Date(),
     };
     // console.log("cycleRecord from " + caller, cycleRecord);
     const cycleSettingsCloned = structuredClone(cycleSettings);

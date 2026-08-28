@@ -1,14 +1,9 @@
 import { Module } from '@nestjs/common';
 import { GroupStudyManagementService } from './group-study-management.service';
 import { MediasoupModule } from 'src/mediasoup/mediasoup.module';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Room, RoomSchema } from 'src/schemas/room.schema';
 
 @Module({
-  imports: [
-    MediasoupModule,
-    MongooseModule.forFeature([{ name: Room.name, schema: RoomSchema }]),
-  ],
+  imports: [MediasoupModule],
   controllers: [],
   providers: [GroupStudyManagementService],
   exports: [GroupStudyManagementService],

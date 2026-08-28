@@ -135,6 +135,5 @@ export function getCycleRecord(
     ),
     start: endTime - cycleDurationInSec * 1000,
     end: endTime,
-    date: new Date(),
   };
 }

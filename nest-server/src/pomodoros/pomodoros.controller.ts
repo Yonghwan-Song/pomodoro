@@ -24,10 +24,12 @@ export class PomodorosController {
   ) {
     // console.log('Received createPomodoroDto in controller:', createPomodoroDto);
 
-    return await this.pomodorosService.persistPomodoroRecordsAndTaskTrackingDurations(
+    await this.pomodorosService.persistPomodoroRecordsAndTaskTrackingDurations(
       createPomodoroDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Get('today/total')
@@ -54,18 +56,19 @@ export class PomodorosController {
     @Body(new ValidationPipe()) createDemoDataDto: CreateDemoDataDto,
     @Req() request: CustomRequest,
   ) {
-    const arrOfDemoPomodoroRecords = await this.pomodorosService.createDemoData(
+    await this.pomodorosService.createDemoData(
       createDemoDataDto,
       request.userEmail,
     );
-    console.log(arrOfDemoPomodoroRecords);
 
-    return arrOfDemoPomodoroRecords;
+    return { success: true };
   }
 
   // @Delete('deleteDemoData')
   @Delete('demo-data')
   async deleteDemoData(@Req() request: CustomRequest) {
-    return await this.pomodorosService.deleteDemoData(request.userEmail);
+    await this.pomodorosService.deleteDemoData(request.userEmail);
+
+    return { success: true };
   }
 }
