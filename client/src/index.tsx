@@ -844,21 +844,6 @@ export async function persistCategoryChangeInfoArrayToIDB(
   }
 }
 
-export async function persistTaskChangeInfoArrayToIDB(
-  infoArr: TaskChangeInfo[],
-) {
-  try {
-    const db = DB || (await openIndexedDB());
-    const store = db
-      .transaction(TASK_DURATION_TRACKING_STORE_NAME, 'readwrite')
-      .objectStore(TASK_DURATION_TRACKING_STORE_NAME);
-
-    await store.put({ name: 'taskChangeInfoArray', value: infoArr });
-  } catch (error) {
-    console.warn(error);
-  }
-}
-
 export async function clearCategoryStore() {
   try {
     const db = DB || (await openIndexedDB());
