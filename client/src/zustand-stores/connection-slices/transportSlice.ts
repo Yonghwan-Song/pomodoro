@@ -93,7 +93,7 @@ export const createTransportSlice: StateCreator<
         isCreatingTransports,
       } = get();
 
-      //#region Early Fucking Returns
+      //#region Early Returns
       if (
         !socket ||
         !device ||
@@ -133,11 +133,14 @@ export const createTransportSlice: StateCreator<
       // Send Transport
       if (!isSendTransportReady) {
         socket.emit(EventNames.CREATE_SEND_TRANSPORT);
-        // QQQ: 왜 once? 왜 안적어놨어? on으로 바꿔도 되는지 모르잖아......................................................
-        // 존나 많이 호출되는데 왜그런지 모르겠음. 걍 once로 해보고 다시 로그 찍어보겠음
-        // TODO: 이전에 isCreatingTransports 때문에 early return되었다고 로그가 떴는데도 씨이발 아래의 once함수의 cb의 console.log가 실행되었다. remove를 해줘야한다는거야?
-        // disconnected일때 off를 해저야하나 이런게 아니라 우리의 의도에 따라 해줘야하는거라고 이 씨이...발아.. 방에서 나갔다가 다시 들어올 때마다 socket.once를 해주면 그게 존나 중복되니까 문제가 생기지 않을까?
-        // 그게 직접적인 이번 에러의 원인이 아닐지라도 entropy를 줄이라며.. 결국 이것도 joinRoom의 과정에 포함되니까 leaveRoom하면 off할꺼야 그리고 적어 off한다고
+        // QQQ: 왜 once로 했는지 이유를 남기지 않았다. on으로 바꿔도 되는지 판단할 근거가 없다.
+        // 호출 횟수가 예상보다 많은데 원인을 모르겠다. 우선 once로 두고 로그를 다시 확인해보자.
+        // TODO: isCreatingTransports 때문에 early return 되었다는 로그가 떴는데도 아래 once 콜백의
+        // console.log가 실행되었다. 리스너를 제거해야 한다는 뜻인가?
+        // disconnected일 때 off를 해야 하나의 문제가 아니라, 우리 의도에 맞게 정리해야 하는 문제다.
+        // 방에서 나갔다가 다시 들어올 때마다 socket.once를 등록하면 리스너가 중복되어 문제가 생기지 않을까?
+        // 이번 에러의 직접적인 원인이 아니더라도 정리해두는 편이 낫다.
+        // 결국 이것도 joinRoom 과정에 포함되므로 leaveRoom에서 off하고, off한다는 사실을 여기에 남긴다.
         socket.once(EventNames.SEND_TRANSPORT_CREATED, (options: any) => {
           console.log(
             'inside socket.on(EventNames.SEND_TRANSPORT_CREATED, options',
@@ -244,7 +247,7 @@ export const createTransportSlice: StateCreator<
               (ack: AckResponse<any>) => {
                 ack.success
                   ? cb({ id: ack.data.producerId })
-                  : err(new Error(ack.error)); // ERROR: Produce failed Error: Send transport mismatch at Socket2.<anonymous> <-- 이딴것도 뜬다 씨이발..
+                  : err(new Error(ack.error)); // ERROR: Produce failed Error: Send transport mismatch at Socket2.<anonymous> <- 이런 에러도 관측된다.
               },
             );
           });

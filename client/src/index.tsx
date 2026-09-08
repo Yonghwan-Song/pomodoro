@@ -445,7 +445,7 @@ export async function persistAutoStartSettingToServer(
     //?     그런데 왠지 모르게 저 Request가 성공했는지 여부를 Response의
     //?     status로 확인 할 수 있잖아. 그런데 그렇게하면 뭔가 페이지 이동하거나 할때
     //?     삑 날것 같아서 그랬어. e.g 시작 버튼 누르고 곧바로 뭐 다른 페이지로 이동한다거나
-    //!     그러니까 이거다. update을 하고(e.g. start pomo)존나 빨리
+    //!     정리하면 이렇다. update을 하고(e.g. start pomo) 아주 빠르게
     //!     cache를 사용하게 되는 경우가 있을지 찾아봐
     const cache = DynamicCache || (await openCache(CacheName));
     const pomoInfoResponse = await cache.match(BASE_URL + RESOURCE.USERS);

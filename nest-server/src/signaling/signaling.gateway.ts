@@ -258,7 +258,7 @@ export class SignalingGateway
           }, 0);
           break;
 
-        // TODO: setTimeout에 room을 넣어서 그 안에서 조건을 거시기 하면 되는거 아니야? 주석 존나많고 entropy개증가함.
+        // TODO: setTimeout 콜백 안에서 room 조건을 판단하도록 정리할 것. 지금은 주석이 많아 흐름이 잘 읽히지 않는다.
         case 'ping timeout':
           //#region 주저리
           // NOTE: Other cases; for example, NETWORK DISCONNECTION -> "transport close"
@@ -369,7 +369,7 @@ export class SignalingGateway
           }
           break;
 
-        // TODO: test if this case also includes lost wifi... 시발 어디서?.. 핸드폰에서 끊어버리기...
+        // TODO: 이 case에 wifi 유실도 포함되는지 확인할 것. (테스트 방법: 휴대폰에서 직접 네트워크를 끊는다)
         // NOTE: The connection was closed (example: the user has lost connection, or the network was changed from WiFi to 4G).
         case 'transport close':
           if (peer.removalTimer) {
@@ -556,8 +556,8 @@ export class SignalingGateway
     );
   }
 
-  // 만약 받지 못했다고 가정하면, 아니 ... 그게 말이 되나? 존나 빨리 두번 조지면
-  // 못받아?
+  // QQQ: ACK를 받지 못하는 경우가 실제로 가능한가?
+  // 아주 짧은 간격으로 두 번 요청하면 놓칠 수 있나?
   // [ICE Restart 요청 수신]
   // 클라이언트가 네트워크 문제로 연결에 실패(failed)했을 때, 연결을 복구하기 위해 새로운 인증 정보를 요청하는 이벤트
   @SubscribeMessage(EventNames.RESTART_ICE)

@@ -74,8 +74,8 @@ export class TodayRecordsService {
   // NOTE:
   // 그러니까 강제로... 접속하자마자 그 접속 시간 이전의 데이터는 그냥 다 지워버리고
   // 그다음에 결국 남아있는 데이터를 다 가져오도록 하는거지...
-  // 그렇게 해서 findTodayRecords에서 "Today"라는 개념이 형성된 것인데... 시발러마... 대가리깬다..
-  // Today를 그냥 시발 timestamp 조건문을 이용해서 가져가면 되는거지 무슨 왜 데이터를 지워... 소중한 데이터를 ...
+  // 그렇게 해서 findTodayRecords의 "Today" 개념이 만들어진 것인데, 지금 다시 보면 납득하기 어렵다.
+  // "Today"는 timestamp 조건문으로 조회하면 되는 것이지, 데이터를 지울 이유가 없다.
   // TODO: 위의 비판을 읽고
   // 1)FE에서 delete하는 modifier를 없앤다?...(이게 정말 맞는 말인지 확인하고 다시해보면 된다)
   // 2)로직 아래에 있는거 지우고 위의 말처럼 timestamp로 get today records를 구현.

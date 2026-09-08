@@ -211,7 +211,7 @@ export const createSocketSlice: StateCreator<
         //   //#region Scribble
         //   // 1. firefox 방어가 되는지 확인해야함. 아니면 firefox쓰지 말라고해버리기...
         //   // 2. 경우의 수 rope들 다시 잡아내기 (가능한 사건들의 줄기?) <-- 이거를 어떠헥 다시 하지.....................
-        //   // 3. Then, what should I do about the fucking edge case where socket.emit() is called and ack res is not received?
+        //   // 3. Then, what should I do about the edge case where socket.emit() is called and ack res is not received?
         //   // What happens in this design?
         //   // The fact that an ack response is not received means the socket connection was down as soon as the socket.emit() was called.
         //   // That means this reconnect handler is going to be called definitely
@@ -368,10 +368,10 @@ export const createSocketSlice: StateCreator<
                     // 애초에 연결 끊겼을 당시에 lobby에서 끊긴 경우
                     // NOTE: B
                     if (isUserInRoomInClient) {
-                      // IMPT: 그래서 여기도 존나 희박한게, 사용자가 연결이 끊겼을때 로비에서 방으로 입장한 경우.
+                      // IMPT: 이 경우도 아주 드물다. 연결이 끊긴 상태에서 사용자가 로비에서 방으로 입장한 경우다.
                       // NOTE: [2]
                       console.log('[SS, FE] -> [Lobby, Room]'); // QQQ: 이거 가능한거야? SS에서 방에서 로비로 쫒아내고 peerMap에서 안지울 수 있나? [Lobby, Lobby] -> [No Peer, Lobby]는 가능해보이는데,
-                      // TODO: 혹시 user가 socket연결 안된지 모르고 Lobby에 있다가 방에 입장?... 시발 진짜... 그렇게 못하게 해야지...
+                      // TODO: 사용자가 소켓이 끊긴 줄 모르고 로비에 있다가 방에 입장하는 경우인가? 애초에 입장하지 못하도록 막아야 한다.
 
                       leaveRoom(false); // 아니다.. 이미 서버에서는 lobby로 나가져있기 때문에 나가달라고 서버에 작업 요청할 필요가 없음. 대신에 FE에서는 나가야지
                       set({

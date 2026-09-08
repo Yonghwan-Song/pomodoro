@@ -632,7 +632,9 @@ export class GroupStudyManagementService
       // 서로 비동기라... 아니 서로 통신하고 하나 둘 셋 하고 state을 바꾸는게 아니지 않나?... 각자 즈그들 (transport instance)의 기준따라 거시기 하겠지.
       // 그래서 약간 ... 클라이언트가 더 빨리 판단해서 failed로 된거고... ...
       // 라고 생각해보면 말이 되긴함. 그런데 애초에 이렇게 방어해놓은것은 왜...
-      // 빡대가리새끼야... completed에서 disconnected되고나서 다시 connected -> completed된 딱 그 찰나의 경우만 방어하고싶은건데 대놓고 completed와 connected로 guard를 만들면 중간에 한번 disconnected되었었는지 아닌지 어떻게 아냐고...
+      // 정리하면, 막고 싶은 것은 completed -> disconnected -> connected -> completed로 되돌아온
+      // 찰나의 경우뿐이다. 그런데 connected/completed를 그대로 guard로 쓰면
+      // 중간에 disconnected를 거쳤는지 여부를 알 수 없다.
       // 0|pomodoro-nest  | [SignalingGateway:handleRestartIce] Socket sb_GzYEKgNEPOWq-AAAj requested ICE restart for its recv transport
       // 0|pomodoro-nest  | [SignalingGateway:handleRestartIce] Socket sb_GzYEKgNEPOWq-AAAj requested ICE restart for its send transport
       // 0|pomodoro-nest  | ice=completed -> disconnected sinceLastIce=50843ms peer=r013y8V4e1TbWrZkrsOsagS3oa22 age=106297ms ts=2026-06-23T11:36:45.201Z [recv:f437cb2a-810e-4ddb-89c9-3eeb4707c2e6]
@@ -1138,7 +1140,8 @@ export class GroupStudyManagementService
         );
         return { success: false, error: 'Ghost socket' };
         // 그런데 어떻게 지우는거야? disconnect이 transport close에 의해 발생했는데, 이게 ping timeout이 이어서 발생하거든? 같은 소켓에 대해...
-        // 내가 기대했던 것은 disconnect event 가 발생했으면 그냥.. recover안되고 그냥 memory에서 deallocate되는거지.. 무슨 왜 남아서 event fire하고 지랄임?
+        // 내가 기대했던 동작은, disconnect event가 발생하면 recover되지 않고 메모리에서 해제되는 것이었다.
+        // 그런데 실제로는 객체가 남아서 event를 계속 발생시킨다.
       }
 
       if (!peer) {

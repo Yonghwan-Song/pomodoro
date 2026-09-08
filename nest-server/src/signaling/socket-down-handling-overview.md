@@ -75,17 +75,17 @@ const newSocket = io(BASE_URL, {
 이런 경우가 존재하기는 하는거야?... 그냥 clean up해버려 30분 뒤에.
 
 - [ ] just clean up after 30min
-- [ ] think about it again after we introducing the fucking.. docker
+- [ ] think about it again after introducing docker
 
 ##### 3.
 
 - [ ] simply clean up after 30min
       이것은 그냥 로비에서 30분간 연결 안된것과 거의 동치라고 봐도 될듯?... _:::..._
-- [ ] and think about it again after we introducing the fucking.. docker
+- [ ] and think about it again after introducing docker
 
 #### client behaviour
 
-Get him the fuck out of the room
+Get him out of the room
 
 - give new values to slice states
   - **MediaStreamSliceStates, TransportSliceStates, ProducerSliceStates, ConsumerSliceStates**
