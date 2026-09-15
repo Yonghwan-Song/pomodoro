@@ -7,10 +7,10 @@ import {
   getAuthorizationUrl,
   getAuthToken,
   Permission,
-  revokeAuthToken,
+  revokeToken,
   Task,
   TodoistApi,
-} from '@doist/todoist-api-typescript';
+} from '@doist/todoist-sdk';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq, and, notInArray } from 'drizzle-orm';
 import * as schema from 'src/postgresql/schema';
@@ -59,7 +59,11 @@ export class TodoistService {
   generateAuthorizationUrl(userEmail: string): string {
     const state = getAuthStateParameter();
     const scopes: Permission[] = ['data:read', 'task:add'];
-    const authorizationUrl = getAuthorizationUrl(this.clientId, scopes, state);
+    const authorizationUrl = getAuthorizationUrl({
+      clientId: this.clientId,
+      permissions: scopes,
+      state,
+    });
 
     // Store the state with current timestamp
     this.stateMap.set(state, { createdAt: Date.now(), userEmail });
@@ -240,10 +244,10 @@ export class TodoistService {
     }
 
     try {
-      const result = await revokeAuthToken({
+      const result = await revokeToken({
         clientId: this.clientId,
         clientSecret: this.clientSecret,
-        accessToken: accessToken,
+        token: accessToken,
       });
 
       if (result) {
@@ -281,9 +285,16 @@ export class TodoistService {
   ): Promise<TodoistTaskWithFocusDuration[]> {
     try {
       const api = new TodoistApi(accessToken);
-      const incompleteTasks = (await api.getTasks()).results.filter(
-        (task) => task.isCompleted === false,
-      );
+      // NOTE: API v1은 페이지 단위로 응답하므로 nextCursor가 없을 때까지 모두 가져온다.
+      // 첫 페이지만 쓰면 나머지 태스크가 아래 Soft Deactivation에서 비활성화된다.
+      const allTasks: Task[] = [];
+      let cursor: string | null = null;
+      do {
+        const page = await api.getTasks({ cursor, limit: 200 });
+        allTasks.push(...page.results);
+        cursor = page.nextCursor;
+      } while (cursor);
+      const incompleteTasks = allTasks.filter((task) => !task.checked);
 
       const activeTodoistTaskIds = incompleteTasks.map((task) => task.id);
       const trackingRows = await this.db.transaction(async (tx) => {

@@ -24,7 +24,7 @@
     "db:migrate": "ts-node src/database-migration/migrate.ts"
   },
   "dependencies": {
-    "@doist/todoist-api-typescript": "^4.0.3",
+    "@doist/todoist-sdk": "^15.2.0",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
@@ -69,7 +69,7 @@
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.1.3"
+    "typescript": "~5.9"
   },
   "jest": {
     "moduleFileExtensions": [

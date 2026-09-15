@@ -15,7 +15,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { doublePrecision } from 'drizzle-orm/pg-core';
-import type { Task } from '@doist/todoist-api-typescript';
+import type { Task } from '@doist/todoist-sdk';
 
 //#region Types for JSONB
 type TimersStates = {

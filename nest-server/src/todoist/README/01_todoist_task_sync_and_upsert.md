@@ -94,7 +94,7 @@ WHERE user_id = '유저_UUID'
 ```
 
 ### 왜 DELETE 대신 `isActive = false`인가?
-- 유저가 Todoist에서 태스크를 완료(`isCompleted: true`)하거나 삭제하면, Todoist API 응답 목록(`activeTodoistTaskIds`)에서 제외됩니다.
+- 유저가 Todoist에서 태스크를 완료(`checked: true`)하거나 삭제하면, Todoist API 응답 목록(`activeTodoistTaskIds`)에서 제외됩니다.
 - 이때 이 태스크를 PostgreSQL에서 `DELETE` 해버리면 **과거 해당 태스크에 걸려있던 `pomodoros` 기록의 외래키(`todoist_task_id`) 참조와 누적 통계(`totalFocusDuration`)가 손실**됩니다.
 - 따라서 행(row)은 그대로 유지하되 `isActive = false`로 상태만 비활성화하여 **과거 데이터 무결성을 100% 보존**합니다.
 

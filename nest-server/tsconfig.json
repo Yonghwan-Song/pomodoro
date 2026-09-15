@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "Node16",
+    "module": "node20",
     "moduleResolution": "node16",
     "declaration": false,
     "removeComments": true,
