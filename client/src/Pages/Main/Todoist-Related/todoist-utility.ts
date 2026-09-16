@@ -9,7 +9,10 @@ import {
   TodoistTasksWithFocusDuration,
 } from '../../../types/todoistRelatedTypes';
 import { axiosInstance } from '../../../axios-and-error-handling/axios-instances';
-import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
+import {
+  boundedPomoInfoStore,
+  useBoundedPomoInfoStore,
+} from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
   TaskWithFocusDurationAndChildren,
   TodoistTasksTreeAndMap,
@@ -113,6 +116,56 @@ export function useTaskSelectionHandler() {
       console.error('Error handling task selection:', error);
     }
   };
+}
+
+/**
+ * 선택된 태스크가 Todoist에서 완료/삭제되어 최신 태스크 목록에 없다면,
+ * "Run Without Task"를 누른 것과 같은 방식으로 선택을 해제한다.
+ * 이걸 안 하면 사라진 태스크 id가 taskChangeInfoArray와 sessionStorage에 남아
+ * 이번 세션과 다음 세션의 기록에 계속 붙는다.
+ *
+ * - 이미 시작한 POMO: 지금 시점부터 no-task 구간을 추가 (그 전 시간은 기존 태스크에 기록됨)
+ * - 그 외(시작 전 POMO, BREAK, 세션 타입을 아직 모르는 새 탭): 배열을 no-task로 교체
+ *
+ * hook이 아닌 일반 함수라서 sync 직후나 앱 초기 로드처럼 React 밖에서도 호출할 수 있다.
+ */
+export async function deselectCurrentTaskIfRemoved(activeTaskIds: {
+  has(id: string): boolean;
+}) {
+  const state = boundedPomoInfoStore.getState();
+  const { currentTaskId, taskChangeInfoArray } = state;
+  if (currentTaskId === '' || activeTaskIds.has(currentTaskId)) return;
+
+  state.setCurrentTaskId('');
+  sessionStorage.setItem(CURRENT_TASK_ID, '');
+
+  const sessionType = sessionStorage
+    .getItem(CURRENT_SESSION_TYPE)
+    ?.toUpperCase();
+  const moment = Date.now();
+
+  try {
+    if (sessionType === 'POMO' && !state.checkIfSessionIsNotStartedYet()) {
+      state.addTaskChangeInfo({ id: '', taskChangeTimestamp: moment });
+      await axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_TASK_ID, {
+        currentTaskId: '',
+        doesItJustChangeTask: false,
+        changeTimestamp: moment,
+      });
+    } else {
+      const noTaskChange: TaskChangeInfo = {
+        id: '',
+        taskChangeTimestamp: taskChangeInfoArray[0]?.taskChangeTimestamp ?? 0,
+      };
+      state.setTaskChangeInfoArray([noTaskChange]);
+      await axiosInstance.patch(
+        RESOURCE.USERS + SUB_SET.TASK_CHANGE_INFO_ARRAY,
+        { taskChangeInfoArray: [noTaskChange] },
+      );
+    }
+  } catch (error) {
+    console.error('Error deselecting a removed task:', error);
+  }
 }
 //#endregion
 //#region Original

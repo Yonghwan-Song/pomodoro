@@ -28,6 +28,7 @@ import {
 } from '..';
 import { Category, CategoryChangeInfo } from '../types/clientStatesType';
 import { pubsub } from '../pubsub';
+import { deselectCurrentTaskIfRemoved } from '../Pages/Main/Todoist-Related/todoist-utility';
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;
@@ -171,6 +172,11 @@ export function AuthContextProvider({
               numOfCycle: 1,
             },
           });
+
+        // 앱을 닫아둔 사이 Todoist에서 완료/삭제된 태스크가 선택된 채로 남아있을 수 있음.
+        await deselectCurrentTaskIfRemoved(
+          new Set(states.todoistTasks.map((task) => task.id)),
+        );
 
         //
         await persistCategoryChangeInfoArrayToIDB(
