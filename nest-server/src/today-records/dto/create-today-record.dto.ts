@@ -12,10 +12,10 @@
 // }
 
 import {
+  IsIn,
   IsNumber,
   IsOptional,
   IsPositive,
-  IsString,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -37,9 +37,8 @@ class PauseDto {
 }
 
 export class CreateTodayRecordDto {
-  //TODO:  dto string -> ""? is this going to pass validation? or should I add @IsNotEmpty()
-  @IsString()
-  kind: string;
+  @IsIn(['pomo', 'break'])
+  kind: 'pomo' | 'break';
 
   @IsNumber()
   @IsPositive()

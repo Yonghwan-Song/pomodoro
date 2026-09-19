@@ -27,11 +27,11 @@ describe("Timer", () => {
     // 1. POMO h1 확인
     // session can be either Pomo or Break
     const session = screen.getByRole("heading", {
-      name: /pomo/i,
+      name: /pomo/i
     });
     // 2. 숫자 5 확인
     const duration = screen.getByRole("heading", {
-      name: /5:00/i,
+      name: /5:00/i
     });
     expect(startButton).toBeInTheDocument();
     expect(endButton).toBeInTheDocument();
@@ -57,10 +57,10 @@ describe("Timer", () => {
     );
     const startButton = screen.getByRole("button", { name: /start/i });
     const session = screen.getByRole("heading", {
-      name: /pomo/i,
+      name: /pomo/i
     });
     const duration = screen.getByRole("heading", {
-      name: /5:00/i,
+      name: /5:00/i
     });
     expect(session).toHaveTextContent(/pomo/i);
     await ue.click(startButton);
@@ -87,10 +87,10 @@ describe("Timer", () => {
     render(<PatternTimer />);
     const startButton = screen.getByRole("button", { name: /start/i });
     const session = screen.getByRole("heading", {
-      name: /pomo/i,
+      name: /pomo/i
     });
     let duration = screen.getByRole("heading", {
-      name: /5:00/i,
+      name: /5:00/i
     });
     expect(session).toHaveTextContent(/pomo/i);
 
@@ -104,7 +104,7 @@ describe("Timer", () => {
       });
     }
     duration = screen.getByRole("heading", {
-      level: 2,
+      level: 2
     });
     //여기서 ... re-render 된 시점이니까 저기 위에 있던 duration같은거는 unmount되었다? 그런데 session은 ? 이거는 계속 가만히 있었나보네..?
     expect(startButton).toHaveTextContent(/start/i);
@@ -203,10 +203,10 @@ describe("Timer", () => {
     const startButton = screen.getByRole("button", { name: /start/i });
     const endButton = screen.getByRole("button", { name: /end/i });
     const session = screen.getByRole("heading", {
-      name: /pomo/i,
+      name: /pomo/i
     });
     const remainingDuration = screen.getByRole("heading", {
-      name: /5:00/i,
+      name: /5:00/i
     });
 
     expect(session).toHaveTextContent(/pomo/i);
@@ -267,10 +267,10 @@ describe("Timer", () => {
     const startButton = screen.getByRole("button", { name: /start/i });
     const endButton = screen.getByRole("button", { name: /end/i });
     const session = screen.getByRole("heading", {
-      name: /pomo/i,
+      name: /pomo/i
     });
     const remainingDuration = screen.getByRole("heading", {
-      name: /5:00/i,
+      name: /5:00/i
     });
 
     expect(session).toHaveTextContent(/pomo/i);

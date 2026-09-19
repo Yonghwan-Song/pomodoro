@@ -1,0 +1,164 @@
+동시에 끊는것 다시 시작해야함.
+
+시나리오 1.
+socket이 끊기고 다시 복구되고 그다음에 udp가 끊기고 다시 복구.
+이것은 그냥 뭐 udp하나만 가지고 구현했을때 이미 완성된 경우라고보면 된다.
+
+시나리오 2.
+socket이 끊기고, udp 끊기고 -> socket 재연결되었을때 attempt ice restart
+
+시나리오 3. <-- edge case
+socket이 끊기고, udp 끊기고, attempt ice restart-> socket 재연결되었을때
+
+---
+
+그냥 socket이 끊기고 udp가 끊기고 그 타이밍이 어떻게 되는지는 사실 알기 좀 어렵고...
+어떤 black box라고 보겠다. 왜 그렇게 하고싶냐하면, 당장 생각나는 것은 그냥 딱 한번 끊기고 말겠지라고 할수도 있지만, 내가 인터넷 연결 안좋은 곳에서 몇번 경험했던 신기한 것은 연결이 오락가락하던것임. 대충 내가 내 앱에 network up/down 에 대한 로그를 찍어놓았는데, 이게 예를 들면 한 5초에 3번? 정도 오락가락하더라고... 그런거 보면.. TCP socket이 down되는것과 udp transport라는 독립적인 route들의 down을 단순하게 예측하기는 어렵고 하루 죙일 경우의수 따지고 앉아있어야할듯.. 나는 수학을 못하니까! 그래서 ...
+다음의 사실에 입각해서 위의 black box에서 나오는 사건들의 가닥들을 모아 잡아놓아보자 이말이야.
+1.  A. TCP socket의 signaling server와의 연결, 그리고 B. mediasoup 의 webRtcTransport의 연결(UDP socket)은 겹치지 않는다.
+다른 도로여서 ... 무너졌다가 복구되는 것도 서로 신경쓰지 않음. (스펙 수준에서 그냥 서로 신경 끄고 있음:::... 심지어 같이 사용하라고 있는것도 아니잖아...)
+2. 그래서 A와 B의 재연결 과정은 다음과 같음.
+A. 그냥 무한으로다가 재연결을 시도함. 서버의 주소만 알고 단지 인터넷만 연결되면 다른 과정은 필요없음.
+    - 그리고 우리가 firebaseUid를 기준으로 잡았기 때문에... 괜찮....?..
+    - 생각해보니...재연결시 새로운 아이디를 받는 방식이여도 결국 양방향성이 아니기 때문에 한계가 있어보이고,
+    그 한계속에서 아마도 방에서 나가는 기능을 실행하는 타이밍으로 잡는게 마땅하면 좋겠다. QQQ, TODO
+B. A와는 다르게,
+    1. 서버의 주소만 안다고 해결되는 것이 아니라, ufrag와 pwd를 다시 교환하는 Inter Connectivity Establishment 과정을 거쳐야한다. 그래서 뭐 ICE candidates교환하고 뭐 아무튼 수동적으로 다시 ICE negotiation을 진행해야함!
+    2. 그 과정은은 Siganling Server에 의존함. 즉 A의 재연결되었음을 전제하에 이루어질 수 있다.
+결론 -> Black box의 결과가 어떻게 되었든... B는 복구를 독립적으로 (A의 연결 상태를 무시하고) 진행한다. -> 그러므로 A가 on일때와 off일때로 나누면 된다....
+
+i.e., Black Box에서 다양한 사건의 줄기들은 결국 B의 복구로 무조건 모일 수 밖에 없음. 그러니까 B의 복구에서 다시 바라봐도 문제가 없음.. 그냥 무시가능.... (나으 흐망사항이오)
+
+그러면 결국 그 B의 복구 시도 이후의 시나리오도 결국 여기에서 모였다가 나가는거니까...
+그러니까 이 한덩이에서 갈라져 나가는거니까 사실상 여기에서만 구분해놓고 이 시점에서 해결을 해보리면 이후의 상황(경우의 수)도 생각 따로 안해도 되는거 아닐까?... 이거 확률에서 뭐라고 말하지 이런 개념을?... 그런 개념이 있긴 한가?
+
+B만 생각하라고 -> B가 "RESTART_ICE"를 1.성공적으로 보낸경우와 보내지 2.못한 경우 두개로 나눔.
+
+(// 아래것으로 하겠음.
+1. 보낸 경우
+- Ack를 받음.
+- Ack를 못 받음.
+2. 못 보낸 경우.
+-> TCP down)
+
+or
+그런데 이것은 socket volatile을 사용하지 않은 것 (즉, default... 그리고 buffer에 저장되었다가 자동으로 다시 보내짐)
+1. Ack를 받은 경우
+- TCP is up until the procedure is completed.
+2. Ack를 못 받은 경우.
+    a- 애초에 RESTART_ICE도 못보냄. -> fixed by buffer
+    b- RESTART_ICE was sent but... TCP was down before receiving ACK Res -> this needs to be emitted again manually on the socket reconnect.
+
+Because of the 2-b, we need to implement the reconnect handler on the socket.io manger?...
+What should we base to determine when to send or when not to?
+
+-> But at this point, I start to think that what if we just use volatile and implement the 2-b at the same time to just remove edge case?
+--> Despite the best case scenario of the suggestion above, we also need to find a way to determine when to or when not to send because the packet might be dropped due to fucked up internet connection condition.
+---> 그러니까 reconnect handler cannot solely guarantee 100% Ack Reception on its own unless it includes the way of the judgement/decision.
+
+그러니까 나는 지금 무엇을 해야하냐면
+당장 Ack 를 보내고도 받지 못한 경우를 판단할 수 있는 Boolean 값을 변수로다가 transport당 하나씩 조지는 object를 transportSliceState에 만들어야함.
+
+---
+
+뭐로?.... 그냥 정보의 근원은 두가지인데? 보냈냐 받았냐?
+그 장소에 가서 ....
+determinant
+- send
+    - isIceRestartEmitted
+    - isAckResponseReceived
+- recv
+    - isIceRestartEmitted
+    - isAckResponseReceived
+
+-----
+
+이제 해야할 것:
+그냥 각 시나리오별로 test....
+두가지 방식의 분할법 중 두번째 것을 기반으로 생각하기로 했음.
+1. Ack를 받은 경우
+- TCP is up until the procedure is completed.
+2. Ack를 못 받은 경우.
+    a- 애초에 RESTART_ICE도 못보냄. -> fixed by buffer
+    b- RESTART_ICE was sent but... TCP was down before receiving ACK Res -> this needs to be emitted again manually on the socket reconnect.
+
+1번의 경우 -> 이미 test를 했음.
+2번
+    -a -> socket끊고, udp 끊는다
+        - 문제점: 지금의 iceSignalingStatus를 가지고는 이 시나리오에서도 isIceRestartEmitted === true
+        && isAckResponseNotReceived === true.
+        왜냐하면, 지금은 단순히 그 socket.emit 호출 바로 다음라인에서 일괄적으로 isIceRestartEmitted에 true값을 할당함.
+        But the fact that we reach that point does not always mean that the event is emitted.
+        그냥 get().socket.connected === false인 상태에서 그 emit이 호출되었다면... isIceRestartEmitted에 true값을 할당해서는 안된다.
+        그 emit호출 전에 딱 체크를 해놓고 만약 공갈이면 false로 냅둬. 그리고 isAckResponseNotReceived 도 역시 false.
+        그러므로 false, false가 된다. 그래서 호출 안된다. 그런데 또 생각해보니까, 이렇게까지 안해도 true, false라서 결국 reconnect
+        이벤트 핸들러에서 attemptToRestartIce() 호출 안된다.
+        그래서 이제 공갈까지 포함시킬지 말지를 결정해야함. 포함한다고 말할경우에는 "socket.connected === false"일 때도, 그냥 보냈다고 친다.
+        라고 말하는거임 왜냐하면, 아니 그런데 좀더 정확하게 하는게 맞다.
+
+    -b -> as soon as RESTART_ICE is emitted, ...socket을 끊는다.... 이걸 어떻게 하지? signaling server에서 ack res보낼때 의도적으로 대략 5초 정도 delay를 의도적으로 준다.
+        그리고 나는 이제 로그에서 emit된거 보자마자 -> `RESTART_ICE has been sent for ${kind} transport`
+         5초 이내에 socket 끊으면 된다. `adb reverse --remove`, `sudo tcpkill ...`
+
+---
+
+pomodoro-from-arch on  feature/integrate-webrtc [$✘!+?]
+❯ adb start-server
+* daemon not running; starting now at tcp:5037
+* daemon started successfully
+
+---
+recv
+tuple=udp local=0.0.0.0:36538 remote=10.20.159.7:39558 peer=8S0ZcKU4WRU29cnY70NSTXcQ2N23 age=313ms ts=2026-05-21T07:44:12.996Z [recv:f7436584-cab8-4416-8976-7ccdfad27960]
+send
+tuple=udp local=0.0.0.0:47869 remote=10.20.159.7:56996 peer=8S0ZcKU4WRU29cnY70NSTXcQ2N23 age=7018ms ts=2026-05-21T07:44:19.680Z [send:9f7be3c5-3369-4658-829f-d6143e3b2b21]
+
+누구의 관점에서 차단하는데? 서버쪽에서부터 차단해나간다. 왜냐하면 mobile쪽에서 규칙 적용하면 ICE candidates를 계속 돌려막기 해서 자동으로 다시 연결되고 그랬던 기억이 있음.
+
+UDP DROP~!!!
+# Send transport
+sudo iptables -I INPUT  -i wlan0 -p udp -d 10.20.105.210 --dport 47869 -j DROP
+sudo iptables -I OUTPUT -o wlan0 -p udp -s 10.20.105.210 --sport 47869 -j DROP
+
+# Recv transport
+sudo iptables -I INPUT  -i wlan0 -p udp -d 10.20.105.210 --dport 36538 -j DROP
+sudo iptables -I OUTPUT -o wlan0 -p udp -s 10.20.105.210 --sport 36538 -j DROP
+
+TCP DROP!!!
+adb reverse --remove tcp:3000
+
+sudo tcpkill -i lo port "$port_number"
+
+ephemeral port nubmer 알아내기:
+pomodoro-from-arch on  feature/integrate-webrtc [$✘!+?] took 3s
+❯ sudo ss -tnp 'dst 127.0.0.1 dport = :3000'
+
+[sudo] password for yhs:
+State     Recv-Q     Send-Q          Local Address:Port            Peer Address:Port     Process
+ESTAB     0          0                   127.0.0.1:59999              127.0.0.1:3000      users:(("adb",pid=42372,fd=16))
+ESTAB     0          0                   127.0.0.1:60072              127.0.0.1:3000      users:(("firefox",pid=44211,fd=193))
+
+sudo tcpkill -i lo port "59999"
+
+
+-----
+
+
+# socket이 연결된 경우에만 실질적으로 ICE_RESTART 시도하는 방식으로 했을 때, 위에서 선택했던 시나리오가 어떤식으로 인식되는지 살펴보자.
+
+
+1. Ack를 받은 경우
+- TCP is up until the procedure is completed. <--- 그대로.
+2. Ack를 못 받은 경우.
+    a- 애초에 RESTART_ICE도 못보냄. <-- buffer조차 되지 않는다. 즉 원천적으로 조건문에 의해 socket.emit() 호출자체가 차단된다.
+    b- RESTART_ICE was sent but... TCP was down before receiving ACK Res -> this needs to be emitted again manually on the socket reconnect.
+
+
+
+애초에 2-a는 존재하지 않게 되는거지, 그러니까 딱 두가지 경우로 나뉜다. X)연결되어서 보내서 받는 경우와, Y)연결되어서 보냈는데 못받는 경우.
+
+## X)와 Y)는 언제 처음 촉발되고 언제 어떻게 재촉발 되는가? -> 여러번 호출되던 것이 바뀔 수 있지 않나? 그러니까 firefox work-around가 무용지물이 되는게 아닌가?
+
+firefox -> 기능 상실하면 어떻게 하지?... 자살하렴.
+
+---

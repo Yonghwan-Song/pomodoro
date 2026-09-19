@@ -4,8 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { PomodorosModule } from './pomodoros/pomodoros.module';
 import { TodayRecordsModule } from './today-records/today-records.module';
@@ -14,18 +13,12 @@ import { CategoriesModule } from './categories/categories.module';
 import { CycleSettingModule } from './cycle-setting/cycle-setting.module';
 import { TodoistModule } from './todoist/todoist.module';
 import { SignalingModule } from './signaling/signaling.module';
+import { PgModule } from './postgresql/pg.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('DATABASE_URL'),
-      }),
-      inject: [ConfigService],
-    }),
-    // MongooseModule.forRoot(process.env.DATABASE_URL),
+    PgModule,
     UsersModule,
     PomodorosModule,
     TodayRecordsModule,

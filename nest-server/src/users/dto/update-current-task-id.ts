@@ -1,6 +1,6 @@
 import { IsString, IsBoolean, IsOptional, IsNumber } from 'class-validator';
 
-export class UpdateCurrentTaskIdAndTaskChangeInfoArrayDto {
+export class UpdateCurrentTaskIdDto {
   @IsString()
   currentTaskId: string;
 

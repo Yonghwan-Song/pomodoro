@@ -2,215 +2,354 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Inject,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { CreateCycleSettingDto } from './dto/create-cycle-setting.dto';
-import {
-  PartialCreateCycleSettingDto,
-  UpdateCycleSettingDto,
-} from './dto/update-cycle-setting.dto';
-import { InjectModel, InjectConnection } from '@nestjs/mongoose';
-import { CycleSetting } from 'src/schemas/cycleSetting.schema';
-import { Model, Connection, UpdateQuery } from 'mongoose';
-import { User } from 'src/schemas/user.schema';
+import { UpdateCycleSettingDto } from './dto/update-cycle-setting.dto';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { eq, and } from 'drizzle-orm';
+import * as schema from 'src/postgresql/schema';
 
 @Injectable()
 export class CycleSettingService {
   constructor(
-    @InjectModel(CycleSetting.name)
-    private cycleSettingModel: Model<CycleSetting>,
-    @InjectModel(User.name) private userModel: Model<User>,
-    @InjectConnection() private connection: Connection,
+    @Inject('PG_DB_BY_DRIZZLE')
+    private readonly db: NodePgDatabase<typeof schema>,
   ) {}
 
+  // NOTE: 프론트엔드 전체에서 POST /cycle-settings를 호출하는 곳은 Settings.tsx:464-476 딱 1곳뿐입니다.
   async create(
     createCycleSettingDto: CreateCycleSettingDto,
     userEmail: string,
   ) {
     try {
-      // Set the current cycle setting's isCurrent to false
-      //! 이렇게 그냥 안하기로 했음.
-      // await this.cycleSettingModel.updateMany(
-      //   { userEmail, isCurrent: true },
-      //   { $set: { isCurrent: false } },
-      // );
+      await this.db.transaction(async (tx) => {
+        const pgUser = await tx.query.users.findFirst({
+          where: eq(schema.users.userEmail, userEmail),
+          columns: { id: true },
+        });
 
-      const newCycleSetting = new this.cycleSettingModel({
-        ...createCycleSettingDto,
-        userEmail,
-      });
+        if (pgUser) {
+          const { pomoSetting, name, isCurrent } = createCycleSettingDto;
 
-      const savedCycleSetting = await newCycleSetting.save();
-      const currentUser = await this.userModel.findOne({
-        userEmail,
-      });
-      const updatedUser = await currentUser.updateOne({
-        $push: {
-          cycleSettings: savedCycleSetting._id,
-        },
-      });
-      console.log(
-        'updatedUser at create method of CycleSettingService',
-        updatedUser,
-      );
+          // NOTE: Just-in-case - 만약 새로 생성하는 설정이 isCurrent === true라면 기존 활성 설정을 false로 변경
+          // 그런데, FE에서 항상 new cycleSetting은 isCurrent - false로 온다.
+          if (isCurrent === true) {
+            await tx
+              .update(schema.cycleSettings)
+              .set({ isCurrent: false })
+              .where(eq(schema.cycleSettings.userId, pgUser.id));
+          }
 
-      return savedCycleSetting;
+          const [insertedCycleSetting] = await tx
+            .insert(schema.cycleSettings)
+            .values({
+              userId: pgUser.id,
+              name,
+              isCurrent: isCurrent ?? false,
+              pomoDuration: pomoSetting.pomoDuration,
+              shortBreakDuration: pomoSetting.shortBreakDuration,
+              longBreakDuration: pomoSetting.longBreakDuration,
+              numOfPomo: pomoSetting.numOfPomo,
+              numOfCycle: pomoSetting.numOfCycle,
+            })
+            .returning();
+
+          if (insertedCycleSetting) {
+            // 평탄화된 컬럼을 다시 pomoSetting 중첩 객체로 복원하여 Shadow Diff 비교
+            const {
+              pomoDuration,
+              shortBreakDuration,
+              longBreakDuration,
+              numOfPomo,
+              numOfCycle,
+              ...restPgSetting
+            } = insertedCycleSetting;
+
+            const pgResponse = {
+              ...restPgSetting,
+              pomoSetting: {
+                pomoDuration,
+                shortBreakDuration,
+                longBreakDuration,
+                numOfPomo,
+                numOfCycle,
+              },
+              cycleStat: [],
+            };
+
+            console.log('pg result at create cycle settings');
+            console.log('--------------------------------------------------->');
+            console.dir(pgResponse, {
+              depth: null,
+              colors: true,
+            });
+            console.log('<---------------------------------------------------');
+          }
+        }
+      });
+      return;
     } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException(
-          'Cycle setting with this name already exists for this user.',
-        );
+      // PostgreSQL SQLSTATE 23505: UNIQUE constraint 또는 unique index 위반
+      if (error.code === '23505') {
+        if (error.constraint === 'cycle_settings_user_id_name_unique') {
+          throw new ConflictException(
+            'Cycle setting with this name already exists for this user.',
+          );
+        }
+
+        if (error.constraint === 'cycle_settings_user_id_is_current_unique') {
+          throw new ConflictException(
+            'A current cycle setting already exists for this user.',
+          );
+        }
       }
-      throw error;
+
+      console.error('[CycleSettingService.create]', error);
+      throw new InternalServerErrorException('Failed to create cycle setting');
     }
   }
 
+  /** NOTE: 특이사항 - 이상한 constraint가 존재한다 -> cycleSettings table에서 특정 userId를 갖는 row들 중 isCurrent값이 true인 것은 단 한개이어야 한다.
+   * 1. 이게 relational database의 data integrity와 어떤 관련이 있고 이런 특이한 constraint를 API 레벨 말고 db table level에서 강제할 수 있는지 궁금
+   * 2. 그리고 그렇게 할 수 있다면, 그렇게 하는것이 적절한 선택인지도 궁금.
+   */
   async update(
     updateCycleSettingDto: UpdateCycleSettingDto,
     userEmail: string,
   ) {
     try {
       console.log('updateCycleSettingDto', updateCycleSettingDto);
-      const { name, data } = updateCycleSettingDto;
+      const { name, data: updateData } = updateCycleSettingDto;
+      // Three jobs are done in order.
+      // 1) Ensure unique constraint about isCurrent column's value.
+      // 2) update data all the properties of which are optional. 3) update cycle_records table if the data includes `cycleStat`.
+      await this.db.transaction(async (tx) => {
+        const pgUser = await tx.query.users.findFirst({
+          where: eq(schema.users.userEmail, userEmail),
+          columns: { id: true },
+        });
 
-      const settingToModify = await this.cycleSettingModel
-        .findOne({
-          userEmail,
-          name,
-        })
-        .exec();
-      console.log('settingToModify', settingToModify);
+        if (pgUser) {
+          // TODO: Validate that the target setting exists before resetting isCurrent.
+          // Otherwise, a request for a missing setting with isCurrent: true can
+          // commit after clearing the user's existing current setting.
+          // NOTE: 1) isCurrent: true 요청 시 기존 활성 설정을 false로 일괄 변경
+          // The `isCurrent` value affects other rows owned by this user.
+          // It is because the user's data in this table should have unique row where its isCurrent column is true.
+          if (updateData.isCurrent === true) {
+            await tx
+              .update(schema.cycleSettings)
+              .set({ isCurrent: false })
+              .where(eq(schema.cycleSettings.userId, pgUser.id));
+          }
 
-      if ('isCurrent' in data) {
-        const prevCurrentUpdated = await this.cycleSettingModel
-          .findOneAndUpdate(
-            { userEmail, isCurrent: true },
-            { $set: { isCurrent: false } },
-            { new: true },
-          )
-          .exec();
-        console.log(
-          'prevCurrentUpdated at update() in the class CycleSttingService',
-          prevCurrentUpdated,
-        );
-      }
+          // 2) 업데이트할 필드 평탄화 매핑 (destructuring spread로 간결하게 병합)
+          // NOTE: pomoSetting이 undefined여도 객체 스프레드({ ...pomoSetting })는 에러 없이 무시되고,
+          // Drizzle ORM의 .set()은 undefined 필드를 SQL SET 절에서 자동으로 제외하므로 안전합니다.
+          const { pomoSetting, cycleStat, ...directFields } = updateData;
+          const updateValues = {
+            ...directFields,
+            ...pomoSetting,
+          };
 
-      const updateQuery: UpdateQuery<PartialCreateCycleSettingDto> = {
-        $set: data,
-      };
+          let updatedPgSetting: {
+            id: string;
+            userId: string;
+            name: string;
+            isCurrent: boolean;
+            pomoDuration: number;
+            shortBreakDuration: number;
+            longBreakDuration: number;
+            numOfPomo: number;
+            numOfCycle: number;
+            averageAdherenceRate: number;
+          };
+          if (Object.keys(updateValues).length > 0) {
+            const [result] = await tx
+              .update(schema.cycleSettings)
+              .set(updateValues)
+              .where(
+                and(
+                  eq(schema.cycleSettings.userId, pgUser.id),
+                  eq(schema.cycleSettings.name, name),
+                ),
+              )
+              .returning();
+            updatedPgSetting = result;
+          } else {
+            updatedPgSetting = await tx.query.cycleSettings.findFirst({
+              where: and(
+                eq(schema.cycleSettings.userId, pgUser.id),
+                eq(schema.cycleSettings.name, name),
+              ),
+            });
+          }
 
-      //* 그냥 cycleStat's length를 10으로 유지하기로 해서.. 아예 통짜로 client에서
-      //* array자체를 보내버리기로 결정했음.
-      // if ('cycleStat' in data) {
-      //   updateQuery = {
-      //     ...updateQuery,
-      //     $push: { cycleStat: data.cycleStat },
-      //   };
-      //   delete updateQuery.$set.cycleStat;
-      // }
+          // 3) cycleStat 동기화 (data.cycleStat이 넘어온 경우 자식 테이블 갱신)
+          // TODO: [Refactoring] FE가 임베디드 전체 배열(최대 10건)을 보내기 때문에 현재는 DELETE 후 전체 INSERT(전체 교체)로 동기화 중.
+          // 향후 PostgreSQL 완전 전환 시 단일 레코드 INSERT API(POST /cycle-records)로 개편 권장.
+          // 상세 배경 및 계획 문서: nest-server/src/cycle-setting/README/cycle_stat_sync_and_refactoring.md
+          if (updateData.cycleStat && updatedPgSetting) {
+            await tx
+              .delete(schema.cycleRecords)
+              .where(
+                eq(schema.cycleRecords.cycleSettingId, updatedPgSetting.id),
+              );
 
-      // Use $set to update multiple fields in the document
-      const documentUpdated = await this.cycleSettingModel
-        .findOneAndUpdate({ userEmail, name }, updateQuery, { new: true })
-        .exec();
+            if (updateData.cycleStat.length > 0) {
+              await tx.insert(schema.cycleRecords).values(
+                updateData.cycleStat.map((stat) => ({
+                  cycleSettingId: updatedPgSetting.id,
+                  ratio: stat.ratio,
+                  cycleAdherenceRate: stat.cycleAdherenceRate,
+                  start: stat.start,
+                  end: stat.end,
+                })),
+              );
+            }
+          }
 
-      console.log(
-        'updated document at update() in the class CycleSttingService',
-        documentUpdated,
-      );
-      return documentUpdated;
+          // 4) 그냥 update된 결과 print
+          if (updatedPgSetting) {
+            const {
+              pomoDuration,
+              shortBreakDuration,
+              longBreakDuration,
+              numOfPomo,
+              numOfCycle,
+              ...restPgSetting
+            } = updatedPgSetting;
+
+            const pgResponse = {
+              ...restPgSetting,
+              pomoSetting: {
+                pomoDuration,
+                shortBreakDuration,
+                longBreakDuration,
+                numOfPomo,
+                numOfCycle,
+              },
+              cycleStat: updateData.cycleStat ?? [],
+            };
+
+            console.log('pg result at update cycle settings');
+            console.log('--------------------------------------------------->');
+            console.dir(pgResponse, {
+              depth: null,
+              colors: true,
+            });
+            console.log('<---------------------------------------------------');
+          }
+        }
+      });
+
+      return;
     } catch (error) {
-      console.warn(error);
-    }
-  }
+      // PostgreSQL SQLSTATE 23505: UNIQUE constraint 또는 unique index 위반
+      if (error.code === '23505') {
+        if (error.constraint === 'cycle_settings_user_id_name_unique') {
+          throw new ConflictException(
+            'Cycle setting with this name already exists for this user.',
+          );
+        }
 
-  //#region Multiple Journey
-  async delete(name: string, userEmail: string) {
-    // 1. Find and delete the cycle setting
-    const deletedDoc = await this.cycleSettingModel
-      .findOneAndDelete({ userEmail, name })
-      .exec();
-
-    if (!deletedDoc) {
-      throw new NotFoundException('Cycle setting not found');
-    }
-
-    // 2.
-    await this.userModel.findOneAndUpdate(
-      { userEmail },
-      { $pull: { cycleSettings: deletedDoc._id } },
-    );
-
-    // 3. Find the most recently created cycle setting to set it to current
-    if (deletedDoc.isCurrent) {
-      const cycleSettingsArr = await this.cycleSettingModel
-        .find({ userEmail })
-        .sort({ createdAt: 'descending' }) // timestamp가 descending한다고 생각하면, 가장 큰 timestamp이 처음에 오니까, 0 index의 값이 가장 최근 값이다.
-        .exec();
-
-      if (cycleSettingsArr.length > 0) {
-        // Client 사이드에서도 체크함.
-        await this.cycleSettingModel
-          .findOneAndUpdate(
-            { _id: cycleSettingsArr[0]._id },
-            { $set: { isCurrent: true } },
-            { new: true },
-          )
-          .exec();
+        if (error.constraint === 'cycle_settings_user_id_is_current_unique') {
+          throw new ConflictException(
+            'A current cycle setting already exists for this user.',
+          );
+        }
       }
+
+      console.error('[CycleSettingService.update]', error);
+      throw new InternalServerErrorException('Failed to update cycle setting');
     }
-
-    return deletedDoc;
   }
-  //#endregion Multiple Journey
 
-  //#region Single Communication - Nest40051: Write conflict. current setting을 지울 때 발생.
-  // async delete(name: string, userEmail: string) {
-  //   const session = await this.connection.startSession();
-  //   session.startTransaction();
+  async delete(name: string, userEmail: string) {
+    try {
+      // PostgreSQL Drizzle Delete within Transaction
+      const pgDeleteResult = await this.db.transaction(async (tx) => {
+        const pgUser = await tx.query.users.findFirst({
+          where: eq(schema.users.userEmail, userEmail),
+          columns: { id: true },
+        });
 
-  //   try {
-  //     // 1. Find and delete the cycle setting
-  //     const deletedDoc = await this.cycleSettingModel
-  //       .findOneAndDelete({ userEmail, name })
-  //       .session(session)
-  //       .setOptions({ noCursorTimeout: true }) // Disable yielding
-  //       .exec();
+        if (!pgUser) {
+          throw new Error(`PostgreSQL user not found for ${userEmail}`);
+        }
 
-  //     if (!deletedDoc) {
-  //       throw new NotFoundException('Cycle setting not found');
-  //     }
+        // 1) 대상 사이클 설정 삭제 (ON DELETE CASCADE로 하위 cycle_records 자동 삭제)
+        const [deletedPgSetting] = await tx
+          .delete(schema.cycleSettings)
+          .where(
+            and(
+              eq(schema.cycleSettings.userId, pgUser.id),
+              eq(schema.cycleSettings.name, name),
+            ),
+          )
+          .returning({
+            id: schema.cycleSettings.id,
+            name: schema.cycleSettings.name,
+            isCurrent: schema.cycleSettings.isCurrent,
+          });
 
-  //     // 2. Update the user document to remove the cycle setting reference
-  //     await this.userModel
-  //       .findOneAndUpdate(
-  //         { userEmail },
-  //         { $pull: { cycleSettings: deletedDoc._id } },
-  //         { session },
-  //       )
-  //       .setOptions({ noCursorTimeout: true }) // Disable yielding
-  //       .exec();
+        if (!deletedPgSetting) {
+          throw new Error(
+            `PostgreSQL cycle setting '${name}' not found for ${userEmail}`,
+          );
+        }
 
-  //     // 3. Find and update the most recently created cycle setting to set it as current
-  //     if (deletedDoc.isCurrent) {
-  //       await this.cycleSettingModel
-  //         .findOneAndUpdate(
-  //           { userEmail, _id: { $ne: deletedDoc._id } }, // Exclude the document that was just deleted
-  //           { $set: { isCurrent: true } },
-  //           { sort: { createdAt: -1 }, session, new: true },
-  //         )
-  //         .setOptions({ noCursorTimeout: true }) // Disable yielding
-  //         .exec();
-  //     }
+        let promotedPgSetting:
+          { id: string; name: string; isCurrent: boolean } | undefined;
 
-  //     await session.commitTransaction();
-  //     session.endSession();
+        // 2) 삭제된 설정이 isCurrent === true 였다면, 남아있는 설정 중 1개를 isCurrent = true로 자동 승격
+        if (deletedPgSetting.isCurrent) {
+          const remainingSetting = await tx.query.cycleSettings.findFirst({
+            where: eq(schema.cycleSettings.userId, pgUser.id),
+            columns: { id: true },
+          });
 
-  //     return deletedDoc;
-  //   } catch (error) {
-  //     await session.abortTransaction();
-  //     session.endSession();
-  //     throw error;
-  //   }
-  // }
-  //#endregion Single Communication
+          if (remainingSetting) {
+            [promotedPgSetting] = await tx
+              .update(schema.cycleSettings)
+              .set({ isCurrent: true })
+              .where(eq(schema.cycleSettings.id, remainingSetting.id))
+              .returning({
+                id: schema.cycleSettings.id,
+                name: schema.cycleSettings.name,
+                isCurrent: schema.cycleSettings.isCurrent,
+              });
+
+            if (!promotedPgSetting) {
+              throw new Error(
+                `PostgreSQL cycle setting '${remainingSetting.id}' not found during current-setting promotion`,
+              );
+            }
+          }
+        }
+
+        return { deletedPgSetting, promotedPgSetting };
+      });
+
+      console.log('pg result at delete cycle setting');
+      console.log('--------------------------------------------------->');
+      console.dir(pgDeleteResult, {
+        depth: null,
+        colors: true,
+      });
+      console.log('<---------------------------------------------------');
+      //#endregion
+
+      return;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
+      console.error('[CycleSettingService.delete]', error);
+      throw new InternalServerErrorException('Failed to delete cycle setting');
+    }
+  }
 }

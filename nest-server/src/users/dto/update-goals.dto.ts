@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, IsObject, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsNumber,
+  IsObject,
+  ValidateNested,
+} from 'class-validator';
 
 class GoalDto {
   @IsNumber()
@@ -16,6 +23,8 @@ export class UpdateGoalsDto {
   weeklyGoal: GoalDto;
 
   @IsArray()
+  @ArrayMinSize(7)
+  @ArrayMaxSize(7)
   @ValidateNested({ each: true })
   @Type(() => GoalDto)
   dailyGoals: GoalDto[];

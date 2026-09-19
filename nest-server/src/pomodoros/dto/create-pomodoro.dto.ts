@@ -21,7 +21,7 @@ class TaskTracking {
   taskId: string;
   @IsNotEmpty()
   @IsNumber()
-  @IsPositive()
+  // @IsPositive()
   duration: number;
 }
 

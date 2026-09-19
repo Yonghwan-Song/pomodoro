@@ -1,13 +1,15 @@
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 
-// router.put("/updateAutoStartSetting", updateAutoStartSetting);
 export class UpdateAutoStartSettingDto {
   @IsBoolean()
-  doesPomoStartAutomatically: boolean;
+  @IsOptional()
+  doesPomoStartAutomatically?: boolean;
 
   @IsBoolean()
-  doesBreakStartAutomatically: boolean;
+  @IsOptional()
+  doesBreakStartAutomatically?: boolean;
 
   @IsBoolean()
-  doesCycleStartAutomatically: boolean;
+  @IsOptional()
+  doesCycleStartAutomatically?: boolean;
 }

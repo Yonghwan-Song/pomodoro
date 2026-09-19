@@ -28,6 +28,7 @@ import {
 } from '..';
 import { Category, CategoryChangeInfo } from '../types/clientStatesType';
 import { pubsub } from '../pubsub';
+import { deselectCurrentTaskIfRemoved } from '../Pages/Main/Todoist-Related/todoist-utility';
 
 type AuthContextType = {
   googleSignIn: () => Promise<void>;
@@ -35,6 +36,7 @@ type AuthContextType = {
   user: User | null;
   isNewUser: boolean;
   isNewUserRegistered: boolean;
+  isNewUserBeingRegistered: boolean;
 };
 
 // AuthContext is going to be provided by AuthContextProvider,
@@ -49,6 +51,8 @@ export function AuthContextProvider({
   const [user, setUser] = useState<User | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [isNewUserRegistered, setIsNewUserRegistered] = useState(false);
+  const [isNewUserBeingRegistered, setIsNewUserBeingRegistered] =
+    useState(false);
   const [isUserNewlyRegistered, setIsUserNewlyRegistered] = useState(false);
   const [isUserNew, setIsUserNew] = useState(false);
   const populateExistingUserStates = useBoundedPomoInfoStore(
@@ -67,15 +71,26 @@ export function AuthContextProvider({
   const googleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      // TODO: add it.
+      // NOTE: signInWithPopup -> authDomain (referer) -> 키 제한에 허용시켜야
+      // localhost:3001에서 앱을 열어도, Firebase Google 로그인은 내부적으로 authDomain(지금
+      // 은 pomodoro-ef5e0.firebaseapp.com)의 iframe/popup을 통해 통신합니다.
+      // 그래서 API 서버 입장에서는 요청 referer가
+      // https://pomodoro-ef5e0.firebaseapp.com/...로 보일 수 있어요.
+      // 즉:
+      // - 앱 시작: http://localhost:3001
+      // - 실제 인증 보조 요청: https://pomodoro-ef5e0.firebaseapp.com 쪽에서 발생
+      // - 그래서 키 제한에 firebaseapp.com 도메인도 허용 필요
       const result = await signInWithPopup(auth, provider);
       const details = getAdditionalUserInfo(result);
 
       if (!details) return;
 
       if (details.isNewUser) {
+        setIsNewUserBeingRegistered(true);
+        const res = await registerUser(result.user);
         setIsNewUser(true);
         setIsUserNew(true);
-        await registerUser(result.user);
       } else {
         setIsUserNew(false);
       }
@@ -103,11 +118,12 @@ export function AuthContextProvider({
    */
   async function registerUser(user: User) {
     try {
-      let response = await axiosInstance.post(RESOURCE.USERS, {
+      const response = await axiosInstance.post(RESOURCE.USERS, {
         firebaseUid: user.uid,
       });
-      setIsNewUserRegistered(true);
+      setIsNewUserRegistered(true); // deprecated
       setIsUserNewlyRegistered(true);
+      setIsNewUserBeingRegistered(false);
       return response;
     } catch (err) {
       console.warn(err);
@@ -157,6 +173,11 @@ export function AuthContextProvider({
             },
           });
 
+        // 앱을 닫아둔 사이 Todoist에서 완료/삭제된 태스크가 선택된 채로 남아있을 수 있음.
+        await deselectCurrentTaskIfRemoved(
+          new Set(states.todoistTasks.map((task) => task.id)),
+        );
+
         //
         await persistCategoryChangeInfoArrayToIDB(
           states.categoryChangeInfoArray,
@@ -179,10 +200,32 @@ export function AuthContextProvider({
         console.warn(error);
       }
     }
+    // NOTE: 중요한 것은 이 두개의 boolean함수가 실행되는 시점은 새롭게 가입하는 사람의 post의 response를 제외하고는,
+    // server에서 데이터를 가져와서 뭔가 확인하고 그러는게 아니라는것.
+    // 제한된 정보를 갖고 다시한번 아래의 두 함수들이 제대로 작동하도록 조건들의 조합을 찾아내야함.
+    // 1. user!==null은 당연하고, 혹시 L83에 registerUser() 호출하기 전에 isBeingRegistered라고 boolean local state을 만들고,
+    // isBeingRegistered === true이면, 판단 보류시키는 뭐 그런거 만들어야하나
     function isLoggedInUserExisting() {
-      return user !== null && isUserNew === false;
+      // console.log('Inside isLoggedInUserExisting()');
+      // console.log('------------------------------>');
+      // console.log('user', user);
+      // console.log('isNewUserBeingRegistered', isNewUserBeingRegistered);
+      // console.log('isUserNew', isUserNew);
+      // console.log('<------------------------------');
+      return (
+        user !== null &&
+        isNewUserBeingRegistered !== true &&
+        isUserNew === false
+      );
+      // return user !== null && isUserNew === false; // Original
     }
     function isLoggedInUserNew() {
+      // console.log('Inside isLoggedInUserNew()');
+      // console.log('------------------------------>');
+      // console.log('user', user);
+      // console.log('isUserNew', isUserNew);
+      // console.log('isUserNewlyRegistered', isUserNewlyRegistered);
+      // console.log('<------------------------------');
       return (
         user !== null && isUserNew === true && isUserNewlyRegistered === true
       );
@@ -197,8 +240,20 @@ export function AuthContextProvider({
     // 3. user and isUserNew is updated together becuase of batching states internally(???) - no problem
     if (isLoggedInUserExisting() || isLoggedInUserNew()) {
       populateDataFromServer();
+      // NOTE: google쪽에서 user를 만들어 내서 auth의 관점에서 user를 받아냈다는 것이 server에서도 user가 등록 완료되었다는 것을 의미하지 않는다.
+      // 그래서... 위의 isLoggedInUserExisting 이게 다른 조건문이 필요함
+      // WARNING: 위에서 씨부린말 무슨 말인지 잘 모르겠고, 새로 가입한 사람이라도,
+      // db 작업이 다 끝나서 googleSignIn method의 registerUser()작업이 완료되기 전이라도, user가 null이 아니게 되어서
+      // 이 setUp함수가 호출될 수 있고, 그렇다면 user는 new이긴 하지만 아직 isUserNew가 false인 상태임.
+      // 그래서 isLoggedInUserExisting() evaluates to true. And this leads to populateDataFromServer() call,
+      // where `axiosInstance.get(RESOURCE.USERS)` is called that leads to 5000 internal error (due to non-existing user)
+      // IMPT: 문제는 전제의 오류: google auth server가 user를 identity인가? 를 만들어내는 타이밍이 "느리거나 같다"
+      // with -> Server가 user를 만들어내는 타이밍
+      // 그런데 이게 MongoDB Atlas에서는 통했고, Neon PG에서는 안통했음.
+      // DESIGN: isLoggedInUserExisting()과 isLoggedInUserNew()가 정확히 작동할 수 있게 global state을 몇개 더 만들거나...
+      // 뭔 짓거리를 해야함.
     }
-  }, [user, isUserNew, isUserNewlyRegistered]);
+  }, [user, isUserNew, isUserNewlyRegistered, isNewUserBeingRegistered]);
 
   //
   /**
@@ -215,7 +270,7 @@ export function AuthContextProvider({
      */
 
     async function getAndSetStatesFromIDBForNonSignedInUsers() {
-      let states = await obtainStatesFromIDB('withSettings');
+      const states = await obtainStatesFromIDB('withSettings');
 
       // 1. non-signed-in user가 이전에 사용하던 정보가 Indexed DB에 존재하는 경우.
       if (Object.entries(states).length !== 0) {
@@ -283,6 +338,7 @@ export function AuthContextProvider({
         user,
         isNewUser,
         isNewUserRegistered,
+        isNewUserBeingRegistered,
       }}
     >
       {children}

@@ -26,4 +26,5 @@ export class Category {
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
 
+// NOTE: Because category name should be unique per users.
 CategorySchema.index({ userEmail: 1, name: 1 }, { unique: true });

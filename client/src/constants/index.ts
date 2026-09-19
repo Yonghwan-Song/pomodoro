@@ -52,6 +52,7 @@ export const RESOURCE = {
   TODOIST: '/todoist',
 };
 export const SUB_SET = {
+  TODAY_TOTAL: '/today/total',
   POMODORO_SETTING: '/pomodoro-setting',
   AUTO_START_SETTING: '/auto-start-setting',
   TIMERS_STATES: '/timers-states',

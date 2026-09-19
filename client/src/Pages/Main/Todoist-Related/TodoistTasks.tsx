@@ -7,6 +7,7 @@ import { TaskItem } from './TaskItem';
 import styled from 'styled-components';
 import { useBoundedPomoInfoStore } from '../../../zustand-stores/pomoInfoStoreUsingSlice';
 import {
+  deselectCurrentTaskIfRemoved,
   generateTaskDictionaryAndTree,
   useTaskSelectionHandler,
 } from './todoist-utility';
@@ -73,6 +74,7 @@ export function TodoistTasks() {
         response.data.tasks,
       );
       setTaskTreeForUI(rootTasks);
+      await deselectCurrentTaskIfRemoved(taskMap);
     } catch (err) {
       console.error('Error fetching tasks:', err);
       setError('Failed to fetch tasks. Please try again.');

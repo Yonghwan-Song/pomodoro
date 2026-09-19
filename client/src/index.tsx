@@ -17,7 +17,6 @@ import {
   CategoryChangeInfo,
   CycleInfoType,
   TimersStatesTypeWithCurrentCycleInfo,
-  CycleRecord,
 } from './types/clientStatesType';
 import { Vacant } from './Pages/Vacant/Vacant';
 import { PomoSettingType } from './types/clientStatesType';
@@ -150,6 +149,7 @@ pubsub.subscribe('successOfPersistingRecordsOfTodayToIDB', (data) => {
   deciderOfWhetherDataForRunningTimerFetched[1] = true;
 });
 
+// TODO: 이제 아예 이 BroadcastChannel은 필요 없는거 아니야?.. 확인하고 필요 없으면 지우기.
 const BC = new BroadcastChannel('pomodoro');
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 //#endregion
@@ -178,6 +178,17 @@ root.render(
             element={<Navigate to="/timer" replace />}
           />
         )}
+        <Route
+          path="group-study"
+          element={
+            <Protected>
+              <GroupStudy />
+            </Protected>
+          }
+        >
+          <Route index element={<RoomList />} />
+          <Route path="room/:roomId" element={<Room />} />
+        </Route>
         <Route
           path="statistics"
           element={
@@ -434,7 +445,7 @@ export async function persistAutoStartSettingToServer(
     //?     그런데 왠지 모르게 저 Request가 성공했는지 여부를 Response의
     //?     status로 확인 할 수 있잖아. 그런데 그렇게하면 뭔가 페이지 이동하거나 할때
     //?     삑 날것 같아서 그랬어. e.g 시작 버튼 누르고 곧바로 뭐 다른 페이지로 이동한다거나
-    //!     그러니까 이거다. update을 하고(e.g. start pomo)존나 빨리
+    //!     정리하면 이렇다. update을 하고(e.g. start pomo) 아주 빠르게
     //!     cache를 사용하게 되는 경우가 있을지 찾아봐
     const cache = DynamicCache || (await openCache(CacheName));
     const pomoInfoResponse = await cache.match(BASE_URL + RESOURCE.USERS);
@@ -828,21 +839,6 @@ export async function persistCategoryChangeInfoArrayToIDB(
       .objectStore('categoryStore');
 
     await store.put({ name: 'changeInfoArray', value: infoArr });
-  } catch (error) {
-    console.warn(error);
-  }
-}
-
-export async function persistTaskChangeInfoArrayToIDB(
-  infoArr: TaskChangeInfo[],
-) {
-  try {
-    const db = DB || (await openIndexedDB());
-    const store = db
-      .transaction(TASK_DURATION_TRACKING_STORE_NAME, 'readwrite')
-      .objectStore(TASK_DURATION_TRACKING_STORE_NAME);
-
-    await store.put({ name: 'taskChangeInfoArray', value: infoArr });
   } catch (error) {
     console.warn(error);
   }

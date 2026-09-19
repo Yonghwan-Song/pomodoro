@@ -41,6 +41,7 @@ export type StyledBoxProps = {
   paddingBottom?: string;
   borderRadius?: string;
   boxShadowColor?: string; // Add this line
+  border?: string;
 };
 
 export const StyledBox = styled.div<StyledBoxProps>`
@@ -131,5 +132,11 @@ export const StyledBox = styled.div<StyledBoxProps>`
     overflowY &&
     css`
       overflow-y: ${overflowY};
+    `}
+
+  ${({ border }) =>
+    border &&
+    css`
+      border: ${border};
     `}
 `;

@@ -41,6 +41,8 @@ interface Goals {
 @Schema()
 export class User {
   @Prop({ unique: true })
+  // NOTE: A Firebase UID is a unique identifier assigned to a user within a specific Firebase project.
+  // It serves as the primary way to identify users across various services, including Authentication, Realtime Database, Cloud Storage, and Analytics.
   firebaseUid: string; // TODO: 이거 password처럼 생각해야하는거 아닌가 싶은데 흠..
 
   @Prop({ type: String, default: null, required: false })
@@ -65,11 +67,16 @@ export class User {
 
   @Prop({ unique: true })
   userEmail: string;
+  // NOTE: We have userEmail field instead of uuid. Therefore, we need to find out correct uuid for documents using this information.
+  // And fortunately, users pg table includes 'userEmail' column. Get it from users and use it to find his cycleSettings.
+
+  @Prop({ type: String, default: null, required: false })
+  userNickname: string;
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CycleSetting' }],
   })
-  cycleSettings: ObjectId[];
+  cycleSettings: ObjectId[]; // NOTE: SQL의 관점에서는 이게 이미 Join된 테이브처럼 작동하는 것임.
 
   @Prop(
     raw({
@@ -131,7 +138,7 @@ export class User {
   currentCycleInfo: CycleInfo;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }] })
-  categories: ObjectId[];
+  categories: ObjectId[]; // NOTE: SQL의 관점에서는 이게 이미 Join된 테이브처럼 작동하는 것임.
 
   @Prop({ default: true })
   isUnCategorizedOnStat: boolean;

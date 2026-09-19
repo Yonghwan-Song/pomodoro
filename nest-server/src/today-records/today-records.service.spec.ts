@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { PG_DB_BY_DRIZZLE } from 'src/postgresql/pg-provider';
 import { TodayRecordsService } from './today-records.service';
 
 describe('RecordsOfTodayService', () => {
@@ -6,7 +7,10 @@ describe('RecordsOfTodayService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [TodayRecordsService],
+      providers: [
+        TodayRecordsService,
+        { provide: PG_DB_BY_DRIZZLE, useValue: {} },
+      ],
     }).compile();
 
     service = module.get<TodayRecordsService>(TodayRecordsService);

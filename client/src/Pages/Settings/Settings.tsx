@@ -3,7 +3,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useState } from 'react';
 import { css } from '@emotion/react';
 import { useAuthContext } from '../../Context/AuthContext';
-import { CycleSetting, PomoSettingType } from '../../types/clientStatesType';
+import { CycleSetting } from '../../types/clientStatesType';
 import { Button } from '../../ReusableComponents/Buttons/Button';
 import { BoxShadowWrapper } from '../../ReusableComponents/Wrapper';
 import { BREAK_POINTS, POMO_SETTING_RANGES } from '../../constants';
@@ -928,39 +928,6 @@ async function removeDemoData(user: User) {
     const res = await axiosInstance.delete(
       RESOURCE.POMODOROS + SUB_SET.DEMO_DATA,
     );
-    // console.log("res obj.data", res.data);
-  } catch (err) {
-    console.warn(err);
-  }
-}
-
-//TODO: 1.변수명 바꾸기 pomoInfo나 뭐... requiredStatesToRunTimer로 2.
-async function persistPomoSettingToServer(
-  user: User,
-  pomoSetting: PomoSettingType,
-) {
-  try {
-    let cache = DynamicCache || (await openCache(CacheName));
-    let pomoSettingAndTimersStatesResponse = await cache.match(
-      BASE_URL + RESOURCE.USERS,
-    );
-    if (pomoSettingAndTimersStatesResponse !== undefined) {
-      let pomoSettingAndTimersStates =
-        await pomoSettingAndTimersStatesResponse.json();
-      pomoSettingAndTimersStates.pomoSetting = pomoSetting;
-      await cache.put(
-        BASE_URL + RESOURCE.USERS,
-        new Response(JSON.stringify(pomoSettingAndTimersStates)),
-      );
-    }
-
-    const res = await axiosInstance.patch(
-      RESOURCE.USERS + SUB_SET.POMODORO_SETTING,
-      {
-        ...pomoSetting,
-      },
-    );
-
     // console.log("res obj.data", res.data);
   } catch (err) {
     console.warn(err);

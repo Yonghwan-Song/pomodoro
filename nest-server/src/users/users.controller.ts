@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdatePomoSettingDto } from './dto/update-pomo-setting.dto';
 import { UpdateAutoStartSettingDto } from './dto/update-auto-start-setting.dto';
 import { UpdateTimersStatesDto } from './dto/update-timers-states.dto';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
@@ -19,7 +18,7 @@ import { UpdateColorForUnCategorizedDto } from './dto/update-color-for-uncategor
 import { UpdateCategoryChangeInfoArrayDto } from './dto/update-category-change-info-array.dto';
 import { UpdateGoalsDto } from './dto/update-goals.dto';
 import { UpdateCurrentCycleInfoDto } from './dto/update-current-cycle-info.dto';
-import { UpdateCurrentTaskIdAndTaskChangeInfoArrayDto } from './dto/update-current-task-id';
+import { UpdateCurrentTaskIdDto } from './dto/update-current-task-id';
 import { UpdateTaskChangeInfoArrayDto } from './dto/update-task-change-info-array.dto';
 
 @Controller('users')
@@ -33,24 +32,19 @@ export class UsersController {
 
   //TODO: is it valid to instantiate a ValidationPipe for every method?
   @Post()
-  create(
+  async create(
     @Body(new ValidationPipe()) createUserDto: CreateUserDto,
     @Req() request: CustomRequest,
   ) {
+    // ): Promise<{ success: true }> {
     console.log(createUserDto);
-    return this.usersService.create(createUserDto, request.userEmail);
-  }
-
-  @Patch('pomodoro-setting')
-  async updatePomoSetting(
-    @Body(new ValidationPipe()) updatePomoSettingDto: UpdatePomoSettingDto,
-    @Req() request: CustomRequest,
-  ) {
-    // console.log(updatePomoSettingDto);
-    return await this.usersService.updatePomoSetting(
-      updatePomoSettingDto,
+    return await this.usersService.create(
+      createUserDto,
       request.userEmail,
+      request.userNickname,
     );
+
+    // return { success: true };
   }
 
   @Patch('auto-start-setting')
@@ -60,10 +54,12 @@ export class UsersController {
     @Req() request: CustomRequest,
   ) {
     console.log(updateAutoStartSettingDto);
-    return await this.usersService.updateAutoStartSetting(
+    await this.usersService.updateAutoStartSetting(
       updateAutoStartSettingDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('current-cycle-info')
@@ -77,10 +73,12 @@ export class UsersController {
       updateCurrentCycleInfoDto,
     );
 
-    return await this.usersService.updateCurrentCycleInfo(
+    await this.usersService.updateCurrentCycleInfo(
       updateCurrentCycleInfoDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('goals')
@@ -89,10 +87,8 @@ export class UsersController {
     updateGoalsDto: UpdateGoalsDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.usersService.updateGoals(
-      updateGoalsDto,
-      request.userEmail,
-    );
+    await this.usersService.updateGoals(updateGoalsDto, request.userEmail);
+    return { success: true };
   }
 
   @Patch('timers-states')
@@ -100,10 +96,12 @@ export class UsersController {
     @Body(new ValidationPipe()) updateTimersStatesDto: UpdateTimersStatesDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.usersService.updateTimersStates(
+    await this.usersService.updateTimersStates(
       updateTimersStatesDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('is-uncategorized-on-stat')
@@ -112,10 +110,12 @@ export class UsersController {
     updateIsUnCategorizedOnStatDto: UpdateIsUnCategorizedOnStatDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.usersService.updateIsUnCategorizedOnStat(
+    await this.usersService.updateIsUnCategorizedOnStat(
       updateIsUnCategorizedOnStatDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('color-for-uncategorized')
@@ -124,10 +124,12 @@ export class UsersController {
     updateColorForUnCategorizedDto: UpdateColorForUnCategorizedDto,
     @Req() request: CustomRequest,
   ) {
-    return await this.usersService.updateColorForUnCategorized(
+    await this.usersService.updateColorForUnCategorized(
       updateColorForUnCategorizedDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('category-change-info-array')
@@ -140,47 +142,55 @@ export class UsersController {
       'updateCategoryChangeInfoArrayDto.categoryChangeInfoArray',
       updateCategoryChangeInfoArrayDto.categoryChangeInfoArray,
     );
-    return await this.usersService.updateCategoryChangeInfoArray(
+    await this.usersService.updateCategoryChangeInfoArray(
       updateCategoryChangeInfoArrayDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('current-task-id')
+  // 세션 도중 태스크 전환 이벤트 기록 (추가/교체)
   async updateCurrentTaskId(
     @Body(new ValidationPipe())
-    updateCurrentTaskIdAndTaskChangeInfoArrayDto: UpdateCurrentTaskIdAndTaskChangeInfoArrayDto,
+    updateCurrentTaskIdDto: UpdateCurrentTaskIdDto,
     @Req() request: CustomRequest,
-  ) {
+  ): Promise<{ success: true }> {
     console.log(
       'updateCurrentTaskIdAndTaskChangeInfoArrayDto',
-      updateCurrentTaskIdAndTaskChangeInfoArrayDto,
+      updateCurrentTaskIdDto,
     );
 
-    return await this.usersService.updateCurrentTaskIdAndTaskChangeInfoArray(
-      updateCurrentTaskIdAndTaskChangeInfoArrayDto,
+    await this.usersService.updateCurrentTaskId(
+      updateCurrentTaskIdDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Patch('task-change-info-array')
+  // 세션 시작/전환 시 배열 통째로 초기화 (리셋)
   async updateTaskChangeInfoArray(
     @Body(new ValidationPipe())
     updateTaskChangeInfoArrayDto: UpdateTaskChangeInfoArrayDto,
     @Req() request: CustomRequest,
-  ) {
+  ): Promise<{ success: true }> {
     console.log('updateTaskChangeInfoArrayDto', updateTaskChangeInfoArrayDto);
 
-    return await this.usersService.updateTaskChangeInfoArray(
+    await this.usersService.updateTaskChangeInfoArray(
       updateTaskChangeInfoArrayDto,
       request.userEmail,
     );
+
+    return { success: true };
   }
 
   @Delete()
   async deleteUser(@Req() request: CustomRequest) {
-    const deletedData = await this.usersService.deleteUser(request.userEmail);
-    console.log(deletedData);
-    return deletedData;
+    await this.usersService.deleteUser(request.userEmail);
+
+    return { success: true };
   }
 }
