@@ -12,7 +12,6 @@ import { FireBase_Admin_Middleware } from './common/middlewares/firebase.middlew
 import { CategoriesModule } from './categories/categories.module';
 import { CycleSettingModule } from './cycle-setting/cycle-setting.module';
 import { TodoistModule } from './todoist/todoist.module';
-import { SignalingModule } from './signaling/signaling.module';
 import { PgModule } from './postgresql/pg.module';
 
 @Module({
@@ -25,7 +24,6 @@ import { PgModule } from './postgresql/pg.module';
     CategoriesModule,
     CycleSettingModule,
     TodoistModule,
-    SignalingModule,
   ],
   controllers: [],
   providers: [],
