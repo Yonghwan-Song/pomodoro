@@ -9,11 +9,11 @@ import {
   DailyGoals,
   Goals,
   PomoSettingType,
-  TaskTrackingDocument,
   TimersStatesType,
 } from '../types/clientStatesType';
 import {
   TaskChangeInfo,
+  TaskTrackingDuration,
   TodoistTasksWithFocusDuration,
   TaskWithFocusDurationAndChildren,
 } from '../types/todoistRelatedTypes';
@@ -118,7 +118,7 @@ interface TodoistIntegrationSlice extends TodoistIntegrationSliceStates {
   setTaskChangeInfoArray: (arr: TaskChangeInfo[]) => void;
   addTaskChangeInfo: (info: TaskChangeInfo) => void;
   setCurrentTaskId: (id: string) => void;
-  updateTaskTreeForUI: (pairs: TaskTrackingDocument[]) => void; //!<------------
+  updateTaskTreeForUI: (pairs: TaskTrackingDuration[]) => void; //!<------------
   setTaskTreeForUI: (tree: Array<TaskWithFocusDurationAndChildren>) => void;
 }
 

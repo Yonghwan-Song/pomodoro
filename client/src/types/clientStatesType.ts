@@ -1,16 +1,4 @@
 //#region Timer-Related
-export type RequiredStatesToRunTimerType = {
-  pomoSetting: PomoSettingType;
-  autoStartSetting: AutoStartSettingType;
-  timersStates: TimersStatesType;
-  currentCycleInfo: CycleInfoType;
-  categories: Category[];
-  isUnCategorizedOnStat: boolean;
-  colorForUnCategorized: string;
-  categoryChangeInfoArray: CategoryChangeInfo[];
-  doesItJustChangeCategory?: boolean;
-};
-
 export type PomoSettingType = {
   pomoDuration: number;
   shortBreakDuration: number;
@@ -54,6 +42,15 @@ export type CycleInfoType = {
 };
 
 export type CycleRecord = {
+  /**
+   * 실제 달성한 집중 비율 (Focus Ratio)
+   * - 계산 위치:
+   *   - `client/src/utils/anything.ts`의 `getCycleRecord()`
+   *   - `client/src/Pages/Main/Timer-Related/TimerController/TimerController.tsx`의 `generateAndPushCycleRecord()`
+   * - 계산식: `roundTo_X_DecimalPoints(totalFocusDurationInSec / cycleDurationInSec, 2)`
+   *   (해당 사이클에서 실제 집중한 총 시간(초) / 사이클 전체 소요 시간(초))
+   * - 참고: 목표 집중 비율(ratioTargeted)과의 비율은 `cycleAdherenceRate` (`ratio / ratioTargeted`)로 계산됨.
+   */
   ratio: number; // 실제 달성한 ratio
   cycleAdherenceRate: number;
   start: number;
@@ -179,16 +176,6 @@ export type InfoOfSessionStateChange = {
   subKind?: string | 'start' | 'end';
   timestamp: number;
 };
-export type CategoryDurationsAndHelperFields = {
-  categoryDurationArr: CategoryDuration[];
-  currentCategoryName: string;
-};
-export type CategoryDuration = {
-  categoryName: string;
-  duration: number;
-  startTime: number; // pause일때 시작되었을 수도 있다는 것을 잊으면 안됨.
-};
-
 export type DurationsOfCategoryTaskCombinationAndHelperFields = {
   durationArrOfCategoryTaskCombination: DurationOfCategoryTaskCombination[];
   currentCategoryTaskCombination: [string, string]; // [categoryName, taskId]
@@ -200,13 +187,6 @@ export type DurationOfCategoryTaskCombination = {
   startTime: number; // pause일때 시작되었을 수도 있다는 것을 잊으면 안됨.
 };
 
-export type SegmentDuration = {
-  owner: string; //! This is not optional since pause can also have its category. I mean we just can pause a session and the session has its category (including "uncategorized")
-  duration: number;
-  type: 'pause' | 'focus';
-  startTime: number;
-};
-
 export type SessionSegment = {
   owner: [string, string]; // [taskId, categoryName]
   duration: number;
@@ -214,16 +194,7 @@ export type SessionSegment = {
   startTime: number;
 };
 
-//! 이게 Session의 핵심 정보이고 활용가치가 가장 좋은 데이터 형태임.
 export type SegmentDurationsAndHelperFields = {
-  segmentDurationArr: SegmentDuration[];
-  // following three are used to help calculate duration for each segment.
-  currentOwner: string;
-  currentStartTime: number;
-  currentType: 'pause' | 'focus';
-};
-
-export type SegmentDurationsAndHelperFields2 = {
   segmentDurationArr: SessionSegment[];
   // following three are used to help calculate duration for each segment.
   currentOwner: [string, string]; // [taskId, categoryName];
@@ -231,15 +202,4 @@ export type SegmentDurationsAndHelperFields2 = {
   currentType: 'pause' | 'focus';
 };
 
-export type TaskDuration = {
-  // taskId: string; // Map의 key로 하기로 했음.
-  duration: number;
-};
-
-export type TaskTrackingDocument = {
-  taskId: string;
-  duration: number;
-};
-
 //#endregion
-export type BroadCastMessage = { evName: string; payload: any };

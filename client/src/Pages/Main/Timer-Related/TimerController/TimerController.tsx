@@ -641,6 +641,27 @@ export function TimerController({
 
     prevSessionType.current = prevSession;
 
+    const copiedCategoryChangeInfoArray = structuredClone(
+      categoryChangeInfoArray,
+    );
+    const copiedTaskChangeInfoArray = structuredClone(taskChangeInfoArray);
+
+    // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
+    const firstCategoryChange = copiedCategoryChangeInfoArray[0];
+    if (
+      firstCategoryChange !== undefined &&
+      firstCategoryChange.categoryChangeTimestamp === 0
+    ) {
+      firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
+    }
+    const firstTaskChange = copiedTaskChangeInfoArray[0];
+    if (
+      firstTaskChange !== undefined &&
+      firstTaskChange.taskChangeTimestamp === 0
+    ) {
+      firstTaskChange.taskChangeTimestamp = sessionData.startTime;
+    }
+
     switch (prevSession) {
       case SESSION.POMO:
         notify('shortBreak');
@@ -675,63 +696,38 @@ export function TimerController({
         //#endregion
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
-        if (user) {
-          const copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray,
-          );
-          const copiedTaskChangeInfoArray =
-            structuredClone(taskChangeInfoArray);
 
-          // create-pomodoro DTO에서 startTime - @IsPositive() 100% 방어하기 위해
-          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
-          if (
-            firstCategoryChange !== undefined &&
-            firstCategoryChange.categoryChangeTimestamp === 0
-          ) {
-            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
-          }
-          const firstTaskChange = copiedTaskChangeInfoArray[0];
-          if (
-            firstTaskChange !== undefined &&
-            firstTaskChange.taskChangeTimestamp === 0
-          ) {
-            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
-          }
+        // console.log("sessionData.startTime", sessionData.startTime);
+        // console.log(
+        //   "copiedCategoryChangeInfoArray[0]",
+        //   copiedCategoryChangeInfoArray[0]
+        // );
+        // console.log(
+        //   "copiedTaskChangeInfoArray[0]",
+        //   copiedTaskChangeInfoArray[0]
+        // );
 
-          // console.log("sessionData.startTime", sessionData.startTime);
-          // console.log(
-          //   "copiedCategoryChangeInfoArray[0]",
-          //   copiedCategoryChangeInfoArray[0]
-          // );
-          // console.log(
-          //   "copiedTaskChangeInfoArray[0]",
-          //   copiedTaskChangeInfoArray[0]
-          // );
+        // 1) and 2) 모두 아래 함수에서 실행한다.
 
-          // 1) and 2) 모두 아래 함수에서 실행한다.
-
-          sessionData.startTime !== 0 &&
-            (await recordPomo(
-              copiedCategoryChangeInfoArray,
-              copiedTaskChangeInfoArray,
-              sessionData,
-            ));
-        }
         // B - 2: records of today
         // 1)
         setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
-        // New
+        // 2)
+        // NOTE: 똑같다! sessionData는 공통이네 단지 풀어서 들어가는 것일 뿐,
         if (sessionData.startTime !== 0) {
-          // 2)
-          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
+          persistRecOfTodayToServer({
+            categoryChangeInfoArray: copiedCategoryChangeInfoArray,
+            taskChangeInfoArray: copiedTaskChangeInfoArray,
+            record: { kind: 'pomo', ...sessionData },
+            authGuard: user,
+          });
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: 'pomo',
             data: sessionData,
           });
         }
-
         //#endregion
         break;
 
@@ -767,7 +763,10 @@ export function TimerController({
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: 'break', ...sessionData }, user);
+          persistRecOfTodayToServer({
+            record: { kind: 'break', ...sessionData },
+            authGuard: user,
+          });
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: 'break',
@@ -804,42 +803,19 @@ export function TimerController({
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
-        if (user) {
-          const copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray,
-          );
-          const copiedTaskChangeInfoArray =
-            structuredClone(taskChangeInfoArray);
 
-          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
-          if (
-            firstCategoryChange !== undefined &&
-            firstCategoryChange.categoryChangeTimestamp === 0
-          ) {
-            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
-          }
-          const firstTaskChange = copiedTaskChangeInfoArray[0];
-          if (
-            firstTaskChange !== undefined &&
-            firstTaskChange.taskChangeTimestamp === 0
-          ) {
-            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
-          }
-
-          sessionData.startTime !== 0 &&
-            (await recordPomo(
-              copiedCategoryChangeInfoArray,
-              copiedTaskChangeInfoArray,
-              sessionData,
-            ));
-        }
         // B - 2: records of today
         // 1)
         setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
+          persistRecOfTodayToServer({
+            categoryChangeInfoArray: copiedCategoryChangeInfoArray,
+            taskChangeInfoArray: copiedTaskChangeInfoArray,
+            record: { kind: 'pomo', ...sessionData },
+            authGuard: user,
+          });
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: 'pomo',
@@ -905,42 +881,24 @@ export function TimerController({
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 1: pomodoro records
-        if (user) {
-          const copiedCategoryChangeInfoArray = structuredClone(
-            categoryChangeInfoArray,
-          );
-          const copiedTaskChangeInfoArray =
-            structuredClone(taskChangeInfoArray);
-
-          const firstCategoryChange = copiedCategoryChangeInfoArray[0];
-          if (
-            firstCategoryChange !== undefined &&
-            firstCategoryChange.categoryChangeTimestamp === 0
-          ) {
-            firstCategoryChange.categoryChangeTimestamp = sessionData.startTime;
-          }
-          const firstTaskChange = copiedTaskChangeInfoArray[0];
-          if (
-            firstTaskChange !== undefined &&
-            firstTaskChange.taskChangeTimestamp === 0
-          ) {
-            firstTaskChange.taskChangeTimestamp = sessionData.startTime;
-          }
-
-          sessionData.startTime !== 0 &&
-            (await recordPomo(
-              copiedCategoryChangeInfoArray,
-              copiedTaskChangeInfoArray,
-              sessionData,
-            ));
-        }
+        // await recordPomo(
+        //   copiedCategoryChangeInfoArray,
+        //   copiedTaskChangeInfoArray,
+        //   sessionData,
+        //   user,
+        // );
         // B - 2: records of today
         // 1)
         setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
 
         if (sessionData.startTime !== 0) {
           // 2)
-          persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, user);
+          persistRecOfTodayToServer({
+            categoryChangeInfoArray: copiedCategoryChangeInfoArray,
+            taskChangeInfoArray: copiedTaskChangeInfoArray,
+            record: { kind: 'pomo', ...sessionData },
+            authGuard: user,
+          });
           // 3)
           await persistSingleTodaySessionToIDB({
             kind: 'pomo',
@@ -1005,7 +963,10 @@ export function TimerController({
         // 1)
         setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
         // 2)
-        persistRecOfTodayToServer({ kind: 'break', ...sessionData }, user);
+        persistRecOfTodayToServer({
+          record: { kind: 'break', ...sessionData },
+          authGuard: user,
+        });
         // 3)
         await persistSingleTodaySessionToIDB({
           kind: 'break',

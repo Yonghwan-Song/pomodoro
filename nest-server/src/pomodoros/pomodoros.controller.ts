@@ -4,12 +4,12 @@ import {
   Post,
   Body,
   Delete,
+  GoneException,
   ValidationPipe,
   Req,
   Query,
 } from '@nestjs/common';
 import { PomodorosService } from './pomodoros.service';
-import { CreatePomodoroDto } from './dto/create-pomodoro.dto';
 import { CreateDemoDataDto } from './dto/create-demo-data.dto';
 import { CustomRequest } from 'src/common/middlewares/firebase.middleware';
 
@@ -18,18 +18,12 @@ export class PomodorosController {
   constructor(private readonly pomodorosService: PomodorosService) {}
 
   @Post()
-  async create(
-    @Body(new ValidationPipe()) createPomodoroDto: CreatePomodoroDto,
-    @Req() request: CustomRequest,
-  ) {
+  create() {
     // console.log('Received createPomodoroDto in controller:', createPomodoroDto);
 
-    await this.pomodorosService.persistPomodoroRecordsAndTaskTrackingDurations(
-      createPomodoroDto,
-      request.userEmail,
+    throw new GoneException(
+      'Pomodoro records are saved with the timer session at POST /today-records',
     );
-
-    return { success: true };
   }
 
   @Get('today/total')

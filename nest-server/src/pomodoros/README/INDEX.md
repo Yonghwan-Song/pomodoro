@@ -15,3 +15,8 @@
    - `categoryId` / `todoistTaskId` 외래키(FK) 조회 및 매핑 전략
    - `taskTrackingArr` Null 방어 및 `totalFocusDuration` 원자적 증분 업데이트
    - `SUM()` 집계 쿼리 및 대량 더미 데이터 청크 분할 삽입 기법
+
+3. **[03. N+1 review of `persistPomodoroRecordsAndTaskTrackingDurations` — leave as-is](./03_n_plus_one_persist_decision.md)**
+   - FK `findFirst` loop and duration UPDATE loop are N+1 in shape
+   - Durations batch with `UPDATE ... FROM`, not `IN`; that bulk form is more than current N needs
+   - Client already folds `taskId`; session-sized category/task changes are why the loops stay
