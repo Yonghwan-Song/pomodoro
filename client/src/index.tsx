@@ -1327,18 +1327,17 @@ async function wrapUpPomoSession(ctx: SessionWrapUpContext) {
     duration: timersStatesForNextSession.duration,
   });
 
-  if (sessionData.startTime !== 0) {
-    await recordPomo(
-      categoryChangeInfoArrayBeforeReset,
-      taskChangeInfoArray,
-      sessionData,
-    );
-    await persistSingleTodaySessionToIDB({
+  sessionData.startTime !== 0 &&
+    (await persistSingleTodaySessionToIDB({
       kind: 'pomo',
       data: sessionData,
-    });
-    persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, idToken);
-  }
+    }));
+  persistRecOfTodayToServer({
+    categoryChangeInfoArray: categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    record: { kind: 'pomo', ...sessionData },
+    authGuard: idToken,
+  });
 
   handleAutoStartOrPersist({
     autoStartSetting,
@@ -1398,8 +1397,10 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
       }),
   });
 
-  sessionData.startTime !== 0 &&
-    persistRecOfTodayToServer({ kind: 'break', ...sessionData }, idToken);
+  persistRecOfTodayToServer({
+    record: { kind: 'break', ...sessionData },
+    authGuard: idToken,
+  });
 }
 
 async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
@@ -1425,18 +1426,17 @@ async function wrapUpLastPomoSession(ctx: SessionWrapUpContext) {
     duration: timersStatesForNextSession.duration,
   });
 
-  if (sessionData.startTime !== 0) {
-    await recordPomo(
-      categoryChangeInfoArrayBeforeReset,
-      taskChangeInfoArray,
-      sessionData,
-    );
-    persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, idToken);
-    await persistSingleTodaySessionToIDB({
+  sessionData.startTime !== 0 &&
+    (await persistSingleTodaySessionToIDB({
       kind: 'pomo',
       data: sessionData,
-    });
-  }
+    }));
+  persistRecOfTodayToServer({
+    categoryChangeInfoArray: categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    record: { kind: 'pomo', ...sessionData },
+    authGuard: idToken,
+  });
 
   handleAutoStartOrPersist({
     autoStartSetting,
@@ -1508,18 +1508,17 @@ async function wrapUpVeryLastPomoSession(ctx: SessionWrapUpContext) {
     totalDurationOfSetOfCycles: totalDurationOfSetOfCyclesTargeted,
   });
 
-  if (sessionData.startTime !== 0) {
-    await recordPomo(
-      categoryChangeInfoArrayBeforeReset,
-      taskChangeInfoArray,
-      sessionData,
-    );
-    await persistSingleTodaySessionToIDB({
+  sessionData.startTime !== 0 &&
+    (await persistSingleTodaySessionToIDB({
       kind: 'pomo',
       data: sessionData,
-    });
-    persistRecOfTodayToServer({ kind: 'pomo', ...sessionData }, idToken);
-  }
+    }));
+  persistRecOfTodayToServer({
+    categoryChangeInfoArray: categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
+    record: { kind: 'pomo', ...sessionData },
+    authGuard: idToken,
+  });
 }
 
 async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
@@ -1600,8 +1599,10 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
       }),
   });
 
-  sessionData.startTime !== 0 &&
-    persistRecOfTodayToServer({ kind: 'break', ...sessionData }, idToken);
+  persistRecOfTodayToServer({
+    record: { kind: 'break', ...sessionData },
+    authGuard: idToken,
+  });
 }
 
 // 1. 시작한다는 의미:

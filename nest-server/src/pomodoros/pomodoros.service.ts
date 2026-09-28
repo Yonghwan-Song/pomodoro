@@ -32,27 +32,20 @@ export class PomodorosService {
     userEmail: string,
   ) {
     try {
-      console.log('Received createPomodoroDto in service:', createPomodoroDto);
-
       // FE에서는 항상 배열로 보내지만, DTO상 optional이므로 ?? [] 방어 적용
       const safeTrackingArr = createPomodoroDto.taskTrackingArr ?? [];
-
       const persistablePomodoroRecords =
         createPomodoroDto.pomodoroRecordArr.filter(({ duration }) =>
           isPersistableDuration(duration),
         );
-
       const persistableTaskTrackings = safeTrackingArr.filter(({ duration }) =>
         isPersistableDuration(duration),
       );
-
       const excludedPomodoroCount =
         createPomodoroDto.pomodoroRecordArr.length -
         persistablePomodoroRecords.length;
-
       const excludedTaskTrackingCount =
         safeTrackingArr.length - persistableTaskTrackings.length;
-
       if (excludedPomodoroCount > 0 || excludedTaskTrackingCount > 0) {
         console.warn(
           '[PomodorosService.persistPomodoroRecordsAndTaskTrackingDurations] ' +
@@ -78,10 +71,11 @@ export class PomodorosService {
 
         // 1) 뽀모도로 레코드 FK 매핑 및 INSERT
         const pgPomodoroValues = [];
-        // for (const val of createPomodoroDto.pomodoroRecordArr) {
+        // FK resolution
         for (const val of persistablePomodoroRecords) {
           let categoryId: string | null = null;
           if (val.category?.name) {
+            // NOTE: 카테고리ID값을 넣어야해서 찾는것임. DB에 한번 갔다옴.
             const foundCategory = await tx.query.categories.findFirst({
               where: and(
                 eq(schema.categories.userId, pgUser.id),
@@ -94,6 +88,7 @@ export class PomodorosService {
 
           let todoistTaskId: string | null = null;
           if (val.task?.id) {
+            // NOTE: 테스크ID값을 넣어야해서 찾는것임. DB에 한번 갔다옴.
             const foundTask = await tx.query.todoistTasks.findFirst({
               where: and(
                 eq(schema.todoistTasks.userId, pgUser.id),
@@ -131,6 +126,7 @@ export class PomodorosService {
 
         // 2) taskTrackingArr 누적 집중 시간 증분 업데이트
         const updatedPgTasks = [];
+        25;
         // for (const tracking of safeTrackingArr) {
         for (const tracking of persistableTaskTrackings) {
           const [updatedPgTask] = await tx
