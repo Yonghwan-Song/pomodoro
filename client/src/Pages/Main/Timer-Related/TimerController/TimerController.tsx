@@ -1865,7 +1865,8 @@ export function TimerController({
     }
 
     if (isThisSessionPaused()) {
-      const stateCloned = { ...timerState };
+      // pause is frozen after reload (Immer). structuredClone gives a writable copy.
+      const stateCloned = structuredClone(timerState);
       stateCloned.pause.totalLength +=
         now -
         stateCloned.pause.record[stateCloned.pause.record.length - 1].start;
