@@ -84,7 +84,7 @@ interface TimerRelatedDB extends DBSchema {
       // startTime + duration
       // Or starTime + timePassed (this is when a user ends the session in the middle)
       endTime: number;
-      timeCountedDown: number; //in minutes
+      timeCountedDown: number; //in milliseconds
       pause: {
         totalLength: number;
         record: { start: number; end: number | undefined }[];
@@ -909,7 +909,7 @@ function buildSessionData(timersStates: {
     pause,
     startTime,
     endTime: startTime + pause.totalLength + duration * 60 * 1000,
-    timeCountedDown: duration,
+    timeCountedDown: duration * 60 * 1000,
   };
 }
 
