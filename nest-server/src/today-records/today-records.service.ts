@@ -5,8 +5,9 @@ import {
 } from '@nestjs/common';
 import { CreateTodayRecordDto } from './dto/create-today-record.dto';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, gte, sql } from 'drizzle-orm';
+import { eq, and, gte, inArray, sql } from 'drizzle-orm';
 import * as schema from 'src/postgresql/schema';
+import { normalizeReason, sessionSegmentInserts } from './session-segment-rows';
 
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
 
@@ -60,6 +61,11 @@ export class TodayRecordsService {
 
       const pgPersistResult = await this.db.transaction(async (tx) => {
         //#region Common (break and pomo)
+        const isEarlyEnded = createTodayRecordDto.isEarlyEnded ?? false;
+        const earlyEndReason = isEarlyEnded
+          ? normalizeReason(createTodayRecordDto.earlyEndReason)
+          : null;
+
         const [insertedTimerSession] = await tx
           .insert(schema.timerSessions)
           .values({
@@ -69,6 +75,11 @@ export class TodayRecordsService {
             endTime: createTodayRecordDto.endTime,
             timeCountedDown: createTodayRecordDto.timeCountedDown,
             pause: createTodayRecordDto.pause,
+            totalPauseLength: createTodayRecordDto.pause?.totalLength ?? 0,
+            plannedDuration: createTodayRecordDto.plannedDuration ?? null,
+            editedDuration: createTodayRecordDto.editedDuration ?? 0,
+            isEarlyEnded,
+            earlyEndReason,
           })
           .returning({ id: schema.timerSessions.id });
 
@@ -80,6 +91,100 @@ export class TodayRecordsService {
         }
 
         const sessionId = insertedTimerSession.id;
+
+        // 분리된 sessionPauses 테이블에 일시정지 기록 적재
+        const pauseRecords = (createTodayRecordDto.pause?.record ?? []).filter(
+          (r) =>
+            typeof r.start === 'number' &&
+            typeof r.end === 'number' &&
+            r.end >= r.start,
+        );
+        if (pauseRecords.length > 0) {
+          await tx.insert(schema.sessionPauses).values(
+            pauseRecords.map((r) => ({
+              timerSessionId: sessionId,
+              startTime: r.start,
+              endTime: r.end,
+              reason: normalizeReason(r.reason),
+            })),
+          );
+        }
+
+        const segments = createTodayRecordDto.segments;
+        const categoryNames = [
+          ...new Set(
+            segments
+              .map((segment) => segment.owner[0].trim())
+              .filter((name) => name.length > 0),
+          ),
+        ];
+        const taskIds = [
+          ...new Set(
+            segments
+              .map((segment) => segment.owner[1].trim())
+              .filter((taskId) => taskId.length > 0),
+          ),
+        ];
+        const categoryRows =
+          categoryNames.length === 0
+            ? []
+            : await tx
+                .select({
+                  id: schema.categories.id,
+                  name: schema.categories.name,
+                })
+                .from(schema.categories)
+                .where(
+                  and(
+                    eq(schema.categories.userId, pgUser.id),
+                    inArray(schema.categories.name, categoryNames),
+                  ),
+                );
+        const taskRows =
+          taskIds.length === 0
+            ? []
+            : await tx
+                .select({
+                  id: schema.todoistTasks.id,
+                  todoistTaskId: schema.todoistTasks.todoistTaskId,
+                  taskData: schema.todoistTasks.taskData,
+                })
+                .from(schema.todoistTasks)
+                .where(
+                  and(
+                    eq(schema.todoistTasks.userId, pgUser.id),
+                    inArray(schema.todoistTasks.todoistTaskId, taskIds),
+                  ),
+                );
+
+        const categoryIdByName = new Map(
+          categoryRows.map((row) => [row.name, row.id]),
+        );
+        const todoistRowIdByTaskId = new Map(
+          taskRows.map((row) => [row.todoistTaskId, row.id]),
+        );
+        const taskContentByTaskId = new Map(
+          taskRows.map((row) => [
+            row.todoistTaskId,
+            row.taskData?.content ?? null,
+          ]),
+        );
+
+        const segmentRows = sessionSegmentInserts({
+          userId: pgUser.id,
+          timerSessionId: sessionId,
+          segments,
+          categoryIdByName,
+          todoistRowIdByTaskId,
+          taskContentByTaskId,
+        });
+        const insertedSegments =
+          segmentRows.length === 0
+            ? []
+            : await tx
+                .insert(schema.sessionSegments)
+                .values(segmentRows)
+                .returning({ id: schema.sessionSegments.id });
         //#endregion
 
         let insertedPgPomodoros: { id: string }[] = [];
@@ -98,8 +203,7 @@ export class TodayRecordsService {
             ({ duration }) => isPersistableDuration(duration),
           );
           const excludedPomodoroCount =
-            safePomodoroRecordArr.length -
-            persistablePomodoroRecords.length;
+            safePomodoroRecordArr.length - persistablePomodoroRecords.length;
           const excludedTaskTrackingCount =
             safeTrackingArr.length - persistableTaskTrackings.length;
           if (excludedPomodoroCount > 0 || excludedTaskTrackingCount > 0) {
@@ -111,35 +215,21 @@ export class TodayRecordsService {
             );
           }
 
-          const pgPomodoroValues = [];
-          for (const val of persistablePomodoroRecords) {
-            let categoryId: string | null = null;
-            if (val.category?.name) {
-              // NOTE: 카테고리ID값을 넣어야해서 찾는것임. DB에 한번 갔다옴.
-              const foundCategory = await tx.query.categories.findFirst({
-                where: and(
-                  eq(schema.categories.userId, pgUser.id),
-                  eq(schema.categories.name, val.category.name),
-                ),
-                columns: { id: true },
-              });
-              if (foundCategory) categoryId = foundCategory.id;
-            }
+          // NOTE: pomodoroRecordArr는 FE 파이프라인에서 segments를 집계(makeDurationsFromSegmentsByCategoryAndTaskCombination)하여 생성되므로,
+          // pomodoroRecordArr에 포함된 모든 category/task는 이미 segments 조회 시 구축된 Map에 존재합니다. (추가 DB 조회 불필요, O(1) 메모리 매핑)
+          const pgPomodoroValues = persistablePomodoroRecords.map((val) => {
+            const categoryName = val.category?.name?.trim();
+            const taskId = val.task?.id?.trim();
+            const categoryId =
+              categoryName && categoryIdByName.has(categoryName)
+                ? categoryIdByName.get(categoryName)!
+                : null;
+            const todoistTaskId =
+              taskId && todoistRowIdByTaskId.has(taskId)
+                ? todoistRowIdByTaskId.get(taskId)!
+                : null;
 
-            let todoistTaskId: string | null = null;
-            if (val.task?.id) {
-              // NOTE: 테스크ID값을 넣어야해서 찾는것임. DB에 한번 갔다옴.
-              const foundTask = await tx.query.todoistTasks.findFirst({
-                where: and(
-                  eq(schema.todoistTasks.userId, pgUser.id),
-                  eq(schema.todoistTasks.todoistTaskId, val.task.id),
-                ),
-                columns: { id: true },
-              });
-              if (foundTask) todoistTaskId = foundTask.id;
-            }
-
-            pgPomodoroValues.push({
+            return {
               userId: pgUser.id,
               duration: val.duration,
               startTime: val.startTime,
@@ -148,8 +238,8 @@ export class TodayRecordsService {
               categoryId,
               todoistTaskId,
               timerSessionId: sessionId,
-            });
-          }
+            };
+          });
 
           if (pgPomodoroValues.length > 0) {
             insertedPgPomodoros = await tx
@@ -200,6 +290,7 @@ export class TodayRecordsService {
         return {
           timerSessionId: sessionId,
           insertedTimerSession,
+          insertedSegmentCount: insertedSegments.length,
           insertedPomodoroCount: insertedPgPomodoros.length,
           updatedTasks: updatedPgTasks,
         };
@@ -221,36 +312,22 @@ export class TodayRecordsService {
       // 'pomo'. Do not keep a second write path that inserts pomodoros without a
       // session (the old persistPomodoroRecordsAndTaskTrackingDurations POST).
 
-      ////#region logging
-      //console.log(
-      //  'timer session persist result at TodayRecordsService.createTodayRecord',
-      //);
-      //console.log('--------------------------------------------------->');
-      //console.dir(insertedPgRecord, {
-      //  depth: null,
-      //  colors: true,
-      //});
-      //console.log('<---------------------------------------------------');
-      ////#endregion
-
       return;
     } catch (error) {
-      console.error('[TodayRecordsService.createTodayRecord]', error);
+      console.error(
+        `Failed to create timer session in PostgreSQL for ${userEmail}`,
+        error,
+      );
       throw new InternalServerErrorException(
-        'Failed to insert timer session data',
+        `Failed to save timer session for ${userEmail}`,
       );
     }
-    //#endregion
   }
 
   // NOTE:
-  // 그러니까 강제로... 접속하자마자 그 접속 시간 이전의 데이터는 그냥 다 지워버리고
-  // 그다음에 결국 남아있는 데이터를 다 가져오도록 하는거지...
+  // 과거에는 접속하자마자 해당 시점 이전 데이터를 삭제하고 남은 데이터만 가져오는 방식이었다.
   // 그렇게 해서 findTodayRecords의 "Today" 개념이 만들어진 것인데, 지금 다시 보면 납득하기 어렵다.
   // "Today"는 timestamp 조건문으로 조회하면 되는 것이지, 데이터를 지울 이유가 없다.
-  // TODO: 위의 비판을 읽고
-  // 1)FE에서 delete하는 modifier를 없앤다?...(이게 정말 맞는 말인지 확인하고 다시해보면 된다)
-  // 2)로직 아래에 있는거 지우고 위의 말처럼 timestamp로 get today records를 구현.
   async findTodayRecords(userEmail: string, timestamp?: number) {
     try {
       //#region Pg
@@ -276,13 +353,45 @@ export class TodayRecordsService {
           startTime: true,
           endTime: true,
           timeCountedDown: true,
-          pause: true,
+          totalPauseLength: true,
+          plannedDuration: true,
+          editedDuration: true,
+          isEarlyEnded: true,
+          earlyEndReason: true,
+        },
+        with: {
+          pauses: {
+            columns: {
+              startTime: true,
+              endTime: true,
+              duration: true,
+              reason: true,
+            },
+          },
         },
       });
 
       console.log('pgRecords at get todayRecord', pgRecords);
 
-      return pgRecords;
+      // 클라이언트(FE) 호환성을 위해 pause 객체 구조로 매핑하여 반환
+      return pgRecords.map((r) => ({
+        kind: r.kind,
+        startTime: r.startTime,
+        endTime: r.endTime,
+        timeCountedDown: r.timeCountedDown,
+        plannedDuration: r.plannedDuration,
+        editedDuration: r.editedDuration,
+        isEarlyEnded: r.isEarlyEnded,
+        earlyEndReason: r.earlyEndReason,
+        pause: {
+          totalLength: r.totalPauseLength,
+          record: r.pauses.map((p) => ({
+            start: p.startTime,
+            end: p.endTime,
+            reason: p.reason,
+          })),
+        },
+      }));
       //#endregion
     } catch (error) {
       console.error('[TodayRecordsService.findTodayRecords]', error);

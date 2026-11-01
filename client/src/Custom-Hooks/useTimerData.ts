@@ -12,6 +12,7 @@ import {
   RecType,
 } from '../types/clientStatesType';
 import { pubsub } from '../pubsub';
+import { normalizePause } from '../utils/finishedSessionFields';
 import { SUCCESS_PersistingTimersStatesWithCycleInfoToIDB } from '../constants';
 
 /**
@@ -94,7 +95,14 @@ export function useTimerData(options?: { skipPubSub?: boolean }) {
       const unsub = pubsub.subscribe(
         SUCCESS_PersistingTimersStatesWithCycleInfoToIDB,
         (data) => {
-          setStatesRelatedToTimer(data.timersStates);
+          setStatesRelatedToTimer(
+            data.timersStates.pause == null
+              ? data.timersStates
+              : {
+                  ...data.timersStates,
+                  pause: normalizePause(data.timersStates.pause),
+                },
+          );
           setCurrentCycleInfo(data.currentCycleInfo);
           areDataForRunningTimerFetched.current[0] = true;
         },

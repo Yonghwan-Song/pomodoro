@@ -45,6 +45,7 @@ import {
   msToSec,
   isThisFocusSession,
 } from '../utility-functions';
+import { closeEarlyEnd } from '../earlyEndClose';
 import { roundTo_X_DecimalPoints } from '../../../../utils/number-related-utils';
 import {
   boundedPomoInfoStore,
@@ -58,6 +59,10 @@ import { Button } from '../../../../ReusableComponents/Buttons/Button';
 import { ACTION, reducer, TimerAction } from '../reducers';
 import Time from '../Time/Time';
 import { getAverage, isSessionNotStartedYet } from '../../../../utils/anything';
+import {
+  analysisFieldsForFinishedSession,
+  SessionLengthKind,
+} from '../../../../utils/finishedSessionFields';
 import { css } from '@emotion/react';
 
 type TimerControllerProps = {
@@ -282,6 +287,180 @@ export function TimerController({
     longBreakDuration,
   };
 
+  //#region Pause Reason State & Sync
+  const isPaused =
+    timerState.running === false &&
+    timerState.startTime !== 0 &&
+    (timerState.pause?.record?.length ?? 0) !== 0;
+
+  const [pauseReasonInput, setPauseReasonInput] = useState('');
+  const pauseReasonDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (isPaused && timerState.pause?.record?.length) {
+      const lastPause =
+        timerState.pause.record[timerState.pause.record.length - 1];
+      setPauseReasonInput(lastPause?.reason ?? '');
+    } else if (!isPaused) {
+      setPauseReasonInput('');
+    }
+  }, [isPaused, timerState.pause?.record?.length]);
+
+  const syncPauseReason = (reasonText: string) => {
+    const trimmed = reasonText.trim();
+    const valueToSave = trimmed === '' ? null : trimmed;
+
+    dispatch({
+      type: ACTION.UPDATE_PAUSE_REASON,
+      payload: valueToSave,
+    });
+
+    if (user && timerState.pause && timerState.pause.record.length > 0) {
+      const lastIndex = timerState.pause.record.length - 1;
+      const updatedRecord = timerState.pause.record.map((item, idx) => {
+        if (idx === lastIndex) {
+          return { ...item, reason: valueToSave };
+        }
+        return item;
+      });
+
+      persistTimersStatesToServer({
+        startTime: timerState.startTime,
+        running: false,
+        pause: {
+          ...timerState.pause,
+          record: updatedRecord,
+        },
+      });
+    }
+  };
+
+  const handlePauseReasonChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>,
+  ) => {
+    const newValue = e.target.value;
+    setPauseReasonInput(newValue);
+
+    if (pauseReasonDebounceRef.current) {
+      clearTimeout(pauseReasonDebounceRef.current);
+    }
+
+    pauseReasonDebounceRef.current = setTimeout(() => {
+      syncPauseReason(newValue);
+    }, 400);
+  };
+
+  const handlePauseReasonBlur = () => {
+    if (pauseReasonDebounceRef.current) {
+      clearTimeout(pauseReasonDebounceRef.current);
+      pauseReasonDebounceRef.current = null;
+    }
+    syncPauseReason(pauseReasonInput);
+  };
+  //#endregion
+
+  //#region Early End Reason State & Handlers
+  const [showEarlyEndReasonInput, setShowEarlyEndReasonInput] = useState(false);
+  const [earlyEndReasonInput, setEarlyEndReasonInput] = useState('');
+  const [isSubmittingEarlyEndReason, setIsSubmittingEarlyEndReason] =
+    useState(false);
+  const earlyEndContextRef = useRef<{
+    initiatedAt: number;
+    wasRunning: boolean;
+    snapshot: TimerStateType;
+    // Cycle updates and RESET already ran. A failed save retries next() only.
+    committed: boolean;
+  } | null>(null);
+
+  function pauseTimer(momentTimerIsPaused: number) {
+    if (pauseReasonDebounceRef.current) {
+      clearTimeout(pauseReasonDebounceRef.current);
+      pauseReasonDebounceRef.current = null;
+    }
+    dispatch({ type: ACTION.PAUSE, payload: momentTimerIsPaused });
+    setTimersStatesPartial({ running: false });
+    user &&
+      persistTimersStatesToServer({
+        startTime: timerState.startTime,
+        running: false,
+        pause: {
+          ...timerState.pause,
+          record: [
+            ...timerState.pause!.record,
+            { start: momentTimerIsPaused, end: undefined, reason: null },
+          ],
+        },
+      });
+  }
+
+  const handleEndButtonClick = () => {
+    const sessionStartTime = timerState.startTime;
+    const isSessionStarted = !isSessionNotStartedYet(
+      timerState.running,
+      sessionStartTime,
+    );
+
+    // 아직 시작되지 않은 세션이면 바로 Skip (조기 종료 사유 묻지 않음)
+    if (!isSessionStarted) {
+      endTimer(Date.now());
+      setShowEarlyEndReasonInput(false);
+      return;
+    }
+
+    const initiatedAt = Date.now();
+    const wasRunning = timerState.running;
+    // Snapshot is taken before pauseTimer. Case 1 persists this snapshot, so the
+    // pause that only freezes the countdown is not part of the finished session.
+    earlyEndContextRef.current = {
+      initiatedAt,
+      wasRunning,
+      snapshot: structuredClone(timerState),
+      committed: false,
+    };
+
+    if (wasRunning) {
+      pauseTimer(initiatedAt);
+    } else if (isPaused) {
+      if (pauseReasonDebounceRef.current) {
+        clearTimeout(pauseReasonDebounceRef.current);
+        pauseReasonDebounceRef.current = null;
+      }
+      syncPauseReason(pauseReasonInput);
+    }
+
+    setEarlyEndReasonInput('');
+    setShowEarlyEndReasonInput(true);
+  };
+
+  const handleCancelEarlyEnd = () => {
+    setShowEarlyEndReasonInput(false);
+    setEarlyEndReasonInput('');
+    // The pause started at End click stays. It is now an ordinary pause.
+    earlyEndContextRef.current = null;
+  };
+
+  const handleConfirmEarlyEndReason = async () => {
+    if (isSubmittingEarlyEndReason) return;
+    if (earlyEndContextRef.current === null) return;
+    setIsSubmittingEarlyEndReason(true);
+    const trimmed = earlyEndReasonInput.trim();
+    const reasonToSave = trimmed === '' ? null : trimmed;
+
+    try {
+      await endTimer(Date.now(), reasonToSave);
+      earlyEndContextRef.current = null;
+      setShowEarlyEndReasonInput(false);
+      setEarlyEndReasonInput('');
+    } catch (err) {
+      console.error('Failed to end timer early', err);
+    } finally {
+      setIsSubmittingEarlyEndReason(false);
+    }
+  };
+  //#endregion
+
   //#region Initializers
   function initializeTimerState(initialVal: TimerStateType): TimerStateType {
     let timerState = initialVal;
@@ -427,11 +606,13 @@ export function TimerController({
     state,
     timeCountedDownInMilliSeconds = durationInMinutes * 60 * 1000,
     endForced,
+    earlyEndReason = null,
   }: {
     howManyCountdown: number;
     state: TimerStateType;
     timeCountedDownInMilliSeconds?: number;
     endForced?: number;
+    earlyEndReason?: string | null;
   }) {
     const { running, ...withoutRunning } = state;
     const endTime =
@@ -439,23 +620,38 @@ export function TimerController({
       state.startTime + state.pause.totalLength + timeCountedDownInMilliSeconds;
     endTimeRef.current = endTime;
 
-    const sessionData = {
-      ...withoutRunning,
-      endTime,
-      timeCountedDown: timeCountedDownInMilliSeconds,
-    };
-
     // console.log("howManyCountdown", howManyCountdown);
     // console.log("numOfPomo", numOfPomo);
     const prevSession = identifyPrevSession({
       howManyCountdown,
       numOfPomo,
     });
+
+    const isEarlyEnded = Boolean(endForced);
+    const lengthKind: SessionLengthKind =
+      prevSession === SESSION.SHORT_BREAK
+        ? 'shortBreak'
+        : prevSession === SESSION.LONG_BREAK
+          ? 'longBreak'
+          : 'pomo';
+
+    const sessionData: Omit<RecType, 'kind'> = {
+      ...withoutRunning,
+      endTime,
+      timeCountedDown: timeCountedDownInMilliSeconds,
+      ...analysisFieldsForFinishedSession({
+        lengthKind,
+        pomoSetting,
+        durationMinutes: durationInMinutes,
+        isEarlyEnded,
+        earlyEndReason,
+      }),
+    };
     // console.log("prevSession", SESSION[prevSession]);
     const currentSessionType = +prevSession % 2 === 0 ? 'pomo' : 'break';
     sessionStorage.setItem(CURRENT_SESSION_TYPE, currentSessionType);
 
-    wrapUpSession({
+    await wrapUpSession({
       prevSession: prevSession,
       data: {
         state,
@@ -567,6 +763,33 @@ export function TimerController({
    *      2) DB에 persist
    *      3) Indexed DB에 - unlogged-in user도 Timeline기능을 사용할 수 있게 하기 위해.
    */
+  function persistFinishedSession(
+    kind: 'pomo' | 'break',
+    sessionData: Omit<RecType, 'kind'>,
+    changes?: {
+      categoryChangeInfoArray: CategoryChangeInfo[];
+      taskChangeInfoArray: {
+        id: string;
+        taskChangeTimestamp: number;
+      }[];
+    },
+  ): Promise<void> {
+    setRecords((prev) => [...prev, { kind, ...sessionData }]);
+    if (sessionData.startTime === 0) return Promise.resolve();
+    return Promise.all([
+      persistRecOfTodayToServer({
+        categoryChangeInfoArray: changes?.categoryChangeInfoArray,
+        taskChangeInfoArray: changes?.taskChangeInfoArray,
+        record: { kind, ...sessionData },
+        authGuard: user,
+      }),
+      persistSingleTodaySessionToIDB({
+        kind,
+        data: sessionData,
+      }),
+    ]).then(() => undefined);
+  }
+
   async function wrapUpSession({
     prevSession,
     data,
@@ -710,24 +933,10 @@ export function TimerController({
         // 1) and 2) 모두 아래 함수에서 실행한다.
 
         // B - 2: records of today
-        // 1)
-        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
-
-        // 2)
-        // NOTE: 똑같다! sessionData는 공통이네 단지 풀어서 들어가는 것일 뿐,
-        if (sessionData.startTime !== 0) {
-          persistRecOfTodayToServer({
-            categoryChangeInfoArray: copiedCategoryChangeInfoArray,
-            taskChangeInfoArray: copiedTaskChangeInfoArray,
-            record: { kind: 'pomo', ...sessionData },
-            authGuard: user,
-          });
-          // 3)
-          await persistSingleTodaySessionToIDB({
-            kind: 'pomo',
-            data: sessionData,
-          });
-        }
+        await persistFinishedSession('pomo', sessionData, {
+          categoryChangeInfoArray: copiedCategoryChangeInfoArray,
+          taskChangeInfoArray: copiedTaskChangeInfoArray,
+        });
         //#endregion
         break;
 
@@ -758,21 +967,7 @@ export function TimerController({
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 2: records of today
-        // 1)
-        setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
-
-        if (sessionData.startTime !== 0) {
-          // 2)
-          persistRecOfTodayToServer({
-            record: { kind: 'break', ...sessionData },
-            authGuard: user,
-          });
-          // 3)
-          await persistSingleTodaySessionToIDB({
-            kind: 'break',
-            data: sessionData,
-          });
-        }
+        await persistFinishedSession('break', sessionData);
         //#endregion
         break;
 
@@ -806,22 +1001,10 @@ export function TimerController({
 
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
-
-        if (sessionData.startTime !== 0) {
-          // 2)
-          persistRecOfTodayToServer({
-            categoryChangeInfoArray: copiedCategoryChangeInfoArray,
-            taskChangeInfoArray: copiedTaskChangeInfoArray,
-            record: { kind: 'pomo', ...sessionData },
-            authGuard: user,
-          });
-          // 3)
-          await persistSingleTodaySessionToIDB({
-            kind: 'pomo',
-            data: sessionData,
-          });
-        }
+        await persistFinishedSession('pomo', sessionData, {
+          categoryChangeInfoArray: copiedCategoryChangeInfoArray,
+          taskChangeInfoArray: copiedTaskChangeInfoArray,
+        });
         //#endregion
 
         break;
@@ -889,22 +1072,10 @@ export function TimerController({
         // );
         // B - 2: records of today
         // 1)
-        setRecords((prev) => [...prev, { kind: 'pomo', ...sessionData }]);
-
-        if (sessionData.startTime !== 0) {
-          // 2)
-          persistRecOfTodayToServer({
-            categoryChangeInfoArray: copiedCategoryChangeInfoArray,
-            taskChangeInfoArray: copiedTaskChangeInfoArray,
-            record: { kind: 'pomo', ...sessionData },
-            authGuard: user,
-          });
-          // 3)
-          await persistSingleTodaySessionToIDB({
-            kind: 'pomo',
-            data: sessionData,
-          });
-        }
+        await persistFinishedSession('pomo', sessionData, {
+          categoryChangeInfoArray: copiedCategoryChangeInfoArray,
+          taskChangeInfoArray: copiedTaskChangeInfoArray,
+        });
         //#endregion
         break;
 
@@ -960,18 +1131,7 @@ export function TimerController({
 
         //#region B 세션을 마무리하면서 생기는 데이터를 client state과 DB에 반영
         // B - 2: records of today
-        // 1)
-        setRecords((prev) => [...prev, { kind: 'break', ...sessionData }]);
-        // 2)
-        persistRecOfTodayToServer({
-          record: { kind: 'break', ...sessionData },
-          authGuard: user,
-        });
-        // 3)
-        await persistSingleTodaySessionToIDB({
-          kind: 'break',
-          data: sessionData,
-        });
+        await persistFinishedSession('break', sessionData);
         //#endregion
 
         break;
@@ -1692,6 +1852,13 @@ export function TimerController({
         }
       }
     } else if (doWeResumeTimer()) {
+      if (pauseReasonDebounceRef.current) {
+        clearTimeout(pauseReasonDebounceRef.current);
+        pauseReasonDebounceRef.current = null;
+      }
+      const trimmedReason = pauseReasonInput.trim();
+      const currentReason = trimmedReason === '' ? null : trimmedReason;
+
       dispatch({ type: ACTION.RESUME, payload: momentTimerIsToggled });
       setTimersStatesPartial({
         running: true,
@@ -1702,6 +1869,7 @@ export function TimerController({
             return {
               ...obj,
               end: momentTimerIsToggled,
+              reason: currentReason ?? obj.reason ?? null,
             };
           } else {
             return obj;
@@ -1744,23 +1912,10 @@ export function TimerController({
           totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
         });
     } else if (doWePauseTimer()) {
-      dispatch({ type: ACTION.PAUSE, payload: momentTimerIsToggled });
-      setTimersStatesPartial({ running: false });
-      // to serveer
-      user &&
-        persistTimersStatesToServer({
-          startTime: timerState.startTime,
-          running: false,
-          pause: {
-            ...timerState.pause,
-            record: [
-              ...timerState.pause!.record,
-              { start: momentTimerIsToggled, end: undefined },
-            ],
-          },
-        });
+      pauseTimer(momentTimerIsToggled);
     }
     function doWeStartTimer() {
+      setShowEarlyEndReasonInput(false);
       return (
         timerState.running === false && timerState.pause!.record.length === 0
       ); // if this is not the first start of the timer, it means resuming the timer.
@@ -1785,110 +1940,141 @@ export function TimerController({
    * 4. setStates
    *
    * @param now the moment a session is forced to end in the middle.
+   * @param earlyEndReason user provided reason for ending early.
    */
-  async function endTimer(now: number) {
+  async function endTimer(now: number, earlyEndReason: string | null = null) {
     // console.log("startTime in the endTimer()", timerState.startTime);
-    const timeCountedDownInMilliSeconds =
-      (durationInSeconds - remainingDurationInSec) * 1000;
+    const earlyEnd = earlyEndContextRef.current;
+    const openPause = earlyEnd?.snapshot.pause.record.at(-1);
+    const hasOpenPause = openPause !== undefined && openPause.end === undefined;
+    // Running uses the pre-pause snapshot. An already paused session extends
+    // that open pause. A started session with no open pause keeps the old path.
+    const closedSession =
+      earlyEnd &&
+      earlyEnd.snapshot.startTime !== 0 &&
+      (earlyEnd.wasRunning || hasOpenPause)
+        ? closeEarlyEnd({
+            state: earlyEnd.snapshot,
+            wasRunning: earlyEnd.wasRunning,
+            initiatedAt: earlyEnd.initiatedAt,
+            confirmedAt: now,
+            pauseReason: pauseReasonInput,
+          })
+        : null;
+    const timeCountedDownInMilliSeconds = closedSession
+      ? closedSession.timeCountedDown
+      : (durationInSeconds - remainingDurationInSec) * 1000;
+    const sessionEndTime = closedSession ? closedSession.endTime : now;
 
-    const newCycleDuration = cycleDurationInSec - remainingDurationInSec;
-    const newTotalDurationOfSetOfCycles =
-      totalDurationOfSetOfCyclesInSec - remainingDurationInSec;
+    if (!earlyEnd?.committed) {
+      const newCycleDuration = cycleDurationInSec - remainingDurationInSec;
+      const newTotalDurationOfSetOfCycles =
+        totalDurationOfSetOfCyclesInSec - remainingDurationInSec;
 
-    if (isThisFocusSession(repetitionCount)) {
-      const newTotalFocusDuration =
-        totalFocusDurationInSec - remainingDurationInSec;
-      if (
-        identifyPrevSession({
-          howManyCountdown: repetitionCount + 1,
-          numOfPomo,
-        }) === SESSION.VERY_LAST_POMO
-      ) {
-        generateAndPushCycleRecord(
-          now,
-          newCycleDuration,
-          newTotalFocusDuration,
-          'endTimer - focus session',
-        );
-      }
-      setTotalFocusDurationInSec(newTotalFocusDuration);
-      setCycleDurationInSec(newCycleDuration);
-      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
-      persistStatesToIDB({
-        currentCycleInfo: {
-          totalFocusDuration: newTotalFocusDuration,
-          cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-          //
-          cycleStartTimestamp,
-          veryFirstCycleStartTimestamp,
-        },
-      });
-      user &&
-        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-          totalFocusDuration: newTotalFocusDuration,
-          cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+      if (isThisFocusSession(repetitionCount)) {
+        const newTotalFocusDuration =
+          totalFocusDurationInSec - remainingDurationInSec;
+        if (
+          identifyPrevSession({
+            howManyCountdown: repetitionCount + 1,
+            numOfPomo,
+          }) === SESSION.VERY_LAST_POMO
+        ) {
+          generateAndPushCycleRecord(
+            sessionEndTime,
+            newCycleDuration,
+            newTotalFocusDuration,
+            'endTimer - focus session',
+          );
+        }
+        setTotalFocusDurationInSec(newTotalFocusDuration);
+        setCycleDurationInSec(newCycleDuration);
+        setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
+        persistStatesToIDB({
+          currentCycleInfo: {
+            totalFocusDuration: newTotalFocusDuration,
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+            //
+            cycleStartTimestamp,
+            veryFirstCycleStartTimestamp,
+          },
         });
-    } else {
-      // Break session
-      if (
-        identifyPrevSession({
-          howManyCountdown: repetitionCount + 1,
-          numOfPomo,
-        }) === SESSION.LONG_BREAK
-      ) {
-        generateAndPushCycleRecord(
-          now,
-          newCycleDuration,
-          totalFocusDurationInSec,
-          'endTimer - break session',
-        );
-      }
-      setCycleDurationInSec(newCycleDuration);
-      setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
-      persistStatesToIDB({
-        currentCycleInfo: {
-          cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
-          //
-          totalFocusDuration: totalFocusDurationInSec,
-          cycleStartTimestamp,
-          veryFirstCycleStartTimestamp,
-        },
-      });
-      user &&
-        axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
-          cycleDuration: newCycleDuration,
-          totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+        user &&
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            totalFocusDuration: newTotalFocusDuration,
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          });
+      } else {
+        // Break session
+        if (
+          identifyPrevSession({
+            howManyCountdown: repetitionCount + 1,
+            numOfPomo,
+          }) === SESSION.LONG_BREAK
+        ) {
+          generateAndPushCycleRecord(
+            sessionEndTime,
+            newCycleDuration,
+            totalFocusDurationInSec,
+            'endTimer - break session',
+          );
+        }
+        setCycleDurationInSec(newCycleDuration);
+        setTotalDurationOfSetOfCyclesInSec(newTotalDurationOfSetOfCycles);
+        persistStatesToIDB({
+          currentCycleInfo: {
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+            //
+            totalFocusDuration: totalFocusDurationInSec,
+            cycleStartTimestamp,
+            veryFirstCycleStartTimestamp,
+          },
         });
+        user &&
+          axiosInstance.patch(RESOURCE.USERS + SUB_SET.CURRENT_CYCLE_INFO, {
+            cycleDuration: newCycleDuration,
+            totalDurationOfSetOfCycles: newTotalDurationOfSetOfCycles,
+          });
+      }
     }
 
-    if (isThisSessionPaused()) {
+    const sessionPaused = isThisSessionPaused();
+    let stateToPass: TimerStateType;
+
+    if (closedSession) {
+      stateToPass = closedSession.state;
+    } else if (sessionPaused) {
       // pause is frozen after reload (Immer). structuredClone gives a writable copy.
       const stateCloned = structuredClone(timerState);
-      stateCloned.pause.totalLength +=
-        now -
-        stateCloned.pause.record[stateCloned.pause.record.length - 1].start;
-      stateCloned.pause.record[stateCloned.pause.record.length - 1].end = now;
-      next({
-        howManyCountdown: repetitionCount + 1,
-        state: stateCloned,
-        timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
-        endForced: now,
-      });
+      const lastPause =
+        stateCloned.pause.record[stateCloned.pause.record.length - 1];
+      stateCloned.pause.totalLength += now - lastPause.start;
+      lastPause.end = now;
+      if (pauseReasonInput.trim() !== '') {
+        lastPause.reason = pauseReasonInput.trim();
+      }
+      stateToPass = stateCloned;
     } else {
-      next({
-        howManyCountdown: repetitionCount + 1,
-        state: timerState,
-        timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
-        endForced: now,
-      });
+      stateToPass = timerState;
     }
 
-    dispatch({ type: ACTION.RESET });
-    setTimersStatesPartial({ running: false, startTime: 0 });
-    setRemainingDurationInSec(0);
+    if (!earlyEnd?.committed) {
+      dispatch({ type: ACTION.RESET });
+      setTimersStatesPartial({ running: false, startTime: 0 });
+      setRemainingDurationInSec(0);
+      if (earlyEnd) earlyEnd.committed = true;
+    }
+
+    await next({
+      howManyCountdown: repetitionCount + 1,
+      state: stateToPass,
+      timeCountedDownInMilliSeconds: timeCountedDownInMilliSeconds,
+      endForced: sessionEndTime,
+      earlyEndReason,
+    });
 
     function isThisSessionPaused() {
       return (
@@ -2140,6 +2326,7 @@ export function TimerController({
         <div css={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => toggleTimer(Date.now())}
+            disabled={showEarlyEndReasonInput}
             css={{
               background: 'transparent',
               border: 'none',
@@ -2161,7 +2348,8 @@ export function TimerController({
                 : '▶️'}
           </button>
           <button
-            onClick={() => endTimer(Date.now())}
+            onClick={handleEndButtonClick}
+            disabled={showEarlyEndReasonInput}
             css={{
               background: 'transparent',
               border: 'none',
@@ -2278,6 +2466,7 @@ export function TimerController({
           setTotalDurationOfSetOfCyclesInSec={
             setTotalDurationOfSetOfCyclesInSec
           }
+          durationEditLocked={showEarlyEndReasonInput}
         />
       </div>
 
@@ -2299,6 +2488,7 @@ export function TimerController({
           <Button
             type={'submit'}
             color={'primary'}
+            disabled={showEarlyEndReasonInput}
             handleClick={() => {
               toggleTimer(Date.now());
             }}
@@ -2310,9 +2500,8 @@ export function TimerController({
                 : 'Resume'}
           </Button>
           <Button
-            handleClick={() => {
-              endTimer(Date.now());
-            }}
+            disabled={showEarlyEndReasonInput}
+            handleClick={handleEndButtonClick}
           >
             {isSessionNotStartedYet(
               timerState.running,
@@ -2323,6 +2512,103 @@ export function TimerController({
           </Button>
         </FlexBox>
       </div>
+
+      {isPaused && !showEarlyEndReasonInput && (
+        <div
+          css={{
+            alignSelf: 'center',
+            width: '80%',
+            maxWidth: '280px',
+            marginTop: '12px',
+            marginBottom: '4px',
+          }}
+        >
+          <textarea
+            value={pauseReasonInput}
+            onChange={handlePauseReasonChange}
+            onBlur={handlePauseReasonBlur}
+            placeholder="일시정지 사유를 입력하세요 (선택)"
+            rows={2}
+            css={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '8px 10px',
+              fontSize: '13px',
+              fontFamily: 'inherit',
+              borderRadius: '8px',
+              border: '1.5px solid #d0d7de',
+              backgroundColor: '#fafbfc',
+              color: '#24292f',
+              resize: 'none',
+              outline: 'none',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+              '&:focus': {
+                borderColor: '#0969da',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 0 0 3px rgba(9, 105, 218, 0.15)',
+              },
+            }}
+          />
+        </div>
+      )}
+
+      {showEarlyEndReasonInput && (
+        <div
+          css={{
+            alignSelf: 'center',
+            width: '80%',
+            maxWidth: '280px',
+            marginTop: '12px',
+            marginBottom: '4px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <textarea
+            value={earlyEndReasonInput}
+            onChange={(e) => setEarlyEndReasonInput(e.target.value)}
+            placeholder="조기 종료 사유를 입력하세요 (선택)"
+            rows={2}
+            css={{
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '8px 10px',
+              fontSize: '13px',
+              fontFamily: 'inherit',
+              borderRadius: '8px',
+              border: '1.5px solid #d0d7de',
+              backgroundColor: '#fafbfc',
+              color: '#24292f',
+              resize: 'none',
+              outline: 'none',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+              '&:focus': {
+                borderColor: '#0969da',
+                backgroundColor: '#ffffff',
+                boxShadow: '0 0 0 3px rgba(9, 105, 218, 0.15)',
+              },
+            }}
+          />
+          <div
+            css={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}
+          >
+            <Button
+              handleClick={handleCancelEarlyEnd}
+              disabled={isSubmittingEarlyEndReason}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              handleClick={handleConfirmEarlyEndReason}
+              disabled={isSubmittingEarlyEndReason}
+            >
+              {isSubmittingEarlyEndReason ? 'Ending...' : 'Confirm'}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div css={{ alignSelf: 'center' }}>
         <h3 style={{ textAlign: 'center' }}>

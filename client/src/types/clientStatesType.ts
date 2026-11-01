@@ -1,3 +1,6 @@
+import type { TaskTrackingDuration } from './todoistRelatedTypes';
+import type { PomodoroSessionDocument } from '../Pages/Statistics/statRelatedTypes';
+
 //#region Timer-Related
 export type PomoSettingType = {
   pomoDuration: number;
@@ -17,8 +20,14 @@ export type TimerStateType = {
   startTime: number;
   pause: {
     totalLength: number;
-    record: { start: number; end: number | undefined }[]; // 8개월 전 "Fix #35" commit하면서 중간에 end timer 버튼 누르면 end에 now값 들어가게 바꿨는데
-    // 여기서  undefined를 없애도 되는지는 잘 모르겠어. documenation을 제대로 안해놔서 모르는건가.
+    record: {
+      start: number;
+      end: number | undefined; // why undefined? - end doesnt' exist until resuming a session
+      // DESIGN: `| null` instead of `| undefined `
+      // 1.reason은 null이 "이유 없음"이고, 문자열이 사용자가 적은 이유입니다.
+      // 2. undefined나 없는 키는 JSON.stringify에서 빠져서, 서버에 도착하면 이유가 없었던 것과 구분이 안 됩니다.
+      reason: string | null;
+    }[];
   };
 };
 
@@ -136,19 +145,45 @@ export type DailyGoals = [Goal, Goal, Goal, Goal, Goal, Goal, Goal];
 //#endregion
 
 //#region Timeline-Related
-export type RecType = Omit<TimerStateType, 'running'> & {
+export type RecType = {
   kind: 'pomo' | 'break';
+  startTime: number;
   endTime: number;
   timeCountedDown: number;
+  // NOTE: Timeline UI upgrade 방안
+  // 1. 아래의 데이터들도 모두 시각화에 사용할 수 있음.
+  // 2. 그리고 세션이 종료되면, `persistRecOfTodayToServer.ts`에서 계산하는 pomodoro records들이 있을텐데, 이것들이 포함하는 정보에는,
+  // category와 task의 조합을 identifier로 이 세션을 pomodoro records로 쪼개는 것. 그런데 이 정보들 또한 앞으로 Timeline에 반영할 수 있으면 시각적으로 재미있을 것 같다.
+  plannedDuration: number | null;
+  editedDuration: number | null;
+  // TODO: targetDuration이라고 여기에도 그리고 database에도 정의해두는게 그냥 깔끔하다.
+  // targetDuration = plannedDuration + editedDuration.
+  // 0< timeCountedDown <= targetDuration, 그리고 이 plannedDuration, targetDuration, timeCountedDown을 시간축에 모두 ms로 표현가능. 이게 정보임. In other words, information
+  // 만약에 owner가 [X, A] -> [Y, B]로 되고 plannedDuration < targetDuration 그리고 timeCountedDown > plannedDuration 이면, 과연 두 owner중에 어떤 것이 이 세션이 planned보다 길어진 것에
+  // 영향을 줬다고 판단할 수 있지? 없지.. 그냥 사실만 언급해줄 수 있을 뿐. 그리고, pause는 알아서 위의 duration들과 timeCountedDown 계산에서 적절히 제거되어서 착오 및 오류가 없나?
+  isEarlyEnded: boolean;
+  earlyEndReason: string | null;
+  pause: TimerStateType['pause'];
 };
 
 export type KindOfDuration = 'pomo' | 'break' | 'pause';
-export type DurationType = {
+
+export type BaseDuration = {
   startTime: number;
   endTime: number;
-  subject: KindOfDuration;
   duration: number;
 };
+
+export type WorkOrBreakDuration = BaseDuration & {
+  subject: 'pomo' | 'break';
+};
+
+export type PauseDuration = BaseDuration & {
+  subject: 'pause';
+  pauseReason: string | null;
+};
+
+export type DurationType = WorkOrBreakDuration | PauseDuration;
 /**
  * For example, if a user pauses the timer once, a pomodoro session can consist of
  * some durations such as, one pomo, one pause, and one pomo in order.
@@ -175,6 +210,7 @@ export type InfoOfSessionStateChange = {
   kind: 'category' | 'task' | 'pause' | 'endOfSession';
   subKind?: string | 'start' | 'end';
   timestamp: number;
+  reason?: string | null;
 };
 export type DurationsOfCategoryTaskCombinationAndHelperFields = {
   durationArrOfCategoryTaskCombination: DurationOfCategoryTaskCombination[];
@@ -188,18 +224,31 @@ export type DurationOfCategoryTaskCombination = {
 };
 
 export type SessionSegment = {
-  owner: [string, string]; // [taskId, categoryName]
+  owner: [string, string]; // [categoryName, taskId]
   duration: number;
   type: 'pause' | 'focus';
   startTime: number;
+  reason?: string | null;
+};
+
+/**
+ * POST /today-records 요청 시 서버(CreateTodayRecordDto)로 전송하는 최종 페이로드 규격
+ * - 세션 기본 정보(RecType)를 100% 그대로 상속받고,
+ * - 타임라인 세그먼트(segments)와 pomo 전용 통계 필드(pomodoroRecordArr, taskTrackingArr)를 결합합니다.
+ */
+export type CreateTodayRecordPayload = RecType & {
+  segments: SessionSegment[];
+  pomodoroRecordArr?: PomodoroSessionDocument[];
+  taskTrackingArr?: TaskTrackingDuration[];
 };
 
 export type SegmentDurationsAndHelperFields = {
   segmentDurationArr: SessionSegment[];
   // following three are used to help calculate duration for each segment.
-  currentOwner: [string, string]; // [taskId, categoryName];
+  currentOwner: [string, string]; // [categoryName, taskId];
   currentStartTime: number;
   currentType: 'pause' | 'focus';
+  currentReason: string | null;
 };
 
 //#endregion

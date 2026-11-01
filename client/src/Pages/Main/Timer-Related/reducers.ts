@@ -1,15 +1,25 @@
 import { persistStatesToIDB } from '../../..';
 import { TimerStateType } from '../../../types/clientStatesType';
 
-export type PauseType = {
-  totalLength: number;
-  record: {
-    start: number;
-    end: number | undefined;
-  }[];
-};
+export type PauseType = TimerStateType['pause'];
 
-export type TimerAction = UpdateAction | ResetAction | ContinueAction;
+export const ACTION = {
+  START: 'start',
+  PAUSE: 'pause',
+  RESUME: 'resume',
+  RESET: 'reset',
+  CONTINUE: 'continue',
+  UPDATE_PAUSE_REASON: 'update_pause_reason',
+} as const;
+
+type Update = typeof ACTION.START | typeof ACTION.PAUSE | typeof ACTION.RESUME;
+type Reset = typeof ACTION.RESET;
+type Continue = typeof ACTION.CONTINUE;
+type UpdatePauseReason = typeof ACTION.UPDATE_PAUSE_REASON;
+
+export type TimerAction =
+  UpdateAction | ResetAction | ContinueAction | UpdatePauseReasonAction;
+
 type UpdateAction = {
   type: Update;
   payload: number;
@@ -23,9 +33,11 @@ type ContinueAction = {
   type: Continue;
   payload: TimerStateType;
 };
-type Update = 'start' | 'pause' | 'resume';
-type Reset = 'reset';
-type Continue = 'continue';
+
+type UpdatePauseReasonAction = {
+  type: UpdatePauseReason;
+  payload: string | null;
+};
 
 export function reducer(
   state: TimerStateType,
@@ -42,7 +54,6 @@ export function reducer(
       return {
         ...state,
         running: true,
-        // startTime: action.payload,
         startTime: action.payload!,
       };
 
@@ -53,7 +64,7 @@ export function reducer(
           ...state.pause,
           record: [
             ...state.pause!.record,
-            { start: action.payload, end: undefined },
+            { start: action.payload, end: undefined, reason: null },
           ],
         },
       });
@@ -64,7 +75,7 @@ export function reducer(
           ...state.pause!,
           record: [
             ...state.pause!.record,
-            { start: action.payload, end: undefined },
+            { start: action.payload, end: undefined, reason: null },
           ],
         },
       };
@@ -127,21 +138,29 @@ export function reducer(
         ...action.payload,
       };
 
+    case ACTION.UPDATE_PAUSE_REASON: {
+      if (!state.pause || state.pause.record.length === 0) return state;
+      const lastIndex = state.pause.record.length - 1;
+      const updatedRecord = state.pause.record.map((item, idx) => {
+        if (idx === lastIndex) {
+          return { ...item, reason: action.payload };
+        }
+        return item;
+      });
+      const newPause = {
+        ...state.pause,
+        record: updatedRecord,
+      };
+      persistStatesToIDB({
+        pause: newPause,
+      });
+      return {
+        ...state,
+        pause: newPause,
+      };
+    }
+
     default:
       throw new Error();
   }
 }
-
-export const ACTION: {
-  START: Update;
-  PAUSE: Update;
-  RESUME: Update;
-  RESET: Reset;
-  CONTINUE: Continue;
-} = {
-  START: 'start',
-  PAUSE: 'pause',
-  RESUME: 'resume',
-  RESET: 'reset',
-  CONTINUE: 'continue',
-};

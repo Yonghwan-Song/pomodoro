@@ -3,6 +3,7 @@ import {
   RecType,
   SessionSegment,
   DurationOfCategoryTaskCombination,
+  CreateTodayRecordPayload,
 } from '../types/clientStatesType';
 import { TaskTrackingDuration } from '../types/todoistRelatedTypes';
 import { PomodoroSessionDocument } from '../Pages/Statistics/statRelatedTypes';
@@ -52,88 +53,119 @@ export async function persistRecOfTodayToServer({
     if (sessionData.startTime === 0) return;
 
     const cache = DynamicCache || (await openCache(CacheName));
-    let payload = {};
+    let segments: SessionSegment[] = [];
+    let pomodoroRecordArr: PomodoroSessionDocument[] | undefined;
+    let taskTrackingArr: TaskTrackingDuration[] | undefined;
 
-    if (kind === 'pomo' && authGuard) {
-      //#region Prepare some values
-      // 1.Raw data -> timestamps -> segments -> durations -> pomoRecords
-      // 2.                          segments -> taskFocusDurationMap -> taskTrackingArr
+    // segments는 pomo/break 모두 같은 SessionSegment 타입으로 보낸다.
+    // kind는 세션에 있고, 호출부가 category/task 배열을 넘기면
+    // timestampsToSegmentsReducer의 idx 0, 1 시작 엔트리 가정이 break에도 그대로 성립한다.
+    // pomodoroRecordArr, taskTrackingArr, today-total은 pomo만 갱신한다.
+    if (authGuard) {
+      const safeCategories =
+        categoryChangeInfoArray.length > 0
+          ? categoryChangeInfoArray
+          : [
+              {
+                categoryName: 'uncategorized',
+                categoryChangeTimestamp: sessionData.startTime,
+              },
+            ];
+
+      const safeTasks =
+        taskChangeInfoArray.length > 0
+          ? taskChangeInfoArray
+          : [
+              {
+                id: '',
+                taskChangeTimestamp: sessionData.startTime,
+              },
+            ];
+
       const timestamps: InfoOfSessionStateChange[] = makeTimestampsFromRawData(
-        categoryChangeInfoArray,
-        taskChangeInfoArray,
+        safeCategories,
+        safeTasks,
         sessionData.pause.record as {
           start: number;
           end: number;
+          reason?: string | null;
         }[],
         sessionData.endTime,
       );
-      const segments: Array<SessionSegment> =
-        makeSegmentsFromTimestamps(timestamps);
-      const durations: Array<DurationOfCategoryTaskCombination> =
-        makeDurationsFromSegmentsByCategoryAndTaskCombination(segments);
-      const pomodoroRecordArr: PomodoroSessionDocument[] =
-        makePomoRecordsFromDurations(durations, sessionData.startTime);
+      segments = makeSegmentsFromTimestamps(timestamps);
 
-      const taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
-      const taskTrackingArr: TaskTrackingDuration[] = Array.from(
-        taskFocusDurationMap.entries(),
-      ).map(([taskId, duration]) => ({
-        taskId,
-        duration: Math.floor(duration / (60 * 1000)),
-      }));
-      //#endregion
-
-      //#region update states
-      // 1. Todoist Task UI
-      boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
-
-      // 2. Group Study Room UI
-      // [Group Study Room UI 업데이트용 실시간 통계 갱신]
-      // 방금 종료된 타이머 세션(PomodoroSessionDocument 배열)에서 실제로 집중한 총 시간(duration)을 합산합니다.
-      totalDurationAdded = pomodoroRecordArr.reduce(
-        (acc, curr) => acc + curr.duration,
-        0,
-      );
-      // 상태를 업데이트하고 반환된 최신값을 바로 가져옵니다. (Zustand 외부 호출은 동기적으로 즉시 처리됨)
-      const updatedTodayTotalDuration = boundedPomoInfoStore
-        .getState()
-        .incrementTodayTotalDuration(totalDurationAdded);
-      didIncrementTodayTotal = true;
-      //#endregion
-
-      //#region Sync data across group study participants
-      // 내가 방에 들어와 있는 상태라면, 다른 사람들에게 내 새로운 집중 시간을 Broadcast 해달라고 서버에 알립니다.
-      // 방에 들어가 있지 않은 상태여도, 언제 방에 들어갈지 모르니까 todayTotalDuration는 상시 업데이트를 해놓아야함.
-      const socket = useConnectionStore.getState().socket;
-      const isUserInRoom = useConnectionStore.getState().isUserInRoom;
-
-      if (socket && isUserInRoom) {
-        socket.emit(EventNames.SYNC_MY_TODAY_TOTAL_DURATION, {
-          todayTotalDuration: updatedTodayTotalDuration,
-        });
-      }
-      //#endregion
-      //#region Stat에 반영
-      pubsub.publish('pomoAdded', pomodoroRecordArr);
-      //#endregion
-
-      //#region Update cache
-      const statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
-      if (statResponse !== undefined) {
-        const statData = await statResponse.json();
-
-        const dataToPush: PomodoroSessionDocument[] = pomodoroRecordArr;
-        statData.push(...dataToPush);
-
-        await cache.put(
-          BASE_URL + RESOURCE.POMODOROS,
-          new Response(JSON.stringify(statData)),
+      if (kind === 'pomo') {
+        //#region Prepare some values
+        // 1.Raw data -> timestamps -> segments -> durations -> pomoRecords
+        // 2.                          segments -> taskFocusDurationMap -> taskTrackingArr
+        // 동일한 owner(카테고리/태스크) 세그먼트의 집중 시간을 하나로 합침 (중간에 pause가 있어도 하나의 duration으로 병합)
+        const durations: Array<DurationOfCategoryTaskCombination> =
+          makeDurationsFromSegmentsByCategoryAndTaskCombination(segments);
+        // ms -> 분 단위 변환 및 서버 전송 규격(PomodoroSessionDocument) 포맷으로 매핑
+        pomodoroRecordArr = makePomoRecordsFromDurations(
+          durations,
+          sessionData.startTime,
         );
-        appendedPomodoroRecords.push(...dataToPush);
-      }
-      //#endregion
 
-      payload = { ...payload, pomodoroRecordArr, taskTrackingArr };
+        const taskFocusDurationMap = getTaskDurationMapFromSegments(segments);
+        taskTrackingArr = Array.from(taskFocusDurationMap.entries()).map(
+          ([taskId, duration]) => ({
+            taskId,
+            duration: Math.floor(duration / (60 * 1000)),
+          }),
+        );
+        //#endregion
+
+        //#region update states
+        // 1. Todoist Task UI
+        boundedPomoInfoStore.getState().updateTaskTreeForUI(taskTrackingArr);
+
+        // 2. Group Study Room UI
+        // [Group Study Room UI 업데이트용 실시간 통계 갱신]
+        // 방금 종료된 타이머 세션(PomodoroSessionDocument 배열)에서 실제로 집중한 총 시간(duration)을 합산합니다.
+        totalDurationAdded = pomodoroRecordArr.reduce(
+          (acc, curr) => acc + curr.duration,
+          0,
+        );
+        // 상태를 업데이트하고 반환된 최신값을 바로 가져옵니다. (Zustand 외부 호출은 동기적으로 즉시 처리됨)
+        const updatedTodayTotalDuration = boundedPomoInfoStore
+          .getState()
+          .incrementTodayTotalDuration(totalDurationAdded);
+        didIncrementTodayTotal = true;
+        //#endregion
+
+        //#region Sync data across group study participants
+        // 내가 방에 들어와 있는 상태라면, 다른 사람들에게 내 새로운 집중 시간을 Broadcast 해달라고 서버에 알립니다.
+        // 방에 들어가 있지 않은 상태여도, 언제 방에 들어갈지 모르니까 todayTotalDuration는 상시 업데이트를 해놓아야함.
+        const socket = useConnectionStore.getState().socket;
+        const isUserInRoom = useConnectionStore.getState().isUserInRoom;
+
+        if (socket && isUserInRoom) {
+          socket.emit(EventNames.SYNC_MY_TODAY_TOTAL_DURATION, {
+            todayTotalDuration: updatedTodayTotalDuration,
+          });
+        }
+        //#endregion
+        //#region Stat에 반영
+        pubsub.publish('pomoAdded', pomodoroRecordArr);
+        //#endregion
+
+        //#region Update cache
+        const statResponse = await cache.match(BASE_URL + RESOURCE.POMODOROS);
+        if (statResponse !== undefined) {
+          const statData = await statResponse.json();
+
+          const dataToPush: PomodoroSessionDocument[] = pomodoroRecordArr;
+          statData.push(...dataToPush);
+
+          await cache.put(
+            BASE_URL + RESOURCE.POMODOROS,
+            new Response(JSON.stringify(statData)),
+          );
+          appendedPomodoroRecords.push(...dataToPush);
+        }
+        //#endregion
+      }
     }
 
     //#region Common jobs regardless of kind
@@ -154,9 +186,16 @@ export async function persistRecOfTodayToServer({
     }
     //#endregion
 
-    // http request
-    payload = { ...payload, ...record };
-    authGuard && (await axiosInstance.post(RESOURCE.TODAY_RECORDS, payload));
+    // http request with type-safe payload
+    if (authGuard) {
+      const payload: CreateTodayRecordPayload = {
+        ...record,
+        segments,
+        ...(kind === 'pomo' && pomodoroRecordArr ? { pomodoroRecordArr } : {}),
+        ...(kind === 'pomo' && taskTrackingArr ? { taskTrackingArr } : {}),
+      };
+      await axiosInstance.post(RESOURCE.TODAY_RECORDS, payload);
+    }
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       try {

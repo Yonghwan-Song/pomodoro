@@ -12,6 +12,8 @@ import {
   uniqueIndex,
   integer,
   bigint,
+  index,
+  check,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { doublePrecision } from 'drizzle-orm/pg-core';
@@ -70,6 +72,12 @@ type Pause = {
 export const timerSessionKindEnum = pgEnum('timer_session_kind', [
   'pomo',
   'break',
+]);
+
+// 세그먼트가 타이머 진행인지 일시정지인지. 세션이 pomo인지 break인지는 timer_sessions.kind다.
+export const sessionSegmentTypeEnum = pgEnum('session_segment_type', [
+  'focus',
+  'pause',
 ]);
 
 export const users = pgTable('users', {
@@ -292,18 +300,76 @@ export const timerSessions = pgTable(
     timeCountedDown: bigint({ mode: 'number' }).notNull(),
 
     // JSONB keeps the MongoDB migration and Timeline read path simple.
-    // If pause events become an analytics target, normalize them into a
-    // session_pauses table and calculate totalLength with an aggregate query
-    // or maintain it as a cached aggregate in the same transaction.
+    // 무중단 원칙: 운영 중인 release 브랜치와의 호환성을 위해 유지합니다.
     pause: jsonb()
       .$type<Pause>()
       .default({ totalLength: 0, record: [] })
       .notNull(),
+
+    // 시작 시점 설정의 ms 스냅샷. 이후 설정 변경과 무관하게 보존한다.
+    plannedDuration: bigint({ mode: 'number' }),
+    // +5/-5 변경량의 합(ms). 음수 허용; 최종 목표는 plannedDuration + editedDuration.
+    editedDuration: bigint({ mode: 'number' }).default(0),
+
+    isEarlyEnded: boolean().default(false).notNull(),
+    earlyEndReason: text(),
+    // Client Pause.totalLength. Closed pauses only; an open pause is not in this payload.
+    totalPauseLength: bigint({ mode: 'number' }).default(0).notNull(),
   },
   (table) => [
     uniqueIndex('timer_sessions_user_id_start_time_index').on(
       table.userId,
       table.startTime.desc(),
+    ),
+    check(
+      'timer_sessions_end_after_start',
+      sql`${table.endTime} >= ${table.startTime}`,
+    ),
+    check(
+      'timer_sessions_planned_duration_nonnegative',
+      sql`${table.plannedDuration} >= 0`,
+    ),
+    check(
+      'timer_sessions_target_duration_nonnegative',
+      sql`${table.plannedDuration} + ${table.editedDuration} >= 0`,
+    ),
+    check(
+      'timer_sessions_countdown_nonnegative',
+      sql`${table.timeCountedDown} >= 0`,
+    ),
+    check(
+      'timer_sessions_pause_length_nonnegative',
+      sql`${table.totalPauseLength} >= 0`,
+    ),
+    check(
+      'timer_sessions_early_end_reason_valid',
+      sql`${table.isEarlyEnded} OR ${table.earlyEndReason} IS NULL`,
+    ),
+  ],
+);
+
+export const sessionPauses = pgTable(
+  'session_pauses',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    timerSessionId: uuid()
+      .notNull()
+      .references(() => timerSessions.id, { onDelete: 'cascade' }),
+    startTime: bigint({ mode: 'number' }).notNull(),
+    endTime: bigint({ mode: 'number' }).notNull(),
+    duration: bigint({ mode: 'number' })
+      .generatedAlwaysAs(sql`end_time - start_time`)
+      .notNull(),
+    reason: text(),
+  },
+  (table) => [
+    uniqueIndex('session_pauses_session_id_start_time_index').on(
+      table.timerSessionId,
+      table.startTime,
+    ),
+    check(
+      'session_pauses_end_after_start',
+      sql`${table.endTime} >= ${table.startTime}`,
     ),
   ],
 );
@@ -321,19 +387,60 @@ export const pomodoros = pgTable(
     isDummy: boolean().default(false).notNull(),
     categoryId: uuid().references(() => categories.id, {
       onDelete: 'set null',
-    }), // TODO: category를 삭제했다고 기록이 어떤 category에 관한 것이었나를 지우는게 맞아?... 이름으로도 남겨두는게 어때?
+    }),
     todoistTaskId: uuid().references(() => todoistTasks.id),
-
-    // IMPT:
-    // Nullable because some legacy Pomodoros cannot be matched to a deleted or
-    // missing MongoDB TodayRecord. New records should always provide this FK.
-    timerSessionId: uuid().references(() => timerSessions.id),
+    timerSessionId: uuid().references(() => timerSessions.id, {
+      onDelete: 'set null',
+    }),
   },
   (table) => [
     uniqueIndex('pomodoros_user_id_start_time_index').on(
       table.userId,
       table.startTime.desc(),
     ),
+  ],
+);
+
+export const sessionSegments = pgTable(
+  'session_segments',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    userId: uuid().references(() => users.id, { onDelete: 'set null' }),
+    timerSessionId: uuid().references(() => timerSessions.id, {
+      onDelete: 'set null',
+    }),
+    sequenceOrder: integer().notNull(),
+    type: sessionSegmentTypeEnum().notNull(),
+    startTime: bigint({ mode: 'number' }).notNull(),
+    duration: bigint({ mode: 'number' }).notNull(),
+    endTime: bigint({ mode: 'number' })
+      .generatedAlwaysAs(sql`start_time + duration`)
+      .notNull(),
+    categoryName: varchar({ length: 255 }),
+    categoryId: uuid().references(() => categories.id, {
+      onDelete: 'set null',
+    }),
+    taskId: text(),
+    taskContent: text(),
+    todoistTaskId: uuid().references(() => todoistTasks.id, {
+      onDelete: 'set null',
+    }),
+    reason: text(),
+  },
+  (table) => [
+    uniqueIndex('session_segments_session_id_sequence_order_index').on(
+      table.timerSessionId,
+      table.sequenceOrder,
+    ),
+    index('session_segments_session_id_start_time_index').on(
+      table.timerSessionId,
+      table.startTime,
+    ),
+    index('session_segments_user_id_start_time_index').on(
+      table.userId,
+      table.startTime,
+    ),
+    check('session_segments_duration_nonnegative', sql`${table.duration} >= 0`),
   ],
 );
 
@@ -344,15 +451,16 @@ export const usersRelations = relations(users, ({ many }) => ({
   todoistTasks: many(todoistTasks),
   timerSessions: many(timerSessions),
   pomodoros: many(pomodoros),
+  sessionSegments: many(sessionSegments),
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
-  // Users is a parent table since the userId field of categories is referencing users table's primary key field, "id".
   user: one(users, {
     fields: [categories.userId],
     references: [users.id],
   }),
   pomodoros: many(pomodoros),
+  sessionSegments: many(sessionSegments),
 }));
 
 export const cycleSettingsRelations = relations(
@@ -389,6 +497,7 @@ export const todoistTasksRelations = relations(
       relationName: 'taskHierarchy',
     }),
     pomodoros: many(pomodoros),
+    sessionSegments: many(sessionSegments),
   }),
 );
 
@@ -400,8 +509,17 @@ export const timerSessionsRelations = relations(
       references: [users.id],
     }),
     pomodoros: many(pomodoros),
+    segments: many(sessionSegments),
+    pauses: many(sessionPauses),
   }),
 );
+
+export const sessionPausesRelations = relations(sessionPauses, ({ one }) => ({
+  timerSession: one(timerSessions, {
+    fields: [sessionPauses.timerSessionId],
+    references: [timerSessions.id],
+  }),
+}));
 
 export const pomodorosRelations = relations(pomodoros, ({ one }) => ({
   user: one(users, {
@@ -421,4 +539,26 @@ export const pomodorosRelations = relations(pomodoros, ({ one }) => ({
     references: [timerSessions.id],
   }),
 }));
+
+export const sessionSegmentsRelations = relations(
+  sessionSegments,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [sessionSegments.userId],
+      references: [users.id],
+    }),
+    timerSession: one(timerSessions, {
+      fields: [sessionSegments.timerSessionId],
+      references: [timerSessions.id],
+    }),
+    category: one(categories, {
+      fields: [sessionSegments.categoryId],
+      references: [categories.id],
+    }),
+    todoistTask: one(todoistTasks, {
+      fields: [sessionSegments.todoistTaskId],
+      references: [todoistTasks.id],
+    }),
+  }),
+);
 //#endregion

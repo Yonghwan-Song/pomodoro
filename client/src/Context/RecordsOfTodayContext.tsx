@@ -1,10 +1,10 @@
 import { useContext, createContext, useEffect } from 'react';
 import { useFetch } from '../Custom-Hooks/useFetch';
 import { RecType } from '../types/clientStatesType';
+import { normalizeFinishedSession } from '../utils/finishedSessionFields';
 import { persistManyTodaySessionsToIDB } from '..';
 import { pubsub } from '../pubsub';
 import { useAuthContext } from './AuthContext';
-import { axiosInstance } from '../axios-and-error-handling/axios-instances';
 import { RESOURCE } from '../constants';
 
 export const RecordsOfTodayContext = createContext<RecType[] | null>(null);
@@ -71,7 +71,9 @@ function removeRecordsBeforeToday(records: RecType[]): RecType[] {
 
   // 예를 들면, 어제 밤 11시에 시작해서 그다음날 오전 12시 30분에 세션이 종료되었다면,
   // endTime >= startOfTodayTimestamp 이므로, Timeline에 그 세션의 일부가 표시는 된다.
-  return records.filter((rec) => rec.endTime >= startOfTodayTimestamp);
+  return records
+    .filter((rec) => rec.endTime >= startOfTodayTimestamp)
+    .map(normalizeFinishedSession);
 }
 
 async function persistRecordsOfTodayToIDB(records: RecType[]) {

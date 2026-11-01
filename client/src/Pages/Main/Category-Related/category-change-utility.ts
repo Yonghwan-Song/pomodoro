@@ -1,12 +1,12 @@
-import {
+import type {
   DurationOfCategoryTaskCombination,
   DurationsOfCategoryTaskCombinationAndHelperFields,
   InfoOfSessionStateChange,
   SegmentDurationsAndHelperFields,
   SessionSegment,
 } from '../../../types/clientStatesType';
-import { TaskChangeInfo } from '../../../types/todoistRelatedTypes';
-import { PomodoroSessionDocument } from '../../Statistics/statRelatedTypes';
+import type { TaskChangeInfo } from '../../../types/todoistRelatedTypes';
+import type { PomodoroSessionDocument } from '../../Statistics/statRelatedTypes';
 
 //-------------------------------New After Task Integration Feature-----------------------------
 //#region raw data to timestamps
@@ -19,6 +19,7 @@ export function makeTimestampsFromRawData(
   pauseRecord: {
     start: number;
     end: number;
+    reason?: string | null;
   }[],
   endTime: number,
 ): InfoOfSessionStateChange[] {
@@ -32,7 +33,9 @@ export function makeTimestampsFromRawData(
     ...categoryChanges,
     ...taskChanges,
     ...pauseRecords,
-  ];
+  ].filter(
+    (event) => Number.isFinite(event.timestamp) && event.timestamp <= endTime,
+  );
 
   data.sort((a, b) => a.timestamp - b.timestamp);
   data.push({ kind: 'endOfSession', timestamp: endTime });
@@ -71,11 +74,21 @@ export function makeTimestampsFromRawData(
   }
 
   function transformPauseRecords(
-    pauseRecords: { start: number; end: number }[],
+    pauseRecords: { start: number; end: number; reason?: string | null }[],
   ): InfoOfSessionStateChange[] {
     return pauseRecords.flatMap((val) => [
-      { kind: 'pause', subKind: 'start', timestamp: val.start },
-      { kind: 'pause', subKind: 'end', timestamp: val.end },
+      {
+        kind: 'pause',
+        subKind: 'start',
+        timestamp: val.start,
+        reason: val.reason ?? null,
+      },
+      {
+        kind: 'pause',
+        subKind: 'end',
+        timestamp: val.end,
+        reason: val.reason ?? null,
+      },
     ]);
   }
 }
@@ -92,10 +105,13 @@ export function makeSegmentsFromTimestamps(
       currentType: 'focus',
       currentOwner: ['', ''],
       currentStartTime: 0,
+      currentReason: null,
     },
   );
   return segArrAndHelper.segmentDurationArr;
 }
+// TODO: taskChangeInfoArray가 []이면 idx 0, 1을 시작 이벤트로 보고 건너뛰는 가정이 깨진다.
+// nest-server/src/postgresql/README/16_session_segments.md
 export function timestampsToSegmentsReducer(
   acc: SegmentDurationsAndHelperFields,
   val: InfoOfSessionStateChange,
@@ -138,8 +154,10 @@ export function timestampsToSegmentsReducer(
           duration: duration_in_ms,
           type: acc.currentType,
           startTime: acc.currentStartTime,
+          reason: null,
         });
         acc.currentType = 'pause';
+        acc.currentReason = val.reason ?? null;
         acc.currentStartTime = val.timestamp;
       }
       if (val.subKind === 'end') {
@@ -148,8 +166,10 @@ export function timestampsToSegmentsReducer(
           duration: duration_in_ms,
           type: acc.currentType,
           startTime: acc.currentStartTime,
+          reason: acc.currentReason,
         });
         acc.currentType = 'focus';
+        acc.currentReason = null;
         acc.currentStartTime = val.timestamp;
       }
       break;
@@ -159,6 +179,7 @@ export function timestampsToSegmentsReducer(
         duration: duration_in_ms,
         type: acc.currentType,
         startTime: acc.currentStartTime,
+        reason: acc.currentType === 'pause' ? acc.currentReason : null,
       });
       acc.currentOwner[0] = val.subKind!; // category가 바뀌었으므로, owner도 바꿔준다.
       acc.currentStartTime = val.timestamp;
@@ -169,6 +190,7 @@ export function timestampsToSegmentsReducer(
         duration: duration_in_ms,
         type: acc.currentType,
         startTime: acc.currentStartTime,
+        reason: acc.currentType === 'pause' ? acc.currentReason : null,
       });
       acc.currentOwner[1] = val.subKind!;
       acc.currentStartTime = val.timestamp;
@@ -181,6 +203,7 @@ export function timestampsToSegmentsReducer(
           duration: duration_in_ms,
           type: acc.currentType,
           startTime: acc.currentStartTime,
+          reason: acc.currentType === 'pause' ? acc.currentReason : null,
         });
       break;
 

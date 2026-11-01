@@ -56,13 +56,18 @@ import {
 } from './utils/anything';
 import { TaskChangeInfo } from './types/todoistRelatedTypes';
 import { notify, makeSound } from './utils/notify';
-import { recordPomo } from './utils/recordPomo';
 import { persistRecOfTodayToServer } from './utils/persistRecOfTodayToServer';
+import {
+  analysisFieldsForFinishedSession,
+  normalizeFinishedSession,
+  normalizePause,
+} from './utils/finishedSessionFields';
 import { handleSessionEndBySW } from './utils/handleSessionEndBySW';
 import { handleEndOfCycle } from './utils/handleEndOfCycle';
 
 //#region Indexed Database Schema
 interface TimerRelatedDB extends DBSchema {
+  // NOTE: 이거 TimersStates도 들어가는데.. type으로 정의된다기보다는 key-val방식이라 그냥 string, number 조합으로 커버된다.
   stateStore: {
     value: {
       name: string;
@@ -77,19 +82,7 @@ interface TimerRelatedDB extends DBSchema {
     key: string;
   };
   recOfToday: {
-    value: {
-      kind: 'pomo' | 'break';
-      startTime: number;
-
-      // startTime + duration
-      // Or starTime + timePassed (this is when a user ends the session in the middle)
-      endTime: number;
-      timeCountedDown: number; //in milliseconds
-      pause: {
-        totalLength: number;
-        record: { start: number; end: number | undefined }[];
-      };
-    };
+    value: RecType;
     key: [number];
   };
   failedReqInfo: {
@@ -119,10 +112,7 @@ interface TimerRelatedDB extends DBSchema {
 export type dataCombinedFromIDB = {
   running: boolean;
   startTime: number;
-  pause: {
-    totalLength: number;
-    record: { start: number; end: number | undefined }[];
-  };
+  pause: PauseType;
   duration: number;
   repetitionCount: number;
   pomoSetting: PomoSettingType;
@@ -628,6 +618,13 @@ export async function openIndexedDB() {
   return db;
 }
 
+function normalizeLoadedStatePause(
+  states: dataCombinedFromIDB,
+): dataCombinedFromIDB {
+  if (states.pause == null) return states;
+  return { ...states, pause: normalizePause(states.pause) };
+}
+
 export async function obtainStatesFromIDB(
   opt: 'withoutSettings',
 ): Promise<TimersStatesTypeWithCurrentCycleInfo | {}>;
@@ -645,15 +642,16 @@ export async function obtainStatesFromIDB(
     return { ...acc, [cur.name]: cur.value };
   }, {});
   if (Object.keys(states).length !== 0) {
+    const withPause = normalizeLoadedStatePause(states as dataCombinedFromIDB);
     if (opt === 'withoutSettings') {
       const {
         pomoSetting,
         autoStartSetting,
         ...timersStatesWithCurrentCycleInfo
-      } = states as dataCombinedFromIDB;
+      } = withPause;
       return timersStatesWithCurrentCycleInfo;
     } else {
-      return states;
+      return withPause;
     }
   } else {
     return {};
@@ -699,9 +697,10 @@ export async function retrieveTodaySessionsFromIDB(): Promise<RecType[]> {
   const store = db
     .transaction('recOfToday', 'readonly')
     .objectStore('recOfToday');
-  const allSessions = await store.getAll();
+  const allSessions: RecType[] = await store.getAll();
   // console.log("allSessions", allSessions);
-  return allSessions;
+  // NOTE: RecType extends StoredRec
+  return allSessions.map(normalizeFinishedSession);
 }
 
 export async function retrieveAutoStartSettingFromIDB() {
@@ -756,10 +755,7 @@ export async function persistSingleTodaySessionToIDB({
   data,
 }: {
   kind: 'pomo' | 'break';
-  data: Omit<TimerStateType, 'running'> & {
-    endTime: number;
-    timeCountedDown: number;
-  };
+  data: Omit<RecType, 'kind'>;
 }) {
   const db = DB || (await openIndexedDB());
   const store = db
@@ -951,7 +947,7 @@ const statesOfTimerResetConstant = {
   startTime: 0,
   pause: {
     totalLength: 0,
-    record: [] as { start: number; end: number | undefined }[],
+    record: [] as PauseType['record'],
   },
 };
 
@@ -977,7 +973,7 @@ async function loadSessionEndPrereqs(): Promise<{
 async function prepareCategoryChangeAndPersistForSessionEnd(params: {
   idToken: string | null;
   userEmail: string | null;
-  sessionData: ReturnType<typeof buildSessionData>;
+  sessionData: Omit<RecType, 'kind'>;
   taskChangeInfoArray: TaskChangeInfo[];
 }): Promise<CategoryChangeInfo[]> {
   const { idToken, userEmail, sessionData, taskChangeInfoArray } = params;
@@ -1063,7 +1059,7 @@ function handleAutoStartOrPersist(options: {
 }
 
 type SessionWrapUpContext = {
-  sessionData: ReturnType<typeof buildSessionData>;
+  sessionData: Omit<RecType, 'kind'>;
   timersStatesForNextSession: TimersStatesType;
   currentCycleInfo: CycleInfoType;
   pomoSetting: PomoSettingType;
@@ -1085,13 +1081,27 @@ export async function endTimer(action: 'endTimer', payload: GoNextPayload) {
   const { currentCycleInfo, ...timersStates } =
     timersStatesWithCurrentCycleInfo;
 
-  const sessionData = buildSessionData(timersStates);
-
   const kindOfSessionJustFinished = identifyPrevSession({
     howManyCountdown: timersStates.repetitionCount + 1,
     numOfPomo: pomoSetting.numOfPomo,
     numOfCycle: pomoSetting.numOfCycle,
   });
+  const lengthKind =
+    kindOfSessionJustFinished === SESSION.SHORT_BREAK
+      ? 'shortBreak'
+      : kindOfSessionJustFinished === SESSION.LONG_BREAK
+        ? 'longBreak'
+        : 'pomo';
+  const sessionData = {
+    ...buildSessionData(timersStates),
+    ...analysisFieldsForFinishedSession({
+      lengthKind,
+      pomoSetting,
+      durationMinutes: timersStates.duration,
+      isEarlyEnded: false,
+      earlyEndReason: null,
+    }),
+  };
 
   const timersStatesForNextSession =
     buildTimersStatesForNextSession(timersStates);
@@ -1364,6 +1374,8 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
     pomoSetting,
     autoStartSetting,
     idToken,
+    categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
     statesOfTimerReset,
   } = ctx;
   notify('pomo');
@@ -1398,6 +1410,8 @@ async function wrapUpShortBreakSession(ctx: SessionWrapUpContext) {
   });
 
   persistRecOfTodayToServer({
+    categoryChangeInfoArray: categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
     record: { kind: 'break', ...sessionData },
     authGuard: idToken,
   });
@@ -1530,6 +1544,8 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
     autoStartSetting,
     idToken,
     userEmail,
+    categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
     statesOfTimerReset,
     totalFocusDurationTargeted,
     cycleDurationTargeted,
@@ -1600,6 +1616,8 @@ async function wrapUpLongBreakSession(ctx: SessionWrapUpContext) {
   });
 
   persistRecOfTodayToServer({
+    categoryChangeInfoArray: categoryChangeInfoArrayBeforeReset,
+    taskChangeInfoArray,
     record: { kind: 'break', ...sessionData },
     authGuard: idToken,
   });
