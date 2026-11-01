@@ -48,23 +48,43 @@ export default function RecOfToday({ records }: RecOfTodayProps) {
           // curIndex: starts from 0 (on first call, 0 if `initialValue` was specified, otherwise 1)
           return arrOfStartAndEnd.reduce<DurationType[]>(
             (accu, curVal, curIndex, arr) => {
-              let subject: 'pomo' | 'break' | 'pause' =
-                // The first start cannot be the start of pause.
-                // It must be either the start of pomodoro or break.
-                (curIndex + 1) % 2 === 1 ? rec.kind : 'pause';
-              if (curIndex + 1 < arr.length) {
+              if (curIndex + 1 >= arr.length) {
+                return accu;
+              }
+
+              const isWorkOrBreak = (curIndex + 1) % 2 === 1;
+              const startTime = curVal;
+              const endTime = arr[curIndex + 1];
+              const duration = endTime - startTime;
+
+              if (isWorkOrBreak) {
                 return [
                   ...accu,
                   {
-                    startTime: curVal,
-                    endTime: arr[curIndex + 1],
-                    subject,
-                    duration: arr[curIndex + 1] - curVal,
+                    startTime,
+                    endTime,
+                    subject: rec.kind,
+                    duration,
                   },
                 ];
-              } else {
-                return [...accu];
               }
+
+              // 일시정지(pause) 구간
+              const matchedPause = rec.pause?.record?.find(
+                (p) => p.start === curVal,
+              );
+              const pauseReason = matchedPause?.reason ?? null;
+
+              return [
+                ...accu,
+                {
+                  startTime,
+                  endTime,
+                  subject: 'pause',
+                  duration,
+                  pauseReason,
+                },
+              ];
             },
             [],
           );

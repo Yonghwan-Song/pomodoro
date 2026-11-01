@@ -1,4 +1,4 @@
-import { IsOptional, ValidateNested } from 'class-validator';
+import { IsArray, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class RecordDto {
@@ -6,15 +6,22 @@ class RecordDto {
   start: number;
 
   @IsOptional()
-  end: number;
+  end?: number;
+
+  @IsOptional()
+  reason?: string | null;
 }
 
+// QQQ: 왜 둘다 optional이지?
 class PauseDto {
+  @IsOptional()
   totalLength: number;
 
-  @ValidateNested()
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => RecordDto)
-  record: RecordDto;
+  record: RecordDto[];
 }
 
 export class UpdateTimersStatesDto {

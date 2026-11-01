@@ -30,6 +30,7 @@ type CircularProgressBarProps = {
   setTotalDurationOfSetOfCyclesInSec: React.Dispatch<
     React.SetStateAction<number>
   >;
+  durationEditLocked?: boolean;
 };
 
 /**
@@ -67,6 +68,7 @@ const CircularProgressBar = ({
   setTotalFocusDurationInSec,
   setCycleDurationInSec,
   setTotalDurationOfSetOfCyclesInSec,
+  durationEditLocked = false,
 }: CircularProgressBarProps) => {
   const categoryChangeInfoArray = useBoundedPomoInfoStore(
     (state) => state.categoryChangeInfoArray,
@@ -428,7 +430,13 @@ const CircularProgressBar = ({
         y={C.SVG.HEGITH / 2 - 20}
       >
         {/* to make the sign easier to click, I created a transparent circle */}
-        <g onClick={() => setAddCount((prev) => prev + 1)} cursor={'pointer'}>
+        <g
+          onClick={() => {
+            if (durationEditLocked) return;
+            setAddCount((prev) => prev + 1);
+          }}
+          cursor={durationEditLocked ? 'default' : 'pointer'}
+        >
           <circle cx={20} cy={20} r={20} fill="transparent" />
           <line
             x1="10"
@@ -458,8 +466,11 @@ const CircularProgressBar = ({
         y={C.SVG.HEGITH / 2 - 20}
       >
         <g
-          onClick={() => setSubtractCount((prev) => prev + 1)}
-          cursor={'pointer'}
+          onClick={() => {
+            if (durationEditLocked) return;
+            setSubtractCount((prev) => prev + 1);
+          }}
+          cursor={durationEditLocked ? 'default' : 'pointer'}
         >
           <circle cx={20} cy={20} r={20} fill="transparent" />
           <line

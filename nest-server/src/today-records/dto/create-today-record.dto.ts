@@ -19,6 +19,12 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsString,
+  IsArray,
+  IsInt,
+  Min,
+  MaxLength,
+  ArrayMinSize,
+  ArrayMaxSize,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -80,6 +86,10 @@ class RecordDto {
 
   @IsOptional()
   end: number;
+
+  @IsOptional()
+  @IsString()
+  reason?: string | null;
 }
 
 class PauseDto {
@@ -89,11 +99,35 @@ class PauseDto {
   @Type(() => RecordDto)
   record: RecordDto[];
 }
+
+// Client SessionSegment. owner is [categoryName, taskId]. type is focus or pause.
+class SessionSegmentDto {
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(2)
+  @IsString({ each: true })
+  @MaxLength(255, { each: true })
+  owner: [string, string];
+
+  @IsInt()
+  @Min(0)
+  duration: number;
+
+  @IsIn(['focus', 'pause'])
+  type: 'focus' | 'pause';
+
+  @IsInt()
+  @IsPositive()
+  startTime: number;
+
+  @IsOptional()
+  @IsString()
+  reason?: string | null;
+}
 //#endregion
 
 export class CreateTodayRecordDto {
   // 새롭게 합쳐지는 부분
-  //#region When Kind is pomo
   @IsOptional() // NOTE: kind === "pomo"인 경우에만 받는다.
   @ValidateNested({ each: true }) // Each object in the pomodoroRecordArr array, which is nested, is validated individually.
   @Type(() => PomodoroRecord)
@@ -103,7 +137,12 @@ export class CreateTodayRecordDto {
   @ValidateNested({ each: true })
   @Type(() => TaskTracking)
   taskTrackingArr: TaskTracking[];
-  //#endregion
+
+  // pomo와 break 모두 보낸다.
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SessionSegmentDto)
+  segments: SessionSegmentDto[];
 
   // 기존
   @IsIn(['pomo', 'break'])
@@ -124,4 +163,21 @@ export class CreateTodayRecordDto {
   @IsNumber()
   @IsPositive() //TODO: 이거 positive가 아닌 case가 있을까?....
   timeCountedDown: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  plannedDuration?: number;
+
+  @IsOptional()
+  @IsInt()
+  editedDuration?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isEarlyEnded?: boolean;
+
+  @IsOptional()
+  @IsString()
+  earlyEndReason?: string | null;
 }
